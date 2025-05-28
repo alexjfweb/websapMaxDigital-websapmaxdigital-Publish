@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Settings, ShoppingBag, Utensils, Users } from "lucide-react";
+import { BarChart, Settings, ShoppingBag, Utensils, Users, CreditCard, Share2 } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminDashboardPage() {
