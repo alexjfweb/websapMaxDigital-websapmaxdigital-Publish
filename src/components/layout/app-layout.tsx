@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation'; // Added usePathname
 import {
   SidebarProvider,
   Sidebar,
@@ -36,20 +36,20 @@ const guestUser: User = {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname(); // Get current pathname
   const [currentUser, setCurrentUser] = useState<User>(guestUser);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true); // Ensure localStorage is only accessed on the client
+    setIsMounted(true); 
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser) as User;
-        // Validate essential fields from stored user
         if (parsedUser && parsedUser.email && parsedUser.role && (parsedUser.name || parsedUser.username)) {
           setCurrentUser(parsedUser);
         } else {
-          localStorage.removeItem('currentUser'); // Clear invalid data
+          localStorage.removeItem('currentUser'); 
           setCurrentUser(guestUser);
         }
       } catch (error) {
@@ -60,20 +60,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     } else {
       setCurrentUser(guestUser);
     }
-  }, []);
+  }, [pathname]); // Add pathname to dependency array
   
   useEffect(() => {
     if (!isMounted) return;
 
     const protectedRoutesPrefixes = ['/admin', '/superadmin', '/employee'];
-    const currentPath = window.location.pathname;
+    // Use the pathname from usePathname instead of window.location.pathname for consistency with Next.js routing
+    const currentPath = pathname; 
     const isGuest = currentUser.role === 'guest';
 
     if (isGuest && protectedRoutesPrefixes.some(prefix => currentPath.startsWith(prefix))) {
       toast({ title: "Access Denied", description: "Please log in to access this page.", variant: "destructive" });
       router.push('/login');
     } else if (!isGuest && (currentPath === '/login' || currentPath === '/register')) {
-        let dashboardPath = "/menu"; // Default for guests or if role doesn't match specific dashboard
+        let dashboardPath = "/menu"; 
         switch(currentUser.role) {
             case "admin": dashboardPath = "/admin/dashboard"; break;
             case "superadmin": dashboardPath = "/superadmin/dashboard"; break;
@@ -82,7 +83,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         router.push(dashboardPath);
     }
 
-  }, [currentUser, router, isMounted]);
+  }, [currentUser, router, isMounted, pathname]); // Added pathname to dependency array
 
 
   const handleLogout = () => {
@@ -178,3 +179,4 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
+
