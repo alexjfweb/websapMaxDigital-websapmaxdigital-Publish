@@ -116,6 +116,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </svg>
             <span className="group-data-[collapsible=icon]:hidden">websapMax</span>
           </Link>
+          {currentUser.role !== 'guest' ? (
+            <div className="mt-1 text-center group-data-[collapsible=icon]:hidden">
+              <p className="text-sm font-medium text-sidebar-foreground truncate max-w-[150px]">
+                {currentUser.name || currentUser.username}
+              </p>
+              <p className="text-xs text-sidebar-foreground/80 capitalize">
+                Rol: {currentUser.role}
+              </p>
+            </div>
+          ) : (
+             <div className="mt-1 text-center group-data-[collapsible=icon]:hidden">
+               <p className="text-sm text-sidebar-foreground/80">
+                Guest Access
+               </p>
+            </div>
+          )}
         </SidebarHeader>
         <SidebarContent className="flex-grow">
           <NavigationMenu role={currentUser.role} />
@@ -130,8 +146,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         <AvatarFallback>{currentUser.name ? currentUser.name.substring(0,1).toUpperCase() : 'U'}</AvatarFallback>
                       </Avatar>
                       <div className="group-data-[collapsible=icon]:hidden flex flex-col items-start">
-                        <span className="text-sm font-medium">{currentUser.name}</span>
-                        <span className="text-xs text-muted-foreground">{currentUser.email}</span>
+                        <span className="text-sm font-medium truncate max-w-[120px]">{currentUser.name}</span>
+                        <span className="text-xs text-muted-foreground truncate max-w-[120px]">{currentUser.email}</span>
                       </div>
                     </Button>
                 </DropdownMenuTrigger>

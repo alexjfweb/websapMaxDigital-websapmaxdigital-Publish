@@ -29,7 +29,9 @@ import {
   History,
   CreditCard,
   CalendarCheck,
-  Megaphone
+  Megaphone,
+  LogIn, // Added LogIn icon
+  UserPlus // Added UserPlus icon
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
@@ -47,8 +49,8 @@ const navItems: NavItem[] = [
   { href: '/menu', label: 'Public Menu', icon: Newspaper, allowedRoles: ['guest', 'employee', 'admin', 'superadmin'], tooltip: 'View Menu' },
 
   // Guest-only links (only shown when role is 'guest')
-  { href: '/login', label: 'Login', icon: Home, allowedRoles: ['guest'], tooltip: 'Login' },
-  { href: '/register', label: 'Register', icon: UserCog, allowedRoles: ['guest'], tooltip: 'Register' },
+  { href: '/login', label: 'Login', icon: LogIn, allowedRoles: ['guest'], tooltip: 'Login' },
+  { href: '/register', label: 'Register', icon: UserPlus, allowedRoles: ['guest'], tooltip: 'Register' },
 
   // SuperAdmin Routes - only accessible by 'superadmin'
   { href: '/superadmin/dashboard', label: 'SA Dashboard', icon: ShieldCheck, allowedRoles: ['superadmin'], tooltip: 'Super Admin Dashboard' },
@@ -82,17 +84,28 @@ export default function NavigationMenu({ role }: NavigationMenuProps) {
   const renderNavItems = (items: NavItem[], isSubMenu = false) => {
     return items
       .filter(item => {
+        // For guests, only show items that are explicitly for 'guest' role.
         if (role === 'guest') {
-          // For guests, only show items that are explicitly for guests.
           return item.allowedRoles.includes('guest');
-        } else {
-          // For logged-in users:
-          // 1. The item must be allowed for their role.
-          // 2. The item must NOT be /login or /register.
-          return item.allowedRoles.includes(role) &&
-                 item.href !== '/login' &&
-                 item.href !== '/register';
         }
+
+        // For logged-in users:
+        // Never show login/register routes.
+        if (item.href === '/login' || item.href === '/register') {
+          return false;
+        }
+
+        // Check direct role access
+        if (item.allowedRoles.includes(role)) return true;
+
+        // Check hierarchical access
+        // Admin can see employee routes
+        if (role === 'admin' && item.allowedRoles.includes('employee')) return true;
+        
+        // Superadmin can see admin and employee routes
+        if (role === 'superadmin' && (item.allowedRoles.includes('admin') || item.allowedRoles.includes('employee'))) return true;
+        
+        return false; // If no condition is met.
       })
       .map((item) => {
         const Icon = item.icon;
