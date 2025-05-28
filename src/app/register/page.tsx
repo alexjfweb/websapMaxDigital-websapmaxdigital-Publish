@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,7 +14,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input"; // Added Input import
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription as ShadCNCardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import Link from "next/link";
@@ -25,10 +26,10 @@ const registerFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
   confirmPassword: z.string(),
-  role: z.enum(["admin", "employee"], { required_error: "Please select a role." }), // SuperAdmin might be created via CLI or special interface
+  role: z.enum(["admin", "employee"], { required_error: "Please select a role." }),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
-  path: ["confirmPassword"], // path of error
+  path: ["confirmPassword"],
 });
 
 export default function RegisterPage() {
@@ -43,13 +44,11 @@ export default function RegisterPage() {
   });
 
   function onSubmit(values: z.infer<typeof registerFormSchema>) {
-    // Mock registration logic
     console.log("Registration attempt:", values);
     toast({
       title: "Registration Submitted",
       description: "This is a mock registration. In a real app, account creation would occur.",
     });
-    // In a real app, you might redirect to login or a verification page
   }
 
   return (
@@ -61,8 +60,8 @@ export default function RegisterPage() {
                   <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
               </svg>
             </div>
-          <CardTitle className="text-3xl font-bold text-primary">Create an Account</CardTitle>
-          <ShadCNCardDescription>Join websapMax to manage your restaurant or orders.</ShadCNCardDescription>
+          <CardTitle className="text-3xl font-bold text-primary" suppressHydrationWarning>Create an Account</CardTitle>
+          <ShadCNCardDescription suppressHydrationWarning>Join websapMax to manage your restaurant or orders.</ShadCNCardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -161,3 +160,5 @@ export default function RegisterPage() {
     </div>
   );
 }
+
+    
