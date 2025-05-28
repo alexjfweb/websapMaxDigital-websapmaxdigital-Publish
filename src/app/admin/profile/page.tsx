@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { UploadCloud, Save, Edit, Trash2 } from "lucide-react";
-import { useLanguage } from "@/contexts/language-context";
+import { useLanguage } from "@/contexts/language-context"; // Importado
 
 // Mock data - in a real app, this would come from a backend/state management
 const mockProfile = {
@@ -25,7 +25,7 @@ const mockProfile = {
 
 
 export default function AdminProfilePage() {
-  const { t } = useLanguage();
+  const { t } = useLanguage(); // Añadido
 
   return (
     <div className="space-y-8">
@@ -65,13 +65,13 @@ export default function AdminProfilePage() {
           <div className="space-y-4">
             <Label>{t('adminProfile.businessInfoCard.logoLabel')}</Label>
             <div className="flex items-center gap-4">
-                <img src={mockProfile.logoUrl} alt="Current Logo" className="h-24 w-24 rounded-md border object-cover" data-ai-hint="logo placeholder"/>
+                <img src={mockProfile.logoUrl} alt={t('adminProfile.businessInfoCard.logoAlt')} className="h-24 w-24 rounded-md border object-cover" data-ai-hint="logo placeholder"/>
                 <Button variant="outline">
                     <UploadCloud className="mr-2 h-4 w-4" /> {t('adminProfile.businessInfoCard.uploadLogoButton')}
                     <Input type="file" className="hidden" accept="image/*" />
                 </Button>
             </div>
-            <p className="text-xs text-muted-foreground">Recommended size: 200x200px. Max 2MB.</p>
+            <p className="text-xs text-muted-foreground">{t('adminProfile.businessInfoCard.logoHint')}</p>
           </div>
         </CardContent>
       </Card>
@@ -117,13 +117,13 @@ export default function AdminProfilePage() {
             <div className="space-y-2">
                 <Label>{t('adminProfile.paymentMethodsCard.nequiQrLabel')}</Label>
                 <div className="flex items-center gap-4">
-                    <img src={mockProfile.nequiQrUrl} alt="Nequi QR Code" className="h-24 w-24 rounded-md border object-cover" data-ai-hint="QR code placeholder"/>
+                    <img src={mockProfile.nequiQrUrl} alt={t('adminProfile.paymentMethodsCard.nequiQrAlt')} className="h-24 w-24 rounded-md border object-cover" data-ai-hint="QR code placeholder"/>
                     <Button variant="outline">
                         <UploadCloud className="mr-2 h-4 w-4" /> {t('adminProfile.paymentMethodsCard.uploadNequiQrButton')}
                         <Input type="file" className="hidden" accept="image/*" />
                     </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">Upload the QR code image for Nequi payments.</p>
+                <p className="text-xs text-muted-foreground">{t('adminProfile.paymentMethodsCard.nequiQrHint')}</p>
             </div>
             <div className="flex items-center space-x-2">
                 <Input type="checkbox" id="cod" defaultChecked />
