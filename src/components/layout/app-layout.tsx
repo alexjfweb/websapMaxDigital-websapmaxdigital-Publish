@@ -41,7 +41,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true); 
+    setIsMounted(true);
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
       try {
@@ -49,7 +49,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         if (parsedUser && parsedUser.email && parsedUser.role && (parsedUser.name || parsedUser.username)) {
           setCurrentUser(parsedUser);
         } else {
-          localStorage.removeItem('currentUser'); 
+          localStorage.removeItem('currentUser');
           setCurrentUser(guestUser);
         }
       } catch (error) {
@@ -61,20 +61,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       setCurrentUser(guestUser);
     }
   }, [pathname]); // Add pathname to dependency array
-  
+
   useEffect(() => {
     if (!isMounted) return;
 
     const protectedRoutesPrefixes = ['/admin', '/superadmin', '/employee'];
-    // Use the pathname from usePathname instead of window.location.pathname for consistency with Next.js routing
-    const currentPath = pathname; 
+    const currentPath = pathname;
     const isGuest = currentUser.role === 'guest';
 
     if (isGuest && protectedRoutesPrefixes.some(prefix => currentPath.startsWith(prefix))) {
       toast({ title: "Access Denied", description: "Please log in to access this page.", variant: "destructive" });
       router.push('/login');
     } else if (!isGuest && (currentPath === '/login' || currentPath === '/register')) {
-        let dashboardPath = "/menu"; 
+        let dashboardPath = "/menu";
         switch(currentUser.role) {
             case "admin": dashboardPath = "/admin/dashboard"; break;
             case "superadmin": dashboardPath = "/superadmin/dashboard"; break;
@@ -95,7 +94,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (!isMounted) {
     return (
-      <div className="flex min-h-svh w-full items-center justify-center bg-background">
+      <div 
+        className="flex min-h-svh w-full items-center justify-center bg-background"
+        suppressHydrationWarning={true} // Added this line
+      >
         Loading application...
       </div>
     );
@@ -179,4 +181,4 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
-
+    
