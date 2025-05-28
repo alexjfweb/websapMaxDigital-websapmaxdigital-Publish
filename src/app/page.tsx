@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Utensils, ShoppingCart, Share2 } from 'lucide-react';
@@ -5,6 +8,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 export default function HomePage() {
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
+
+  useEffect(() => {
+    setCurrentYear(new Date().getFullYear());
+  }, []);
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-theme(spacing.16))] text-center p-4 md:p-8">
       <header className="mb-12">
@@ -64,8 +73,9 @@ export default function HomePage() {
         <Image 
           src="https://placehold.co/800x450.png" 
           alt="Delicious Food Montage" 
-          layout="fill" 
-          objectFit="cover"
+          fill={true}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          style={{ objectFit: 'cover' }}
           data-ai-hint="food restaurant" 
         />
       </div>
@@ -77,7 +87,7 @@ export default function HomePage() {
       </Link>
 
       <footer className="mt-16 text-muted-foreground text-sm">
-        <p>&copy; {new Date().getFullYear()} websapMax. All rights reserved.</p>
+        <p>&copy; {currentYear !== null ? currentYear : ''} websapMax. All rights reserved.</p>
         <p>Experience the future of dining.</p>
       </footer>
     </div>
