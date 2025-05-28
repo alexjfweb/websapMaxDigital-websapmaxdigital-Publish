@@ -1,13 +1,15 @@
+
 "use client";
 
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuGroup } from '@/components/ui/dropdown-menu';
-import { Bell, UserCircle, Settings, LogOut, Menu as MenuIcon, LogIn as LogInIcon } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuGroup, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
+import { Bell, UserCircle, Settings, LogOut, Menu as MenuIcon, LogIn as LogInIcon, Globe } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import type { User } from '@/types';
+import { useLanguage, type Language } from '@/contexts/language-context';
 
 interface AppHeaderProps {
   currentUser: User;
@@ -16,6 +18,16 @@ interface AppHeaderProps {
 
 export default function AppHeader({ currentUser, handleLogout }: AppHeaderProps) {
   const { isMobile } = useSidebar();
+  const { language, setLanguage } = useLanguage();
+
+  const languages: { code: Language; name: string; flag: string }[] = [
+    { code: 'en', name: 'English', flag: '🇬🇧' },
+    { code: 'es', name: 'Español', flag: '🇪🇸' },
+    { code: 'pt', name: 'Português', flag: '🇵🇹' },
+    { code: 'fr', name: 'Français', flag: '🇫🇷' },
+  ];
+
+  const currentLanguageDetails = languages.find(lang => lang.code === language) || languages[0];
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 sm:px-6 shadow-sm">
@@ -24,6 +36,26 @@ export default function AppHeader({ currentUser, handleLogout }: AppHeaderProps)
         {/* Optional: Search bar or other header elements can go here */}
       </div>
       <div className="flex items-center gap-2 md:gap-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <Globe className="h-5 w-5" />
+              <span className="sr-only">Change language</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Select Language</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {languages.map((lang) => (
+              <DropdownMenuItem key={lang.code} onSelect={() => setLanguage(lang.code)}>
+                <span className="mr-2">{lang.flag}</span>
+                {lang.name}
+                {language === lang.code && <span className="ml-auto text-xs text-muted-foreground">Current</span>}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <Button variant="ghost" size="icon" className="rounded-full">
           <Bell className="h-5 w-5" />
           <span className="sr-only">Toggle notifications</span>
