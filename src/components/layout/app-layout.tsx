@@ -46,7 +46,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       try {
         const parsedUser = JSON.parse(storedUser) as User;
         // Validate essential fields from stored user
-        if (parsedUser && parsedUser.email && parsedUser.role && parsedUser.name) {
+        if (parsedUser && parsedUser.email && parsedUser.role && (parsedUser.name || parsedUser.username)) {
           setCurrentUser(parsedUser);
         } else {
           localStorage.removeItem('currentUser'); // Clear invalid data
@@ -62,9 +62,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, []);
   
-  // This effect ensures that when currentUser changes (e.g., after login),
-  // we re-evaluate if a guest needs to be redirected from a protected route.
-  // Or if a logged-in user lands on /login or /register, redirect them.
   useEffect(() => {
     if (!isMounted) return;
 
@@ -76,8 +73,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       toast({ title: "Access Denied", description: "Please log in to access this page.", variant: "destructive" });
       router.push('/login');
     } else if (!isGuest && (currentPath === '/login' || currentPath === '/register')) {
-        // Redirect logged-in users away from login/register pages
-        let dashboardPath = "/";
+        let dashboardPath = "/menu"; // Default for guests or if role doesn't match specific dashboard
         switch(currentUser.role) {
             case "admin": dashboardPath = "/admin/dashboard"; break;
             case "superadmin": dashboardPath = "/superadmin/dashboard"; break;
@@ -97,8 +93,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   if (!isMounted) {
-    // Render a loading state or null to prevent hydration mismatch
-    // Ideally, a skeleton loader that matches the layout structure.
     return (
       <div className="flex min-h-svh w-full items-center justify-center bg-background">
         Loading application...
@@ -143,10 +137,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <Button variant="ghost" className="w-full justify-start gap-2 p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={currentUser.avatarUrl || `https://placehold.co/40x40.png?text=${currentUser.name?.substring(0,1).toUpperCase()}`} alt={currentUser.name || 'User'} data-ai-hint="user avatar" />
-                        <AvatarFallback>{currentUser.name ? currentUser.name.substring(0,1).toUpperCase() : 'U'}</AvatarFallback>
+                        <AvatarFallback>{currentUser.name ? currentUser.name.substring(0,1).toUpperCase() : currentUser.username.substring(0,1).toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <div className="group-data-[collapsible=icon]:hidden flex flex-col items-start">
-                        <span className="text-sm font-medium truncate max-w-[120px]">{currentUser.name}</span>
+                        <span className="text-sm font-medium truncate max-w-[120px]">{currentUser.name || currentUser.username}</span>
                         <span className="text-xs text-muted-foreground truncate max-w-[120px]">{currentUser.email}</span>
                       </div>
                     </Button>
@@ -176,7 +170,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </Sidebar>
       <SidebarRail />
       <SidebarInset className="flex flex-col">
-        <AppHeader />
+        <AppHeader currentUser={currentUser} handleLogout={handleLogout} />
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background">
           {children}
         </main>
