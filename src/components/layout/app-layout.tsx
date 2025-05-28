@@ -1,4 +1,9 @@
+
+"use client"; // Required for useState and useEffect
+
 import * as React from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   SidebarProvider,
   Sidebar,
@@ -6,30 +11,100 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarInset,
-  SidebarTrigger,
   SidebarRail,
 } from '@/components/ui/sidebar';
 import AppHeader from '@/components/layout/header';
 import NavigationMenu from '@/components/layout/navigation-menu';
 import { Button } from '@/components/ui/button';
-import { Home, LogOut, Settings, UserCircle } from 'lucide-react';
+import { LogOut, Settings, UserCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import type { User, UserRole } from '@/types';
+import { toast } from '@/hooks/use-toast';
 
-// Mock user for demonstration
-const mockUser = {
-  name: 'Admin User',
-  email: 'admin@websapmax.com',
-  avatarUrl: 'https://placehold.co/100x100.png',
-  role: 'admin', // Possible roles: 'superadmin', 'admin', 'employee', 'guest'
+const guestUser: User = {
+  id: 'guest',
+  username: 'guest',
+  email: 'guest@example.com',
+  name: 'Guest User',
+  avatarUrl: 'https://placehold.co/100x100.png?text=G',
+  role: 'guest',
+  status: 'active',
+  registrationDate: new Date().toISOString(),
 };
 
-
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  // For this scaffold, we'll pass the mock user's role to the NavigationMenu
-  // In a real app, this would come from an auth context or session.
-  const userRole = mockUser.role;
+  const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<User>(guestUser);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true); // Ensure localStorage is only accessed on the client
+    const storedUser = localStorage.getItem('currentUser');
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser) as User;
+        // Validate essential fields from stored user
+        if (parsedUser && parsedUser.email && parsedUser.role && parsedUser.name) {
+          setCurrentUser(parsedUser);
+        } else {
+          localStorage.removeItem('currentUser'); // Clear invalid data
+          setCurrentUser(guestUser);
+        }
+      } catch (error) {
+        console.error("Failed to parse user from localStorage", error);
+        localStorage.removeItem('currentUser');
+        setCurrentUser(guestUser);
+      }
+    } else {
+      setCurrentUser(guestUser);
+    }
+  }, []);
+  
+  // This effect ensures that when currentUser changes (e.g., after login),
+  // we re-evaluate if a guest needs to be redirected from a protected route.
+  // Or if a logged-in user lands on /login or /register, redirect them.
+  useEffect(() => {
+    if (!isMounted) return;
+
+    const protectedRoutesPrefixes = ['/admin', '/superadmin', '/employee'];
+    const currentPath = window.location.pathname;
+    const isGuest = currentUser.role === 'guest';
+
+    if (isGuest && protectedRoutesPrefixes.some(prefix => currentPath.startsWith(prefix))) {
+      toast({ title: "Access Denied", description: "Please log in to access this page.", variant: "destructive" });
+      router.push('/login');
+    } else if (!isGuest && (currentPath === '/login' || currentPath === '/register')) {
+        // Redirect logged-in users away from login/register pages
+        let dashboardPath = "/";
+        switch(currentUser.role) {
+            case "admin": dashboardPath = "/admin/dashboard"; break;
+            case "superadmin": dashboardPath = "/superadmin/dashboard"; break;
+            case "employee": dashboardPath = "/employee/dashboard"; break;
+        }
+        router.push(dashboardPath);
+    }
+
+  }, [currentUser, router, isMounted]);
+
+
+  const handleLogout = () => {
+    localStorage.removeItem('currentUser');
+    setCurrentUser(guestUser);
+    toast({ title: "Logged Out", description: "You have been successfully logged out." });
+    router.push('/login');
+  };
+
+  if (!isMounted) {
+    // Render a loading state or null to prevent hydration mismatch
+    // Ideally, a skeleton loader that matches the layout structure.
+    return (
+      <div className="flex min-h-svh w-full items-center justify-center bg-background">
+        Loading application...
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider defaultOpen>
@@ -43,43 +118,45 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </Link>
         </SidebarHeader>
         <SidebarContent className="flex-grow">
-          <NavigationMenu role={userRole} />
+          <NavigationMenu role={currentUser.role} />
         </SidebarContent>
-        <SidebarFooter className="p-2 mt-auto">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                 <Button variant="ghost" className="w-full justify-start gap-2 p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={mockUser.avatarUrl} alt={mockUser.name} data-ai-hint="user avatar" />
-                      <AvatarFallback>{mockUser.name.substring(0,1).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div className="group-data-[collapsible=icon]:hidden flex flex-col items-start">
-                      <span className="text-sm font-medium">{mockUser.name}</span>
-                      <span className="text-xs text-muted-foreground">{mockUser.email}</span>
-                    </div>
-                  </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56 mb-2 ml-2" side="top" align="start">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                  <DropdownMenuItem>
-                    <UserCircle className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
+        {currentUser.role !== 'guest' && (
+          <SidebarFooter className="p-2 mt-auto">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="w-full justify-start gap-2 p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={currentUser.avatarUrl || `https://placehold.co/40x40.png?text=${currentUser.name?.substring(0,1).toUpperCase()}`} alt={currentUser.name || 'User'} data-ai-hint="user avatar" />
+                        <AvatarFallback>{currentUser.name ? currentUser.name.substring(0,1).toUpperCase() : 'U'}</AvatarFallback>
+                      </Avatar>
+                      <div className="group-data-[collapsible=icon]:hidden flex flex-col items-start">
+                        <span className="text-sm font-medium">{currentUser.name}</span>
+                        <span className="text-xs text-muted-foreground">{currentUser.email}</span>
+                      </div>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 mb-2 ml-2" side="top" align="start">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem disabled> {/* Disabled for mock */}
+                      <UserCircle className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem disabled> {/* Disabled for mock */}
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-        </SidebarFooter>
+                </DropdownMenuContent>
+              </DropdownMenu>
+          </SidebarFooter>
+        )}
       </Sidebar>
       <SidebarRail />
       <SidebarInset className="flex flex-col">

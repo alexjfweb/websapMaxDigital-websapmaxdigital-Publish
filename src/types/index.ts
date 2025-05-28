@@ -1,3 +1,4 @@
+
 export interface RestaurantProfile {
   id: string;
   name: string;
@@ -42,6 +43,7 @@ export interface User {
   id: string;
   username: string;
   email: string;
+  name?: string; // Added name for display
   contact?: string;
   role: UserRole;
   status: 'active' | 'inactive' | 'pending';

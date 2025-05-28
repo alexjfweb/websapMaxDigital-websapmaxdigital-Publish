@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,6 +18,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
 import { LogIn } from "lucide-react";
+import { useRouter } from 'next/navigation';
+import type { User, UserRole } from "@/types";
 
 const loginFormSchema = z.object({
   email: z.string().email({
@@ -27,7 +30,14 @@ const loginFormSchema = z.object({
   }),
 });
 
+const mockUsersCredentials: Record<string, { password: string; role: UserRole; name: string; avatarUrl?: string }> = {
+  "superadmin@example.com": { password: "SuperAdmin2023", role: "superadmin", name: "Super Admin", avatarUrl: "https://placehold.co/100x100.png?text=SA" },
+  "admin@example.com": { password: "Admin2023", role: "admin", name: "Admin User", avatarUrl: "https://placehold.co/100x100.png?text=AU" },
+  "empleado@example.com": { password: "Empleado2023", role: "employee", name: "Employee User", avatarUrl: "https://placehold.co/100x100.png?text=EU" },
+};
+
 export default function LoginPage() {
+  const router = useRouter();
   const form = useForm<z.infer<typeof loginFormSchema>>({
     resolver: zodResolver(loginFormSchema),
     defaultValues: {
@@ -37,14 +47,47 @@ export default function LoginPage() {
   });
 
   function onSubmit(values: z.infer<typeof loginFormSchema>) {
-    // Mock login logic
-    console.log("Login attempt:", values);
-    toast({
-      title: "Login Submitted",
-      description: "This is a mock login. In a real app, authentication would occur.",
-    });
-    // In a real app, you'd redirect on successful login
-    // e.g., router.push('/dashboard') based on role
+    const userCredential = mockUsersCredentials[values.email];
+
+    if (userCredential && userCredential.password === values.password) {
+      const loggedInUser: User = {
+        id: values.email, // Using email as ID for mock
+        username: userCredential.name.toLowerCase().replace(' ', '.'),
+        email: values.email,
+        role: userCredential.role,
+        name: userCredential.name,
+        avatarUrl: userCredential.avatarUrl,
+        status: 'active', // Mock status
+        registrationDate: new Date().toISOString(), // Mock registration date
+      };
+      
+      localStorage.setItem('currentUser', JSON.stringify(loggedInUser));
+      
+      toast({
+        title: "Login Successful!",
+        description: `Welcome, ${userCredential.name}! Redirecting...`,
+      });
+
+      switch (userCredential.role) {
+        case "superadmin":
+          router.push("/superadmin/dashboard");
+          break;
+        case "admin":
+          router.push("/admin/dashboard");
+          break;
+        case "employee":
+          router.push("/employee/dashboard");
+          break;
+        default:
+          router.push("/"); // Fallback to home
+      }
+    } else {
+      toast({
+        title: "Login Failed",
+        description: "Invalid email or password. Please try again.",
+        variant: "destructive",
+      });
+    }
   }
 
   return (
