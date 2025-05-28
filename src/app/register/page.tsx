@@ -7,14 +7,14 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription as ShadCNCardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
 import { UserPlus } from "lucide-react";
@@ -61,7 +61,7 @@ export default function RegisterPage() {
               </svg>
             </div>
           <CardTitle className="text-3xl font-bold text-primary">Create an Account</CardTitle>
-          <CardDescription>Join websapMax to manage your restaurant or orders.</CardDescription>
+          <ShadCNCardDescription>Join websapMax to manage your restaurant or orders.</ShadCNCardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
