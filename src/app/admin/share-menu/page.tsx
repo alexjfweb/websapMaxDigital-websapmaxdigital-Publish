@@ -8,6 +8,7 @@ import { Copy, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import WhatsAppIcon from "@/components/icons/whatsapp-icon";
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image'; // Added import for Next.js Image
 
 export default function AdminShareMenuPage() {
   const { toast } = useToast();
