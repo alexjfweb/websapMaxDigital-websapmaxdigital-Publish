@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { UploadCloud, Save, Edit, Trash2 } from "lucide-react";
+import { FormDescription } from "@/components/ui/form"; // Added FormDescription import
 
 // Mock data - in a real app, this would come from a backend/state management
 const mockProfile = {
