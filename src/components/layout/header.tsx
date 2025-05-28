@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuGroup, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuGroup } from '@/components/ui/dropdown-menu';
 import { Bell, UserCircle, Settings, LogOut, Menu as MenuIcon, LogIn as LogInIcon, Globe } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
@@ -18,7 +18,7 @@ interface AppHeaderProps {
 
 export default function AppHeader({ currentUser, handleLogout }: AppHeaderProps) {
   const { isMobile } = useSidebar();
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage(); // Added t
 
   const languages: { code: Language; name: string; flag: string }[] = [
     { code: 'en', name: 'English', flag: '🇬🇧' },
@@ -26,8 +26,6 @@ export default function AppHeader({ currentUser, handleLogout }: AppHeaderProps)
     { code: 'pt', name: 'Português', flag: '🇵🇹' },
     { code: 'fr', name: 'Français', flag: '🇫🇷' },
   ];
-
-  const currentLanguageDetails = languages.find(lang => lang.code === language) || languages[0];
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 sm:px-6 shadow-sm">
@@ -40,11 +38,11 @@ export default function AppHeader({ currentUser, handleLogout }: AppHeaderProps)
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full">
               <Globe className="h-5 w-5" />
-              <span className="sr-only">Change language</span>
+              <span className="sr-only">{t('header.selectLanguage')}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Select Language</DropdownMenuLabel>
+            <DropdownMenuLabel>{t('header.selectLanguage')}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {languages.map((lang) => (
               <DropdownMenuItem key={lang.code} onSelect={() => setLanguage(lang.code)}>
@@ -58,7 +56,7 @@ export default function AppHeader({ currentUser, handleLogout }: AppHeaderProps)
 
         <Button variant="ghost" size="icon" className="rounded-full">
           <Bell className="h-5 w-5" />
-          <span className="sr-only">Toggle notifications</span>
+          <span className="sr-only">{t('header.notifications')}</span>
         </Button>
 
         {currentUser && currentUser.role !== 'guest' ? (
@@ -84,17 +82,17 @@ export default function AppHeader({ currentUser, handleLogout }: AppHeaderProps)
               <DropdownMenuGroup>
                 <DropdownMenuItem disabled>
                   <UserCircle className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
+                  <span>{t('header.profile')}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem disabled>
                   <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
+                  <span>{t('header.settings')}</span>
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
+                <span>{t('header.logout')}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -102,7 +100,7 @@ export default function AppHeader({ currentUser, handleLogout }: AppHeaderProps)
           <Link href="/login" passHref>
             <Button variant="outline">
               <LogInIcon className="mr-2 h-4 w-4" />
-              Login
+              {t('header.loginButton')}
             </Button>
           </Link>
         )}

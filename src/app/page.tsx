@@ -1,66 +1,30 @@
 
 "use client";
 
-import { useEffect, useState, useContext } from 'react'; // Added useContext
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Utensils, ShoppingCart, Share2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useLanguage, type Language } from '@/contexts/language-context'; // Added
+import { useLanguage } from '@/contexts/language-context';
 
 export default function HomePage() {
   const [currentYear, setCurrentYear] = useState<number | null>(null);
-  const { language } = useLanguage(); // Consuming language context
+  const { t } = useLanguage();
 
   useEffect(() => {
     setCurrentYear(new Date().getFullYear());
   }, []);
 
-  const welcomeMessages: Record<Language, string> = {
-    en: "Welcome to websapMax!",
-    es: "¡Bienvenido a websapMax!",
-    pt: "Bem-vindo ao websapMax!",
-    fr: "Bienvenue chez websapMax!"
-  };
-
-  const sublineMessages: Record<Language, string> = {
-    en: "Your ultimate digital menu solution. Explore delicious dishes, place orders seamlessly, and share with ease.",
-    es: "Tu solución definitiva de menú digital. Explora platos deliciosos, realiza pedidos sin problemas y comparte con facilidad.",
-    pt: "Sua solução definitiva de menu digital. Explore pratos deliciosos, faça pedidos de forma transparente e compartilhe com facilidade.",
-    fr: "Votre solution de menu numérique ultime. Explorez des plats délicieux, passez des commandes en toute simplicité et partagez facilement."
-  };
-
-  const exploreButtonMessages: Record<Language, string> = {
-    en: "Explore Our Menu",
-    es: "Explora Nuestro Menú",
-    pt: "Explore Nosso Cardápio",
-    fr: "Découvrez Notre Menu"
-  };
-  
-  const footerCopyrightMessages: Record<Language, string> = {
-    en: "websapMax. All rights reserved.",
-    es: "websapMax. Todos los derechos reservados.",
-    pt: "websapMax. Todos os direitos reservados.",
-    fr: "websapMax. Tous droits réservés."
-  };
-
-  const footerExperienceMessages: Record<Language, string> = {
-    en: "Experience the future of dining.",
-    es: "Experimenta el futuro de la gastronomía.",
-    pt: "Experimente o futuro da gastronomia.",
-    fr: "Découvrez l'avenir de la restauration."
-  };
-
-
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-theme(spacing.16))] text-center p-4 md:p-8">
       <header className="mb-12">
         <h1 className="text-5xl md:text-7xl font-bold text-primary mb-4">
-          {welcomeMessages[language] || welcomeMessages['en']}
+          {t('home.welcome')}
         </h1>
         <p className="text-xl md:text-2xl text-foreground/80 max-w-2xl mx-auto">
-          {sublineMessages[language] || sublineMessages['en']}
+          {t('home.subline')}
         </p>
       </header>
 
@@ -71,18 +35,12 @@ export default function HomePage() {
               <Utensils className="h-12 w-12 text-accent" />
             </div>
             <CardTitle className="text-2xl text-center">
-              {language === 'es' ? 'Menú Interactivo' : 
-               language === 'pt' ? 'Cardápio Interativo' :
-               language === 'fr' ? 'Menu Interactif' : 
-               'Interactive Menu'}
+              {t('home.interactiveMenuTitle')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground text-center">
-              {language === 'es' ? 'Navega por nuestro extenso menú con hermosas imágenes y descripciones detalladas.' :
-               language === 'pt' ? 'Navegue pelo nosso extenso cardápio com belas imagens e descrições detalhadas.' :
-               language === 'fr' ? 'Parcourez notre menu complet avec de belles images et des descriptions détaillées.' :
-               'Browse our extensive menu with beautiful images and detailed descriptions.'}
+              {t('home.interactiveMenuDescription')}
             </p>
           </CardContent>
         </Card>
@@ -93,18 +51,12 @@ export default function HomePage() {
               <ShoppingCart className="h-12 w-12 text-accent" />
             </div>
             <CardTitle className="text-2xl text-center">
-              {language === 'es' ? 'Pedidos Fáciles' : 
-               language === 'pt' ? 'Pedidos Fáceis' :
-               language === 'fr' ? 'Commande Facile' : 
-               'Easy Ordering'}
+              {t('home.easyOrderingTitle')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground text-center">
-             {language === 'es' ? 'Añade tus platos favoritos al carrito y envía tu pedido directamente por WhatsApp.' :
-              language === 'pt' ? 'Adicione seus pratos favoritos ao carrinho e envie seu pedido diretamente pelo WhatsApp.' :
-              language === 'fr' ? 'Ajoutez vos plats préférés au panier et envoyez votre commande directement via WhatsApp.' :
-              'Add your favorite dishes to the cart and send your order directly via WhatsApp.'}
+             {t('home.easyOrderingDescription')}
             </p>
           </CardContent>
         </Card>
@@ -115,18 +67,12 @@ export default function HomePage() {
               <Share2 className="h-12 w-12 text-accent" />
             </div>
             <CardTitle className="text-2xl text-center">
-              {language === 'es' ? 'Comparte y Conecta' : 
-               language === 'pt' ? 'Compartilhe e Conecte' :
-               language === 'fr' ? 'Partagez et Connectez' : 
-               'Share & Connect'}
+              {t('home.shareConnectTitle')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground text-center">
-              {language === 'es' ? 'Comparte fácilmente nuestro menú con amigos y familiares o haz reservaciones.' :
-               language === 'pt' ? 'Compartilhe facilmente nosso cardápio com amigos e familiares ou faça reservas.' :
-               language === 'fr' ? 'Partagez facilement notre menu avec vos amis et votre famille ou faites des réservations.' :
-               'Easily share our menu with friends and family or make reservations.'}
+              {t('home.shareConnectDescription')}
             </p>
           </CardContent>
         </Card>
@@ -145,13 +91,13 @@ export default function HomePage() {
 
       <Link href="/menu" passHref>
         <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8 py-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-          {exploreButtonMessages[language] || exploreButtonMessages['en']}
+          {t('home.exploreButton')}
         </Button>
       </Link>
 
       <footer className="mt-16 text-muted-foreground text-sm">
-        <p>&copy; {currentYear !== null ? currentYear : new Date().getFullYear()} {footerCopyrightMessages[language] || footerCopyrightMessages['en']}</p>
-        <p>{footerExperienceMessages[language] || footerExperienceMessages['en']}</p>
+        <p>&copy; {currentYear !== null ? currentYear : new Date().getFullYear()} {t('home.footerCopyright')}</p>
+        <p>{t('home.footerExperience')}</p>
       </footer>
     </div>
   );

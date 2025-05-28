@@ -30,94 +30,76 @@ import {
   CreditCard,
   CalendarCheck,
   Megaphone,
-  LogIn, // Added LogIn icon
-  UserPlus // Added UserPlus icon
+  LogIn,
+  UserPlus
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import { useLanguage } from '@/contexts/language-context'; // Added
 
 interface NavItem {
   href: string;
-  label: string;
+  labelKey: string; // Changed from label to labelKey
   icon: React.ElementType;
   allowedRoles: string[];
   subItems?: NavItem[];
-  tooltip?: string;
+  tooltipKey?: string; // Optional tooltipKey
 }
 
 const navItems: NavItem[] = [
-  // Public Menu - accessible by anyone logged in or guest
-  { href: '/menu', label: 'Public Menu', icon: Newspaper, allowedRoles: ['guest', 'employee', 'admin', 'superadmin'], tooltip: 'View Menu' },
-
-  // Guest-only links (only shown when role is 'guest')
-  { href: '/login', label: 'Login', icon: LogIn, allowedRoles: ['guest'], tooltip: 'Login' },
-  { href: '/register', label: 'Register', icon: UserPlus, allowedRoles: ['guest'], tooltip: 'Register' },
-
-  // SuperAdmin Routes - only accessible by 'superadmin'
-  { href: '/superadmin/dashboard', label: 'SA Dashboard', icon: ShieldCheck, allowedRoles: ['superadmin'], tooltip: 'Super Admin Dashboard' },
-  { href: '/superadmin/users', label: 'User Management', icon: Users, allowedRoles: ['superadmin'], tooltip: 'Manage Users' },
-  { href: '/superadmin/backup', label: 'Backup', icon: Server, allowedRoles: ['superadmin'], tooltip: 'System Backup' },
-  { href: '/superadmin/logs', label: 'Logs', icon: History, allowedRoles: ['superadmin'], tooltip: 'View Logs' },
-
-  // Admin Routes - accessible by 'admin' and 'superadmin'
-  { href: '/admin/dashboard', label: 'Admin Dashboard', icon: LayoutDashboard, allowedRoles: ['admin', 'superadmin'], tooltip: 'Admin Dashboard' },
-  { href: '/admin/profile', label: 'Restaurant Profile', icon: Settings, allowedRoles: ['admin', 'superadmin'], tooltip: 'Manage Profile' },
-  { href: '/admin/dishes', label: 'Dish Management', icon: Utensils, allowedRoles: ['admin', 'superadmin'], tooltip: 'Manage Dishes' },
-  { href: '/admin/employees', label: 'Employee Management', icon: UserCog, allowedRoles: ['admin', 'superadmin'], tooltip: 'Manage Employees' },
-  { href: '/admin/reservations', label: 'Reservations', icon: CalendarCheck, allowedRoles: ['admin', 'superadmin'], tooltip: 'Manage Reservations' },
-  { href: '/admin/payments', label: 'Payment Methods', icon: CreditCard, allowedRoles: ['admin', 'superadmin'], tooltip: 'Payment Settings' },
-  { href: '/admin/share-menu', label: 'Share Menu', icon: Share2, allowedRoles: ['admin', 'superadmin'], tooltip: 'Share Menu' },
-
-  // Employee Routes - accessible by 'employee', 'admin', and 'superadmin'
-  { href: '/employee/dashboard', label: 'Employee Dashboard', icon: ClipboardList, allowedRoles: ['employee', 'admin', 'superadmin'], tooltip: 'Employee Dashboard' },
-  { href: '/employee/orders', label: 'Manage Orders', icon: ShoppingBag, allowedRoles: ['employee', 'admin', 'superadmin'], tooltip: 'Manage Orders' },
-  { href: '/employee/reservations', label: 'Manage Reservations', icon: BookUser, allowedRoles: ['employee', 'admin', 'superadmin'], tooltip: 'Manage Reservations' },
-  { href: '/employee/promote', label: 'Promote Menu', icon: Megaphone, allowedRoles: ['employee', 'admin', 'superadmin'], tooltip: 'Promote Menu' },
+  { href: '/menu', labelKey: 'nav.publicMenu', icon: Newspaper, allowedRoles: ['guest', 'employee', 'admin', 'superadmin'], tooltipKey: 'nav.publicMenu' },
+  { href: '/login', labelKey: 'nav.login', icon: LogIn, allowedRoles: ['guest'], tooltipKey: 'nav.login' },
+  { href: '/register', labelKey: 'nav.register', icon: UserPlus, allowedRoles: ['guest'], tooltipKey: 'nav.register' },
+  { href: '/superadmin/dashboard', labelKey: 'nav.superAdminDashboard', icon: ShieldCheck, allowedRoles: ['superadmin'], tooltipKey: 'nav.superAdminDashboard' },
+  { href: '/superadmin/users', labelKey: 'nav.userManagement', icon: Users, allowedRoles: ['superadmin'], tooltipKey: 'nav.userManagement' },
+  { href: '/superadmin/backup', labelKey: 'nav.backup', icon: Server, allowedRoles: ['superadmin'], tooltipKey: 'nav.backup' },
+  { href: '/superadmin/logs', labelKey: 'nav.logs', icon: History, allowedRoles: ['superadmin'], tooltipKey: 'nav.logs' },
+  { href: '/admin/dashboard', labelKey: 'nav.adminDashboard', icon: LayoutDashboard, allowedRoles: ['admin', 'superadmin'], tooltipKey: 'nav.adminDashboard' },
+  { href: '/admin/profile', labelKey: 'nav.restaurantProfile', icon: Settings, allowedRoles: ['admin', 'superadmin'], tooltipKey: 'nav.restaurantProfile' },
+  { href: '/admin/dishes', labelKey: 'nav.dishManagement', icon: Utensils, allowedRoles: ['admin', 'superadmin'], tooltipKey: 'nav.dishManagement' },
+  { href: '/admin/employees', labelKey: 'nav.employeeManagement', icon: UserCog, allowedRoles: ['admin', 'superadmin'], tooltipKey: 'nav.employeeManagement' },
+  { href: '/admin/reservations', labelKey: 'nav.reservations', icon: CalendarCheck, allowedRoles: ['admin', 'superadmin'], tooltipKey: 'nav.reservations' },
+  { href: '/admin/payments', labelKey: 'nav.paymentMethods', icon: CreditCard, allowedRoles: ['admin', 'superadmin'], tooltipKey: 'nav.paymentMethods' },
+  { href: '/admin/share-menu', labelKey: 'nav.shareMenu', icon: Share2, allowedRoles: ['admin', 'superadmin'], tooltipKey: 'nav.shareMenu' },
+  { href: '/employee/dashboard', labelKey: 'nav.employeeDashboard', icon: ClipboardList, allowedRoles: ['employee', 'admin', 'superadmin'], tooltipKey: 'nav.employeeDashboard' },
+  { href: '/employee/orders', labelKey: 'nav.manageOrders', icon: ShoppingBag, allowedRoles: ['employee', 'admin', 'superadmin'], tooltipKey: 'nav.manageOrders' },
+  { href: '/employee/reservations', labelKey: 'nav.manageReservations', icon: BookUser, allowedRoles: ['employee', 'admin', 'superadmin'], tooltipKey: 'nav.manageReservations' },
+  { href: '/employee/promote', labelKey: 'nav.promoteMenu', icon: Megaphone, allowedRoles: ['employee', 'admin', 'superadmin'], tooltipKey: 'nav.promoteMenu' },
 ];
 
 interface NavigationMenuProps {
-  role: string; // e.g., 'guest', 'admin', 'employee', 'superadmin'
+  role: string;
 }
 
 export default function NavigationMenu({ role }: NavigationMenuProps) {
   const pathname = usePathname();
+  const { t } = useLanguage(); // Added
 
   const renderNavItems = (items: NavItem[], isSubMenu = false) => {
     return items
       .filter(item => {
-        // For guests, only show items that are explicitly for 'guest' role.
         if (role === 'guest') {
           return item.allowedRoles.includes('guest');
         }
-
-        // For logged-in users:
-        // Never show login/register routes.
         if (item.href === '/login' || item.href === '/register') {
           return false;
         }
-
-        // Check direct role access
         if (item.allowedRoles.includes(role)) return true;
-
-        // Check hierarchical access
-        // Admin can see employee routes
         if (role === 'admin' && item.allowedRoles.includes('employee')) return true;
-        
-        // Superadmin can see admin and employee routes
         if (role === 'superadmin' && (item.allowedRoles.includes('admin') || item.allowedRoles.includes('employee'))) return true;
-        
-        return false; // If no condition is met.
+        return false;
       })
       .map((item) => {
         const Icon = item.icon;
         const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+        const translatedLabel = t(item.labelKey);
+        const translatedTooltip = item.tooltipKey ? t(item.tooltipKey) : translatedLabel;
         
         if (isSubMenu) {
           return (
             <SidebarMenuSubItem key={item.href}>
               <Link href={item.href} passHref legacyBehavior>
                 <SidebarMenuSubButton isActive={isActive}>
-                  {/* <Icon className="h-4 w-4 mr-2" /> */}
-                  <span>{item.label}</span>
+                  <span>{translatedLabel}</span>
                 </SidebarMenuSubButton>
               </Link>
             </SidebarMenuSubItem>
@@ -127,9 +109,9 @@ export default function NavigationMenu({ role }: NavigationMenuProps) {
         return (
           <SidebarMenuItem key={item.href}>
             <Link href={item.href} passHref legacyBehavior>
-              <SidebarMenuButton isActive={isActive} tooltip={item.tooltip || item.label}>
+              <SidebarMenuButton isActive={isActive} tooltip={translatedTooltip}>
                 <Icon />
-                <span>{item.label}</span>
+                <span>{translatedLabel}</span>
               </SidebarMenuButton>
             </Link>
             {item.subItems && item.subItems.length > 0 && (
