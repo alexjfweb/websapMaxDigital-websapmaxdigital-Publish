@@ -1,10 +1,11 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { UploadCloud, Save, Edit, Trash2 } from "lucide-react";
-import { FormDescription } from "@/components/ui/form"; // Added FormDescription import
+// FormDescription import removed as it's no longer used
 
 // Mock data - in a real app, this would come from a backend/state management
 const mockProfile = {
@@ -68,7 +69,7 @@ export default function AdminProfilePage() {
                     <Input type="file" className="hidden" accept="image/*" />
                 </Button>
             </div>
-            <FormDescription className="text-xs">Recommended size: 200x200px. Max 2MB.</FormDescription>
+            <p className="text-xs text-muted-foreground">Recommended size: 200x200px. Max 2MB.</p>
           </div>
         </CardContent>
       </Card>
@@ -120,7 +121,7 @@ export default function AdminProfilePage() {
                         <Input type="file" className="hidden" accept="image/*" />
                     </Button>
                 </div>
-                <FormDescription className="text-xs">Upload the QR code image for Nequi payments.</FormDescription>
+                <p className="text-xs text-muted-foreground">Upload the QR code image for Nequi payments.</p>
             </div>
              {/* Add fields for Nequi account holder and number if needed */}
             <div className="flex items-center space-x-2">
