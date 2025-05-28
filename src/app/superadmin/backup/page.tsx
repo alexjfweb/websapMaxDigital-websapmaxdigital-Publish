@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DownloadCloud, UploadCloud, PlayCircle, RotateCcw, Settings2, History } from "lucide-react";
+import { DownloadCloud, UploadCloud, PlayCircle, RotateCcw, Settings2, History, Trash2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
