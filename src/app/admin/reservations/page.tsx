@@ -1,3 +1,6 @@
+
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, Eye, Search, Filter, CalendarDays } from "lucide-react";
@@ -5,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { useLanguage } from "@/contexts/language-context";
 
 // Mock Data for Reservations
 const mockReservations = [
@@ -15,14 +19,15 @@ const mockReservations = [
 ];
 
 export default function AdminReservationsPage() {
+  const { t } = useLanguage();
   const reservations = mockReservations;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "confirmed": return <Badge className="bg-green-500 text-white hover:bg-green-600">Confirmed</Badge>;
-      case "pending": return <Badge className="bg-yellow-500 text-white hover:bg-yellow-600">Pending</Badge>;
-      case "cancelled": return <Badge variant="destructive">Cancelled</Badge>;
-      case "completed": return <Badge variant="secondary">Completed</Badge>;
+      case "confirmed": return <Badge className="bg-green-500 text-white hover:bg-green-600">{t('adminReservations.status.confirmed')}</Badge>;
+      case "pending": return <Badge className="bg-yellow-500 text-white hover:bg-yellow-600">{t('adminReservations.status.pending')}</Badge>;
+      case "cancelled": return <Badge variant="destructive">{t('adminReservations.status.cancelled')}</Badge>;
+      case "completed": return <Badge variant="secondary">{t('adminReservations.status.completed')}</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;
     }
   };
@@ -30,24 +35,24 @@ export default function AdminReservationsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-primary">Reservation Management</h1>
-        <p className="text-lg text-muted-foreground">View and manage customer table bookings.</p>
+        <h1 className="text-3xl font-bold text-primary">{t('adminReservations.title')}</h1>
+        <p className="text-lg text-muted-foreground">{t('adminReservations.description')}</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>All Reservations</CardTitle>
-          <CardDescription>List of all customer reservations.</CardDescription>
+          <CardTitle>{t('adminReservations.allReservationsCard.title')}</CardTitle>
+          <CardDescription>{t('adminReservations.allReservationsCard.description')}</CardDescription>
           <div className="flex flex-col md:flex-row gap-2 pt-4">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search by name or phone..." className="pl-8" />
+              <Input placeholder={t('adminReservations.searchInputPlaceholder')} className="pl-8" />
             </div>
             <Button variant="outline">
-              <Filter className="mr-2 h-4 w-4" /> Filter by Status
+              <Filter className="mr-2 h-4 w-4" /> {t('adminReservations.filterStatusButton')}
             </Button>
             <Button variant="outline">
-              <CalendarDays className="mr-2 h-4 w-4" /> Filter by Date
+              <CalendarDays className="mr-2 h-4 w-4" /> {t('adminReservations.filterDateButton')}
             </Button>
           </div>
         </CardHeader>
@@ -55,12 +60,12 @@ export default function AdminReservationsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Customer Name</TableHead>
-                <TableHead>Date & Time</TableHead>
-                <TableHead className="text-center">Guests</TableHead>
-                <TableHead className="hidden sm:table-cell">Phone</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t('adminReservations.table.customerName')}</TableHead>
+                <TableHead>{t('adminReservations.table.dateTime')}</TableHead>
+                <TableHead className="text-center">{t('adminReservations.table.guests')}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t('adminReservations.table.phone')}</TableHead>
+                <TableHead className="text-center">{t('adminReservations.table.status')}</TableHead>
+                <TableHead className="text-right">{t('adminReservations.table.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -96,7 +101,6 @@ export default function AdminReservationsPage() {
           </Table>
         </CardContent>
       </Card>
-       {/* Placeholder for View Reservation Details Dialog */}
     </div>
   );
 }

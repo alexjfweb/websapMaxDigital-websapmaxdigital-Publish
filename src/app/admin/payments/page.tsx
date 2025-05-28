@@ -1,3 +1,6 @@
+
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -5,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { UploadCloud, Save } from "lucide-react";
 import Image from "next/image";
+import { useLanguage } from "@/contexts/language-context";
 
 // Mock data for payment settings
 const mockPaymentSettings = {
@@ -16,38 +20,38 @@ const mockPaymentSettings = {
 };
 
 export default function AdminPaymentsPage() {
-  // State and handlers for form elements would go here.
+  const { t } = useLanguage();
   
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-primary">Payment Methods</h1>
-      <p className="text-lg text-muted-foreground">Configure how customers can pay for their orders.</p>
+      <h1 className="text-3xl font-bold text-primary">{t('adminPayments.title')}</h1>
+      <p className="text-lg text-muted-foreground">{t('adminPayments.description')}</p>
 
       <Card>
         <CardHeader>
-          <CardTitle>Nequi Payments</CardTitle>
-          <CardDescription>Enable and configure Nequi as a payment option.</CardDescription>
+          <CardTitle>{t('adminPayments.nequiCard.title')}</CardTitle>
+          <CardDescription>{t('adminPayments.nequiCard.description')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center space-x-2">
             <Checkbox id="nequiEnabled" defaultChecked={mockPaymentSettings.nequiEnabled} />
             <Label htmlFor="nequiEnabled" className="text-sm font-medium">
-              Enable Nequi Payments
+              {t('adminPayments.nequiCard.enableLabel')}
             </Label>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="nequiAccountHolder">Nequi Account Holder Name</Label>
+            <Label htmlFor="nequiAccountHolder">{t('adminPayments.nequiCard.accountHolderLabel')}</Label>
             <Input id="nequiAccountHolder" defaultValue={mockPaymentSettings.nequiAccountHolder} />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="nequiAccountNumber">Nequi Account Number (Phone)</Label>
+            <Label htmlFor="nequiAccountNumber">{t('adminPayments.nequiCard.accountNumberLabel')}</Label>
             <Input id="nequiAccountNumber" type="tel" defaultValue={mockPaymentSettings.nequiAccountNumber} />
           </div>
           
           <div className="space-y-2">
-            <Label>Nequi QR Code Image</Label>
+            <Label>{t('adminPayments.nequiCard.qrCodeLabel')}</Label>
             <div className="flex items-center gap-4">
               {mockPaymentSettings.nequiQrUrl && (
                 <Image 
@@ -61,26 +65,26 @@ export default function AdminPaymentsPage() {
               )}
               <Button variant="outline" asChild>
                 <Label htmlFor="nequiQrUpload" className="cursor-pointer">
-                  <UploadCloud className="mr-2 h-4 w-4" /> Upload New QR
+                  <UploadCloud className="mr-2 h-4 w-4" /> {t('adminPayments.nequiCard.uploadButton')}
                   <Input id="nequiQrUpload" type="file" className="hidden" accept="image/*" />
                 </Label>
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">Upload the QR code image provided by Nequi.</p>
+            <p className="text-xs text-muted-foreground">{t('adminPayments.nequiCard.qrUploadDescription')}</p>
           </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Cash on Delivery (COD)</CardTitle>
-          <CardDescription>Allow customers to pay with cash upon delivery or pickup.</CardDescription>
+          <CardTitle>{t('adminPayments.codCard.title')}</CardTitle>
+          <CardDescription>{t('adminPayments.codCard.description')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center space-x-2">
             <Checkbox id="codEnabled" defaultChecked={mockPaymentSettings.codEnabled} />
             <Label htmlFor="codEnabled" className="text-sm font-medium">
-              Enable Cash on Delivery
+              {t('adminPayments.codCard.enableLabel')}
             </Label>
           </div>
         </CardContent>
@@ -88,7 +92,7 @@ export default function AdminPaymentsPage() {
       
       <div className="flex justify-end pt-4">
         <Button>
-          <Save className="mr-2 h-4 w-4" /> Save Payment Settings
+          <Save className="mr-2 h-4 w-4" /> {t('adminPayments.saveButton')}
         </Button>
       </div>
     </div>

@@ -1,11 +1,15 @@
+
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Edit3, Trash2, Search, Filter, UploadCloud } from "lucide-react";
+import { PlusCircle, Edit3, Trash2, Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
-import { mockDishes } from "@/lib/mock-data"; // Assuming mock dishes are available
+import { mockDishes } from "@/lib/mock-data"; 
+import { useLanguage } from "@/contexts/language-context";
 
 // Mock function to render stars
 const renderStars = (likes: number) => {
@@ -15,32 +19,32 @@ const renderStars = (likes: number) => {
 };
 
 export default function AdminDishesPage() {
-  // State for search, filter, dialogs, and CRUD operations would go here.
+  const { t } = useLanguage();
   const dishes = mockDishes;
 
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-primary">Dish Management</h1>
-          <p className="text-lg text-muted-foreground">Add, edit, or remove dishes from your menu.</p>
+          <h1 className="text-3xl font-bold text-primary">{t('adminDishes.title')}</h1>
+          <p className="text-lg text-muted-foreground">{t('adminDishes.description')}</p>
         </div>
         <Button>
-          <PlusCircle className="mr-2 h-5 w-5" /> Add New Dish
+          <PlusCircle className="mr-2 h-5 w-5" /> {t('adminDishes.addNewButton')}
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>All Dishes</CardTitle>
-          <CardDescription>Overview of all menu items.</CardDescription>
+          <CardTitle>{t('adminDishes.allDishesCard.title')}</CardTitle>
+          <CardDescription>{t('adminDishes.allDishesCard.description')}</CardDescription>
           <div className="flex flex-col md:flex-row gap-2 pt-4">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search dishes..." className="pl-8" />
+              <Input placeholder={t('adminDishes.searchInputPlaceholder')} className="pl-8" />
             </div>
             <Button variant="outline">
-              <Filter className="mr-2 h-4 w-4" /> Filter by Category
+              <Filter className="mr-2 h-4 w-4" /> {t('adminDishes.filterButton')}
             </Button>
           </div>
         </CardHeader>
@@ -48,13 +52,13 @@ export default function AdminDishesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="hidden md:table-cell">Image</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead className="text-right">Price</TableHead>
-                <TableHead className="text-center">Stock</TableHead>
-                <TableHead className="text-center hidden sm:table-cell">Likes</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="hidden md:table-cell">{t('adminDishes.table.image')}</TableHead>
+                <TableHead>{t('adminDishes.table.name')}</TableHead>
+                <TableHead>{t('adminDishes.table.category')}</TableHead>
+                <TableHead className="text-right">{t('adminDishes.table.price')}</TableHead>
+                <TableHead className="text-center">{t('adminDishes.table.stock')}</TableHead>
+                <TableHead className="text-center hidden sm:table-cell">{t('adminDishes.table.likes')}</TableHead>
+                <TableHead className="text-right">{t('adminDishes.table.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -76,8 +80,8 @@ export default function AdminDishesPage() {
                   </TableCell>
                   <TableCell className="text-right">${dish.price.toFixed(2)}</TableCell>
                   <TableCell className="text-center">
-                    {dish.stock === -1 ? <Badge variant="secondary">Unlimited</Badge> : 
-                     dish.stock === 0 ? <Badge variant="destructive">Out</Badge> : 
+                    {dish.stock === -1 ? <Badge variant="secondary">{t('adminDishes.stock.unlimited')}</Badge> : 
+                     dish.stock === 0 ? <Badge variant="destructive">{t('adminDishes.stock.out')}</Badge> : 
                      dish.stock}
                   </TableCell>
                   <TableCell className="text-center hidden sm:table-cell">
@@ -99,24 +103,6 @@ export default function AdminDishesPage() {
           </Table>
         </CardContent>
       </Card>
-
-      {/* Placeholder for Add/Edit Dish Modal/Dialog */}
-      {/* <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>{editingDish ? 'Edit Dish' : 'Add New Dish'}</DialogTitle>
-            <DialogDescription>
-              {editingDish ? 'Update the details of this dish.' : 'Fill in the details for the new menu item.'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-             Form fields for dish name, description, price, category, stock, likes, image upload 
-          </div>
-          <DialogFooter>
-            <Button type="submit">Save changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog> */}
     </div>
   );
 }
