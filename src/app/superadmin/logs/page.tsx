@@ -1,3 +1,6 @@
+
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Search, Filter, Download, AlertCircle, Info, ServerCrash } from "lucide-react";
@@ -6,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
+import { useLanguage } from "@/contexts/language-context";
 
 // Mock Data for Logs
 const mockLogs = [
@@ -18,63 +22,66 @@ const mockLogs = [
 ];
 
 export default function SuperAdminLogsPage() {
+  const { t } = useLanguage();
   const logs = mockLogs;
 
   const getLevelBadge = (level: string) => {
+    const levelKey = `superAdminLogs.level.${level.toLowerCase()}`;
+    const levelText = t(levelKey);
     switch (level.toUpperCase()) {
-      case "INFO": return <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-blue-300"><Info className="mr-1 h-3 w-3"/>INFO</Badge>;
-      case "WARN": return <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 border-yellow-300"><AlertCircle className="mr-1 h-3 w-3"/>WARN</Badge>;
-      case "ERROR": return <Badge variant="destructive"><AlertCircle className="mr-1 h-3 w-3"/>ERROR</Badge>;
-      case "DEBUG": return <Badge variant="outline">DEBUG</Badge>;
-      case "CRITICAL": return <Badge variant="destructive" className="bg-red-700 text-white"><ServerCrash className="mr-1 h-3 w-3"/>CRITICAL</Badge>;
-      default: return <Badge variant="outline">{level}</Badge>;
+      case "INFO": return <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-blue-300"><Info className="mr-1 h-3 w-3"/>{levelText}</Badge>;
+      case "WARN": return <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 border-yellow-300"><AlertCircle className="mr-1 h-3 w-3"/>{levelText}</Badge>;
+      case "ERROR": return <Badge variant="destructive"><AlertCircle className="mr-1 h-3 w-3"/>{levelText}</Badge>;
+      case "DEBUG": return <Badge variant="outline">{levelText}</Badge>;
+      case "CRITICAL": return <Badge variant="destructive" className="bg-red-700 text-white"><ServerCrash className="mr-1 h-3 w-3"/>{levelText}</Badge>;
+      default: return <Badge variant="outline">{levelText}</Badge>;
     }
   };
 
+  const logLevels = ["ALL", "INFO", "WARN", "ERROR", "DEBUG", "CRITICAL"];
+  const logSources = ["ALL_SOURCES", "AuthService", "SystemMonitor", "PaymentService", "OrderService", "BackupService", "Kernel"];
+
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-primary">System Logs</h1>
-      <p className="text-lg text-muted-foreground">Monitor system activity and troubleshoot issues.</p>
+      <h1 className="text-3xl font-bold text-primary">{t('superAdminLogs.title')}</h1>
+      <p className="text-lg text-muted-foreground">{t('superAdminLogs.description')}</p>
 
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-            <CardTitle>Log Viewer</CardTitle>
+            <CardTitle>{t('superAdminLogs.logViewerCard.title')}</CardTitle>
             <Button variant="outline">
-              <Download className="mr-2 h-4 w-4" /> Download Logs
+              <Download className="mr-2 h-4 w-4" /> {t('superAdminLogs.logViewerCard.downloadButton')}
             </Button>
           </div>
-          <CardDescription>Real-time and historical system logs.</CardDescription>
+          <CardDescription>{t('superAdminLogs.logViewerCard.description')}</CardDescription>
           <div className="flex flex-col md:flex-row gap-2 pt-4">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search logs by message, source, or ID..." className="pl-8" />
+              <Input placeholder={t('superAdminLogs.searchInputPlaceholder')} className="pl-8" />
             </div>
             <Select defaultValue="ALL">
               <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Filter by Level" />
+                <SelectValue placeholder={t('superAdminLogs.filterByLevelPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">All Levels</SelectItem>
-                <SelectItem value="INFO">INFO</SelectItem>
-                <SelectItem value="WARN">WARN</SelectItem>
-                <SelectItem value="ERROR">ERROR</SelectItem>
-                <SelectItem value="DEBUG">DEBUG</SelectItem>
-                <SelectItem value="CRITICAL">CRITICAL</SelectItem>
+                {logLevels.map(level => (
+                  <SelectItem key={level} value={level}>
+                    {t(`superAdminLogs.levelFilter.${level.toLowerCase()}`)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
              <Select defaultValue="ALL_SOURCES">
               <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Filter by Source" />
+                <SelectValue placeholder={t('superAdminLogs.filterBySourcePlaceholder')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL_SOURCES">All Sources</SelectItem>
-                <SelectItem value="AuthService">AuthService</SelectItem>
-                <SelectItem value="SystemMonitor">SystemMonitor</SelectItem>
-                <SelectItem value="PaymentService">PaymentService</SelectItem>
-                 <SelectItem value="OrderService">OrderService</SelectItem>
-                <SelectItem value="BackupService">BackupService</SelectItem>
-                <SelectItem value="Kernel">Kernel</SelectItem>
+                {logSources.map(source => (
+                    <SelectItem key={source} value={source}>
+                        {t(`superAdminLogs.sourceFilter.${source.toLowerCase()}`)}
+                    </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -83,10 +90,10 @@ export default function SuperAdminLogsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[180px]">Timestamp</TableHead>
-                <TableHead className="w-[100px] text-center">Level</TableHead>
-                <TableHead>Message</TableHead>
-                <TableHead className="w-[150px] hidden sm:table-cell">Source</TableHead>
+                <TableHead className="w-[180px]">{t('superAdminLogs.table.timestamp')}</TableHead>
+                <TableHead className="w-[100px] text-center">{t('superAdminLogs.table.level')}</TableHead>
+                <TableHead>{t('superAdminLogs.table.message')}</TableHead>
+                <TableHead className="w-[150px] hidden sm:table-cell">{t('superAdminLogs.table.source')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -105,7 +112,7 @@ export default function SuperAdminLogsPage() {
               {logs.length === 0 && (
                  <TableRow>
                     <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                    No logs found matching your criteria.
+                    {t('superAdminLogs.logViewerCard.noLogs')}
                     </TableCell>
                 </TableRow>
               )}
