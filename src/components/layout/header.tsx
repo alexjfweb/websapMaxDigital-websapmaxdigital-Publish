@@ -14,11 +14,23 @@ import { useLanguage, type Language } from '@/contexts/language-context';
 interface AppHeaderProps {
   currentUser: User;
   handleLogout: () => void;
+  showSidebarRelatedUI: boolean; // Nueva prop
 }
 
-export default function AppHeader({ currentUser, handleLogout }: AppHeaderProps) {
-  const { isMobile } = useSidebar();
-  const { language, setLanguage, t } = useLanguage(); // Added t
+// Nuevo componente interno para manejar la lógica del SidebarTrigger
+function ConditionalSidebarTrigger() {
+  const { isMobile } = useSidebar(); // Seguro llamar aquí porque este componente solo se monta cuando showSidebarRelatedUI es true
+  if (!isMobile) return null;
+
+  return (
+    <SidebarTrigger asChild>
+      <Button variant="ghost" size="icon"><MenuIcon /></Button>
+    </SidebarTrigger>
+  );
+}
+
+export default function AppHeader({ currentUser, handleLogout, showSidebarRelatedUI }: AppHeaderProps) {
+  const { language, setLanguage, t } = useLanguage();
 
   const languages: { code: Language; name: string; flag: string }[] = [
     { code: 'en', name: 'English', flag: '🇬🇧' },
@@ -29,7 +41,7 @@ export default function AppHeader({ currentUser, handleLogout }: AppHeaderProps)
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 sm:px-6 shadow-sm">
-      {isMobile && <SidebarTrigger asChild><Button variant="ghost" size="icon"><MenuIcon /></Button></SidebarTrigger>}
+      {showSidebarRelatedUI && <ConditionalSidebarTrigger />}
       <div className="flex-1">
         {/* Optional: Search bar or other header elements can go here */}
       </div>

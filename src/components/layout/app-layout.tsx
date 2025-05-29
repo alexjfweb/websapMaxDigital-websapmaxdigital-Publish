@@ -16,7 +16,7 @@ import {
 import AppHeader from '@/components/layout/header';
 import NavigationMenu from '@/components/layout/navigation-menu';
 import { Button } from '@/components/ui/button';
-import { LogOut, Settings, UserCircle } from 'lucide-react';
+import { LogOut, Settings, UserCircle, Menu as MenuIcon } from 'lucide-react'; // MenuIcon importado por si acaso, aunque se usa en AppHeader
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -75,7 +75,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       toast({ title: t('appLayout.toastAccessDeniedTitle', {defaultValue: "Access Denied"}), description: t('appLayout.toastAccessDeniedDescription', {defaultValue: "Please log in to access this page."}), variant: "destructive" });
       router.push('/login');
     } else if (!isGuest && (currentPath === '/login' || currentPath === '/register')) {
-        let dashboardPath = "/menu";
+        let dashboardPath = "/menu"; // Default redirect for guest-like roles if somehow logged in
         switch(currentUser.role) {
             case "admin": dashboardPath = "/admin/dashboard"; break;
             case "superadmin": dashboardPath = "/superadmin/dashboard"; break;
@@ -94,8 +94,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     router.push('/login');
   };
 
-  const isHomePage = pathname === '/';
-
   if (!isMounted) {
     return (
       <div 
@@ -107,13 +105,16 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
 
+  const isHomePage = pathname === '/';
+
   if (isHomePage) {
-    // For the homepage, render children directly without the sidebar and global AppHeader.
-    // The homepage (src/app/page.tsx) has its own layout elements.
     return (
-      <main className="bg-background">
-        {children}
-      </main>
+      <div className="flex flex-col min-h-svh">
+        <AppHeader currentUser={currentUser} handleLogout={handleLogout} showSidebarRelatedUI={false} />
+        <main className="flex-1 bg-background p-4 md:p-8">
+          {children}
+        </main>
+      </div>
     );
   }
 
@@ -133,7 +134,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 {currentUser.name || currentUser.username}
               </p>
               <p className="text-xs text-sidebar-foreground/80 capitalize">
-                {t('appLayout.rolePrefix')}: {currentUser.role}
+                {t('appLayout.rolePrefix')}: {t(`userRoles.${currentUser.role}`, {defaultValue: currentUser.role})}
               </p>
             </div>
           ) : (
@@ -187,7 +188,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       </Sidebar>
       <SidebarRail />
       <SidebarInset className="flex flex-col">
-        <AppHeader currentUser={currentUser} handleLogout={handleLogout} />
+        <AppHeader currentUser={currentUser} handleLogout={handleLogout} showSidebarRelatedUI={true} />
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background">
           {children}
         </main>
