@@ -61,6 +61,10 @@ export const translations: Record<Language, Translations> = {
     "appLayout.toastAccessDeniedTitle": "Access Denied",
     "appLayout.toastAccessDeniedDescription": "Please log in to access this page.",
     "appLayout.toastLogoutSuccess": "You have been successfully logged out.",
+    "userRoles.guest": "Guest",
+    "userRoles.employee": "Employee",
+    "userRoles.admin": "Admin",
+    "userRoles.superadmin": "Super Admin",
 
 
     // RegisterPage
@@ -250,6 +254,9 @@ export const translations: Record<Language, Translations> = {
     "superAdminDashboard.systemStatusCard.activeUsersLabel": "Active Users (Now)",
     "superAdminDashboard.systemStatusCard.securityAlertsLabel": "Security Alerts",
     "superAdminDashboard.systemHealthValue.good": "Good",
+    "superAdminDashboard.systemHealthValue.warning": "Warning",
+    "superAdminDashboard.systemHealthValue.critical": "Critical",
+
 
     // SuperAdminUsers Page
     "superAdminUsers.title": "User Management",
@@ -277,6 +284,14 @@ export const translations: Record<Language, Translations> = {
     "superAdminUsers.actions.deactivateUser": "Deactivate User",
     "superAdminUsers.actions.activateUser": "Activate User",
     "superAdminUsers.actions.deleteUser": "Delete User",
+
+    // SuperAdminUsers Create Page
+    "superAdminUsersCreate.title": "Create New User",
+    "superAdminUsersCreate.description": "Add a new user account to the system.",
+    "superAdminUsersCreate.formTitle": "New User Details",
+    "superAdminUsersCreate.formDescription": "Fill in the form below to create a new user.",
+    "superAdminUsersCreate.underConstruction": "User creation form is under construction. This is a placeholder page.",
+
 
     // SuperAdminBackup Page
     "superAdminBackup.title": "System Backup & Restore",
@@ -390,6 +405,10 @@ export const translations: Record<Language, Translations> = {
     "appLayout.toastAccessDeniedTitle": "Acceso Denegado",
     "appLayout.toastAccessDeniedDescription": "Por favor, inicia sesión para acceder a esta página.",
     "appLayout.toastLogoutSuccess": "Has cerrado sesión correctamente.",
+    "userRoles.guest": "Invitado",
+    "userRoles.employee": "Empleado",
+    "userRoles.admin": "Administrador",
+    "userRoles.superadmin": "Super Administrador",
 
     // RegisterPage
     "registerPage.title": "Crear una Cuenta",
@@ -578,6 +597,8 @@ export const translations: Record<Language, Translations> = {
     "superAdminDashboard.systemStatusCard.activeUsersLabel": "Usuarios Activos (Ahora)",
     "superAdminDashboard.systemStatusCard.securityAlertsLabel": "Alertas de Seguridad",
     "superAdminDashboard.systemHealthValue.good": "Bueno",
+    "superAdminDashboard.systemHealthValue.warning": "Advertencia",
+    "superAdminDashboard.systemHealthValue.critical": "Crítico",
 
     // SuperAdminUsers Page
     "superAdminUsers.title": "Gestión de Usuarios",
@@ -605,6 +626,13 @@ export const translations: Record<Language, Translations> = {
     "superAdminUsers.actions.deactivateUser": "Desactivar Usuario",
     "superAdminUsers.actions.activateUser": "Activar Usuario",
     "superAdminUsers.actions.deleteUser": "Eliminar Usuario",
+
+     // SuperAdminUsers Create Page
+    "superAdminUsersCreate.title": "Crear Nuevo Usuario",
+    "superAdminUsersCreate.description": "Añadir una nueva cuenta de usuario al sistema.",
+    "superAdminUsersCreate.formTitle": "Detalles del Nuevo Usuario",
+    "superAdminUsersCreate.formDescription": "Rellena el formulario para crear un nuevo usuario.",
+    "superAdminUsersCreate.underConstruction": "El formulario de creación de usuarios está en construcción. Esta es una página de marcador de posición.",
 
     // SuperAdminBackup Page
     "superAdminBackup.title": "Copia de Seguridad y Restauración",
@@ -662,10 +690,10 @@ export const translations: Record<Language, Translations> = {
     "superAdminLogs.table.message": "Mensaje",
     "superAdminLogs.table.source": "Fuente",
     "superAdminLogs.level.info": "INFO",
-    "superAdminLogs.level.warn": "WARN",
+    "superAdminLogs.level.warn": "AVISO", // WARN
     "superAdminLogs.level.error": "ERROR",
     "superAdminLogs.level.debug": "DEBUG",
-    "superAdminLogs.level.critical": "CRITICAL",
+    "superAdminLogs.level.critical": "CRÍTICO", // CRITICAL
     "superAdminLogs.logViewerCard.noLogs": "No se encontraron registros que coincidan con tus criterios.",
   },
   pt: {
@@ -718,6 +746,10 @@ export const translations: Record<Language, Translations> = {
     "appLayout.toastAccessDeniedTitle": "Acesso Negado",
     "appLayout.toastAccessDeniedDescription": "Por favor, faça login para acessar esta página.",
     "appLayout.toastLogoutSuccess": "Você saiu com sucesso.",
+    "userRoles.guest": "Convidado",
+    "userRoles.employee": "Funcionário",
+    "userRoles.admin": "Administrador",
+    "userRoles.superadmin": "Super Administrador",
 
 
      // RegisterPage
@@ -907,6 +939,8 @@ export const translations: Record<Language, Translations> = {
     "superAdminDashboard.systemStatusCard.activeUsersLabel": "Usuários Ativos (Agora)",
     "superAdminDashboard.systemStatusCard.securityAlertsLabel": "Alertas de Segurança",
     "superAdminDashboard.systemHealthValue.good": "Bom",
+    "superAdminDashboard.systemHealthValue.warning": "Aviso",
+    "superAdminDashboard.systemHealthValue.critical": "Crítico",
 
     // SuperAdminUsers Page
     "superAdminUsers.title": "Gerenciamento de Usuários",
@@ -934,6 +968,13 @@ export const translations: Record<Language, Translations> = {
     "superAdminUsers.actions.deactivateUser": "Desativar Usuário",
     "superAdminUsers.actions.activateUser": "Ativar Usuário",
     "superAdminUsers.actions.deleteUser": "Excluir Usuário",
+
+    // SuperAdminUsers Create Page
+    "superAdminUsersCreate.title": "Criar Novo Usuário",
+    "superAdminUsersCreate.description": "Adicionar uma nova conta de usuário ao sistema.",
+    "superAdminUsersCreate.formTitle": "Detalhes do Novo Usuário",
+    "superAdminUsersCreate.formDescription": "Preencha o formulário abaixo para criar um novo usuário.",
+    "superAdminUsersCreate.underConstruction": "O formulário de criação de usuários está em construção. Esta é uma página de espaço reservado.",
 
     // SuperAdminBackup Page
     "superAdminBackup.title": "Backup e Restauração do Sistema",
@@ -991,10 +1032,10 @@ export const translations: Record<Language, Translations> = {
     "superAdminLogs.table.message": "Mensagem",
     "superAdminLogs.table.source": "Fonte",
     "superAdminLogs.level.info": "INFO",
-    "superAdminLogs.level.warn": "WARN",
-    "superAdminLogs.level.error": "ERROR",
+    "superAdminLogs.level.warn": "AVISO", // WARN
+    "superAdminLogs.level.error": "ERRO", // ERROR
     "superAdminLogs.level.debug": "DEBUG",
-    "superAdminLogs.level.critical": "CRITICAL",
+    "superAdminLogs.level.critical": "CRÍTICO", // CRITICAL
     "superAdminLogs.logViewerCard.noLogs": "Nenhum log encontrado correspondente aos seus critérios.",
   },
   fr: {
@@ -1047,6 +1088,10 @@ export const translations: Record<Language, Translations> = {
     "appLayout.toastAccessDeniedTitle": "Accès Refusé",
     "appLayout.toastAccessDeniedDescription": "Veuillez vous connecter pour accéder à cette page.",
     "appLayout.toastLogoutSuccess": "Vous avez été déconnecté avec succès.",
+    "userRoles.guest": "Invité",
+    "userRoles.employee": "Employé",
+    "userRoles.admin": "Administrateur",
+    "userRoles.superadmin": "Super Administrateur",
 
 
     // RegisterPage
@@ -1236,6 +1281,8 @@ export const translations: Record<Language, Translations> = {
     "superAdminDashboard.systemStatusCard.activeUsersLabel": "Utilisateurs Actifs (Maintenant)",
     "superAdminDashboard.systemStatusCard.securityAlertsLabel": "Alertes de Sécurité",
     "superAdminDashboard.systemHealthValue.good": "Bon",
+    "superAdminDashboard.systemHealthValue.warning": "Avertissement",
+    "superAdminDashboard.systemHealthValue.critical": "Critique",
 
     // SuperAdminUsers Page
     "superAdminUsers.title": "Gestion des Utilisateurs",
@@ -1263,6 +1310,14 @@ export const translations: Record<Language, Translations> = {
     "superAdminUsers.actions.deactivateUser": "Désactiver l'utilisateur",
     "superAdminUsers.actions.activateUser": "Activer l'utilisateur",
     "superAdminUsers.actions.deleteUser": "Supprimer l'utilisateur",
+
+    // SuperAdminUsers Create Page
+    "superAdminUsersCreate.title": "Créer un nouvel utilisateur",
+    "superAdminUsersCreate.description": "Ajouter un nouveau compte utilisateur au système.",
+    "superAdminUsersCreate.formTitle": "Détails du nouvel utilisateur",
+    "superAdminUsersCreate.formDescription": "Remplissez le formulaire ci-dessous pour créer un nouvel utilisateur.",
+    "superAdminUsersCreate.underConstruction": "Le formulaire de création d'utilisateur est en construction. Ceci est une page de remplacement.",
+
 
     // SuperAdminBackup Page
     "superAdminBackup.title": "Sauvegarde et Restauration Système",
@@ -1320,12 +1375,12 @@ export const translations: Record<Language, Translations> = {
     "superAdminLogs.table.message": "Message",
     "superAdminLogs.table.source": "Source",
     "superAdminLogs.level.info": "INFO",
-    "superAdminLogs.level.warn": "WARN",
-    "superAdminLogs.level.error": "ERROR",
-    "superAdminLogs.level.debug": "DEBUG",
-    "superAdminLogs.level.critical": "CRITICAL",
+    "superAdminLogs.level.warn": "AVERT.", // WARN
+    "superAdminLogs.level.error": "ERREUR", // ERROR
+    "superAdminLogs.level.debug": "DÉBOG.", // DEBUG
+    "superAdminLogs.level.critical": "CRITIQUE", // CRITICAL
     "superAdminLogs.logViewerCard.noLogs": "Aucun journal trouvé correspondant à vos critères.",
   },
 };
 
-
+    

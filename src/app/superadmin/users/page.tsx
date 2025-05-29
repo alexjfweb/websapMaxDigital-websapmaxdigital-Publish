@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { User, UserRole } from "@/types"; 
 import { useLanguage } from "@/contexts/language-context";
+import Link from "next/link"; // Importado Link
 
 // Mock Data for Users
 const mockUsers: User[] = [
@@ -36,12 +37,12 @@ export default function SuperAdminUsersPage() {
   };
 
   const getStatusBadge = (status: User["status"]) => {
-    const statusKey = `superAdminUsers.status.${status}`;
+    const statusKey = `superAdminUsers.status.${status}`; // Asegúrate que las claves existen en translations.ts
     const statusText = t(statusKey);
     switch (status) {
       case "active": return <Badge variant="default" className="bg-green-500 text-white">{statusText}</Badge>;
       case "inactive": return <Badge variant="outline" className="text-gray-500 border-gray-400">{statusText}</Badge>;
-      case "pending": return <Badge variant="secondary" className="bg-yellow-500 text-white">{statusText}</Badge>;
+      case "pending": return <Badge variant="secondary" className="bg-yellow-500 text-white">{statusText}</Badge>; // Usando amarillo para pendiente
       default: return <Badge variant="outline">{statusText}</Badge>;
     }
   };
@@ -54,9 +55,11 @@ export default function SuperAdminUsersPage() {
           <h1 className="text-3xl font-bold text-primary">{t('superAdminUsers.title')}</h1>
           <p className="text-lg text-muted-foreground">{t('superAdminUsers.description')}</p>
         </div>
-        <Button>
-          <PlusCircle className="mr-2 h-5 w-5" /> {t('superAdminUsers.createUserButton')}
-        </Button>
+        <Link href="/superadmin/users/create" passHref>
+          <Button>
+            <PlusCircle className="mr-2 h-5 w-5" /> {t('superAdminUsers.createUserButton')}
+          </Button>
+        </Link>
       </div>
 
       <Card>
@@ -133,3 +136,5 @@ export default function SuperAdminUsersPage() {
     </div>
   );
 }
+
+    
