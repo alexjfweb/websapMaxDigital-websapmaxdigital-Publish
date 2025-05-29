@@ -1,8 +1,7 @@
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
-// Si necesitas otros servicios de Firebase como Firestore, impórtalos aquí
-// import { getFirestore } from 'firebase/firestore';
+import { getFirestore, type Firestore } from 'firebase/firestore'; // Importar Firestore
 
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY", // TODO: Reemplaza con tu API key real
@@ -22,6 +21,6 @@ if (!getApps().length) {
 }
 
 const auth: Auth = getAuth(app);
-// const db = getFirestore(app); // Ejemplo para Firestore
+const db: Firestore = getFirestore(app); // Inicializar y exportar Firestore
 
-export { app, auth /*, db */ };
+export { app, auth, db }; // Exportar db
