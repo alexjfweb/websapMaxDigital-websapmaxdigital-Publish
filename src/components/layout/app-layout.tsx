@@ -72,7 +72,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     const isGuest = currentUser.role === 'guest';
 
     if (isGuest && protectedRoutesPrefixes.some(prefix => currentPath.startsWith(prefix))) {
-      toast({ title: "Access Denied", description: "Please log in to access this page.", variant: "destructive" });
+      toast({ title: t('appLayout.toastAccessDeniedTitle', {defaultValue: "Access Denied"}), description: t('appLayout.toastAccessDeniedDescription', {defaultValue: "Please log in to access this page."}), variant: "destructive" });
       router.push('/login');
     } else if (!isGuest && (currentPath === '/login' || currentPath === '/register')) {
         let dashboardPath = "/menu";
@@ -84,15 +84,17 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         router.push(dashboardPath);
     }
 
-  }, [currentUser, router, isMounted, pathname]); 
+  }, [currentUser, router, isMounted, pathname, t]); 
 
 
   const handleLogout = () => {
     localStorage.removeItem('currentUser');
     setCurrentUser(guestUser);
-    toast({ title: t('header.logout'), description: "You have been successfully logged out." }); // Example of using t here
+    toast({ title: t('header.logout'), description: t('appLayout.toastLogoutSuccess', {defaultValue: "You have been successfully logged out."}) }); 
     router.push('/login');
   };
+
+  const isHomePage = pathname === '/';
 
   if (!isMounted) {
     return (
@@ -102,6 +104,16 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       >
         {t('appLayout.loading')}
       </div>
+    );
+  }
+
+  if (isHomePage) {
+    // For the homepage, render children directly without the sidebar and global AppHeader.
+    // The homepage (src/app/page.tsx) has its own layout elements.
+    return (
+      <main className="bg-background">
+        {children}
+      </main>
     );
   }
 

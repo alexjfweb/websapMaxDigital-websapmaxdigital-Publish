@@ -58,6 +58,10 @@ export const translations: Record<Language, Translations> = {
     "appLayout.loading": "Loading application...",
     "appLayout.rolePrefix": "Role",
     "appLayout.guestAccess": "Guest Access",
+    "appLayout.toastAccessDeniedTitle": "Access Denied",
+    "appLayout.toastAccessDeniedDescription": "Please log in to access this page.",
+    "appLayout.toastLogoutSuccess": "You have been successfully logged out.",
+
 
     // RegisterPage
     "registerPage.title": "Create an Account",
@@ -383,6 +387,9 @@ export const translations: Record<Language, Translations> = {
     "appLayout.loading": "Cargando aplicación...",
     "appLayout.rolePrefix": "Rol",
     "appLayout.guestAccess": "Acceso de Invitado",
+    "appLayout.toastAccessDeniedTitle": "Acceso Denegado",
+    "appLayout.toastAccessDeniedDescription": "Por favor, inicia sesión para acceder a esta página.",
+    "appLayout.toastLogoutSuccess": "Has cerrado sesión correctamente.",
 
     // RegisterPage
     "registerPage.title": "Crear una Cuenta",
@@ -708,6 +715,10 @@ export const translations: Record<Language, Translations> = {
     "appLayout.loading": "Carregando aplicação...",
     "appLayout.rolePrefix": "Função",
     "appLayout.guestAccess": "Acesso de Convidado",
+    "appLayout.toastAccessDeniedTitle": "Acesso Negado",
+    "appLayout.toastAccessDeniedDescription": "Por favor, faça login para acessar esta página.",
+    "appLayout.toastLogoutSuccess": "Você saiu com sucesso.",
+
 
      // RegisterPage
     "registerPage.title": "Criar uma Conta",
@@ -1033,6 +1044,10 @@ export const translations: Record<Language, Translations> = {
     "appLayout.loading": "Chargement de l'application...",
     "appLayout.rolePrefix": "Rôle",
     "appLayout.guestAccess": "Accès Invité",
+    "appLayout.toastAccessDeniedTitle": "Accès Refusé",
+    "appLayout.toastAccessDeniedDescription": "Veuillez vous connecter pour accéder à cette page.",
+    "appLayout.toastLogoutSuccess": "Vous avez été déconnecté avec succès.",
+
 
     // RegisterPage
     "registerPage.title": "Créer un Compte",
@@ -1312,4 +1327,5 @@ export const translations: Record<Language, Translations> = {
     "superAdminLogs.logViewerCard.noLogs": "Aucun journal trouvé correspondant à vos critères.",
   },
 };
+
 
