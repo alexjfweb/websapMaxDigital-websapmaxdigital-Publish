@@ -8,11 +8,11 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,6 +20,12 @@ import { Card, CardContent, CardDescription as ShadCNCardDescription, CardHeader
 import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
 import { UserPlus } from "lucide-react";
+import { useRouter } from 'next/navigation';
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase"; // Importar auth de tu configuración de Firebase
+import type { User, UserRole } from "@/types";
+import { useLanguage } from "@/contexts/language-context";
+
 
 const registerFormSchema = z.object({
   username: z.string().min(3, { message: "Username must be at least 3 characters." }),
@@ -33,6 +39,8 @@ const registerFormSchema = z.object({
 });
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const { t } = useLanguage();
   const form = useForm<z.infer<typeof registerFormSchema>>({
     resolver: zodResolver(registerFormSchema),
     defaultValues: {
@@ -40,15 +48,57 @@ export default function RegisterPage() {
       email: "",
       password: "",
       confirmPassword: "",
+      // role: "employee", // Default role or leave empty
     },
   });
 
-  function onSubmit(values: z.infer<typeof registerFormSchema>) {
-    console.log("Registration attempt:", values);
-    toast({
-      title: "Registration Submitted",
-      description: "This is a mock registration. In a real app, account creation would occur.",
-    });
+  async function onSubmit(values: z.infer<typeof registerFormSchema>) {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      const firebaseUser = userCredential.user;
+
+      // Crear objeto de usuario para localStorage
+      const newUser: User = {
+        id: firebaseUser.uid,
+        username: values.username,
+        email: firebaseUser.email || values.email,
+        role: values.role as UserRole, // El schema ya valida que sea 'admin' o 'employee'
+        name: values.username, // Usar username como name por simplicidad
+        avatarUrl: `https://placehold.co/100x100.png?text=${values.username.substring(0,1).toUpperCase()}`,
+        status: 'active',
+        registrationDate: new Date().toISOString(),
+      };
+
+      localStorage.setItem('currentUser', JSON.stringify(newUser));
+      
+      toast({
+        title: t('registerPage.toast.successTitle'),
+        description: t('registerPage.toast.successDescription', { email: values.email }),
+      });
+
+      // Redirigir según el rol
+      if (values.role === "admin") {
+        router.push("/admin/dashboard");
+      } else if (values.role === "employee") {
+        router.push("/employee/dashboard");
+      } else {
+        router.push("/"); // Fallback, aunque el schema debería prevenir esto
+      }
+
+    } catch (error: any) {
+      console.error("Firebase registration error:", error);
+      let errorMessage = t('registerPage.toast.errorDefaultDescription');
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = t('registerPage.toast.errorEmailInUse');
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = t('registerPage.toast.errorWeakPassword');
+      }
+      toast({
+        title: t('registerPage.toast.errorTitle'),
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
   }
 
   return (
@@ -60,8 +110,8 @@ export default function RegisterPage() {
                   <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
               </svg>
             </div>
-          <CardTitle className="text-3xl font-bold text-primary" suppressHydrationWarning>Create an Account</CardTitle>
-          <ShadCNCardDescription suppressHydrationWarning>Join websapMax to manage your restaurant or orders.</ShadCNCardDescription>
+          <CardTitle className="text-3xl font-bold text-primary" suppressHydrationWarning>{t('registerPage.title')}</CardTitle>
+          <ShadCNCardDescription suppressHydrationWarning>{t('registerPage.description')}</ShadCNCardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -71,9 +121,9 @@ export default function RegisterPage() {
                 name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Username</FormLabel>
+                    <FormLabel>{t('registerPage.usernameLabel')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="yourusername" {...field} />
+                      <Input placeholder={t('registerPage.usernamePlaceholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -84,9 +134,9 @@ export default function RegisterPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Address</FormLabel>
+                    <FormLabel>{t('registerPage.emailLabel')}</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="you@example.com" {...field} />
+                      <Input type="email" placeholder={t('registerPage.emailPlaceholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -97,7 +147,7 @@ export default function RegisterPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>{t('registerPage.passwordLabel')}</FormLabel>
                     <FormControl>
                       <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
@@ -110,7 +160,7 @@ export default function RegisterPage() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
+                    <FormLabel>{t('registerPage.confirmPasswordLabel')}</FormLabel>
                     <FormControl>
                       <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
@@ -123,36 +173,36 @@ export default function RegisterPage() {
                 name="role"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Register as</FormLabel>
+                    <FormLabel>{t('registerPage.roleLabel')}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a role" />
+                          <SelectValue placeholder={t('registerPage.rolePlaceholder')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="admin">Restaurant Admin/Owner</SelectItem>
-                        <SelectItem value="employee">Restaurant Employee</SelectItem>
+                        <SelectItem value="admin">{t('registerPage.roleAdmin')}</SelectItem>
+                        <SelectItem value="employee">{t('registerPage.roleEmployee')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Choose the type of account you want to create.
+                      {t('registerPage.roleDescription')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               <Button type="submit" className="w-full text-lg py-3">
-                <UserPlus className="mr-2 h-5 w-5" /> Sign Up
+                <UserPlus className="mr-2 h-5 w-5" /> {t('registerPage.signUpButton')}
               </Button>
             </form>
           </Form>
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-muted-foreground">
-            Already have an account?{" "}
+            {t('registerPage.alreadyHaveAccount')}{" "}
             <Link href="/login" className="font-medium text-primary hover:underline">
-              Log in
+              {t('registerPage.loginLink')}
             </Link>
           </p>
         </CardFooter>
@@ -160,5 +210,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-
-    

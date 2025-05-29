@@ -2,8 +2,13 @@
 import type { Language } from '@/contexts/language-context';
 
 export type Translations = {
-  [key: string]: string;
+  [key: string]: string | { [key: string]: string }; // Allow nested objects for grouped translations
 };
+
+// Helper function to flatten keys, e.g., { home: { welcome: "Hello" } } becomes { "home.welcome": "Hello" }
+// This is primarily for internal consistency if you prefer dot notation in components.
+// However, for this implementation, direct access like translations[lang][group][key] might be simpler if not flattening.
+// For now, I'll keep it simple and assume direct access or pre-flattened keys in components.
 
 export const translations: Record<Language, Translations> = {
   en: {
@@ -53,6 +58,30 @@ export const translations: Record<Language, Translations> = {
     "appLayout.loading": "Loading application...",
     "appLayout.rolePrefix": "Role",
     "appLayout.guestAccess": "Guest Access",
+
+    // RegisterPage
+    "registerPage.title": "Create an Account",
+    "registerPage.description": "Join websapMax to manage your restaurant or orders.",
+    "registerPage.usernameLabel": "Username",
+    "registerPage.usernamePlaceholder": "yourusername",
+    "registerPage.emailLabel": "Email Address",
+    "registerPage.emailPlaceholder": "you@example.com",
+    "registerPage.passwordLabel": "Password",
+    "registerPage.confirmPasswordLabel": "Confirm Password",
+    "registerPage.roleLabel": "Register as",
+    "registerPage.rolePlaceholder": "Select a role",
+    "registerPage.roleAdmin": "Restaurant Admin/Owner",
+    "registerPage.roleEmployee": "Restaurant Employee",
+    "registerPage.roleDescription": "Choose the type of account you want to create.",
+    "registerPage.signUpButton": "Sign Up",
+    "registerPage.alreadyHaveAccount": "Already have an account?",
+    "registerPage.loginLink": "Log in",
+    "registerPage.toast.successTitle": "Registration Successful!",
+    "registerPage.toast.successDescription": "Welcome, {email}! Your account has been created.",
+    "registerPage.toast.errorTitle": "Registration Failed",
+    "registerPage.toast.errorEmailInUse": "This email address is already in use. Please try another.",
+    "registerPage.toast.errorWeakPassword": "Password is too weak. It should be at least 6 characters.",
+    "registerPage.toast.errorDefaultDescription": "An unexpected error occurred. Please try again.",
 
     // AdminDashboard Page
     "adminDashboard.title": "Admin Dashboard",
@@ -355,6 +384,30 @@ export const translations: Record<Language, Translations> = {
     "appLayout.rolePrefix": "Rol",
     "appLayout.guestAccess": "Acceso de Invitado",
 
+    // RegisterPage
+    "registerPage.title": "Crear una Cuenta",
+    "registerPage.description": "Únete a websapMax para gestionar tu restaurante o pedidos.",
+    "registerPage.usernameLabel": "Nombre de Usuario",
+    "registerPage.usernamePlaceholder": "tuusuario",
+    "registerPage.emailLabel": "Correo Electrónico",
+    "registerPage.emailPlaceholder": "tu@ejemplo.com",
+    "registerPage.passwordLabel": "Contraseña",
+    "registerPage.confirmPasswordLabel": "Confirmar Contraseña",
+    "registerPage.roleLabel": "Registrarse como",
+    "registerPage.rolePlaceholder": "Selecciona un rol",
+    "registerPage.roleAdmin": "Admin/Dueño del Restaurante",
+    "registerPage.roleEmployee": "Empleado del Restaurante",
+    "registerPage.roleDescription": "Elige el tipo de cuenta que quieres crear.",
+    "registerPage.signUpButton": "Registrarse",
+    "registerPage.alreadyHaveAccount": "¿Ya tienes una cuenta?",
+    "registerPage.loginLink": "Iniciar Sesión",
+    "registerPage.toast.successTitle": "¡Registro Exitoso!",
+    "registerPage.toast.successDescription": "¡Bienvenido, {email}! Tu cuenta ha sido creada.",
+    "registerPage.toast.errorTitle": "Fallo en el Registro",
+    "registerPage.toast.errorEmailInUse": "Esta dirección de correo ya está en uso. Por favor, prueba con otra.",
+    "registerPage.toast.errorWeakPassword": "La contraseña es demasiado débil. Debe tener al menos 6 caracteres.",
+    "registerPage.toast.errorDefaultDescription": "Ocurrió un error inesperado. Por favor, inténtalo de nuevo.",
+
     // AdminDashboard Page
     "adminDashboard.title": "Panel de Administración",
     "adminDashboard.description": "Gestiona tu restaurante eficazmente.",
@@ -655,6 +708,30 @@ export const translations: Record<Language, Translations> = {
     "appLayout.loading": "Carregando aplicação...",
     "appLayout.rolePrefix": "Função",
     "appLayout.guestAccess": "Acesso de Convidado",
+
+     // RegisterPage
+    "registerPage.title": "Criar uma Conta",
+    "registerPage.description": "Junte-se ao websapMax para gerenciar seu restaurante ou pedidos.",
+    "registerPage.usernameLabel": "Nome de Usuário",
+    "registerPage.usernamePlaceholder": "seuusuario",
+    "registerPage.emailLabel": "Endereço de E-mail",
+    "registerPage.emailPlaceholder": "voce@exemplo.com",
+    "registerPage.passwordLabel": "Senha",
+    "registerPage.confirmPasswordLabel": "Confirmar Senha",
+    "registerPage.roleLabel": "Registrar como",
+    "registerPage.rolePlaceholder": "Selecione uma função",
+    "registerPage.roleAdmin": "Admin/Dono do Restaurante",
+    "registerPage.roleEmployee": "Funcionário do Restaurante",
+    "registerPage.roleDescription": "Escolha o tipo de conta que deseja criar.",
+    "registerPage.signUpButton": "Inscrever-se",
+    "registerPage.alreadyHaveAccount": "Já tem uma conta?",
+    "registerPage.loginLink": "Entrar",
+    "registerPage.toast.successTitle": "Registro Bem-sucedido!",
+    "registerPage.toast.successDescription": "Bem-vindo, {email}! Sua conta foi criada.",
+    "registerPage.toast.errorTitle": "Falha no Registro",
+    "registerPage.toast.errorEmailInUse": "Este endereço de e-mail já está em uso. Por favor, tente outro.",
+    "registerPage.toast.errorWeakPassword": "A senha é muito fraca. Deve ter pelo menos 6 caracteres.",
+    "registerPage.toast.errorDefaultDescription": "Ocorreu um erro inesperado. Por favor, tente novamente.",
 
     // AdminDashboard Page
     "adminDashboard.title": "Painel Administrativo",
@@ -957,6 +1034,30 @@ export const translations: Record<Language, Translations> = {
     "appLayout.rolePrefix": "Rôle",
     "appLayout.guestAccess": "Accès Invité",
 
+    // RegisterPage
+    "registerPage.title": "Créer un Compte",
+    "registerPage.description": "Rejoignez websapMax pour gérer votre restaurant ou vos commandes.",
+    "registerPage.usernameLabel": "Nom d'utilisateur",
+    "registerPage.usernamePlaceholder": "votrenomdutilisateur",
+    "registerPage.emailLabel": "Adresse E-mail",
+    "registerPage.emailPlaceholder": "vous@exemple.com",
+    "registerPage.passwordLabel": "Mot de passe",
+    "registerPage.confirmPasswordLabel": "Confirmer le mot de passe",
+    "registerPage.roleLabel": "S'inscrire en tant que",
+    "registerPage.rolePlaceholder": "Sélectionnez un rôle",
+    "registerPage.roleAdmin": "Admin/Propriétaire du Restaurant",
+    "registerPage.roleEmployee": "Employé du Restaurant",
+    "registerPage.roleDescription": "Choisissez le type de compte que vous souhaitez créer.",
+    "registerPage.signUpButton": "S'inscrire",
+    "registerPage.alreadyHaveAccount": "Vous avez déjà un compte ?",
+    "registerPage.loginLink": "Se connecter",
+    "registerPage.toast.successTitle": "Inscription Réussie !",
+    "registerPage.toast.successDescription": "Bienvenue, {email} ! Votre compte a été créé.",
+    "registerPage.toast.errorTitle": "Échec de l'Inscription",
+    "registerPage.toast.errorEmailInUse": "Cette adresse e-mail est déjà utilisée. Veuillez en essayer une autre.",
+    "registerPage.toast.errorWeakPassword": "Le mot de passe est trop faible. Il doit comporter au moins 6 caractères.",
+    "registerPage.toast.errorDefaultDescription": "Une erreur inattendue s'est produite. Veuillez réessayer.",
+
     // AdminDashboard Page
     "adminDashboard.title": "Tableau d'Administration",
     "adminDashboard.description": "Gérez votre restaurant efficacement.",
@@ -1211,3 +1312,4 @@ export const translations: Record<Language, Translations> = {
     "superAdminLogs.logViewerCard.noLogs": "Aucun journal trouvé correspondant à vos critères.",
   },
 };
+
