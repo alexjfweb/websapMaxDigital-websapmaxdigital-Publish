@@ -3,16 +3,17 @@ import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 
-// ATENCIÓN: Después de registrar tu aplicación WEB en la consola de Firebase
-// para el proyecto "websapmax", copia el objeto firebaseConfig completo aquí.
+// ATENCIÓN: Copia y pega aquí los valores EXACTOS de la configuración de Firebase
+// que obtuviste de la Consola de Firebase para tu aplicación web "websapmax-proyect"
+// dentro del proyecto "websapmax".
 const firebaseConfig = {
-  apiKey: "TU_API_KEY_DE_LA_APP_WEB_VA_AQUI", // <-- REEMPLAZA ESTO
+  apiKey: "TU_API_KEY_DE_LA_APP_WEB_VA_AQUI", // <-- REEMPLAZA ESTO DESDE TU CONSOLA
   authDomain: "TU_AUTH_DOMAIN_DE_LA_APP_WEB_VA_AQUI", // <-- REEMPLAZA ESTO (ej: websapmax.firebaseapp.com)
-  projectId: "websapmax", // Este es el ID de tu proyecto
+  projectId: "websapmax", // Confirmado por tu captura de pantalla anterior
   storageBucket: "TU_STORAGE_BUCKET_DE_LA_APP_WEB_VA_AQUI", // <-- REEMPLAZA ESTO (ej: websapmax.appspot.com)
-  messagingSenderId: "TU_MESSAGING_SENDER_ID_DE_LA_APP_WEB_VA_AQUI", // <-- REEMPLAZA ESTO (probablemente 560613070255)
-  appId: "TU_APP_ID_DE_LA_APP_WEB_VA_AQUI", // <-- REEMPLAZA ESTO
-  measurementId: "TU_MEASUREMENT_ID_OPCIONAL_VA_AQUI", // <-- REEMPLAZA ESTO (opcional)
+  messagingSenderId: "560613070255", // Confirmado por tu captura de pantalla anterior (ID del remitente)
+  appId: "1:560613070255:web:7ce75870dbe6b19a084b5a", // Confirmado por tu captura de pantalla actual
+  measurementId: "TU_MEASUREMENT_ID_OPCIONAL_VA_AQUI", // <-- REEMPLAZA ESTO (opcional, si lo tienes)
 };
 
 
