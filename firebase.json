@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "TU_ID_DE_PROYECTO_FIREBASE",
+    "site": "websapmax",
     "source": ".",
     "ignore": [
       "firebase.json",

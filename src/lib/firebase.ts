@@ -1,26 +1,30 @@
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore'; // Importar Firestore
+import { getFirestore, type Firestore } from 'firebase/firestore';
 
+// ATENCIÓN: Debes reemplazar los siguientes valores con las credenciales REALES
+// de tu proyecto Firebase "restolink-gewb4" desde la consola de Firebase.
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY", // TODO: Reemplaza con tu API key real
-  authDomain: "YOUR_AUTH_DOMAIN", // TODO: Reemplaza con tu auth domain real
-  projectId: "YOUR_PROJECT_ID", // TODO: Reemplaza con tu project ID real
-  storageBucket: "YOUR_STORAGE_BUCKET", // TODO: Reemplaza con tu storage bucket real
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID", // TODO: Reemplaza con tu messaging sender ID real
-  appId: "YOUR_APP_ID", // TODO: Reemplaza con tu app ID real
+  apiKey: "TU_API_KEY_DE_RESTOLINK-GEWB4", // <-- REEMPLAZA ESTO
+  authDomain: "TU_AUTH_DOMAIN_DE_RESTOLINK-GEWB4", // <-- REEMPLAZA ESTO (ej: restolink-gewb4.firebaseapp.com)
+  projectId: "restolink-gewb4", // Este es el ID del proyecto que elegiste
+  storageBucket: "TU_STORAGE_BUCKET_DE_RESTOLINK-GEWB4", // <-- REEMPLAZA ESTO (ej: restolink-gewb4.appspot.com)
+  messagingSenderId: "TU_MESSAGING_SENDER_ID_DE_RESTOLINK-GEWB4", // <-- REEMPLAZA ESTO
+  appId: "TU_APP_ID_DE_RESTOLINK-GEWB4", // <-- REEMPLAZA ESTO
+  measurementId: "TU_MEASUREMENT_ID_DE_RESTOLINK-GEWB4", // Opcional, pero reemplaza si lo usas
 };
 
-// Inicializar Firebase
+
 let app: FirebaseApp;
 if (!getApps().length) {
+  // Initialize Firebase
   app = initializeApp(firebaseConfig);
 } else {
+  // Si ya hay una app inicializada, usarla
   app = getApp();
 }
-
 const auth: Auth = getAuth(app);
-const db: Firestore = getFirestore(app); // Inicializar y exportar Firestore
+const db: Firestore = getFirestore(app);
 
-export { app, auth, db }; // Exportar db
+export { app, auth, db };
