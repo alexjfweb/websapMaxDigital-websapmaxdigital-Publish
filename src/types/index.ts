@@ -1,4 +1,6 @@
 
+import type { Timestamp } from 'firebase/firestore';
+
 export interface RestaurantProfile {
   id: string;
   name: string;
@@ -50,3 +52,19 @@ export interface User {
   registrationDate: string; // ISO date string
   avatarUrl?: string;
 }
+
+// New Project types
+export interface Project {
+  id: string; // Document ID from Firestore
+  name: string;
+  description: string;
+  ownerUid: string; // UID of the user who owns/created the project
+  createdAt: Timestamp; // Firestore Timestamp for when the project was created
+  updatedAt: Timestamp; // Firestore Timestamp for when the project was last updated
+}
+
+export type ProjectInput = {
+  name: string;
+  description: string;
+  ownerUid: string; // UID of the user creating the project
+};
