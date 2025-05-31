@@ -1,0 +1,11 @@
+{
+  "hosting": {
+    "site": "TU_ID_DE_PROYECTO_FIREBASE",
+    "source": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}
