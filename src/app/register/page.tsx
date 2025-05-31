@@ -22,7 +22,8 @@ import { toast } from "@/hooks/use-toast";
 import { UserPlus } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase"; // Importar auth de tu configuración de Firebase
+import { auth, db } from "@/lib/firebase"; // Importar db
+import { doc, setDoc } from "firebase/firestore"; // Importar doc y setDoc
 import type { User, UserRole } from "@/types";
 import { useLanguage } from "@/contexts/language-context";
 
@@ -54,45 +55,60 @@ export default function RegisterPage() {
 
   async function onSubmit(values: z.infer<typeof registerFormSchema>) {
     try {
+      // 1. Create user in Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
 
-      // Crear objeto de usuario para localStorage
-      const newUser: User = {
+      // 2. Prepare user data for Firestore
+      const newUserForFirestore: User = {
         id: firebaseUser.uid,
         username: values.username,
         email: firebaseUser.email || values.email,
-        role: values.role as UserRole, // El schema ya valida que sea 'admin' o 'employee'
-        name: values.username, // Usar username como name por simplicidad
+        role: values.role as UserRole,
+        name: values.username, // Using username as name for simplicity, can be extended
         avatarUrl: `https://placehold.co/100x100.png?text=${values.username.substring(0,1).toUpperCase()}`,
-        status: 'active',
+        status: 'active', // Default status for new users
         registrationDate: new Date().toISOString(),
       };
 
-      localStorage.setItem('currentUser', JSON.stringify(newUser));
+      // 3. Save user data to Firestore
+      await setDoc(doc(db, "users", firebaseUser.uid), newUserForFirestore);
+      
+      // 4. Update localStorage (optional, but good for immediate UI update if needed)
+      localStorage.setItem('currentUser', JSON.stringify(newUserForFirestore));
       
       toast({
         title: t('registerPage.toast.successTitle'),
-        description: t('registerPage.toast.successDescription', { email: values.email }),
+        description: t('registerPage.toast.successDescription', { email: values.email }) + " User details saved to database.",
       });
 
-      // Redirigir según el rol
+      // 5. Redirect based on role
       if (values.role === "admin") {
         router.push("/admin/dashboard");
       } else if (values.role === "employee") {
         router.push("/employee/dashboard");
       } else {
-        router.push("/"); // Fallback, aunque el schema debería prevenir esto
+        router.push("/");
       }
 
     } catch (error: any) {
-      console.error("Firebase registration error:", error);
+      console.error("Registration or Firestore save error:", error);
       let errorMessage = t('registerPage.toast.errorDefaultDescription');
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = t('registerPage.toast.errorEmailInUse');
-      } else if (error.code === 'auth/weak-password') {
-        errorMessage = t('registerPage.toast.errorWeakPassword');
+      if (error.code) { // Firebase Auth errors have a 'code' property
+        switch (error.code) {
+          case 'auth/email-already-in-use':
+            errorMessage = t('registerPage.toast.errorEmailInUse');
+            break;
+          case 'auth/weak-password':
+            errorMessage = t('registerPage.toast.errorWeakPassword');
+            break;
+          default:
+            errorMessage = error.message; // Use Firebase error message if not specifically handled
+        }
+      } else if (error.message.includes("Firestore")) { // Check if it's a Firestore related error
+        errorMessage = "Failed to save user details to database. Please try again or contact support.";
       }
+      
       toast({
         title: t('registerPage.toast.errorTitle'),
         description: errorMessage,
