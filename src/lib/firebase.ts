@@ -2,18 +2,18 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
+// Import getAnalytics if you plan to use it, though it's not strictly necessary for core app functionality yet.
+// import { getAnalytics } from "firebase/analytics";
 
-// ATENCIÓN: Copia y pega aquí los valores EXACTOS de la configuración de Firebase
-// que obtuviste de la Consola de Firebase para tu aplicación web "websapmax-proyect"
-// dentro del proyecto "websapmax".
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "TU_API_KEY_DE_LA_APP_WEB_VA_AQUI", // <-- REEMPLAZA ESTO DESDE TU CONSOLA
-  authDomain: "TU_AUTH_DOMAIN_DE_LA_APP_WEB_VA_AQUI", // <-- REEMPLAZA ESTO (ej: websapmax.firebaseapp.com)
-  projectId: "websapmax", // Confirmado por tu captura de pantalla anterior
-  storageBucket: "TU_STORAGE_BUCKET_DE_LA_APP_WEB_VA_AQUI", // <-- REEMPLAZA ESTO (ej: websapmax.appspot.com)
-  messagingSenderId: "560613070255", // Confirmado por tu captura de pantalla anterior (ID del remitente)
-  appId: "1:560613070255:web:7ce75870dbe6b19a084b5a", // Confirmado por tu captura de pantalla actual
-  measurementId: "TU_MEASUREMENT_ID_OPCIONAL_VA_AQUI", // <-- REEMPLAZA ESTO (opcional, si lo tienes)
+  apiKey: "AIzaSyC3UzUVh_OPavejyo-kviYVX_Zy9494yjg",
+  authDomain: "websapmax.firebaseapp.com",
+  projectId: "websapmax",
+  storageBucket: "websapmax.firebasestorage.app", // Corregido, usualmente es .appspot.com o .firebasestorage.app, el usuario proveyó .app
+  messagingSenderId: "560613070255",
+  appId: "1:560613070255:web:7ce75870dbe6b19a084b5a",
+  measurementId: "G-DD5JWPV701"
 };
 
 
@@ -25,7 +25,9 @@ if (!getApps().length) {
   // Si ya hay una app inicializada, usarla
   app = getApp();
 }
+
 const auth: Auth = getAuth(app);
 const db: Firestore = getFirestore(app);
+// const analytics = getAnalytics(app); // Puedes descomentar esto si vas a usar Analytics
 
 export { app, auth, db };
