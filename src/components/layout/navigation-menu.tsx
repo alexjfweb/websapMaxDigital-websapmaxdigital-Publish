@@ -35,17 +35,18 @@ import {
   Store,
   BarChart3,
   Wrench,
+  Database, // Importado
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import { useLanguage } from '@/contexts/language-context'; // Added
+import { useLanguage } from '@/contexts/language-context';
 
 interface NavItem {
   href: string;
-  labelKey: string; // Changed from label to labelKey
+  labelKey: string;
   icon: React.ElementType;
   allowedRoles: string[];
   subItems?: NavItem[];
-  tooltipKey?: string; // Optional tooltipKey
+  tooltipKey?: string;
 }
 
 const navItems: NavItem[] = [
@@ -60,6 +61,7 @@ const navItems: NavItem[] = [
   { href: '/superadmin/companies', labelKey: 'nav.companyManagement', icon: Store, allowedRoles: ['superadmin'], tooltipKey: 'nav.companyManagement' },
   { href: '/superadmin/users', labelKey: 'nav.userManagement', icon: Users, allowedRoles: ['superadmin'], tooltipKey: 'nav.userManagement' },
   { href: '/superadmin/maintenance', labelKey: 'nav.maintenance', icon: Wrench, allowedRoles: ['superadmin'], tooltipKey: 'nav.maintenance' },
+  { href: '/superadmin/database', labelKey: 'nav.databaseStatus', icon: Database, allowedRoles: ['superadmin'], tooltipKey: 'nav.databaseStatus' },
   { href: '/superadmin/backup', labelKey: 'nav.backup', icon: Server, allowedRoles: ['superadmin'], tooltipKey: 'nav.backup' },
   { href: '/superadmin/logs', labelKey: 'nav.logs', icon: History, allowedRoles: ['superadmin'], tooltipKey: 'nav.logs' },
 
@@ -85,23 +87,28 @@ interface NavigationMenuProps {
 
 export default function NavigationMenu({ role }: NavigationMenuProps) {
   const pathname = usePathname();
-  const { t } = useLanguage(); // Added
+  const { t } = useLanguage();
 
   const renderNavItems = (items: NavItem[], isSubMenu = false) => {
     return items
       .filter(item => {
+        // Superadmin sees only superadmin items
+        if (role === 'superadmin') {
+            return item.allowedRoles.includes('superadmin');
+        }
+        // Admin sees only admin items
+        if (role === 'admin') {
+            return item.allowedRoles.includes('admin');
+        }
+        // Employee sees only employee items
+        if (role === 'employee') {
+            return item.allowedRoles.includes('employee');
+        }
+        // Guest sees only guest items and not logged-in items
         if (role === 'guest') {
-          // Guests only see guest items
-          return item.allowedRoles.includes('guest');
+            return item.allowedRoles.includes('guest');
         }
-        
-        // Logged-in users should not see login/register
-        if (item.href === '/login' || item.href === '/register') {
-          return false;
-        }
-
-        // For any other role, check if the role is included in allowedRoles.
-        return item.allowedRoles.includes(role);
+        return false;
       })
       .map((item) => {
         const Icon = item.icon;
