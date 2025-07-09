@@ -9,15 +9,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 
 
-// Mock Data for Orders
+// Mock Data for Orders - Using static dates to prevent hydration errors
 const mockOrders = [
-  { id: "order-001", customerName: "Eva Green", date: new Date(), items: 3, total: 45.50, status: "pending", type: "delivery" },
-  { id: "order-002", customerName: "Frank Blue", date: new Date(Date.now() - 3600000), items: 2, total: 22.00, status: "preparing", type: "pickup" },
-  { id: "order-003", customerName: "Grace Red", date: new Date(Date.now() - 7200000), items: 5, total: 78.25, status: "ready_for_pickup", type: "pickup" },
-  { id: "order-004", customerName: "Henry Yellow", date: new Date(Date.now() - 10800000), items: 1, total: 15.75, status: "out_for_delivery", type: "delivery" },
-  { id: "order-005", customerName: "Ivy White", date: new Date(Date.now() - 86400000), items: 4, total: 55.00, status: "completed", type: "delivery" },
-  { id: "order-006", customerName: "Jack Black", date: new Date(Date.now() - 172800000), items: 2, total: 30.50, status: "cancelled", type: "pickup" },
+  { id: "order-001", customerName: "Eva Green", date: new Date("2024-07-31T12:30:00Z"), items: 3, total: 45.50, status: "pending", type: "delivery" },
+  { id: "order-002", customerName: "Frank Blue", date: new Date("2024-07-31T11:30:00Z"), items: 2, total: 22.00, status: "preparing", type: "pickup" },
+  { id: "order-003", customerName: "Grace Red", date: new Date("2024-07-31T10:30:00Z"), items: 5, total: 78.25, status: "ready_for_pickup", type: "pickup" },
+  { id: "order-004", customerName: "Henry Yellow", date: new Date("2024-07-31T09:30:00Z"), items: 1, total: 15.75, status: "out_for_delivery", type: "delivery" },
+  { id: "order-005", customerName: "Ivy White", date: new Date("2024-07-30T15:00:00Z"), items: 4, total: 55.00, status: "completed", type: "delivery" },
+  { id: "order-006", customerName: "Jack Black", date: new Date("2024-07-29T18:00:00Z"), items: 2, total: 30.50, status: "cancelled", type: "pickup" },
 ];
+
 
 export default function EmployeeOrdersPage() {
   // Filtered orders based on tab would be handled by state

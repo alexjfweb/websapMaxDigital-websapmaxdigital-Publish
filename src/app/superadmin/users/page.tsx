@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { User, UserRole } from "@/types"; 
 import { useLanguage } from "@/contexts/language-context";
 import Link from "next/link"; // Importado Link
+import { format } from "date-fns";
 
 // Mock Data for Users
 const mockUsers: User[] = [
@@ -106,7 +107,7 @@ export default function SuperAdminUsersPage() {
                   <TableCell className="text-center">{getRoleBadge(user.role)}</TableCell>
                   <TableCell className="text-center">{getStatusBadge(user.status)}</TableCell>
                   <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">
-                    {new Date(user.registrationDate).toLocaleDateString()}
+                    {format(new Date(user.registrationDate), "P")}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">

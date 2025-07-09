@@ -11,14 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns";
 import { useLanguage } from "@/contexts/language-context";
 
-// Mock Data for Logs
+// Mock Data for Logs - Using static dates to prevent hydration errors
 const mockLogs = [
-  { id: "log-001", timestamp: new Date(), level: "INFO", message: "User 'admin@example.com' logged in.", source: "AuthService" },
-  { id: "log-002", timestamp: new Date(Date.now() - 60000 * 5), level: "WARN", message: "High CPU usage detected: 85%", source: "SystemMonitor" },
-  { id: "log-003", timestamp: new Date(Date.now() - 60000 * 15), level: "ERROR", message: "Failed to connect to payment gateway.", source: "PaymentService" },
-  { id: "log-004", timestamp: new Date(Date.now() - 60000 * 30), level: "DEBUG", message: "Processing order #12345", source: "OrderService" },
-  { id: "log-005", timestamp: new Date(Date.now() - 60000 * 60), level: "INFO", message: "Database backup completed successfully.", source: "BackupService" },
-  { id: "log-006", timestamp: new Date(Date.now() - 60000 * 120), level: "CRITICAL", message: "System crash detected. Attempting reboot.", source: "Kernel" },
+  { id: "log-001", timestamp: new Date("2024-07-31T12:00:00Z"), level: "INFO", message: "User 'admin@example.com' logged in.", source: "AuthService" },
+  { id: "log-002", timestamp: new Date("2024-07-31T11:55:00Z"), level: "WARN", message: "High CPU usage detected: 85%", source: "SystemMonitor" },
+  { id: "log-003", timestamp: new Date("2024-07-31T11:45:00Z"), level: "ERROR", message: "Failed to connect to payment gateway.", source: "PaymentService" },
+  { id: "log-004", timestamp: new Date("2024-07-31T11:30:00Z"), level: "DEBUG", message: "Processing order #12345", source: "OrderService" },
+  { id: "log-005", timestamp: new Date("2024-07-31T11:00:00Z"), level: "INFO", message: "Database backup completed successfully.", source: "BackupService" },
+  { id: "log-006", timestamp: new Date("2024-07-31T10:00:00Z"), level: "CRITICAL", message: "System crash detected. Attempting reboot.", source: "Kernel" },
 ];
 
 export default function SuperAdminLogsPage() {

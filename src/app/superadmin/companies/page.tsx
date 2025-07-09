@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/language-context";
 import Link from "next/link";
 import type { Company } from "@/types";
+import { format } from "date-fns";
 
 // Mock Data for Companies
 const mockCompanies: Company[] = [
@@ -79,7 +80,7 @@ export default function SuperAdminCompaniesPage() {
                   <TableCell className="hidden sm:table-cell">{company.location}</TableCell>
                   <TableCell className="text-center">{getStatusBadge(company.status)}</TableCell>
                   <TableCell className="hidden md:table-cell text-center text-xs text-muted-foreground">
-                    {new Date(company.registrationDate).toLocaleDateString()}
+                    {format(new Date(company.registrationDate), "P")}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">

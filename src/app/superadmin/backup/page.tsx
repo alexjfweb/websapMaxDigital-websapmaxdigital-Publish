@@ -9,12 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { useLanguage } from "@/contexts/language-context";
 
-// Mock Data for Backup History
+// Mock Data for Backup History - Using static dates to prevent hydration errors
 const mockBackupHistory = [
-  { id: "backup-001", date: new Date(Date.now() - 86400000 * 1), statusKey: "superAdminBackup.status.completed", size: "1.2 GB", typeKey: "superAdminBackup.type.full" },
-  { id: "backup-002", date: new Date(Date.now() - 86400000 * 2), statusKey: "superAdminBackup.status.completed", size: "1.1 GB", typeKey: "superAdminBackup.type.full" },
-  { id: "backup-003", date: new Date(Date.now() - 86400000 * 3), statusKey: "superAdminBackup.status.failed", size: "N/A", typeKey: "superAdminBackup.type.incremental" },
-  { id: "backup-004", date: new Date(Date.now() - 86400000 * 7), statusKey: "superAdminBackup.status.completed", size: "980 MB", typeKey: "superAdminBackup.type.full" },
+  { id: "backup-001", date: new Date("2024-07-31T02:00:00Z"), statusKey: "superAdminBackup.status.completed", size: "1.2 GB", typeKey: "superAdminBackup.type.full" },
+  { id: "backup-002", date: new Date("2024-07-30T02:00:00Z"), statusKey: "superAdminBackup.status.completed", size: "1.1 GB", typeKey: "superAdminBackup.type.full" },
+  { id: "backup-003", date: new Date("2024-07-29T02:00:00Z"), statusKey: "superAdminBackup.status.failed", size: "N/A", typeKey: "superAdminBackup.type.incremental" },
+  { id: "backup-004", date: new Date("2024-07-25T02:00:00Z"), statusKey: "superAdminBackup.status.completed", size: "980 MB", typeKey: "superAdminBackup.type.full" },
 ];
 
 

@@ -43,10 +43,10 @@ const roleDistributionData = [
 ];
 
 const recentActivityData = [
-  { event: "New Company Registered", details: "The Burger Joint", timestamp: new Date(Date.now() - 3600000) },
-  { event: "New User Created", details: "chef.john (Employee)", timestamp: new Date(Date.now() - 7200000) },
-  { event: "System Backup Completed", details: "Full backup successful", timestamp: new Date(Date.now() - 86400000) },
-  { event: "High Revenue Day", details: "$2,500+", timestamp: new Date(Date.now() - 172800000) },
+  { event: "New Company Registered", details: "The Burger Joint", timestamp: new Date("2024-07-31T10:00:00Z") },
+  { event: "New User Created", details: "chef.john (Employee)", timestamp: new Date("2024-07-31T09:00:00Z") },
+  { event: "System Backup Completed", details: "Full backup successful", timestamp: new Date("2024-07-30T11:00:00Z") },
+  { event: "High Revenue Day", details: "$2,500+", timestamp: new Date("2024-07-29T11:00:00Z") },
 ];
 
 
@@ -200,4 +200,3 @@ export default function SuperAdminAnalyticsPage() {
     </div>
   );
 }
-
