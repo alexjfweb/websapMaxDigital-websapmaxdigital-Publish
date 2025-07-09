@@ -295,7 +295,7 @@ export default function SuperAdminRemindersPage() {
 
       {/* Configuration Dialog (for create/edit) */}
       <Dialog open={isConfigDialogOpen} onOpenChange={setIsConfigDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{selectedConfig ? t('superAdminReminders.form.titleEdit') : t('superAdminReminders.form.titleCreate')}</DialogTitle>
             <DialogDescription>{t('superAdminReminders.form.description')}</DialogDescription>
@@ -320,7 +320,28 @@ export default function SuperAdminRemindersPage() {
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="days" className="text-right">{t('superAdminReminders.form.daysLabel')}</Label>
-              <Input id="days" type="number" defaultValue="7" className="col-span-3" />
+              <Input id="days" type="number" defaultValue="7" placeholder={t('superAdminReminders.form.daysPlaceholder')} className="col-span-3" />
+            </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="sendingMethod" className="text-right">{t('superAdminReminders.form.sendingMethodLabel')}</Label>
+                <Select>
+                    <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder={t('superAdminReminders.form.sendingMethodPlaceholder')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="email">{t('superAdminReminders.form.sendingMethodEmail')}</SelectItem>
+                        <SelectItem value="sms">{t('superAdminReminders.form.sendingMethodSms')}</SelectItem>
+                        <SelectItem value="whatsapp">{t('superAdminReminders.form.sendingMethodWhatsapp')}</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="maxRetries" className="text-right">{t('superAdminReminders.form.maxRetriesLabel')}</Label>
+              <Input id="maxRetries" type="number" defaultValue="3" placeholder={t('superAdminReminders.form.maxRetriesPlaceholder')} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="retryInterval" className="text-right">{t('superAdminReminders.form.retryIntervalLabel')}</Label>
+              <Input id="retryInterval" type="number" defaultValue="24" placeholder={t('superAdminReminders.form.retryIntervalPlaceholder')} className="col-span-3" />
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">{t('superAdminReminders.form.statusLabel')}</Label>
