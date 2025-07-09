@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -13,9 +14,9 @@ import { format } from "date-fns";
 
 // Mock Data
 const subscriptionPlans = [
-  { id: "basic", featuresCount: 3 },
-  { id: "pro", featuresCount: 3 },
-  { id: "enterprise", featuresCount: 3 },
+  { id: "basic", featuresCount: 4 },
+  { id: "pro", featuresCount: 4 },
+  { id: "enterprise", featuresCount: 4 },
 ];
 
 const mockTransactions = [
