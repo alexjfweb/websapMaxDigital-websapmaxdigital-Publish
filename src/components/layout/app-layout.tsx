@@ -32,7 +32,7 @@ const guestUser: User = {
   avatarUrl: 'https://placehold.co/100x100.png?text=G',
   role: 'guest',
   status: 'active',
-  registrationDate: new Date().toISOString(),
+  registrationDate: '2024-01-01T00:00:00.000Z', // Static date to prevent hydration mismatch
 };
 
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
