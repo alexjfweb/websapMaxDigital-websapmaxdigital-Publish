@@ -14,11 +14,11 @@ import { format } from "date-fns";
 
 // Mock Data for Companies
 const mockCompanies: Company[] = [
-  { id: "com-1", name: "websapMax Restaurant", location: "Flavor Town", status: "active", registrationDate: "2023-01-15" },
-  { id: "com-2", name: "The Burger Joint", location: "Metropolis", status: "active", registrationDate: "2023-03-20" },
-  { id: "com-3", name: "Pizza Palace", location: "Gotham City", status: "inactive", registrationDate: "2023-05-10" },
-  { id: "com-4", name: "Sushi Central", location: "Star City", status: "pending", registrationDate: "2024-07-28" },
-  { id: "com-5", name: "Taco Tuesday", location: "Central City", status: "active", registrationDate: "2023-09-01" },
+  { id: "com-1", name: "websapMax Restaurant", location: "Flavor Town", status: "active", registrationDate: "2023-01-15T00:00:00Z" },
+  { id: "com-2", name: "The Burger Joint", location: "Metropolis", status: "active", registrationDate: "2023-03-20T00:00:00Z" },
+  { id: "com-3", name: "Pizza Palace", location: "Gotham City", status: "inactive", registrationDate: "2023-05-10T00:00:00Z" },
+  { id: "com-4", name: "Sushi Central", location: "Star City", status: "pending", registrationDate: "2024-07-28T00:00:00Z" },
+  { id: "com-5", name: "Taco Tuesday", location: "Central City", status: "active", registrationDate: "2023-09-01T00:00:00Z" },
 ];
 
 export default function SuperAdminCompaniesPage() {

@@ -11,12 +11,12 @@ import { format } from "date-fns";
 
 // Mock Data for Orders - Using static dates to prevent hydration errors
 const mockOrders = [
-  { id: "order-001", customerName: "Eva Green", date: new Date("2024-07-31T12:30:00Z"), items: 3, total: 45.50, status: "pending", type: "delivery" },
-  { id: "order-002", customerName: "Frank Blue", date: new Date("2024-07-31T11:30:00Z"), items: 2, total: 22.00, status: "preparing", type: "pickup" },
-  { id: "order-003", customerName: "Grace Red", date: new Date("2024-07-31T10:30:00Z"), items: 5, total: 78.25, status: "ready_for_pickup", type: "pickup" },
-  { id: "order-004", customerName: "Henry Yellow", date: new Date("2024-07-31T09:30:00Z"), items: 1, total: 15.75, status: "out_for_delivery", type: "delivery" },
-  { id: "order-005", customerName: "Ivy White", date: new Date("2024-07-30T15:00:00Z"), items: 4, total: 55.00, status: "completed", type: "delivery" },
-  { id: "order-006", customerName: "Jack Black", date: new Date("2024-07-29T18:00:00Z"), items: 2, total: 30.50, status: "cancelled", type: "pickup" },
+  { id: "order-001", customerName: "Eva Green", date: "2024-07-31T12:30:00Z", items: 3, total: 45.50, status: "pending", type: "delivery" },
+  { id: "order-002", customerName: "Frank Blue", date: "2024-07-31T11:30:00Z", items: 2, total: 22.00, status: "preparing", type: "pickup" },
+  { id: "order-003", customerName: "Grace Red", date: "2024-07-31T10:30:00Z", items: 5, total: 78.25, status: "ready_for_pickup", type: "pickup" },
+  { id: "order-004", customerName: "Henry Yellow", date: "2024-07-31T09:30:00Z", items: 1, total: 15.75, status: "out_for_delivery", type: "delivery" },
+  { id: "order-005", customerName: "Ivy White", date: "2024-07-30T15:00:00Z", items: 4, total: 55.00, status: "completed", type: "delivery" },
+  { id: "order-006", customerName: "Jack Black", date: "2024-07-29T18:00:00Z", items: 2, total: 30.50, status: "cancelled", type: "pickup" },
 ];
 
 
@@ -55,7 +55,7 @@ export default function EmployeeOrdersPage() {
           <TableRow key={order.id}>
             <TableCell className="font-mono text-xs">{order.id}</TableCell>
             <TableCell className="font-medium">{order.customerName}</TableCell>
-            <TableCell className="hidden sm:table-cell">{format(order.date, "MMM d, h:mm a")}</TableCell>
+            <TableCell className="hidden sm:table-cell">{format(new Date(order.date), "MMM d, h:mm a")}</TableCell>
             <TableCell className="text-center">{order.items}</TableCell>
             <TableCell className="text-right">${order.total.toFixed(2)}</TableCell>
             <TableCell className="text-center">{getStatusBadge(order.status)}</TableCell>

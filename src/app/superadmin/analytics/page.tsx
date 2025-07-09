@@ -43,10 +43,10 @@ const roleDistributionData = [
 ];
 
 const recentActivityData = [
-  { event: "New Company Registered", details: "The Burger Joint", timestamp: new Date("2024-07-31T10:00:00Z") },
-  { event: "New User Created", details: "chef.john (Employee)", timestamp: new Date("2024-07-31T09:00:00Z") },
-  { event: "System Backup Completed", details: "Full backup successful", timestamp: new Date("2024-07-30T11:00:00Z") },
-  { event: "High Revenue Day", details: "$2,500+", timestamp: new Date("2024-07-29T11:00:00Z") },
+  { event: "New Company Registered", details: "The Burger Joint", timestamp: "2024-07-31T10:00:00Z" },
+  { event: "New User Created", details: "chef.john (Employee)", timestamp: "2024-07-31T09:00:00Z" },
+  { event: "System Backup Completed", details: "Full backup successful", timestamp: "2024-07-30T11:00:00Z" },
+  { event: "High Revenue Day", details: "$2,500+", timestamp: "2024-07-29T11:00:00Z" },
 ];
 
 
@@ -189,7 +189,7 @@ export default function SuperAdminAnalyticsPage() {
                         <TableRow key={index}>
                         <TableCell className="font-medium">{activity.event}</TableCell>
                         <TableCell>{activity.details}</TableCell>
-                        <TableCell className="text-right text-xs text-muted-foreground">{format(activity.timestamp, "MMM d, h:mm a")}</TableCell>
+                        <TableCell className="text-right text-xs text-muted-foreground">{format(new Date(activity.timestamp), "MMM d, h:mm a")}</TableCell>
                         </TableRow>
                     ))}
                     </TableBody>

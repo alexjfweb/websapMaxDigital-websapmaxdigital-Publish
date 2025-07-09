@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, Eye, Search, Filter, CalendarDays, PlusCircle } from "lucide-react";
@@ -8,9 +9,9 @@ import { format } from "date-fns";
 
 // Mock Data for Reservations (can be same as admin or filtered for employee view)
 const mockReservations = [
-  { id: "res-e1", customerName: "Alice Wonderland", date: new Date("2024-08-15T19:00:00"), guests: 4, phone: "555-0101", status: "confirmed", notes: "Window seat preferred" },
-  { id: "res-e2", customerName: "Bob The Builder", date: new Date("2024-08-16T20:30:00"), guests: 2, phone: "555-0102", status: "pending", notes: "Birthday celebration" },
-  { id: "res-e3", customerName: "Charlie Brown", date: new Date("2024-08-15T18:00:00"), guests: 6, phone: "555-0103", status: "cancelled", notes: "" },
+  { id: "res-e1", customerName: "Alice Wonderland", date: "2024-08-15T19:00:00Z", guests: 4, phone: "555-0101", status: "confirmed", notes: "Window seat preferred" },
+  { id: "res-e2", customerName: "Bob The Builder", date: "2024-08-16T20:30:00Z", guests: 2, phone: "555-0102", status: "pending", notes: "Birthday celebration" },
+  { id: "res-e3", customerName: "Charlie Brown", date: "2024-08-15T18:00:00Z", guests: 6, phone: "555-0103", status: "cancelled", notes: "" },
 ];
 
 export default function EmployeeReservationsPage() {
@@ -71,7 +72,7 @@ export default function EmployeeReservationsPage() {
               {reservations.map((reservation) => (
                 <TableRow key={reservation.id}>
                   <TableCell className="font-medium">{reservation.customerName}</TableCell>
-                  <TableCell>{format(reservation.date, "MMM d, yyyy 'at' h:mm a")}</TableCell>
+                  <TableCell>{format(new Date(reservation.date), "MMM d, yyyy 'at' h:mm a")}</TableCell>
                   <TableCell className="text-center">{reservation.guests}</TableCell>
                   <TableCell className="hidden sm:table-cell text-xs text-muted-foreground truncate max-w-xs">
                     {reservation.notes || "N/A"}

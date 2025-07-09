@@ -15,11 +15,11 @@ import { format } from "date-fns";
 
 // Mock Data for Users
 const mockUsers: User[] = [
-  { id: "usr-sa1", username: "super.admin", email: "sa@websapmax.com", role: "superadmin", status: "active", registrationDate: "2022-01-01", avatarUrl: "https://placehold.co/40x40.png?text=SA" },
-  { id: "usr-ad1", username: "restaurant.owner", email: "owner@example.com", role: "admin", status: "active", registrationDate: "2023-02-10", avatarUrl: "https://placehold.co/40x40.png?text=RO" },
-  { id: "usr-em1", username: "chef.john", email: "chef.john@example.com", role: "employee", status: "active", registrationDate: "2023-03-15", contact: "555-1234" },
-  { id: "usr-ad2", username: "another.admin", email: "admin2@example.com", role: "admin", status: "pending", registrationDate: "2024-01-20" },
-  { id: "usr-em2", username: "waiter.jane", email: "waiter.jane@example.com", role: "employee", status: "inactive", registrationDate: "2023-04-01", contact: "555-5678" },
+  { id: "usr-sa1", username: "super.admin", email: "sa@websapmax.com", role: "superadmin", status: "active", registrationDate: "2022-01-01T00:00:00Z", avatarUrl: "https://placehold.co/40x40.png?text=SA" },
+  { id: "usr-ad1", username: "restaurant.owner", email: "owner@example.com", role: "admin", status: "active", registrationDate: "2023-02-10T00:00:00Z", avatarUrl: "https://placehold.co/40x40.png?text=RO" },
+  { id: "usr-em1", username: "chef.john", email: "chef.john@example.com", role: "employee", status: "active", registrationDate: "2023-03-15T00:00:00Z", contact: "555-1234" },
+  { id: "usr-ad2", username: "another.admin", email: "admin2@example.com", role: "admin", status: "pending", registrationDate: "2024-01-20T00:00:00Z" },
+  { id: "usr-em2", username: "waiter.jane", email: "waiter.jane@example.com", role: "employee", status: "inactive", registrationDate: "2023-04-01T00:00:00Z", contact: "555-5678" },
 ];
 
 export default function SuperAdminUsersPage() {

@@ -13,12 +13,12 @@ import { useLanguage } from "@/contexts/language-context";
 
 // Mock Data for Logs - Using static dates to prevent hydration errors
 const mockLogs = [
-  { id: "log-001", timestamp: new Date("2024-07-31T12:00:00Z"), level: "INFO", message: "User 'admin@example.com' logged in.", source: "AuthService" },
-  { id: "log-002", timestamp: new Date("2024-07-31T11:55:00Z"), level: "WARN", message: "High CPU usage detected: 85%", source: "SystemMonitor" },
-  { id: "log-003", timestamp: new Date("2024-07-31T11:45:00Z"), level: "ERROR", message: "Failed to connect to payment gateway.", source: "PaymentService" },
-  { id: "log-004", timestamp: new Date("2024-07-31T11:30:00Z"), level: "DEBUG", message: "Processing order #12345", source: "OrderService" },
-  { id: "log-005", timestamp: new Date("2024-07-31T11:00:00Z"), level: "INFO", message: "Database backup completed successfully.", source: "BackupService" },
-  { id: "log-006", timestamp: new Date("2024-07-31T10:00:00Z"), level: "CRITICAL", message: "System crash detected. Attempting reboot.", source: "Kernel" },
+  { id: "log-001", timestamp: "2024-07-31T12:00:00Z", level: "INFO", message: "User 'admin@example.com' logged in.", source: "AuthService" },
+  { id: "log-002", timestamp: "2024-07-31T11:55:00Z", level: "WARN", message: "High CPU usage detected: 85%", source: "SystemMonitor" },
+  { id: "log-003", timestamp: "2024-07-31T11:45:00Z", level: "ERROR", message: "Failed to connect to payment gateway.", source: "PaymentService" },
+  { id: "log-004", timestamp: "2024-07-31T11:30:00Z", level: "DEBUG", message: "Processing order #12345", source: "OrderService" },
+  { id: "log-005", timestamp: "2024-07-31T11:00:00Z", level: "INFO", message: "Database backup completed successfully.", source: "BackupService" },
+  { id: "log-006", timestamp: "2024-07-31T10:00:00Z", level: "CRITICAL", message: "System crash detected. Attempting reboot.", source: "Kernel" },
 ];
 
 export default function SuperAdminLogsPage() {
@@ -103,7 +103,7 @@ export default function SuperAdminLogsPage() {
                     log.level === "CRITICAL" ? "bg-red-100 dark:bg-red-800/30 font-semibold hover:bg-red-200 dark:hover:bg-red-800/50" :
                     log.level === "WARN" ? "bg-yellow-50 dark:bg-yellow-900/30 hover:bg-yellow-100 dark:hover:bg-yellow-900/50" : ""
                 }>
-                  <TableCell className="font-mono text-xs">{format(log.timestamp, "MMM d, HH:mm:ss.SSS")}</TableCell>
+                  <TableCell className="font-mono text-xs">{format(new Date(log.timestamp), "MMM d, HH:mm:ss.SSS")}</TableCell>
                   <TableCell className="text-center">{getLevelBadge(log.level)}</TableCell>
                   <TableCell className="text-sm leading-tight">{log.message}</TableCell>
                   <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">{log.source}</TableCell>

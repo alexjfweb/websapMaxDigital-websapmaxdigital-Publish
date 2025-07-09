@@ -11,10 +11,10 @@ import { useLanguage } from "@/contexts/language-context";
 
 // Mock Data for Backup History - Using static dates to prevent hydration errors
 const mockBackupHistory = [
-  { id: "backup-001", date: new Date("2024-07-31T02:00:00Z"), statusKey: "superAdminBackup.status.completed", size: "1.2 GB", typeKey: "superAdminBackup.type.full" },
-  { id: "backup-002", date: new Date("2024-07-30T02:00:00Z"), statusKey: "superAdminBackup.status.completed", size: "1.1 GB", typeKey: "superAdminBackup.type.full" },
-  { id: "backup-003", date: new Date("2024-07-29T02:00:00Z"), statusKey: "superAdminBackup.status.failed", size: "N/A", typeKey: "superAdminBackup.type.incremental" },
-  { id: "backup-004", date: new Date("2024-07-25T02:00:00Z"), statusKey: "superAdminBackup.status.completed", size: "980 MB", typeKey: "superAdminBackup.type.full" },
+  { id: "backup-001", date: "2024-07-31T02:00:00Z", statusKey: "superAdminBackup.status.completed", size: "1.2 GB", typeKey: "superAdminBackup.type.full" },
+  { id: "backup-002", date: "2024-07-30T02:00:00Z", statusKey: "superAdminBackup.status.completed", size: "1.1 GB", typeKey: "superAdminBackup.type.full" },
+  { id: "backup-003", date: "2024-07-29T02:00:00Z", statusKey: "superAdminBackup.status.failed", size: "N/A", typeKey: "superAdminBackup.type.incremental" },
+  { id: "backup-004", date: "2024-07-25T02:00:00Z", statusKey: "superAdminBackup.status.completed", size: "980 MB", typeKey: "superAdminBackup.type.full" },
 ];
 
 
@@ -64,7 +64,7 @@ export default function SuperAdminBackupPage() {
             <TableBody>
               {backupHistory.map((backup) => (
                 <TableRow key={backup.id}>
-                  <TableCell className="font-medium">{format(backup.date, "MMM d, yyyy 'at' h:mm a")}</TableCell>
+                  <TableCell className="font-medium">{format(new Date(backup.date), "MMM d, yyyy 'at' h:mm a")}</TableCell>
                   <TableCell>
                     <Badge variant={t(backup.typeKey) === t('superAdminBackup.type.full') ? "default" : "secondary"}>{t(backup.typeKey)}</Badge>
                   </TableCell>

@@ -12,10 +12,10 @@ import { useLanguage } from "@/contexts/language-context";
 
 // Mock Data for Reservations
 const mockReservations = [
-  { id: "res-1", customerName: "Alice Wonderland", date: new Date("2024-08-15T19:00:00"), guests: 4, phone: "555-0101", status: "confirmed" },
-  { id: "res-2", customerName: "Bob The Builder", date: new Date("2024-08-16T20:30:00"), guests: 2, phone: "555-0102", status: "pending" },
-  { id: "res-3", customerName: "Charlie Brown", date: new Date("2024-08-15T18:00:00"), guests: 6, phone: "555-0103", status: "cancelled" },
-  { id: "res-4", customerName: "Diana Prince", date: new Date("2024-08-17T19:30:00"), guests: 3, phone: "555-0104", status: "completed" },
+  { id: "res-1", customerName: "Alice Wonderland", date: "2024-08-15T19:00:00Z", guests: 4, phone: "555-0101", status: "confirmed" },
+  { id: "res-2", customerName: "Bob The Builder", date: "2024-08-16T20:30:00Z", guests: 2, phone: "555-0102", status: "pending" },
+  { id: "res-3", customerName: "Charlie Brown", date: "2024-08-15T18:00:00Z", guests: 6, phone: "555-0103", status: "cancelled" },
+  { id: "res-4", customerName: "Diana Prince", date: "2024-08-17T19:30:00Z", guests: 3, phone: "555-0104", status: "completed" },
 ];
 
 export default function AdminReservationsPage() {
@@ -72,7 +72,7 @@ export default function AdminReservationsPage() {
               {reservations.map((reservation) => (
                 <TableRow key={reservation.id}>
                   <TableCell className="font-medium">{reservation.customerName}</TableCell>
-                  <TableCell>{format(reservation.date, "MMM d, yyyy 'at' h:mm a")}</TableCell>
+                  <TableCell>{format(new Date(reservation.date), "MMM d, yyyy 'at' h:mm a")}</TableCell>
                   <TableCell className="text-center">{reservation.guests}</TableCell>
                   <TableCell className="hidden sm:table-cell">{reservation.phone}</TableCell>
                   <TableCell className="text-center">

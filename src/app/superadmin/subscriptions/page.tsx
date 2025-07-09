@@ -24,9 +24,9 @@ const subscriptionPlans = [
 ];
 
 const mockTransactions = [
-  { id: "txn_1", company: "The Burger Joint", plan: "Pro", amount: 25.00, date: new Date("2024-07-31T10:00:00Z"), status: "Completed" },
-  { id: "txn_2", company: "Pizza Palace", plan: "Basic", amount: 10.00, date: new Date("2024-07-30T11:00:00Z"), status: "Completed" },
-  { id: "txn_3", company: "Sushi Central", plan: "Pro", amount: 25.00, date: new Date("2024-07-29T12:00:00Z"), status: "Failed" },
+  { id: "txn_1", company: "The Burger Joint", plan: "Pro", amount: 25.00, date: "2024-07-31T10:00:00Z", status: "Completed" },
+  { id: "txn_2", company: "Pizza Palace", plan: "Basic", amount: 10.00, date: "2024-07-30T11:00:00Z", status: "Completed" },
+  { id: "txn_3", company: "Sushi Central", plan: "Pro", amount: 25.00, date: "2024-07-29T12:00:00Z", status: "Failed" },
 ];
 
 export default function SuperAdminSubscriptionsPage() {

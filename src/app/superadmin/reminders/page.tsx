@@ -27,10 +27,10 @@ const mockSummary = {
 };
 
 const mockReminderHistory = [
-    { id: "rem-1", company: "The Burger Joint", type: "7 Days Before", date: new Date("2024-07-30T09:00:00Z"), status: "Sent" },
-    { id: "rem-2", company: "Pizza Palace", type: "On Expiration", date: new Date("2024-07-29T09:00:00Z"), status: "Opened" },
-    { id: "rem-3", company: "Sushi Central", type: "3 Days Overdue", date: new Date("2024-07-28T09:00:00Z"), status: "Sent" },
-    { id: "rem-4", company: "Taco Tuesday", type: "7 Days Before", date: new Date("2024-07-27T09:00:00Z"), status: "Failed" },
+    { id: "rem-1", company: "The Burger Joint", type: "7 Days Before", date: "2024-07-30T09:00:00Z", status: "Sent" },
+    { id: "rem-2", company: "Pizza Palace", type: "On Expiration", date: "2024-07-29T09:00:00Z", status: "Opened" },
+    { id: "rem-3", company: "Sushi Central", type: "3 Days Overdue", date: "2024-07-28T09:00:00Z", status: "Sent" },
+    { id: "rem-4", company: "Taco Tuesday", type: "7 Days Before", date: "2024-07-27T09:00:00Z", status: "Failed" },
 ];
 
 const mockConfigs = [
@@ -256,7 +256,7 @@ export default function SuperAdminRemindersPage() {
                                 <TableRow key={item.id}>
                                     <TableCell className="font-medium">{item.company}</TableCell>
                                     <TableCell>{item.type}</TableCell>
-                                    <TableCell>{format(item.date, "PPp")}</TableCell>
+                                    <TableCell>{format(new Date(item.date), "PPp")}</TableCell>
                                     <TableCell className="text-right">{getStatusBadge(item.status)}</TableCell>
                                 </TableRow>
                             ))}
