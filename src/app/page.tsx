@@ -96,7 +96,7 @@ export default function HomePage() {
       </Link>
 
       <footer className="mt-16 text-muted-foreground text-sm">
-        <p>&copy; {currentYear !== null ? currentYear : new Date().getFullYear()} {t('home.footerCopyright')}</p>
+        {currentYear && <p>&copy; {currentYear} {t('home.footerCopyright')}</p>}
         <p>{t('home.footerExperience')}</p>
       </footer>
     </div>
