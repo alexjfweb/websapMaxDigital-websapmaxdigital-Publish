@@ -8,9 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Gem, CreditCard, QrCode, History, Save, CheckCircle } from "lucide-react";
+import { Gem, CreditCard, QrCode, History, Save, CheckCircle, UploadCloud } from "lucide-react";
 import { useLanguage } from "@/contexts/language-context";
 import { format } from "date-fns";
+import { useState } from "react";
+import Image from "next/image";
+import { useToast } from "@/hooks/use-toast";
+
 
 // Mock Data
 const subscriptionPlans = [
@@ -27,6 +31,35 @@ const mockTransactions = [
 
 export default function SuperAdminSubscriptionsPage() {
   const { t } = useLanguage();
+  const { toast } = useToast();
+  const [bancolombiaQrPreview, setBancolombiaQrPreview] = useState<string | null>(null);
+
+  const handleQrUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Basic validation for URL format
+    if (e.target.value && (e.target.value.startsWith('http://') || e.target.value.startsWith('https://'))) {
+        setBancolombiaQrPreview(e.target.value);
+    } else if (!e.target.value) {
+        setBancolombiaQrPreview(null);
+    }
+  };
+
+  const handleQrFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setBancolombiaQrPreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+    } else if (file) {
+        toast({
+            title: "Invalid File Type",
+            description: "Please select a valid image file (PNG, JPG, SVG).",
+            variant: "destructive"
+        })
+    }
+  };
+
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -121,6 +154,61 @@ export default function SuperAdminSubscriptionsPage() {
             </div>
           </div>
 
+          {/* BanColombia QR */}
+          <div className="space-y-4 p-4 border rounded-lg">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="bancolombia-enabled" className="text-lg font-semibold">{t('superAdminSubscriptions.paymentMethods.bancolombia.title')}</Label>
+              <Switch id="bancolombia-enabled" />
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-4 items-start">
+                <div className="space-y-4">
+                    {/* URL Input */}
+                    <div className="space-y-2">
+                        <Label htmlFor="bancolombia-url">{t('superAdminSubscriptions.paymentMethods.bancolombia.qrCodeUrl')}</Label>
+                        <Input id="bancolombia-url" placeholder="https://..." onChange={handleQrUrlChange} />
+                    </div>
+
+                    <div className="relative flex items-center">
+                        <div className="flex-grow border-t border-muted"></div>
+                        <span className="flex-shrink mx-4 text-muted-foreground text-xs">{t('superAdminSubscriptions.paymentMethods.bancolombia.or')}</span>
+                        <div className="flex-grow border-t border-muted"></div>
+                    </div>
+
+                    {/* File Upload */}
+                    <div>
+                        <Button variant="outline" asChild className="w-full">
+                            <Label htmlFor="bancolombia-upload" className="cursor-pointer">
+                                <UploadCloud className="mr-2 h-4 w-4" /> {t('superAdminSubscriptions.paymentMethods.bancolombia.uploadButton')}
+                                <Input id="bancolombia-upload" type="file" className="hidden" accept="image/png, image/jpeg, image/svg+xml" onChange={handleQrFileUpload}/>
+                            </Label>
+                        </Button>
+                        <p className="text-xs text-muted-foreground mt-1">{t('superAdminSubscriptions.paymentMethods.bancolombia.infoText')}</p>
+                    </div>
+                </div>
+
+                {/* Preview */}
+                <div className="flex flex-col items-center justify-center p-2 border-dashed border-2 rounded-md h-full min-h-[150px]">
+                    {bancolombiaQrPreview ? (
+                        <Image
+                            src={bancolombiaQrPreview}
+                            alt={t('superAdminSubscriptions.paymentMethods.bancolombia.previewAlt')}
+                            width={150}
+                            height={150}
+                            className="rounded-md object-contain"
+                            data-ai-hint="QR code"
+                        />
+                    ) : (
+                        <div className="text-center text-muted-foreground text-sm">
+                            <QrCode className="h-10 w-10 mx-auto mb-2" />
+                            <p>{t('superAdminSubscriptions.paymentMethods.bancolombia.noPreview')}</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+          </div>
+
+
           <div className="flex justify-end">
              <Button><Save className="mr-2 h-4 w-4" /> {t('superAdminSubscriptions.paymentMethods.saveButton')}</Button>
           </div>
@@ -162,7 +250,7 @@ export default function SuperAdminSubscriptionsPage() {
                   <TableCell className="font-medium">{tx.company}</TableCell>
                   <TableCell>{t(`superAdminSubscriptions.plans.${tx.plan.toLowerCase()}.name`)}</TableCell>
                   <TableCell className="text-right">${tx.amount.toFixed(2)}</TableCell>
-                  <TableCell className="hidden sm:table-cell">{format(tx.date, "PPp")}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{format(new Date(tx.date), "PPp")}</TableCell>
                   <TableCell className="text-center">{getStatusBadge(tx.status)}</TableCell>
                 </TableRow>
               ))}
