@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from 'react';
@@ -35,7 +34,8 @@ import {
   Store,
   BarChart3,
   Wrench,
-  Database, // Importado
+  Database,
+  Gem,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/contexts/language-context';
@@ -59,6 +59,7 @@ const navItems: NavItem[] = [
   { href: '/superadmin/dashboard', labelKey: 'nav.superAdminDashboard', icon: ShieldCheck, allowedRoles: ['superadmin'], tooltipKey: 'nav.superAdminDashboard' },
   { href: '/superadmin/analytics', labelKey: 'nav.globalAnalytics', icon: BarChart3, allowedRoles: ['superadmin'], tooltipKey: 'nav.globalAnalytics' },
   { href: '/superadmin/companies', labelKey: 'nav.companyManagement', icon: Store, allowedRoles: ['superadmin'], tooltipKey: 'nav.companyManagement' },
+  { href: '/superadmin/subscriptions', labelKey: 'nav.subscriptionManagement', icon: Gem, allowedRoles: ['superadmin'], tooltipKey: 'nav.subscriptionManagement' },
   { href: '/superadmin/users', labelKey: 'nav.userManagement', icon: Users, allowedRoles: ['superadmin'], tooltipKey: 'nav.userManagement' },
   { href: '/superadmin/maintenance', labelKey: 'nav.maintenance', icon: Wrench, allowedRoles: ['superadmin'], tooltipKey: 'nav.maintenance' },
   { href: '/superadmin/database', labelKey: 'nav.databaseStatus', icon: Database, allowedRoles: ['superadmin'], tooltipKey: 'nav.databaseStatus' },
