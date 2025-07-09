@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -36,6 +37,7 @@ import {
   Wrench,
   Database,
   Gem,
+  BellRing,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/contexts/language-context';
@@ -60,6 +62,7 @@ const navItems: NavItem[] = [
   { href: '/superadmin/analytics', labelKey: 'nav.globalAnalytics', icon: BarChart3, allowedRoles: ['superadmin'], tooltipKey: 'nav.globalAnalytics' },
   { href: '/superadmin/companies', labelKey: 'nav.companyManagement', icon: Store, allowedRoles: ['superadmin'], tooltipKey: 'nav.companyManagement' },
   { href: '/superadmin/subscriptions', labelKey: 'nav.subscriptionManagement', icon: Gem, allowedRoles: ['superadmin'], tooltipKey: 'nav.subscriptionManagement' },
+  { href: '/superadmin/reminders', labelKey: 'nav.paymentReminders', icon: BellRing, allowedRoles: ['superadmin'], tooltipKey: 'nav.paymentReminders' },
   { href: '/superadmin/users', labelKey: 'nav.userManagement', icon: Users, allowedRoles: ['superadmin'], tooltipKey: 'nav.userManagement' },
   { href: '/superadmin/maintenance', labelKey: 'nav.maintenance', icon: Wrench, allowedRoles: ['superadmin'], tooltipKey: 'nav.maintenance' },
   { href: '/superadmin/database', labelKey: 'nav.databaseStatus', icon: Database, allowedRoles: ['superadmin'], tooltipKey: 'nav.databaseStatus' },
