@@ -31,7 +31,8 @@ import {
   CalendarCheck,
   Megaphone,
   LogIn,
-  UserPlus
+  UserPlus,
+  Store,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/contexts/language-context'; // Added
@@ -47,13 +48,14 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   // Public/Guest routes
-  { href: '/menu', labelKey: 'nav.publicMenu', icon: Newspaper, allowedRoles: ['guest', 'employee', 'admin'], tooltipKey: 'nav.publicMenu' },
+  { href: '/menu', labelKey: 'nav.publicMenu', icon: Newspaper, allowedRoles: ['guest'], tooltipKey: 'nav.publicMenu' },
   { href: '/login', labelKey: 'nav.login', icon: LogIn, allowedRoles: ['guest'], tooltipKey: 'nav.login' },
   { href: '/register', labelKey: 'nav.register', icon: UserPlus, allowedRoles: ['guest'], tooltipKey: 'nav.register' },
 
   // Superadmin routes
   { href: '/superadmin/dashboard', labelKey: 'nav.superAdminDashboard', icon: ShieldCheck, allowedRoles: ['superadmin'], tooltipKey: 'nav.superAdminDashboard' },
   { href: '/superadmin/users', labelKey: 'nav.userManagement', icon: Users, allowedRoles: ['superadmin'], tooltipKey: 'nav.userManagement' },
+  { href: '/superadmin/companies', labelKey: 'nav.companyManagement', icon: Store, allowedRoles: ['superadmin'], tooltipKey: 'nav.companyManagement' },
   { href: '/superadmin/backup', labelKey: 'nav.backup', icon: Server, allowedRoles: ['superadmin'], tooltipKey: 'nav.backup' },
   { href: '/superadmin/logs', labelKey: 'nav.logs', icon: History, allowedRoles: ['superadmin'], tooltipKey: 'nav.logs' },
 
@@ -66,11 +68,11 @@ const navItems: NavItem[] = [
   { href: '/admin/payments', labelKey: 'nav.paymentMethods', icon: CreditCard, allowedRoles: ['admin'], tooltipKey: 'nav.paymentMethods' },
   { href: '/admin/share-menu', labelKey: 'nav.shareMenu', icon: Share2, allowedRoles: ['admin'], tooltipKey: 'nav.shareMenu' },
 
-  // Employee routes (also visible to Admin)
-  { href: '/employee/dashboard', labelKey: 'nav.employeeDashboard', icon: ClipboardList, allowedRoles: ['employee', 'admin'], tooltipKey: 'nav.employeeDashboard' },
-  { href: '/employee/orders', labelKey: 'nav.manageOrders', icon: ShoppingBag, allowedRoles: ['employee', 'admin'], tooltipKey: 'nav.manageOrders' },
-  { href: '/employee/reservations', labelKey: 'nav.manageReservations', icon: BookUser, allowedRoles: ['employee', 'admin'], tooltipKey: 'nav.manageReservations' },
-  { href: '/employee/promote', labelKey: 'nav.promoteMenu', icon: Megaphone, allowedRoles: ['employee', 'admin'], tooltipKey: 'nav.promoteMenu' },
+  // Employee routes
+  { href: '/employee/dashboard', labelKey: 'nav.employeeDashboard', icon: ClipboardList, allowedRoles: ['employee'], tooltipKey: 'nav.employeeDashboard' },
+  { href: '/employee/orders', labelKey: 'nav.manageOrders', icon: ShoppingBag, allowedRoles: ['employee'], tooltipKey: 'nav.manageOrders' },
+  { href: '/employee/reservations', labelKey: 'nav.manageReservations', icon: BookUser, allowedRoles: ['employee'], tooltipKey: 'nav.manageReservations' },
+  { href: '/employee/promote', labelKey: 'nav.promoteMenu', icon: Megaphone, allowedRoles: ['employee'], tooltipKey: 'nav.promoteMenu' },
 ];
 
 interface NavigationMenuProps {
@@ -95,7 +97,6 @@ export default function NavigationMenu({ role }: NavigationMenuProps) {
         }
 
         // For any other role, check if the role is included in allowedRoles.
-        // The inheritance (e.g., admin sees employee items) is now defined in the navItems array itself.
         return item.allowedRoles.includes(role);
       })
       .map((item) => {

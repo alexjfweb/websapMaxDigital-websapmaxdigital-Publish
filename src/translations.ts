@@ -31,6 +31,7 @@ export const translations: Record<Language, Translations> = {
     "nav.register": "Register",
     "nav.superAdminDashboard": "SA Dashboard",
     "nav.userManagement": "User Management",
+    "nav.companyManagement": "Company Management",
     "nav.backup": "System Backup",
     "nav.logs": "System Logs",
     "nav.adminDashboard": "Admin Dashboard",
@@ -257,6 +258,26 @@ export const translations: Record<Language, Translations> = {
     "superAdminDashboard.systemHealthValue.warning": "Warning",
     "superAdminDashboard.systemHealthValue.critical": "Critical",
 
+    // SuperAdminCompanies Page
+    "superAdminCompanies.title": "Company Management",
+    "superAdminCompanies.description": "Manage companies and restaurants registered in the system.",
+    "superAdminCompanies.registerNewCompanyButton": "Register New Company",
+    "superAdminCompanies.allCompaniesCard.title": "All Registered Companies",
+    "superAdminCompanies.allCompaniesCard.description": "A list of all companies and restaurants.",
+    "superAdminCompanies.searchInputPlaceholder": "Search by name, location, or status...",
+    "superAdminCompanies.filterByStatusButton": "Filter by Status",
+    "superAdminCompanies.table.name": "Company/Restaurant Name",
+    "superAdminCompanies.table.location": "Location",
+    "superAdminCompanies.table.status": "Status",
+    "superAdminCompanies.table.registered": "Registered On",
+    "superAdminCompanies.table.actions": "Actions",
+    "superAdminCompanies.status.active": "Active",
+    "superAdminCompanies.status.inactive": "Inactive",
+    "superAdminCompanies.status.pending": "Pending",
+    "superAdminCompanies.actions.edit": "Edit Company",
+    "superAdminCompanies.actions.delete": "Delete Company",
+    "superAdminCompanies.actions.details": "View Details",
+
 
     // SuperAdminUsers Page
     "superAdminUsers.title": "User Management",
@@ -404,6 +425,7 @@ export const translations: Record<Language, Translations> = {
     "nav.register": "Registrarse",
     "nav.superAdminDashboard": "Panel SA",
     "nav.userManagement": "Gestión Usuarios",
+    "nav.companyManagement": "Gestión de Empresas",
     "nav.backup": "Copia Seguridad",
     "nav.logs": "Registros Sistema",
     "nav.adminDashboard": "Panel Admin",
@@ -629,6 +651,26 @@ export const translations: Record<Language, Translations> = {
     "superAdminDashboard.systemHealthValue.warning": "Advertencia",
     "superAdminDashboard.systemHealthValue.critical": "Crítico",
 
+    // SuperAdminCompanies Page
+    "superAdminCompanies.title": "Gestión de Empresas",
+    "superAdminCompanies.description": "Administra empresas y restaurantes registrados en el sistema.",
+    "superAdminCompanies.registerNewCompanyButton": "Registrar Nueva Empresa",
+    "superAdminCompanies.allCompaniesCard.title": "Todas las Empresas Registradas",
+    "superAdminCompanies.allCompaniesCard.description": "Una lista de todas las empresas y restaurantes.",
+    "superAdminCompanies.searchInputPlaceholder": "Buscar por nombre, ubicación o estado...",
+    "superAdminCompanies.filterByStatusButton": "Filtrar por Estado",
+    "superAdminCompanies.table.name": "Nombre Empresa/Restaurante",
+    "superAdminCompanies.table.location": "Ubicación",
+    "superAdminCompanies.table.status": "Estado",
+    "superAdminCompanies.table.registered": "Fecha de Registro",
+    "superAdminCompanies.table.actions": "Acciones",
+    "superAdminCompanies.status.active": "Activo",
+    "superAdminCompanies.status.inactive": "Inactivo",
+    "superAdminCompanies.status.pending": "Pendiente",
+    "superAdminCompanies.actions.edit": "Editar Empresa",
+    "superAdminCompanies.actions.delete": "Eliminar Empresa",
+    "superAdminCompanies.actions.details": "Ver Detalles",
+
     // SuperAdminUsers Page
     "superAdminUsers.title": "Gestión de Usuarios",
     "superAdminUsers.description": "Supervisa todas las cuentas de usuario en el sistema.",
@@ -775,6 +817,7 @@ export const translations: Record<Language, Translations> = {
     "nav.register": "Registrar",
     "nav.superAdminDashboard": "Painel SA",
     "nav.userManagement": "Gerenc. Usuários",
+    "nav.companyManagement": "Gestão de Empresas",
     "nav.backup": "Backup Sistema",
     "nav.logs": "Logs Sistema",
     "nav.adminDashboard": "Painel Admin",
@@ -1001,6 +1044,26 @@ export const translations: Record<Language, Translations> = {
     "superAdminDashboard.systemHealthValue.warning": "Aviso",
     "superAdminDashboard.systemHealthValue.critical": "Crítico",
 
+    // SuperAdminCompanies Page
+    "superAdminCompanies.title": "Gestão de Empresas",
+    "superAdminCompanies.description": "Gerencie empresas e restaurantes registrados no sistema.",
+    "superAdminCompanies.registerNewCompanyButton": "Registrar Nova Empresa",
+    "superAdminCompanies.allCompaniesCard.title": "Todas as Empresas Registradas",
+    "superAdminCompanies.allCompaniesCard.description": "Uma lista de todas as empresas e restaurantes.",
+    "superAdminCompanies.searchInputPlaceholder": "Buscar por nome, localização ou status...",
+    "superAdminCompanies.filterByStatusButton": "Filtrar por Status",
+    "superAdminCompanies.table.name": "Nome da Empresa/Restaurante",
+    "superAdminCompanies.table.location": "Localização",
+    "superAdminCompanies.table.status": "Status",
+    "superAdminCompanies.table.registered": "Data de Registro",
+    "superAdminCompanies.table.actions": "Ações",
+    "superAdminCompanies.status.active": "Ativo",
+    "superAdminCompanies.status.inactive": "Inativo",
+    "superAdminCompanies.status.pending": "Pendente",
+    "superAdminCompanies.actions.edit": "Editar Empresa",
+    "superAdminCompanies.actions.delete": "Excluir Empresa",
+    "superAdminCompanies.actions.details": "Ver Detalhes",
+
     // SuperAdminUsers Page
     "superAdminUsers.title": "Gerenciamento de Usuários",
     "superAdminUsers.description": "Supervisione todas as contas de usuário no sistema.",
@@ -1147,6 +1210,7 @@ export const translations: Record<Language, Translations> = {
     "nav.register": "S'inscrire",
     "nav.superAdminDashboard": "Tableau SA",
     "nav.userManagement": "Gestion Utilisateurs",
+    "nav.companyManagement": "Gestion des Entreprises",
     "nav.backup": "Sauvegarde Système",
     "nav.logs": "Journaux Système",
     "nav.adminDashboard": "Tableau Admin",
@@ -1373,6 +1437,26 @@ export const translations: Record<Language, Translations> = {
     "superAdminDashboard.systemHealthValue.warning": "Avertissement",
     "superAdminDashboard.systemHealthValue.critical": "Critique",
 
+    // SuperAdminCompanies Page
+    "superAdminCompanies.title": "Gestion des Entreprises",
+    "superAdminCompanies.description": "Gérez les entreprises et restaurants enregistrés dans le système.",
+    "superAdminCompanies.registerNewCompanyButton": "Enregistrer Nouvelle Entreprise",
+    "superAdminCompanies.allCompaniesCard.title": "Toutes les Entreprises Enregistrées",
+    "superAdminCompanies.allCompaniesCard.description": "Une liste de toutes les entreprises et de tous les restaurants.",
+    "superAdminCompanies.searchInputPlaceholder": "Rechercher par nom, emplacement ou statut...",
+    "superAdminCompanies.filterByStatusButton": "Filtrer par Statut",
+    "superAdminCompanies.table.name": "Nom de l'Entreprise/Restaurant",
+    "superAdminCompanies.table.location": "Emplacement",
+    "superAdminCompanies.table.status": "Statut",
+    "superAdminCompanies.table.registered": "Date d'Enregistrement",
+    "superAdminCompanies.table.actions": "Actions",
+    "superAdminCompanies.status.active": "Actif",
+    "superAdminCompanies.status.inactive": "Inactif",
+    "superAdminCompanies.status.pending": "En attente",
+    "superAdminCompanies.actions.edit": "Modifier l'Entreprise",
+    "superAdminCompanies.actions.delete": "Supprimer l'Entreprise",
+    "superAdminCompanies.actions.details": "Voir les Détails",
+
     // SuperAdminUsers Page
     "superAdminUsers.title": "Gestion des Utilisateurs",
     "superAdminUsers.description": "Supervisez tous les comptes utilisateurs du système.",
@@ -1480,7 +1564,6 @@ export const translations: Record<Language, Translations> = {
     "superAdminLogs.levelFilter.error": "ERROR",
     "superAdminLogs.levelFilter.debug": "DEBUG",
     "superAdminLogs.levelFilter.critical": "CRITICAL",
-    "superAdminLogs.filterBySourcePlaceholder": "Filtrer par Source",
     "superAdminLogs.sourceFilter.all_sources": "Toutes les Sources",
     "superAdminLogs.sourceFilter.authservice": "AuthService",
     "superAdminLogs.sourceFilter.systemmonitor": "SystemMonitor",
@@ -1500,5 +1583,3 @@ export const translations: Record<Language, Translations> = {
     "superAdminLogs.logViewerCard.noLogs": "Aucun journal trouvé correspondant à vos critères.",
   },
 };
-
-    

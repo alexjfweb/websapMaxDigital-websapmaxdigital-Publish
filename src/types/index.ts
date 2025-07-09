@@ -68,3 +68,15 @@ export type ProjectInput = {
   description: string;
   ownerUid: string; // UID of the user creating the project
 };
+
+// New Company type for SuperAdmin management
+export interface Company {
+  id: string;
+  name: string;
+  location: string;
+  status: 'active' | 'inactive' | 'pending';
+  registrationDate: string; // ISO date string
+  phone?: string;
+  email?: string;
+  category?: 'Company' | 'Restaurant';
+}
