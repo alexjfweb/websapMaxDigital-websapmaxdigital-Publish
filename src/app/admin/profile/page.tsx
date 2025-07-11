@@ -17,6 +17,7 @@ import { useState, type ChangeEvent } from "react";
 import Image from "next/image";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
+import NequiIcon from "@/components/icons/nequi-icon";
 
 
 // Mock data - in a real app, this would come from a backend/state management
@@ -50,6 +51,9 @@ const mockProfile = {
     },
     daviplata: {
       enabled: false,
+      qrCodeUrl: "",
+      accountHolder: "",
+      accountNumber: ""
     },
     bancolombia: {
       enabled: true,
@@ -134,9 +138,9 @@ export default function AdminProfilePage() {
                 <Button variant="outline" asChild>
                   <Label htmlFor="logo-upload" className="cursor-pointer">
                     <UploadCloud className="mr-2 h-4 w-4" /> {t('adminProfile.businessInfoCard.uploadLogoButton')}
+                    <Input id="logo-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, setLogoPreview)}/>
                   </Label>
                 </Button>
-                <Input id="logo-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, setLogoPreview)}/>
             </div>
             <p className="text-xs text-muted-foreground">{t('adminProfile.businessInfoCard.logoHint')}</p>
           </div>
@@ -203,6 +207,44 @@ export default function AdminProfilePage() {
                 </div>
                 <p className="text-sm text-muted-foreground">Permite a los clientes pagar en efectivo al recibir su pedido.</p>
             </div>
+            
+            {/* Nequi */}
+            <div className="space-y-4 p-4 border rounded-lg">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <NequiIcon className="h-6 w-6" />
+                        <Label htmlFor="nequiEnabled" className="text-lg font-semibold">Nequi</Label>
+                    </div>
+                    <Switch id="nequiEnabled" defaultChecked={mockProfile.paymentMethods.nequi.enabled} />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="nequiAccountHolder">Titular de la cuenta</Label>
+                    <Input id="nequiAccountHolder" defaultValue={mockProfile.paymentMethods.nequi.accountHolder} placeholder="Nombre del titular" />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="nequiAccountNumber">Número de cuenta</Label>
+                    <Input id="nequiAccountNumber" type="text" defaultValue={mockProfile.paymentMethods.nequi.accountNumber} placeholder="Número de celular" />
+                </div>
+                <div className="space-y-2">
+                    <Label>Código QR Nequi</Label>
+                    <div className="flex items-center gap-4">
+                        <Image 
+                            src={nequiQrPreview || mockProfile.paymentMethods.nequi.qrCodeUrl || "https://placehold.co/100x100.png?text=Nequi"}
+                            alt="Vista previa QR Nequi" 
+                            width={100} 
+                            height={100} 
+                            className="rounded-md border object-cover"
+                            data-ai-hint="QR code payment"
+                        />
+                        <Button variant="outline" asChild>
+                            <Label htmlFor="nequiQrUpload" className="cursor-pointer">
+                                <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
+                                <Input id="nequiQrUpload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, setNequiQrPreview)} />
+                            </Label>
+                        </Button>
+                    </div>
+                </div>
+            </div>
 
             {/* Daviplata */}
             <div className="space-y-4 p-4 border rounded-lg">
@@ -215,17 +257,17 @@ export default function AdminProfilePage() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="daviplataAccountHolder">Titular de la cuenta</Label>
-                    <Input id="daviplataAccountHolder" placeholder="Nombre del titular" />
+                    <Input id="daviplataAccountHolder" placeholder="Nombre del titular" defaultValue={mockProfile.paymentMethods.daviplata.accountHolder} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="daviplataAccountNumber">Número de cuenta</Label>
-                    <Input id="daviplataAccountNumber" type="tel" placeholder="Número de celular" />
+                    <Input id="daviplataAccountNumber" type="tel" placeholder="Número de celular" defaultValue={mockProfile.paymentMethods.daviplata.accountNumber}/>
                 </div>
                 <div className="space-y-2">
                     <Label>Código QR Daviplata</Label>
                     <div className="flex items-center gap-4">
                         <Image 
-                            src={daviplataQrPreview || "https://placehold.co/100x100.png?text=Daviplata"}
+                            src={daviplataQrPreview || mockProfile.paymentMethods.daviplata.qrCodeUrl || "https://placehold.co/100x100.png?text=Daviplata"}
                             alt="Vista previa QR Daviplata" 
                             width={100} 
                             height={100} 
