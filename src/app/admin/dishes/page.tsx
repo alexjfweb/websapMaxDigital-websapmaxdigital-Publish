@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { PlusCircle, Edit3, Trash2, Search, Filter, UploadCloud, X, Save } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +21,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import type { Dish, DishFormData } from "@/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 
 
 export default function AdminDishesPage() {
@@ -84,7 +85,7 @@ export default function AdminDishesPage() {
       });
       setImagePreview(null);
     }
-  }, [editingDish, form]);
+  }, [editingDish, form, isDialogOpen]); // Added isDialogOpen to reset form on close
 
   const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -137,8 +138,6 @@ export default function AdminDishesPage() {
       });
     }
 
-    form.reset();
-    setImagePreview(null);
     setEditingDish(null);
     setIsDialogOpen(false);
   };
@@ -177,12 +176,7 @@ export default function AdminDishesPage() {
           <h1 className="text-3xl font-bold text-primary">{t('adminDishes.title')}</h1>
           <p className="text-lg text-muted-foreground">{t('adminDishes.description')}</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={(isOpen) => {
-            setIsDialogOpen(isOpen);
-            if (!isOpen) {
-                setEditingDish(null); // This will trigger the useEffect to reset the form
-            }
-        }}>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
                 <Button onClick={openNewDialog}>
                     <PlusCircle className="mr-2 h-5 w-5" /> {t('adminDishes.addNewButton')}
@@ -371,7 +365,7 @@ export default function AdminDishesPage() {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>{t('adminDishes.deleteDialog.cancelButton')}</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteDish(dish.id, dish.name)} className="bg-destructive hover:bg-destructive/90">
+                                <AlertDialogAction onClick={() => handleDeleteDish(dish.id, dish.name)} className={cn(buttonVariants({ variant: "destructive" }))}>
                                     {t('adminDishes.deleteDialog.confirmButton')}
                                 </AlertDialogAction>
                             </AlertDialogFooter>
