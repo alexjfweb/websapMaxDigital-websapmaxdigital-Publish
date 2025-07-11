@@ -59,6 +59,17 @@ export interface Dish {
   isFeatured?: boolean; // Optional: to highlight certain dishes
 }
 
+// Data type for the react-hook-form
+export type DishFormData = {
+  id?: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  stock: number;
+  image?: File | null;
+};
+
 export interface CartItem extends Dish {
   quantity: number;
 }

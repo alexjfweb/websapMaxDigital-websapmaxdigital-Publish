@@ -1,14 +1,14 @@
 
 "use client";
 
-import { useState, type ChangeEvent } from "react";
+import { useState, type ChangeEvent, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Edit3, Trash2, Search, Filter, UploadCloud, X } from "lucide-react";
+import { PlusCircle, Edit3, Trash2, Search, Filter, UploadCloud, X, Save } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -19,10 +19,13 @@ import { useLanguage } from "@/contexts/language-context";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import type { Dish } from "@/types";
+import type { Dish, DishFormData } from "@/types";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+
 
 // Schema for the form validation
 const dishFormSchema = z.object({
+  id: z.string().optional(),
   name: z.string().min(3, { message: "Dish name must be at least 3 characters." }),
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
   price: z.coerce.number().positive({ message: "Price must be a positive number." }),
@@ -44,9 +47,10 @@ export default function AdminDishesPage() {
   const { toast } = useToast();
   const [dishes, setDishes] = useState<Dish[]>(mockDishes);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingDish, setEditingDish] = useState<Dish | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  const form = useForm<z.infer<typeof dishFormSchema>>({
+  const form = useForm<DishFormData>({
     resolver: zodResolver(dishFormSchema),
     defaultValues: {
       name: "",
@@ -54,8 +58,35 @@ export default function AdminDishesPage() {
       price: 0,
       category: "",
       stock: -1,
+      image: null,
     },
   });
+
+  // Effect to populate form when editing
+  useEffect(() => {
+    if (editingDish) {
+      form.reset({
+        id: editingDish.id,
+        name: editingDish.name,
+        description: editingDish.description,
+        price: editingDish.price,
+        category: editingDish.category,
+        stock: editingDish.stock,
+        image: null, // Image file needs to be re-uploaded for security reasons
+      });
+      setImagePreview(editingDish.imageUrl);
+    } else {
+      form.reset({
+        name: "",
+        description: "",
+        price: 0,
+        category: "",
+        stock: -1,
+        image: null,
+      });
+      setImagePreview(null);
+    }
+  }, [editingDish, form]);
 
   const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -72,30 +103,66 @@ export default function AdminDishesPage() {
     }
   };
   
-  const onSubmit = (values: z.infer<typeof dishFormSchema>) => {
-    // In a real app, you would send this to a backend API to create the dish
-    const newDish: Dish = {
-        id: `dish-${Date.now()}`, // Generate a mock ID
-        name: values.name,
-        description: values.description,
-        price: values.price,
-        category: values.category,
-        stock: values.stock,
-        likes: 0, // New dishes start with 0 likes
-        imageUrl: imagePreview || "https://placehold.co/600x400.png", // Use preview or a placeholder
-    };
-    
-    setDishes(prevDishes => [newDish, ...prevDishes]);
-    
-    toast({
-        title: "Dish Created!",
-        description: `The dish "${values.name}" has been successfully added to your menu.`,
-    });
+  const onSubmit = (values: DishFormData) => {
+    // In a real app, you would send this to a backend API
+    if (editingDish) {
+      // Logic to update an existing dish
+      setDishes(prevDishes => prevDishes.map(d => 
+        d.id === editingDish.id ? { 
+          ...d, 
+          ...values, 
+          imageUrl: imagePreview || d.imageUrl, // Keep old image if new one isn't uploaded
+          price: Number(values.price),
+          stock: Number(values.stock) 
+        } : d
+      ));
+      toast({
+        title: "Dish Updated!",
+        description: `The dish "${values.name}" has been successfully updated.`,
+      });
+    } else {
+      // Logic to create a new dish
+      const newDish: Dish = {
+          id: `dish-${Date.now()}`, // Generate a mock ID
+          name: values.name,
+          description: values.description,
+          price: Number(values.price),
+          category: values.category,
+          stock: Number(values.stock),
+          likes: 0, // New dishes start with 0 likes
+          imageUrl: imagePreview || "https://placehold.co/600x400.png", // Use preview or a placeholder
+      };
+      setDishes(prevDishes => [newDish, ...prevDishes]);
+      toast({
+          title: "Dish Created!",
+          description: `The dish "${values.name}" has been successfully added to your menu.`,
+      });
+    }
 
     form.reset();
     setImagePreview(null);
+    setEditingDish(null);
     setIsDialogOpen(false);
   };
+
+  const openEditDialog = (dish: Dish) => {
+    setEditingDish(dish);
+    setIsDialogOpen(true);
+  };
+
+  const openNewDialog = () => {
+    setEditingDish(null);
+    setIsDialogOpen(true);
+  }
+
+  const handleDeleteDish = (dishId: string) => {
+    setDishes(prevDishes => prevDishes.filter(d => d.id !== dishId));
+    toast({
+        title: "Dish Deleted",
+        description: "The dish has been removed from your menu.",
+        variant: "destructive"
+    })
+  }
 
   return (
     <div className="space-y-8">
@@ -107,20 +174,19 @@ export default function AdminDishesPage() {
         <Dialog open={isDialogOpen} onOpenChange={(isOpen) => {
             setIsDialogOpen(isOpen);
             if (!isOpen) {
-                form.reset();
-                setImagePreview(null);
+                setEditingDish(null); // This will trigger the useEffect to reset the form
             }
         }}>
             <DialogTrigger asChild>
-                <Button>
+                <Button onClick={openNewDialog}>
                     <PlusCircle className="mr-2 h-5 w-5" /> {t('adminDishes.addNewButton')}
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>Add New Dish</DialogTitle>
+                    <DialogTitle>{editingDish ? "Edit Dish" : "Add New Dish"}</DialogTitle>
                     <DialogDescription>
-                        Fill out the details below to add a new item to your menu.
+                        {editingDish ? "Update the details for this dish." : "Fill out the details below to add a new item to your menu."}
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -218,7 +284,7 @@ export default function AdminDishesPage() {
                         </div>
                          <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                            <Button type="submit">Save Dish</Button>
+                            <Button type="submit"><Save className="mr-2 h-4 w-4"/> {editingDish ? "Save Changes" : "Save Dish"}</Button>
                         </DialogFooter>
                     </form>
                 </Form>
@@ -281,12 +347,31 @@ export default function AdminDishesPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" className="hover:text-primary">
+                      <Button variant="ghost" size="icon" className="hover:text-primary" onClick={() => openEditDialog(dish)}>
                         <Edit3 className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="hover:text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                           <Button variant="ghost" size="icon" className="hover:text-destructive">
+                             <Trash2 className="h-4 w-4" />
+                           </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the dish
+                                    "{dish.name}" from your menu.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteDish(dish.id)} className="bg-destructive hover:bg-destructive/90">
+                                    Yes, delete dish
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </TableCell>
                 </TableRow>
