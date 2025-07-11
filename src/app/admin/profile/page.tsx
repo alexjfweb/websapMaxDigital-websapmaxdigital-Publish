@@ -6,11 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { UploadCloud, Save, Edit, Trash2, Link as LinkIcon, Facebook, Instagram, Twitter, MessageCircle, Pin } from "lucide-react";
+import { UploadCloud, Save, Edit, Trash2 } from "lucide-react";
 import { useLanguage } from "@/contexts/language-context"; 
 import TikTokIcon from "@/components/icons/tiktok-icon";
 import PinterestIcon from "@/components/icons/pinterest-icon";
-import { Globe, Share2 } from "lucide-react";
+import { Globe, Share2, Facebook, Instagram, Twitter, MessageCircle } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
 
@@ -250,3 +250,4 @@ export default function AdminProfilePage() {
     </div>
   );
 }
+
