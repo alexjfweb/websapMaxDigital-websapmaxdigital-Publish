@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription as ShadCNCardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
 import { UserPlus, ArrowLeft, Save } from "lucide-react";
@@ -117,7 +117,7 @@ export default function SuperAdminCreateUserPage() {
       <Card>
         <CardHeader>
           <CardTitle>{t('superAdminUsersCreate.formTitle')}</CardTitle>
-          <ShadCNCardDescription>{t('superAdminUsersCreate.formDescription')}</ShadCNCardDescription>
+          <CardDescription>{t('superAdminUsersCreate.formDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
