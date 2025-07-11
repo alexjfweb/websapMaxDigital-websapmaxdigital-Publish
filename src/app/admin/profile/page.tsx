@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { UploadCloud, Save, Edit, Trash2, XCircle } from "lucide-react";
+import { UploadCloud, Save, Edit, Trash2, XCircle, CheckCircle } from "lucide-react";
 import { useLanguage } from "@/contexts/language-context"; 
 import TikTokIcon from "@/components/icons/tiktok-icon";
 import PinterestIcon from "@/components/icons/pinterest-icon";
@@ -75,6 +75,8 @@ export default function AdminProfilePage() {
   const [nequiQrPreview, setNequiQrPreview] = useState<string | null>(null);
   const [daviplataQrPreview, setDaviplataQrPreview] = useState<string | null>(null);
   const [bancolombiaQrPreview, setBancolombiaQrPreview] = useState<string | null>(null);
+  const [isSaveAlertOpen, setIsSaveAlertOpen] = useState(false);
+
 
   const handleImageChange = (
     event: ChangeEvent<HTMLInputElement>,
@@ -94,11 +96,13 @@ export default function AdminProfilePage() {
 
   const handleSave = () => {
     // Here you would typically send the data to your backend
+    setIsSaveAlertOpen(true);
+  };
+
+  const handleConfirmSave = () => {
     setIsEditing(false);
-    toast({
-        title: "Profile Saved",
-        description: "Your restaurant profile has been updated successfully.",
-    });
+    setIsSaveAlertOpen(false);
+    // You can also reset image previews here if needed after save
   };
 
   const handleCancel = () => {
@@ -430,6 +434,25 @@ export default function AdminProfilePage() {
         </CardContent>
       </Card>
       
+      {/* Save Confirmation Dialog */}
+      <AlertDialog open={isSaveAlertOpen} onOpenChange={setIsSaveAlertOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <div className="flex justify-center">
+                   <CheckCircle className="h-16 w-16 text-green-500"/>
+                </div>
+                <AlertDialogTitle className="text-center text-xl">¡Perfil Guardado!</AlertDialogTitle>
+                <AlertDialogDescription className="text-center">
+                    Tus cambios en el perfil del restaurante han sido guardados exitosamente.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="sm:justify-center">
+                <AlertDialogAction onClick={handleConfirmSave}>
+                    Aceptar
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
