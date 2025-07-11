@@ -23,28 +23,21 @@ import type { Dish, DishFormData } from "@/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 
-// Schema for the form validation
-const dishFormSchema = z.object({
-  id: z.string().optional(),
-  name: z.string().min(3, { message: "Dish name must be at least 3 characters." }),
-  description: z.string().min(10, { message: "Description must be at least 10 characters." }),
-  price: z.coerce.number().positive({ message: "Price must be a positive number." }),
-  category: z.string().min(3, { message: "Category is required." }),
-  stock: z.coerce.number().int().min(-1, { message: "Stock must be -1 for unlimited, or a positive number." }),
-  image: z.any().optional(),
-});
-
-
-// Mock function to render stars
-const renderStars = (likes: number) => {
-  return Array(5).fill(0).map((_, i) => (
-    <svg key={i} className={`h-4 w-4 ${i < likes ? 'text-accent fill-accent' : 'text-muted-foreground/50'}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-  ));
-};
-
 export default function AdminDishesPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
+
+  // Schema for the form validation, using t function for messages
+  const dishFormSchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(3, { message: t('adminDishes.validation.nameRequired') }),
+    description: z.string().min(10, { message: t('adminDishes.validation.descriptionRequired') }),
+    price: z.coerce.number().positive({ message: t('adminDishes.validation.pricePositive') }),
+    category: z.string().min(3, { message: t('adminDishes.validation.categoryRequired') }),
+    stock: z.coerce.number().int().min(-1, { message: t('adminDishes.validation.stockInvalid') }),
+    image: z.any().optional(),
+  });
+
   const [dishes, setDishes] = useState<Dish[]>(mockDishes);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDish, setEditingDish] = useState<Dish | null>(null);
@@ -61,6 +54,11 @@ export default function AdminDishesPage() {
       image: null,
     },
   });
+  
+  // Re-validate form when language changes
+  useEffect(() => {
+    form.trigger();
+  }, [t, form]);
 
   // Effect to populate form when editing
   useEffect(() => {
@@ -117,8 +115,8 @@ export default function AdminDishesPage() {
         } : d
       ));
       toast({
-        title: "Dish Updated!",
-        description: `The dish "${values.name}" has been successfully updated.`,
+        title: t('adminDishes.toast.updateSuccessTitle'),
+        description: t('adminDishes.toast.updateSuccessDescription', { dishName: values.name }),
       });
     } else {
       // Logic to create a new dish
@@ -134,8 +132,8 @@ export default function AdminDishesPage() {
       };
       setDishes(prevDishes => [newDish, ...prevDishes]);
       toast({
-          title: "Dish Created!",
-          description: `The dish "${values.name}" has been successfully added to your menu.`,
+          title: t('adminDishes.toast.createSuccessTitle'),
+          description: t('adminDishes.toast.createSuccessDescription', { dishName: values.name }),
       });
     }
 
@@ -155,14 +153,22 @@ export default function AdminDishesPage() {
     setIsDialogOpen(true);
   }
 
-  const handleDeleteDish = (dishId: string) => {
+  const handleDeleteDish = (dishId: string, dishName: string) => {
     setDishes(prevDishes => prevDishes.filter(d => d.id !== dishId));
     toast({
-        title: "Dish Deleted",
-        description: "The dish has been removed from your menu.",
+        title: t('adminDishes.toast.deleteSuccessTitle'),
+        description: t('adminDishes.toast.deleteSuccessDescription', { dishName: dishName }),
         variant: "destructive"
     })
   }
+  
+  // Mock function to render stars
+  const renderStars = (likes: number) => {
+    return Array(5).fill(0).map((_, i) => (
+        <svg key={i} className={`h-4 w-4 ${i < likes ? 'text-accent fill-accent' : 'text-muted-foreground/50'}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+    ));
+  };
+
 
   return (
     <div className="space-y-8">
@@ -184,9 +190,9 @@ export default function AdminDishesPage() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>{editingDish ? "Edit Dish" : "Add New Dish"}</DialogTitle>
+                    <DialogTitle>{editingDish ? t('adminDishes.form.titleEdit') : t('adminDishes.form.titleCreate')}</DialogTitle>
                     <DialogDescription>
-                        {editingDish ? "Update the details for this dish." : "Fill out the details below to add a new item to your menu."}
+                        {editingDish ? t('adminDishes.form.descriptionEdit') : t('adminDishes.form.descriptionCreate')}
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -198,9 +204,9 @@ export default function AdminDishesPage() {
                                 name="name"
                                 render={({ field }) => (
                                     <FormItem>
-                                    <FormLabel>Dish Name</FormLabel>
+                                    <FormLabel>{t('adminDishes.form.nameLabel')}</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="e.g., Sizzling Fajitas" {...field} />
+                                        <Input placeholder={t('adminDishes.form.namePlaceholder')} {...field} />
                                     </FormControl>
                                     <FormMessage />
                                     </FormItem>
@@ -211,9 +217,9 @@ export default function AdminDishesPage() {
                                 name="description"
                                 render={({ field }) => (
                                     <FormItem>
-                                    <FormLabel>Description</FormLabel>
+                                    <FormLabel>{t('adminDishes.form.descriptionLabel')}</FormLabel>
                                     <FormControl>
-                                        <Textarea placeholder="Describe the dish..." {...field} />
+                                        <Textarea placeholder={t('adminDishes.form.descriptionPlaceholder')} {...field} />
                                     </FormControl>
                                     <FormMessage />
                                     </FormItem>
@@ -221,11 +227,11 @@ export default function AdminDishesPage() {
                                 />
                            </div>
                            <div className="space-y-4">
-                                <FormLabel>Dish Image</FormLabel>
+                                <FormLabel>{t('adminDishes.form.imageLabel')}</FormLabel>
                                 <div className="relative flex items-center justify-center w-full h-40 border-2 border-dashed rounded-lg">
                                     {imagePreview ? (
                                         <>
-                                            <Image src={imagePreview} alt="Dish preview" layout="fill" objectFit="cover" className="rounded-lg"/>
+                                            <Image src={imagePreview} alt={t('adminDishes.form.imagePreviewAlt')} layout="fill" objectFit="cover" className="rounded-lg"/>
                                             <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={() => { setImagePreview(null); form.setValue("image", null); }}>
                                                 <X className="h-4 w-4"/>
                                             </Button>
@@ -233,7 +239,7 @@ export default function AdminDishesPage() {
                                     ) : (
                                         <label htmlFor="image-upload" className="flex flex-col items-center justify-center w-full h-full cursor-pointer bg-card hover:bg-muted/50 rounded-lg">
                                             <UploadCloud className="h-8 w-8 text-muted-foreground mb-2"/>
-                                            <span className="text-sm text-muted-foreground">Click to upload image</span>
+                                            <span className="text-sm text-muted-foreground">{t('adminDishes.form.imageUploadText')}</span>
                                         </label>
                                     )}
                                     <Input id="image-upload" type="file" className="hidden" accept="image/*" onChange={handleImageChange}/>
@@ -247,7 +253,7 @@ export default function AdminDishesPage() {
                                 name="price"
                                 render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Price ($)</FormLabel>
+                                    <FormLabel>{t('adminDishes.form.priceLabel')}</FormLabel>
                                     <FormControl>
                                     <Input type="number" step="0.01" placeholder="19.99" {...field} />
                                     </FormControl>
@@ -260,9 +266,9 @@ export default function AdminDishesPage() {
                                 name="category"
                                 render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Category</FormLabel>
+                                    <FormLabel>{t('adminDishes.form.categoryLabel')}</FormLabel>
                                     <FormControl>
-                                    <Input placeholder="e.g., Main Courses" {...field} />
+                                    <Input placeholder={t('adminDishes.form.categoryPlaceholder')} {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -273,9 +279,9 @@ export default function AdminDishesPage() {
                                 name="stock"
                                 render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Stock Count</FormLabel>
+                                    <FormLabel>{t('adminDishes.form.stockLabel')}</FormLabel>
                                     <FormControl>
-                                    <Input type="number" placeholder="-1 for unlimited" {...field} />
+                                    <Input type="number" placeholder={t('adminDishes.form.stockPlaceholder')} {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -283,8 +289,8 @@ export default function AdminDishesPage() {
                             />
                         </div>
                          <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                            <Button type="submit"><Save className="mr-2 h-4 w-4"/> {editingDish ? "Save Changes" : "Save Dish"}</Button>
+                            <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>{t('adminDishes.form.cancelButton')}</Button>
+                            <Button type="submit"><Save className="mr-2 h-4 w-4"/> {editingDish ? t('adminDishes.form.saveChangesButton') : t('adminDishes.form.saveDishButton')}</Button>
                         </DialogFooter>
                     </form>
                 </Form>
@@ -358,16 +364,15 @@ export default function AdminDishesPage() {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogTitle>{t('adminDishes.deleteDialog.title')}</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete the dish
-                                    "{dish.name}" from your menu.
+                                    {t('adminDishes.deleteDialog.description', { dishName: dish.name })}
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteDish(dish.id)} className="bg-destructive hover:bg-destructive/90">
-                                    Yes, delete dish
+                                <AlertDialogCancel>{t('adminDishes.deleteDialog.cancelButton')}</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteDish(dish.id, dish.name)} className="bg-destructive hover:bg-destructive/90">
+                                    {t('adminDishes.deleteDialog.confirmButton')}
                                 </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
@@ -383,3 +388,4 @@ export default function AdminDishesPage() {
     </div>
   );
 }
+
