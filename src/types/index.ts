@@ -56,6 +56,7 @@ export interface Dish {
   stock: number; // -1 for unlimited, 0 for out of stock
   likes: number; // Number of stars or likes
   category: string; // e.g., 'Appetizers', 'Main Courses', 'Desserts'
+  isFeatured?: boolean; // Optional: to highlight certain dishes
 }
 
 export interface CartItem extends Dish {
