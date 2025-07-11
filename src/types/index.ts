@@ -25,13 +25,25 @@ export interface RestaurantProfile {
     pinterest?: string;
   };
   paymentMethods: {
+    codEnabled: boolean; // Cash on Delivery
     nequi?: {
-      qrCodeUrl: string;
-      accountHolder: string;
-      accountNumber: string;
       enabled: boolean;
+      qrCodeUrl?: string;
+      accountHolder?: string;
+      accountNumber?: string;
     };
-    cod: boolean; // Cash on Delivery
+    daviplata?: {
+      enabled: boolean;
+      qrCodeUrl?: string;
+      accountHolder?: string;
+      accountNumber?: string;
+    };
+    bancolombia?: {
+      enabled: boolean;
+      qrCodeUrl?: string;
+      accountHolder?: string;
+      accountNumber?: string;
+    };
   };
 }
 

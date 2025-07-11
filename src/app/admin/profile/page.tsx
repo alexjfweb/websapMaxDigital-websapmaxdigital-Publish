@@ -10,8 +10,10 @@ import { UploadCloud, Save, Edit, Trash2 } from "lucide-react";
 import { useLanguage } from "@/contexts/language-context"; 
 import TikTokIcon from "@/components/icons/tiktok-icon";
 import PinterestIcon from "@/components/icons/pinterest-icon";
+import DaviplataIcon from "@/components/icons/daviplata-icon";
+import BancolombiaIcon from "@/components/icons/bancolombia-icon";
 import { Globe, Share2, Facebook, Instagram, Twitter, MessageCircle } from "lucide-react";
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 import Image from "next/image";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -38,11 +40,22 @@ const mockProfile = {
     pinterest: "https://pinterest.com/websapmax"
   },
   paymentMethods: {
-    nequiEnabled: true,
-    nequiQrUrl: "https://placehold.co/200x200.png?text=Nequi+QR",
-    nequiAccountHolder: "websapMax S.A.S",
-    nequiAccountNumber: "3001234567",
     codEnabled: true,
+    nequi: {
+        enabled: true,
+        qrCodeUrl: "https://placehold.co/200x200.png?text=Nequi+QR",
+        accountHolder: "websapMax S.A.S",
+        accountNumber: "3001234567",
+    },
+    daviplata: {
+      enabled: false,
+    },
+    bancolombia: {
+      enabled: true,
+      qrCodeUrl: "https://placehold.co/200x200.png?text=Bancolombia",
+      accountHolder: "websapMax S.A.S",
+      accountNumber: "123-456789-01",
+    }
   }
 };
 
@@ -50,17 +63,23 @@ const mockProfile = {
 export default function AdminProfilePage() {
   const { t } = useLanguage();
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [nequiQrPreview, setNequiQrPreview] = useState<string | null>(null);
+  const [daviplataQrPreview, setDaviplataQrPreview] = useState<string | null>(null);
+  const [bancolombiaQrPreview, setBancolombiaQrPreview] = useState<string | null>(null);
 
-  const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (
+    event: ChangeEvent<HTMLInputElement>,
+    setter: React.Dispatch<React.SetStateAction<string | null>>
+  ) => {
     const file = event.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setLogoPreview(reader.result as string);
+        setter(reader.result as string);
       };
       reader.readAsDataURL(file);
     } else {
-      setLogoPreview(null);
+      setter(null);
     }
   };
 
@@ -116,7 +135,7 @@ export default function AdminProfilePage() {
                     <UploadCloud className="mr-2 h-4 w-4" /> {t('adminProfile.businessInfoCard.uploadLogoButton')}
                   </Label>
                 </Button>
-                <Input id="logo-upload" type="file" className="hidden" accept="image/*" onChange={handleLogoChange}/>
+                <Input id="logo-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, setLogoPreview)}/>
             </div>
             <p className="text-xs text-muted-foreground">{t('adminProfile.businessInfoCard.logoHint')}</p>
           </div>
@@ -167,6 +186,101 @@ export default function AdminProfilePage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Métodos de Pago</CardTitle>
+          <CardDescription>Configura las formas de pago que aceptas en tu restaurante.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-8">
+            {/* Contra Entrega */}
+            <div className="space-y-4 p-4 border rounded-lg">
+                <div className="flex items-center space-x-2">
+                    <Checkbox id="codEnabled" defaultChecked={mockProfile.paymentMethods.codEnabled} />
+                    <Label htmlFor="codEnabled" className="text-lg font-semibold leading-none">
+                        Pago Contra Entrega
+                    </Label>
+                </div>
+                <p className="text-sm text-muted-foreground">Permite a los clientes pagar en efectivo al recibir su pedido.</p>
+            </div>
+
+            {/* Daviplata */}
+            <div className="space-y-4 p-4 border rounded-lg">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <DaviplataIcon className="h-6 w-6" />
+                        <Label htmlFor="daviplataEnabled" className="text-lg font-semibold">Daviplata</Label>
+                    </div>
+                    <Switch id="daviplataEnabled" defaultChecked={mockProfile.paymentMethods.daviplata.enabled} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="daviplataAccountHolder">Titular de la cuenta</Label>
+                    <Input id="daviplataAccountHolder" placeholder="Nombre del titular" />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="daviplataAccountNumber">Número de cuenta</Label>
+                    <Input id="daviplataAccountNumber" type="tel" placeholder="Número de celular" />
+                </div>
+                <div className="space-y-2">
+                    <Label>Código QR Daviplata</Label>
+                    <div className="flex items-center gap-4">
+                        <Image 
+                            src={daviplataQrPreview || "https://placehold.co/100x100.png?text=Daviplata"}
+                            alt="Vista previa QR Daviplata" 
+                            width={100} 
+                            height={100} 
+                            className="rounded-md border object-cover"
+                            data-ai-hint="QR code payment"
+                        />
+                        <Button variant="outline" asChild>
+                            <Label htmlFor="daviplataQrUpload" className="cursor-pointer">
+                                <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
+                                <Input id="daviplataQrUpload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, setDaviplataQrPreview)} />
+                            </Label>
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Bancolombia */}
+            <div className="space-y-4 p-4 border rounded-lg">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <BancolombiaIcon className="h-6 w-6" />
+                        <Label htmlFor="bancolombiaEnabled" className="text-lg font-semibold">QR Bancolombia</Label>
+                    </div>
+                    <Switch id="bancolombiaEnabled" defaultChecked={mockProfile.paymentMethods.bancolombia.enabled} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="bancolombiaAccountHolder">Titular de la cuenta</Label>
+                    <Input id="bancolombiaAccountHolder" defaultValue={mockProfile.paymentMethods.bancolombia.accountHolder} placeholder="Nombre del titular" />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="bancolombiaAccountNumber">Número de cuenta</Label>
+                    <Input id="bancolombiaAccountNumber" type="text" defaultValue={mockProfile.paymentMethods.bancolombia.accountNumber} placeholder="Número de cuenta" />
+                </div>
+                <div className="space-y-2">
+                    <Label>Código QR Bancolombia</Label>
+                    <div className="flex items-center gap-4">
+                        <Image 
+                            src={bancolombiaQrPreview || mockProfile.paymentMethods.bancolombia.qrCodeUrl || "https://placehold.co/100x100.png?text=Bancolombia"}
+                            alt="Vista previa QR Bancolombia" 
+                            width={100} 
+                            height={100} 
+                            className="rounded-md border object-cover"
+                            data-ai-hint="QR code payment"
+                        />
+                        <Button variant="outline" asChild>
+                            <Label htmlFor="bancolombiaQrUpload" className="cursor-pointer">
+                                <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
+                                <Input id="bancolombiaQrUpload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, setBancolombiaQrPreview)} />
+                            </Label>
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </CardContent>
+      </Card>
+
 
       <Card>
         <CardHeader>
@@ -197,54 +311,6 @@ export default function AdminProfilePage() {
                     </div>
                 </div>
             </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('adminPayments.nequiCard.title')}</CardTitle>
-          <CardDescription>{t('adminPayments.nequiCard.description')}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center space-x-2">
-            <Checkbox id="nequiEnabled" defaultChecked={mockProfile.paymentMethods.nequiEnabled} />
-            <Label htmlFor="nequiEnabled" className="text-sm font-medium">
-              {t('adminPayments.nequiCard.enableLabel')}
-            </Label>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="nequiAccountHolder">{t('adminPayments.nequiCard.accountHolderLabel')}</Label>
-            <Input id="nequiAccountHolder" defaultValue={mockProfile.paymentMethods.nequiAccountHolder} />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="nequiAccountNumber">{t('adminPayments.nequiCard.accountNumberLabel')}</Label>
-            <Input id="nequiAccountNumber" type="tel" defaultValue={mockProfile.paymentMethods.nequiAccountNumber} />
-          </div>
-          
-          <div className="space-y-2">
-            <Label>{t('adminPayments.nequiCard.qrCodeLabel')}</Label>
-            <div className="flex items-center gap-4">
-              {mockProfile.paymentMethods.nequiQrUrl && (
-                <Image 
-                    src={mockProfile.paymentMethods.nequiQrUrl} 
-                    alt="Current Nequi QR Code" 
-                    width={100} 
-                    height={100} 
-                    className="rounded-md border object-cover"
-                    data-ai-hint="QR code payment"
-                />
-              )}
-              <Button variant="outline" asChild>
-                <Label htmlFor="nequiQrUpload" className="cursor-pointer">
-                  <UploadCloud className="mr-2 h-4 w-4" /> {t('adminPayments.nequiCard.uploadButton')}
-                  <Input id="nequiQrUpload" type="file" className="hidden" accept="image/*" />
-                </Label>
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">{t('adminPayments.nequiCard.qrUploadDescription')}</p>
-          </div>
         </CardContent>
       </Card>
       
