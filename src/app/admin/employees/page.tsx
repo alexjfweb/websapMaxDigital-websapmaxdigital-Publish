@@ -1,15 +1,25 @@
 
 "use client";
 
+import { useState, useEffect, type ChangeEvent } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Edit3, Trash2, Search, UserCog } from "lucide-react";
+import { PlusCircle, Edit3, Trash2, Search, UserCog, UploadCloud, X, Save } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import type { User } from "@/types"; 
+import type { User, UserRole } from "@/types"; 
 import { useLanguage } from "@/contexts/language-context";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/form";
+import { useToast } from "@/hooks/use-toast";
+import Image from "next/image";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 // Mock Data for Employees
 const mockEmployees: User[] = [
@@ -18,10 +28,126 @@ const mockEmployees: User[] = [
   { id: "emp-3", username: "mike.delivery", email: "mike.delivery@websapmax.com", contact: "555-3333", role: "employee", status: "inactive", registrationDate: "2023-05-10", avatarUrl: "https://placehold.co/40x40.png?text=MD" },
 ];
 
+const employeeFormSchema = z.object({
+    id: z.string().optional(),
+    username: z.string().min(3, { message: "Username must be at least 3 characters." }),
+    email: z.string().email({ message: "Please enter a valid email." }),
+    contact: z.string().optional(),
+    role: z.enum(["employee", "admin"], { required_error: "Role is required." }),
+    status: z.enum(["active", "inactive", "pending"], { required_error: "Status is required." }),
+    avatar: z.any().optional(),
+});
+
+type EmployeeFormData = z.infer<typeof employeeFormSchema>;
+
 
 export default function AdminEmployeesPage() {
   const { t } = useLanguage();
-  const employees = mockEmployees;
+  const { toast } = useToast();
+  const [employees, setEmployees] = useState<User[]>(mockEmployees);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<User | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
+  const form = useForm<EmployeeFormData>({
+    resolver: zodResolver(employeeFormSchema),
+    defaultValues: {
+      username: "",
+      email: "",
+      contact: "",
+      role: "employee",
+      status: "active",
+      avatar: null
+    },
+  });
+
+  useEffect(() => {
+    if (editingEmployee) {
+      form.reset({
+        id: editingEmployee.id,
+        username: editingEmployee.username,
+        email: editingEmployee.email,
+        contact: editingEmployee.contact || "",
+        role: editingEmployee.role as "employee" | "admin",
+        status: editingEmployee.status,
+      });
+      setAvatarPreview(editingEmployee.avatarUrl || null);
+    } else {
+      form.reset({
+        username: "",
+        email: "",
+        contact: "",
+        role: "employee",
+        status: "active",
+        avatar: null
+      });
+      setAvatarPreview(null);
+    }
+  }, [editingEmployee, form]);
+  
+  const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+        form.setValue("avatar", file);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setAvatarPreview(null);
+      form.setValue("avatar", null);
+    }
+  };
+
+  const onSubmit = (values: EmployeeFormData) => {
+    if (editingEmployee) {
+      setEmployees(prev => prev.map(emp => 
+        emp.id === editingEmployee.id ? { 
+            ...emp, 
+            ...values,
+            role: values.role as UserRole,
+            avatarUrl: avatarPreview || emp.avatarUrl 
+        } : emp
+      ));
+      toast({ title: "Employee Updated!", description: `Details for ${values.username} have been updated.` });
+    } else {
+      const newEmployee: User = {
+        id: `emp-${Date.now()}`,
+        username: values.username,
+        email: values.email,
+        contact: values.contact,
+        role: values.role as UserRole,
+        status: values.status,
+        registrationDate: new Date().toISOString(),
+        avatarUrl: avatarPreview || `https://placehold.co/40x40.png?text=${values.username.substring(0,1).toUpperCase()}`,
+      };
+      setEmployees(prev => [newEmployee, ...prev]);
+      toast({ title: "Employee Added!", description: `${values.username} has been added to the team.` });
+    }
+    closeDialog();
+  };
+  
+  const openEditDialog = (employee: User) => {
+    setEditingEmployee(employee);
+    setIsDialogOpen(true);
+  };
+
+  const openNewDialog = () => {
+    setEditingEmployee(null);
+    setIsDialogOpen(true);
+  };
+
+  const closeDialog = () => {
+    setIsDialogOpen(false);
+    setEditingEmployee(null); // This will trigger useEffect to reset the form
+  }
+
+  const handleDeleteEmployee = (employeeId: string) => {
+    setEmployees(prev => prev.filter(emp => emp.id !== employeeId));
+    toast({ title: "Employee Deleted", description: "The employee has been removed from the system.", variant: "destructive" });
+  };
+
 
   return (
     <div className="space-y-8">
@@ -30,9 +156,104 @@ export default function AdminEmployeesPage() {
           <h1 className="text-3xl font-bold text-primary">{t('adminEmployees.title')}</h1>
           <p className="text-lg text-muted-foreground">{t('adminEmployees.description')}</p>
         </div>
-        <Button>
-          <PlusCircle className="mr-2 h-5 w-5" /> {t('adminEmployees.addNewButton')}
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={openNewDialog}>
+              <PlusCircle className="mr-2 h-5 w-5" /> {t('adminEmployees.addNewButton')}
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-xl">
+             <DialogHeader>
+                <DialogTitle>{editingEmployee ? "Edit Employee" : "Add New Employee"}</DialogTitle>
+                <DialogDescription>
+                  {editingEmployee ? "Update the employee's details below." : "Fill in the form to add a new employee."}
+                </DialogDescription>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                 <div className="space-y-2">
+                    <FormLabel>Avatar</FormLabel>
+                    <div className="flex items-center gap-4">
+                       <Avatar className="h-20 w-20">
+                            <AvatarImage src={avatarPreview || `https://placehold.co/80x80.png?text=??`} alt="Avatar Preview" data-ai-hint="user avatar"/>
+                            <AvatarFallback>{form.getValues("username")?.substring(0, 2).toUpperCase() || 'AV'}</AvatarFallback>
+                        </Avatar>
+                        <div className="relative">
+                            <Button type="button" variant="outline" asChild>
+                                <label htmlFor="avatar-upload" className="cursor-pointer">
+                                    <UploadCloud className="mr-2 h-4 w-4"/> Change Avatar
+                                </label>
+                            </Button>
+                           <Input id="avatar-upload" type="file" className="hidden" accept="image/*" onChange={handleAvatarChange}/>
+                        </div>
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField control={form.control} name="username" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Username</FormLabel>
+                        <FormControl><Input placeholder="e.g., john.chef" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField control={form.control} name="email" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl><Input type="email" placeholder="e.g., john.chef@example.com" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField control={form.control} name="contact" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Contact Number (Optional)</FormLabel>
+                        <FormControl><Input type="tel" placeholder="e.g., 555-1234" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}/>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="role" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Role</FormLabel>
+                             <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="employee">Employee</SelectItem>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+                    <FormField control={form.control} name="status" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Status</FormLabel>
+                             <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger><SelectValue placeholder="Select a status" /></SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="active">Active</SelectItem>
+                                    <SelectItem value="inactive">Inactive</SelectItem>
+                                    <SelectItem value="pending">Pending</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+                 </div>
+                 <DialogFooter>
+                    <Button type="button" variant="outline" onClick={closeDialog}>Cancel</Button>
+                    <Button type="submit"><Save className="mr-2 h-4 w-4"/> {editingEmployee ? "Save Changes" : "Create Employee"}</Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card>
@@ -78,15 +299,30 @@ export default function AdminEmployeesPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" className="hover:text-primary">
-                        <UserCog className="h-4 w-4" />
-                      </Button>
-                       <Button variant="ghost" size="icon" className="hover:text-primary">
+                       <Button variant="ghost" size="icon" className="hover:text-primary" onClick={() => openEditDialog(employee)}>
                         <Edit3 className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="hover:text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="hover:text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                              <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                      This will permanently delete the employee "{employee.username}". This action cannot be undone.
+                                  </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteEmployee(employee.id)} className="bg-destructive hover:bg-destructive/90">
+                                      Yes, delete employee
+                                  </AlertDialogAction>
+                              </AlertDialogFooter>
+                          </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </TableCell>
                 </TableRow>
