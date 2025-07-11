@@ -18,7 +18,6 @@ import { mockDishes } from "@/lib/mock-data";
 import { useLanguage } from "@/contexts/language-context";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import type { Dish } from "@/types";
 
@@ -105,7 +104,13 @@ export default function AdminDishesPage() {
           <h1 className="text-3xl font-bold text-primary">{t('adminDishes.title')}</h1>
           <p className="text-lg text-muted-foreground">{t('adminDishes.description')}</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(isOpen) => {
+            setIsDialogOpen(isOpen);
+            if (!isOpen) {
+                form.reset();
+                setImagePreview(null);
+            }
+        }}>
             <DialogTrigger asChild>
                 <Button>
                     <PlusCircle className="mr-2 h-5 w-5" /> {t('adminDishes.addNewButton')}
@@ -150,20 +155,20 @@ export default function AdminDishesPage() {
                                 />
                            </div>
                            <div className="space-y-4">
-                                <Label>Dish Image</Label>
+                                <FormLabel>Dish Image</FormLabel>
                                 <div className="relative flex items-center justify-center w-full h-40 border-2 border-dashed rounded-lg">
                                     {imagePreview ? (
                                         <>
                                             <Image src={imagePreview} alt="Dish preview" layout="fill" objectFit="cover" className="rounded-lg"/>
-                                            <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={() => setImagePreview(null)}>
+                                            <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={() => { setImagePreview(null); form.setValue("image", null); }}>
                                                 <X className="h-4 w-4"/>
                                             </Button>
                                         </>
                                     ) : (
-                                        <Label htmlFor="image-upload" className="flex flex-col items-center justify-center w-full h-full cursor-pointer bg-card hover:bg-muted/50 rounded-lg">
+                                        <label htmlFor="image-upload" className="flex flex-col items-center justify-center w-full h-full cursor-pointer bg-card hover:bg-muted/50 rounded-lg">
                                             <UploadCloud className="h-8 w-8 text-muted-foreground mb-2"/>
                                             <span className="text-sm text-muted-foreground">Click to upload image</span>
-                                        </Label>
+                                        </label>
                                     )}
                                     <Input id="image-upload" type="file" className="hidden" accept="image/*" onChange={handleImageChange}/>
                                 </div>
