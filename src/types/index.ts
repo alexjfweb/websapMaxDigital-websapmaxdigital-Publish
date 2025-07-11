@@ -29,6 +29,7 @@ export interface RestaurantProfile {
       qrCodeUrl: string;
       accountHolder: string;
       accountNumber: string;
+      enabled: boolean;
     };
     cod: boolean; // Cash on Delivery
   };

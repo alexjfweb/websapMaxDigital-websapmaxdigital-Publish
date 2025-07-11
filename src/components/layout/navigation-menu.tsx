@@ -75,7 +75,6 @@ const navItems: NavItem[] = [
   { href: '/admin/dishes', labelKey: 'nav.dishManagement', icon: Utensils, allowedRoles: ['admin'], tooltipKey: 'nav.dishManagement' },
   { href: '/admin/employees', labelKey: 'nav.employeeManagement', icon: UserCog, allowedRoles: ['admin'], tooltipKey: 'nav.employeeManagement' },
   { href: '/admin/reservations', labelKey: 'nav.reservations', icon: CalendarCheck, allowedRoles: ['admin'], tooltipKey: 'nav.reservations' },
-  { href: '/admin/payments', labelKey: 'nav.paymentMethods', icon: CreditCard, allowedRoles: ['admin'], tooltipKey: 'nav.paymentMethods' },
   { href: '/admin/share-menu', labelKey: 'nav.shareMenu', icon: Share2, allowedRoles: ['admin'], tooltipKey: 'nav.shareMenu' },
 
   // Employee routes

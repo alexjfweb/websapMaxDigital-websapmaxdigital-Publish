@@ -13,6 +13,7 @@ import PinterestIcon from "@/components/icons/pinterest-icon";
 import { Globe, Share2, Facebook, Instagram, Twitter, MessageCircle } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 // Mock data - in a real app, this would come from a backend/state management
@@ -35,6 +36,13 @@ const mockProfile = {
     whatsapp: "https://wa.me/15551234567",
     tiktok: "https://tiktok.com/@websapmax",
     pinterest: "https://pinterest.com/websapmax"
+  },
+  paymentMethods: {
+    nequiEnabled: true,
+    nequiQrUrl: "https://placehold.co/200x200.png?text=Nequi+QR",
+    nequiAccountHolder: "websapMax S.A.S",
+    nequiAccountNumber: "3001234567",
+    codEnabled: true,
   }
 };
 
@@ -192,6 +200,54 @@ export default function AdminProfilePage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('adminPayments.nequiCard.title')}</CardTitle>
+          <CardDescription>{t('adminPayments.nequiCard.description')}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center space-x-2">
+            <Checkbox id="nequiEnabled" defaultChecked={mockProfile.paymentMethods.nequiEnabled} />
+            <Label htmlFor="nequiEnabled" className="text-sm font-medium">
+              {t('adminPayments.nequiCard.enableLabel')}
+            </Label>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="nequiAccountHolder">{t('adminPayments.nequiCard.accountHolderLabel')}</Label>
+            <Input id="nequiAccountHolder" defaultValue={mockProfile.paymentMethods.nequiAccountHolder} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="nequiAccountNumber">{t('adminPayments.nequiCard.accountNumberLabel')}</Label>
+            <Input id="nequiAccountNumber" type="tel" defaultValue={mockProfile.paymentMethods.nequiAccountNumber} />
+          </div>
+          
+          <div className="space-y-2">
+            <Label>{t('adminPayments.nequiCard.qrCodeLabel')}</Label>
+            <div className="flex items-center gap-4">
+              {mockProfile.paymentMethods.nequiQrUrl && (
+                <Image 
+                    src={mockProfile.paymentMethods.nequiQrUrl} 
+                    alt="Current Nequi QR Code" 
+                    width={100} 
+                    height={100} 
+                    className="rounded-md border object-cover"
+                    data-ai-hint="QR code payment"
+                />
+              )}
+              <Button variant="outline" asChild>
+                <Label htmlFor="nequiQrUpload" className="cursor-pointer">
+                  <UploadCloud className="mr-2 h-4 w-4" /> {t('adminPayments.nequiCard.uploadButton')}
+                  <Input id="nequiQrUpload" type="file" className="hidden" accept="image/*" />
+                </Label>
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">{t('adminPayments.nequiCard.qrUploadDescription')}</p>
+          </div>
+        </CardContent>
+      </Card>
+      
       <div className="flex justify-end space-x-3 pt-4">
         <Button variant="outline"><Edit className="mr-2 h-4 w-4" /> {t('adminProfile.editButton')}</Button>
         <Button><Save className="mr-2 h-4 w-4" /> {t('adminProfile.saveButton')}</Button>
