@@ -2,15 +2,18 @@
 "use client";
 
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
-import { createContext, useContext, useState, useMemo } from 'react';
-import { translations, type Translations } from '@/translations'; // Import translations
+import { createContext, useContext, useState, useMemo, useCallback } from 'react';
+import { translations } from '@/translations'; 
 
 export type Language = 'en' | 'es' | 'pt' | 'fr';
+
+// Define a type for the variables that can be passed to the translation function
+type TranslationVariables = { [key: string]: string | number };
 
 interface LanguageContextType {
   language: Language;
   setLanguage: Dispatch<SetStateAction<Language>>;
-  t: (key: string) => string; // Add translation function
+  t: (key: string, variables?: TranslationVariables) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -18,11 +21,43 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>('en'); // Default language
 
-  const t = (key: string): string => {
-    return translations[language]?.[key] || key; // Return key if translation not found
-  };
+  const t = useCallback((key: string, variables?: TranslationVariables): string => {
+    // Navigate through nested keys if any, e.g., "home.welcome"
+    const keys = key.split('.');
+    let translation = keys.reduce((acc, currentKey) => {
+        if (acc && typeof acc === 'object' && !Array.isArray(acc)) {
+            return acc[currentKey];
+        }
+        return undefined;
+    }, translations[language] as any) as string | undefined;
 
-  const value = useMemo(() => ({ language, setLanguage, t }), [language, t]);
+    if (translation === undefined) {
+      // Fallback to English if translation not found in current language
+       translation = keys.reduce((acc, currentKey) => {
+        if (acc && typeof acc === 'object' && !Array.isArray(acc)) {
+            return acc[currentKey];
+        }
+        return undefined;
+      }, translations['en'] as any) as string | undefined;
+    }
+    
+    // If still not found, return the key itself
+    if (translation === undefined) {
+      return key;
+    }
+
+    // Replace variables if any
+    if (variables) {
+      Object.keys(variables).forEach((varKey) => {
+        const regex = new RegExp(`{${varKey}}`, 'g');
+        translation = (translation as string).replace(regex, String(variables[varKey]));
+      });
+    }
+
+    return translation;
+  }, [language]);
+
+  const value = useMemo(() => ({ language, setLanguage, t }), [language, setLanguage, t]);
 
   return (
     <LanguageContext.Provider value={value}>
