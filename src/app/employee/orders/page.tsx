@@ -1,12 +1,15 @@
 
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, CheckCircle, Truck, Search, Filter, Printer, ShoppingBag } from "lucide-react"; // Importado ShoppingBag
+import { Eye, CheckCircle, Truck, Search, Filter, Printer, ShoppingBag } from "lucide-react"; 
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
+import { useLanguage } from "@/contexts/language-context";
 
 
 // Mock Data for Orders - Using static dates to prevent hydration errors
@@ -21,6 +24,7 @@ const mockOrders = [
 
 
 export default function EmployeeOrdersPage() {
+  const { t } = useLanguage();
   // Filtered orders based on tab would be handled by state
   const activeOrders = mockOrders.filter(o => !['completed', 'cancelled'].includes(o.status));
   const pastOrders = mockOrders.filter(o => ['completed', 'cancelled'].includes(o.status));
@@ -76,7 +80,7 @@ export default function EmployeeOrdersPage() {
                 )}
                  {order.status === "preparing" && order.type === "pickup" && (
                    <Button variant="ghost" size="icon" className="hover:text-purple-500" title="Mark Ready for Pickup">
-                    <ShoppingBag className="h-4 w-4" /> {/* Reemplazado ShoppingBagIcon con ShoppingBag */}
+                    <ShoppingBag className="h-4 w-4" />
                   </Button>
                 )}
               </div>
@@ -139,5 +143,3 @@ export default function EmployeeOrdersPage() {
     </div>
   );
 }
-
-// Eliminada la definición local de ShoppingBagIcon
