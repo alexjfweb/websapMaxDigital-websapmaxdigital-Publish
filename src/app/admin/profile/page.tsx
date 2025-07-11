@@ -16,6 +16,7 @@ import { Globe, Share2, Facebook, Instagram, Twitter, MessageCircle } from "luci
 import { useState, type ChangeEvent } from "react";
 import Image from "next/image";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 
 
 // Mock data - in a real app, this would come from a backend/state management
