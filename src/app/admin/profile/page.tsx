@@ -233,12 +233,6 @@ export default function AdminProfilePage() {
                 </div>
                 <p className="text-xs text-muted-foreground">{t('adminProfile.paymentMethodsCard.nequiQrHint')}</p>
             </div>
-            <div className="flex items-center space-x-2">
-                <Input type="checkbox" id="cod" defaultChecked />
-                <Label htmlFor="cod" className="text-sm font-normal">
-                    {t('adminProfile.paymentMethodsCard.enableCodLabel')}
-                </Label>
-            </div>
         </CardContent>
       </Card>
 
@@ -250,4 +244,3 @@ export default function AdminProfilePage() {
     </div>
   );
 }
-
