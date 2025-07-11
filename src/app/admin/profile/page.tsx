@@ -26,7 +26,6 @@ const mockProfile = {
   primaryColor: "#FF4500",
   secondaryColor: "#FFF2E6",
   accentColor: "#FFB347",
-  nequiQrUrl: "https://placehold.co/200x200.png?text=NequiQR",
   socialLinks: {
     website: "https://www.websapmax.com",
     menuShareLink: "https://menu.websapmax.com",
@@ -43,7 +42,6 @@ const mockProfile = {
 export default function AdminProfilePage() {
   const { t } = useLanguage();
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [nequiQrPreview, setNequiQrPreview] = useState<string | null>(null);
 
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -55,19 +53,6 @@ export default function AdminProfilePage() {
       reader.readAsDataURL(file);
     } else {
       setLogoPreview(null);
-    }
-  };
-
-  const handleNequiQrChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setNequiQrPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setNequiQrPreview(null);
     }
   };
 
@@ -203,35 +188,6 @@ export default function AdminProfilePage() {
                         <Input type="text" defaultValue={mockProfile.accentColor} readOnly className="flex-1" />
                     </div>
                 </div>
-            </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('adminProfile.paymentMethodsCard.title')}</CardTitle>
-          <CardDescription>{t('adminProfile.paymentMethodsCard.description')}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-            <div className="space-y-2">
-                <Label>{t('adminProfile.paymentMethodsCard.nequiQrLabel')}</Label>
-                <div className="flex items-center gap-4">
-                    <Image 
-                      src={nequiQrPreview || mockProfile.nequiQrUrl} 
-                      alt={t('adminProfile.paymentMethodsCard.nequiQrAlt')} 
-                      width={96}
-                      height={96}
-                      className="h-24 w-24 rounded-md border object-cover" 
-                      data-ai-hint="QR code placeholder"
-                    />
-                    <Button variant="outline" asChild>
-                      <Label htmlFor="nequi-qr-upload" className="cursor-pointer">
-                        <UploadCloud className="mr-2 h-4 w-4" /> {t('adminProfile.paymentMethodsCard.uploadNequiQrButton')}
-                      </Label>
-                    </Button>
-                    <Input id="nequi-qr-upload" type="file" className="hidden" accept="image/*" onChange={handleNequiQrChange} />
-                </div>
-                <p className="text-xs text-muted-foreground">{t('adminProfile.paymentMethodsCard.nequiQrHint')}</p>
             </div>
         </CardContent>
       </Card>
