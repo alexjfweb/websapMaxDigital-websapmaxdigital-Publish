@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { useLanguage } from "@/contexts/language-context";
+import { useEffect, useState } from "react";
 
 
 // Mock Data for Orders - Using static dates to prevent hydration errors
@@ -25,6 +26,12 @@ const mockOrders = [
 
 export default function EmployeeOrdersPage() {
   const { t } = useLanguage();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // Filtered orders based on tab would be handled by state
   const activeOrders = mockOrders.filter(o => !['completed', 'cancelled'].includes(o.status));
   const pastOrders = mockOrders.filter(o => ['completed', 'cancelled'].includes(o.status));
@@ -40,6 +47,10 @@ export default function EmployeeOrdersPage() {
       default: return <Badge variant="outline">{status}</Badge>;
     }
   };
+
+  if (!isMounted) {
+    return null; // or a loading skeleton
+  }
 
   const renderOrderTable = (orders: typeof mockOrders) => (
     <Table>

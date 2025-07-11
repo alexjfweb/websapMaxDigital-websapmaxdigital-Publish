@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -49,6 +49,11 @@ type ReminderConfig = {
 export default function SuperAdminRemindersPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
   const [selectedConfig, setSelectedConfig] = useState<ReminderConfig | null>(null);
@@ -88,6 +93,10 @@ export default function SuperAdminRemindersPage() {
     });
     setIsDeleteDialogOpen(false);
     setConfigToDelete(null);
+  }
+
+  if (!isMounted) {
+    return null; // or a loading skeleton
   }
 
 

@@ -11,6 +11,7 @@ import { useLanguage } from "@/contexts/language-context";
 import Link from "next/link";
 import type { Company } from "@/types";
 import { format } from "date-fns";
+import { useEffect, useState } from "react";
 
 // Mock Data for Companies
 const mockCompanies: Company[] = [
@@ -23,7 +24,12 @@ const mockCompanies: Company[] = [
 
 export default function SuperAdminCompaniesPage() {
   const { t } = useLanguage();
+  const [isMounted, setIsMounted] = useState(false);
   const companies = mockCompanies;
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const getStatusBadge = (status: Company['status']) => {
     const statusKey = `superAdminCompanies.status.${status}`;
@@ -35,6 +41,10 @@ export default function SuperAdminCompaniesPage() {
       default: return <Badge variant="outline">{statusText}</Badge>;
     }
   };
+
+  if (!isMounted) {
+    return null; // or a loading skeleton
+  }
 
   return (
     <div className="space-y-8">

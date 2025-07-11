@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { useLanguage } from "@/contexts/language-context";
+import { useEffect, useState } from "react";
 
 // Mock Data for Reservations
 const mockReservations = [
@@ -20,7 +21,12 @@ const mockReservations = [
 
 export default function AdminReservationsPage() {
   const { t } = useLanguage();
+  const [isMounted, setIsMounted] = useState(false);
   const reservations = mockReservations;
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -31,6 +37,10 @@ export default function AdminReservationsPage() {
       default: return <Badge variant="outline">{status}</Badge>;
     }
   };
+
+  if (!isMounted) {
+    return null; // Or a loading spinner
+  }
 
   return (
     <div className="space-y-8">

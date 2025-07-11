@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { useLanguage } from "@/contexts/language-context";
+import { useEffect, useState } from "react";
 
 // Mock Data for Backup History - Using static dates to prevent hydration errors
 const mockBackupHistory = [
@@ -20,7 +21,16 @@ const mockBackupHistory = [
 
 export default function SuperAdminBackupPage() {
   const { t } = useLanguage();
+  const [isMounted, setIsMounted] = useState(false);
   const backupHistory = mockBackupHistory;
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return null; // or a loading skeleton
+  }
 
   return (
     <div className="space-y-8">

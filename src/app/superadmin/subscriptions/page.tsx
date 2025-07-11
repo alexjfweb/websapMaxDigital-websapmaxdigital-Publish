@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Gem, CreditCard, QrCode, History, Save, CheckCircle, UploadCloud } from "lucide-react";
 import { useLanguage } from "@/contexts/language-context";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 
@@ -32,7 +32,12 @@ const mockTransactions = [
 export default function SuperAdminSubscriptionsPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const [isMounted, setIsMounted] = useState(false);
   const [bancolombiaQrPreview, setBancolombiaQrPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleQrUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Basic validation for URL format
@@ -68,6 +73,10 @@ export default function SuperAdminSubscriptionsPage() {
       default: return <Badge variant="outline">{status}</Badge>;
     }
   };
+
+  if (!isMounted) {
+    return null; // or a loading skeleton
+  }
 
   return (
     <div className="space-y-8">

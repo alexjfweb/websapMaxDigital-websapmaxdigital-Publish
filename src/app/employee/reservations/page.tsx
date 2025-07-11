@@ -1,4 +1,6 @@
 
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, Eye, Search, Filter, CalendarDays, PlusCircle } from "lucide-react";
@@ -6,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { useEffect, useState } from "react";
 
 // Mock Data for Reservations (can be same as admin or filtered for employee view)
 const mockReservations = [
@@ -15,7 +18,12 @@ const mockReservations = [
 ];
 
 export default function EmployeeReservationsPage() {
+  const [isMounted, setIsMounted] = useState(false);
   const reservations = mockReservations;
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -25,6 +33,10 @@ export default function EmployeeReservationsPage() {
       default: return <Badge variant="outline">{status}</Badge>;
     }
   };
+
+  if (!isMounted) {
+    return null; // or a loading skeleton
+  }
 
   return (
     <div className="space-y-8">

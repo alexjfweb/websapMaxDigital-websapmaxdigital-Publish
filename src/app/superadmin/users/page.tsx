@@ -12,6 +12,7 @@ import type { User, UserRole } from "@/types";
 import { useLanguage } from "@/contexts/language-context";
 import Link from "next/link"; // Importado Link
 import { format } from "date-fns";
+import { useEffect, useState } from "react";
 
 // Mock Data for Users
 const mockUsers: User[] = [
@@ -24,7 +25,12 @@ const mockUsers: User[] = [
 
 export default function SuperAdminUsersPage() {
   const { t } = useLanguage();
+  const [isMounted, setIsMounted] = useState(false);
   const users = mockUsers;
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const getRoleBadge = (role: UserRole) => {
     const roleKey = `superAdminUsers.role.${role}`;
@@ -47,6 +53,10 @@ export default function SuperAdminUsersPage() {
       default: return <Badge variant="outline">{statusText}</Badge>;
     }
   };
+
+  if (!isMounted) {
+    return null; // or a loading skeleton
+  }
 
 
   return (

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { useLanguage } from "@/contexts/language-context";
+import { useEffect, useState } from "react";
 
 // Mock Data for Logs - Using static dates to prevent hydration errors
 const mockLogs = [
@@ -23,7 +24,12 @@ const mockLogs = [
 
 export default function SuperAdminLogsPage() {
   const { t } = useLanguage();
+  const [isMounted, setIsMounted] = useState(false);
   const logs = mockLogs;
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const getLevelBadge = (level: string) => {
     const levelKey = `superAdminLogs.level.${level.toLowerCase()}`;
@@ -40,6 +46,10 @@ export default function SuperAdminLogsPage() {
 
   const logLevels = ["ALL", "INFO", "WARN", "ERROR", "DEBUG", "CRITICAL"];
   const logSources = ["ALL_SOURCES", "AuthService", "SystemMonitor", "PaymentService", "OrderService", "BackupService", "Kernel"];
+
+  if (!isMounted) {
+    return null; // or a loading skeleton
+  }
 
   return (
     <div className="space-y-8">

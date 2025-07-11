@@ -9,6 +9,7 @@ import { Users, Store, ShoppingCart, DollarSign, Activity, BarChart3, TrendingUp
 import { useLanguage } from "@/contexts/language-context";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { useEffect, useState } from "react";
 
 // Mock Data
 const totalUsers = 150;
@@ -52,6 +53,15 @@ const recentActivityData = [
 
 export default function SuperAdminAnalyticsPage() {
   const { t } = useLanguage();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return null; // or a loading skeleton
+  }
 
   return (
     <div className="space-y-8">
