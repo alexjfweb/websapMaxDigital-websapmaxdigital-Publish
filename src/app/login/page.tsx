@@ -58,7 +58,7 @@ export default function LoginPage() {
         name: userCredential.name,
         avatarUrl: userCredential.avatarUrl,
         status: 'active', // Mock status
-        registrationDate: new Date().toISOString(), // Mock registration date
+        registrationDate: new Date().toISOString(), // This is safe as it runs after a user action
       };
       
       localStorage.setItem('currentUser', JSON.stringify(loggedInUser));
