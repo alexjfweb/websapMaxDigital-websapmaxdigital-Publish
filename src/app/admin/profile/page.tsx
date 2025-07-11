@@ -11,6 +11,8 @@ import { useLanguage } from "@/contexts/language-context";
 import TikTokIcon from "@/components/icons/tiktok-icon";
 import PinterestIcon from "@/components/icons/pinterest-icon";
 import { Globe, Share2 } from "lucide-react";
+import { useState } from "react";
+import Image from "next/image";
 
 
 // Mock data - in a real app, this would come from a backend/state management
@@ -39,7 +41,21 @@ const mockProfile = {
 
 
 export default function AdminProfilePage() {
-  const { t } = useLanguage(); // Añadido
+  const { t } = useLanguage();
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+
+  const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setLogoPreview(null);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -79,11 +95,20 @@ export default function AdminProfilePage() {
           <div className="space-y-4">
             <Label>{t('adminProfile.businessInfoCard.logoLabel')}</Label>
             <div className="flex items-center gap-4">
-                <img src={mockProfile.logoUrl} alt={t('adminProfile.businessInfoCard.logoAlt')} className="h-24 w-24 rounded-md border object-cover" data-ai-hint="logo placeholder"/>
-                <Button variant="outline">
+                <Image 
+                  src={logoPreview || mockProfile.logoUrl} 
+                  alt={t('adminProfile.businessInfoCard.logoAlt')} 
+                  width={96}
+                  height={96}
+                  className="h-24 w-24 rounded-md border object-cover" 
+                  data-ai-hint="logo placeholder"
+                />
+                <Button variant="outline" asChild>
+                  <Label htmlFor="logo-upload" className="cursor-pointer">
                     <UploadCloud className="mr-2 h-4 w-4" /> {t('adminProfile.businessInfoCard.uploadLogoButton')}
-                    <Input type="file" className="hidden" accept="image/*" />
+                  </Label>
                 </Button>
+                <Input id="logo-upload" type="file" className="hidden" accept="image/*" onChange={handleLogoChange}/>
             </div>
             <p className="text-xs text-muted-foreground">{t('adminProfile.businessInfoCard.logoHint')}</p>
           </div>
