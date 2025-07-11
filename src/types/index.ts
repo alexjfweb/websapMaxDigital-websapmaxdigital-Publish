@@ -14,6 +14,16 @@ export interface RestaurantProfile {
     secondary: string;
     accent: string;
   };
+  socialLinks?: {
+    website?: string;
+    menuShareLink?: string;
+    facebook?: string;
+    instagram?: string;
+    x?: string;
+    whatsapp?: string;
+    tiktok?: string;
+    pinterest?: string;
+  };
   paymentMethods: {
     nequi?: {
       qrCodeUrl: string;

@@ -200,6 +200,17 @@ export const translations: Record<Language, Translations> = {
     "adminProfile.editButton": "Edit",
     "adminProfile.saveButton": "Save Changes",
     "adminProfile.deleteButton": "Delete Profile (Caution)",
+    "adminProfile.socialLinksCard.title": "Social Media & Links",
+    "adminProfile.socialLinksCard.description": "Add links to your social media profiles and website.",
+    "adminProfile.socialLinksCard.websitePlaceholder": "https://your-website.com",
+    "adminProfile.socialLinksCard.menuShareLinkPlaceholder": "https://your-menu-link.com",
+    "adminProfile.socialLinksCard.facebookPlaceholder": "https://facebook.com/your-page",
+    "adminProfile.socialLinksCard.instagramPlaceholder": "https://instagram.com/your-profile",
+    "adminProfile.socialLinksCard.xPlaceholder": "https://x.com/your-handle",
+    "adminProfile.socialLinksCard.whatsappPlaceholder": "https://wa.me/1234567890",
+    "adminProfile.socialLinksCard.tiktokPlaceholder": "https://tiktok.com/@your-profile",
+    "adminProfile.socialLinksCard.pinterestPlaceholder": "https://pinterest.com/your-profile",
+
 
     // AdminReservations Page
     "adminReservations.title": "Reservation Management",
@@ -805,6 +816,16 @@ export const translations: Record<Language, Translations> = {
     "adminProfile.editButton": "Editar",
     "adminProfile.saveButton": "Guardar Cambios",
     "adminProfile.deleteButton": "Eliminar Perfil (Precaución)",
+    "adminProfile.socialLinksCard.title": "Redes Sociales y Enlaces",
+    "adminProfile.socialLinksCard.description": "Añade enlaces a tus perfiles de redes sociales y sitio web.",
+    "adminProfile.socialLinksCard.websitePlaceholder": "https://tu-sitio-web.com",
+    "adminProfile.socialLinksCard.menuShareLinkPlaceholder": "https://tu-enlace-de-menu.com",
+    "adminProfile.socialLinksCard.facebookPlaceholder": "https://facebook.com/tu-pagina",
+    "adminProfile.socialLinksCard.instagramPlaceholder": "https://instagram.com/tu-perfil",
+    "adminProfile.socialLinksCard.xPlaceholder": "https://x.com/tu-usuario",
+    "adminProfile.socialLinksCard.whatsappPlaceholder": "https://wa.me/1234567890",
+    "adminProfile.socialLinksCard.tiktokPlaceholder": "https://tiktok.com/@tu-perfil",
+    "adminProfile.socialLinksCard.pinterestPlaceholder": "https://pinterest.com/tu-perfil",
 
     // AdminReservations Page
     "adminReservations.title": "Gestión de Reservas",
@@ -1410,6 +1431,16 @@ export const translations: Record<Language, Translations> = {
     "adminProfile.editButton": "Editar",
     "adminProfile.saveButton": "Salvar Alterações",
     "adminProfile.deleteButton": "Excluir Perfil (Cuidado)",
+    "adminProfile.socialLinksCard.title": "Redes Sociais e Links",
+    "adminProfile.socialLinksCard.description": "Adicione links para seus perfis de redes sociais e site.",
+    "adminProfile.socialLinksCard.websitePlaceholder": "https://seu-site.com",
+    "adminProfile.socialLinksCard.menuShareLinkPlaceholder": "https://seu-link-de-menu.com",
+    "adminProfile.socialLinksCard.facebookPlaceholder": "https://facebook.com/sua-pagina",
+    "adminProfile.socialLinksCard.instagramPlaceholder": "https://instagram.com/seu-perfil",
+    "adminProfile.socialLinksCard.xPlaceholder": "https://x.com/seu-usuario",
+    "adminProfile.socialLinksCard.whatsappPlaceholder": "https://wa.me/1234567890",
+    "adminProfile.socialLinksCard.tiktokPlaceholder": "https://tiktok.com/@seu-perfil",
+    "adminProfile.socialLinksCard.pinterestPlaceholder": "https://pinterest.com/seu-perfil",
 
     // AdminReservations Page
     "adminReservations.title": "Gerenciamento de Reservas",
@@ -2015,6 +2046,16 @@ export const translations: Record<Language, Translations> = {
     "adminProfile.editButton": "Modifier",
     "adminProfile.saveButton": "Enregistrer les Modifications",
     "adminProfile.deleteButton": "Supprimer le Profil (Attention)",
+    "adminProfile.socialLinksCard.title": "Réseaux Sociaux et Liens",
+    "adminProfile.socialLinksCard.description": "Ajoutez des liens vers vos profils de réseaux sociaux et votre site web.",
+    "adminProfile.socialLinksCard.websitePlaceholder": "https://votre-site-web.com",
+    "adminProfile.socialLinksCard.menuShareLinkPlaceholder": "https://votre-lien-de-menu.com",
+    "adminProfile.socialLinksCard.facebookPlaceholder": "https://facebook.com/votre-page",
+    "adminProfile.socialLinksCard.instagramPlaceholder": "https://instagram.com/votre-profil",
+    "adminProfile.socialLinksCard.xPlaceholder": "https://x.com/votre-pseudo",
+    "adminProfile.socialLinksCard.whatsappPlaceholder": "https://wa.me/1234567890",
+    "adminProfile.socialLinksCard.tiktokPlaceholder": "https://tiktok.com/@votre-profil",
+    "adminProfile.socialLinksCard.pinterestPlaceholder": "https://pinterest.com/votre-profil",
 
     // AdminReservations Page
     "adminReservations.title": "Gestion des Réservations",

@@ -13,6 +13,16 @@ export const mockRestaurantProfile: RestaurantProfile = {
     secondary: '#FFF2E6', // Very light orange
     accent: '#FFB347', // Muted orange-yellow
   },
+  socialLinks: {
+    website: "https://www.websapmax.com",
+    menuShareLink: "https://menu.websapmax.com",
+    facebook: "https://facebook.com/websapmax",
+    instagram: "https://instagram.com/websapmax",
+    x: "https://x.com/websapmax",
+    whatsapp: "https://wa.me/15551234567",
+    tiktok: "https://tiktok.com/@websapmax",
+    pinterest: "https://pinterest.com/websapmax"
+  },
   paymentMethods: {
     nequi: {
       qrCodeUrl: 'https://placehold.co/300x300.png?text=Nequi+QR',

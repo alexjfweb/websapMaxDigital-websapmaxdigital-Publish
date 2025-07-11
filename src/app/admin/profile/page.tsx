@@ -6,8 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { UploadCloud, Save, Edit, Trash2 } from "lucide-react";
-import { useLanguage } from "@/contexts/language-context"; // Importado
+import { UploadCloud, Save, Edit, Trash2, Link as LinkIcon, Facebook, Instagram, Twitter, MessageCircle, Pin } from "lucide-react";
+import { useLanguage } from "@/contexts/language-context"; 
+import TikTokIcon from "@/components/icons/tiktok-icon";
+import PinterestIcon from "@/components/icons/pinterest-icon";
+import { Globe, Share2 } from "lucide-react";
+
 
 // Mock data - in a real app, this would come from a backend/state management
 const mockProfile = {
@@ -21,6 +25,16 @@ const mockProfile = {
   secondaryColor: "#FFF2E6",
   accentColor: "#FFB347",
   nequiQrUrl: "https://placehold.co/200x200.png?text=NequiQR",
+  socialLinks: {
+    website: "https://www.websapmax.com",
+    menuShareLink: "https://menu.websapmax.com",
+    facebook: "https://facebook.com/websapmax",
+    instagram: "https://instagram.com/websapmax",
+    x: "https://x.com/websapmax",
+    whatsapp: "https://wa.me/15551234567",
+    tiktok: "https://tiktok.com/@websapmax",
+    pinterest: "https://pinterest.com/websapmax"
+  }
 };
 
 
@@ -75,6 +89,51 @@ export default function AdminProfilePage() {
           </div>
         </CardContent>
       </Card>
+      
+       {/* Social Links Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('adminProfile.socialLinksCard.title')}</CardTitle>
+          <CardDescription>{t('adminProfile.socialLinksCard.description')}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="relative">
+              <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input id="website" placeholder={t('adminProfile.socialLinksCard.websitePlaceholder')} defaultValue={mockProfile.socialLinks.website} className="pl-10" />
+            </div>
+            <div className="relative">
+              <Share2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input id="menuShareLink" placeholder={t('adminProfile.socialLinksCard.menuShareLinkPlaceholder')} defaultValue={mockProfile.socialLinks.menuShareLink} className="pl-10" />
+            </div>
+            <div className="relative">
+              <Facebook className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input id="facebook" placeholder={t('adminProfile.socialLinksCard.facebookPlaceholder')} defaultValue={mockProfile.socialLinks.facebook} className="pl-10" />
+            </div>
+            <div className="relative">
+              <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input id="instagram" placeholder={t('adminProfile.socialLinksCard.instagramPlaceholder')} defaultValue={mockProfile.socialLinks.instagram} className="pl-10" />
+            </div>
+            <div className="relative">
+              <Twitter className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input id="x" placeholder={t('adminProfile.socialLinksCard.xPlaceholder')} defaultValue={mockProfile.socialLinks.x} className="pl-10" />
+            </div>
+             <div className="relative">
+              <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input id="whatsapp" placeholder={t('adminProfile.socialLinksCard.whatsappPlaceholder')} defaultValue={mockProfile.socialLinks.whatsapp} className="pl-10" />
+            </div>
+            <div className="relative">
+              <TikTokIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input id="tiktok" placeholder={t('adminProfile.socialLinksCard.tiktokPlaceholder')} defaultValue={mockProfile.socialLinks.tiktok} className="pl-10" />
+            </div>
+            <div className="relative">
+              <PinterestIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input id="pinterest" placeholder={t('adminProfile.socialLinksCard.pinterestPlaceholder')} defaultValue={mockProfile.socialLinks.pinterest} className="pl-10" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
 
       <Card>
         <CardHeader>
