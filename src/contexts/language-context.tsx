@@ -2,7 +2,7 @@
 "use client";
 
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
-import { createContext, useContext, useState, useMemo, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useMemo, useCallback } from 'react';
 import { translations } from '@/translations'; 
 import type { Language, TranslationVariables } from '@/types/i18n';
 
@@ -18,26 +18,30 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>('en');
 
   const t = useCallback((key: string, variables?: TranslationVariables): string => {
+    // Helper function to safely access nested properties
     const getNestedTranslation = (lang: Language, keyToFind: string): string | undefined => {
       const keys = keyToFind.split('.');
       let result: any = translations[lang];
       for (const k of keys) {
-        result = result?.[k];
         if (result === undefined) return undefined;
+        result = result[k];
       }
       return result;
     };
 
     let translation = getNestedTranslation(language, key);
 
+    // Fallback to English if translation is not found in the current language
     if (translation === undefined) {
       translation = getNestedTranslation('en', key);
     }
     
+    // Return the key itself if no translation is found anywhere
     if (translation === undefined || typeof translation !== 'string') {
       return key;
     }
 
+    // Replace variables if any
     if (variables) {
       Object.keys(variables).forEach((varKey) => {
         const regex = new RegExp(`{${varKey}}`, 'g');
@@ -48,7 +52,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return translation;
   }, [language]);
 
-  const value = useMemo(() => ({ language, setLanguage, t }), [language, setLanguage, t]);
+  const value = useMemo(() => {
+      const setLanguageAndStore = (newLang: Language | ((prevState: Language) => Language)) => {
+        const lang = typeof newLang === 'function' ? newLang(language) : newLang;
+        localStorage.setItem('language', lang);
+        setLanguage(lang);
+      };
+      return { language, setLanguage: setLanguageAndStore, t };
+  }, [language, t]);
 
   return (
     <LanguageContext.Provider value={value}>

@@ -4,10 +4,53 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Settings, ShoppingBag, Utensils, Users, CreditCard, Share2 } from "lucide-react";
 import Link from "next/link";
-import { useLanguage } from "@/contexts/language-context";
+import { useState, useEffect, useCallback } from 'react';
+import { translations } from '@/translations';
+import type { Language, TranslationVariables } from '@/types/i18n';
 
 export default function AdminDashboardPage() {
-  const { t } = useLanguage();
+  const [lang, setLang] = useState<Language>('en');
+  const [t, setT] = useState<(key: string, vars?: TranslationVariables) => string>(() => () => '');
+
+  useEffect(() => {
+    // Determine the language from localStorage or default to 'en'
+    const storedLang = localStorage.getItem('language') as Language;
+    if (storedLang && translations[storedLang]) {
+      setLang(storedLang);
+    }
+  }, []);
+
+  const getTranslation = useCallback((language: Language, key: string, variables?: TranslationVariables): string => {
+    const keys = key.split('.');
+    let result: any = translations[language];
+    for (const k of keys) {
+      result = result?.[k];
+      if (result === undefined) {
+        // Fallback to English
+        let fallbackResult: any = translations['en'];
+        for (const fk of keys) {
+            fallbackResult = fallbackResult?.[fk];
+            if (fallbackResult === undefined) return key;
+        }
+        result = fallbackResult;
+        break;
+      }
+    }
+    
+    if (typeof result !== 'string') return key;
+
+    if (variables) {
+      Object.keys(variables).forEach((varKey) => {
+        const regex = new RegExp(`{${varKey}}`, 'g');
+        result = result.replace(regex, String(variables[varKey]));
+      });
+    }
+    return result;
+  }, []);
+
+  useEffect(() => {
+    setT(() => (key: string, vars?: TranslationVariables) => getTranslation(lang, key, vars));
+  }, [lang, getTranslation]);
 
   return (
     <div className="space-y-8">
