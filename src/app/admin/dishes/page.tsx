@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, type ChangeEvent, useEffect } from "react";
+import { useState, type ChangeEvent, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -21,14 +21,55 @@ import { useToast } from "@/hooks/use-toast";
 import type { Dish, DishFormData } from "@/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { useLanguage } from "@/contexts/language-context";
+import type { Language, TranslationVariables } from '@/types/i18n';
+import { translations } from '@/translations';
 
 
 export default function AdminDishesPage() {
-  const { t } = useLanguage();
+  const [lang, setLang] = useState<Language>('en');
+  const [t, setT] = useState<(key: string, vars?: TranslationVariables) => string>(() => () => '');
+  
+  const getTranslation = useCallback((language: Language, key: string, variables?: TranslationVariables): string => {
+    const keys = key.split('.');
+    let result: any = translations[language];
+    for (const k of keys) {
+      result = result?.[k];
+      if (result === undefined) {
+        let fallbackResult: any = translations['en'];
+        for (const fk of keys) {
+          fallbackResult = fallbackResult?.[fk];
+          if (fallbackResult === undefined) return key;
+        }
+        result = fallbackResult;
+        break;
+      }
+    }
+    
+    if (typeof result !== 'string') return key;
+
+    if (variables) {
+      Object.keys(variables).forEach((varKey) => {
+        const regex = new RegExp(`{${varKey}}`, 'g');
+        result = result.replace(regex, String(variables[varKey]));
+      });
+    }
+    return result;
+  }, []);
+
+  useEffect(() => {
+    const storedLang = localStorage.getItem('language') as Language | null;
+    if (storedLang && translations[storedLang]) {
+      setLang(storedLang);
+    }
+  }, []);
+  
+  useEffect(() => {
+    setT(() => (key: string, vars?: TranslationVariables) => getTranslation(lang, key, vars));
+  }, [lang, getTranslation]);
+
+
   const { toast } = useToast();
 
-  // Schema for the form validation, using t function for messages
   const dishFormSchema = z.object({
     id: z.string().optional(),
     name: z.string().min(3, { message: t('adminDishes.validation.nameRequired') }),
@@ -61,14 +102,12 @@ export default function AdminDishesPage() {
     },
   });
   
-  // Re-validate form when language changes
   useEffect(() => {
     if (isMounted) {
       form.trigger();
     }
   }, [t, form, isMounted]);
 
-  // Effect to populate form when editing
   useEffect(() => {
     if (editingDish) {
       form.reset({
@@ -78,7 +117,7 @@ export default function AdminDishesPage() {
         price: editingDish.price,
         category: editingDish.category,
         stock: editingDish.stock,
-        image: null, // Image file needs to be re-uploaded for security reasons
+        image: null,
       });
       setImagePreview(editingDish.imageUrl);
     } else {
@@ -92,7 +131,7 @@ export default function AdminDishesPage() {
       });
       setImagePreview(null);
     }
-  }, [editingDish, form, isDialogOpen]); // Added isDialogOpen to reset form on close
+  }, [editingDish, form, isDialogOpen]);
 
   const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -100,7 +139,7 @@ export default function AdminDishesPage() {
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
-        form.setValue("image", file); // Set file object for form submission
+        form.setValue("image", file);
       };
       reader.readAsDataURL(file);
     } else {
@@ -110,14 +149,12 @@ export default function AdminDishesPage() {
   };
   
   const onSubmit = (values: DishFormData) => {
-    // In a real app, you would send this to a backend API
     if (editingDish) {
-      // Logic to update an existing dish
       setDishes(prevDishes => prevDishes.map(d => 
         d.id === editingDish.id ? { 
           ...d, 
           ...values, 
-          imageUrl: imagePreview || d.imageUrl, // Keep old image if new one isn't uploaded
+          imageUrl: imagePreview || d.imageUrl,
           price: Number(values.price),
           stock: Number(values.stock) 
         } : d
@@ -127,16 +164,15 @@ export default function AdminDishesPage() {
         description: t('adminDishes.toast.updateSuccessDescription', { dishName: values.name }),
       });
     } else {
-      // Logic to create a new dish
       const newDish: Dish = {
-          id: `dish-${Date.now()}`, // Generate a mock ID
+          id: `dish-${Date.now()}`,
           name: values.name,
           description: values.description,
           price: Number(values.price),
           category: values.category,
           stock: Number(values.stock),
-          likes: 0, // New dishes start with 0 likes
-          imageUrl: imagePreview || "https://placehold.co/600x400.png", // Use preview or a placeholder
+          likes: 0,
+          imageUrl: imagePreview || "https://placehold.co/600x400.png",
       };
       setDishes(prevDishes => [newDish, ...prevDishes]);
       toast({
@@ -168,7 +204,6 @@ export default function AdminDishesPage() {
     })
   }
   
-  // Mock function to render stars
   const renderStars = (likes: number) => {
     return Array(5).fill(0).map((_, i) => (
         <svg key={i} className={`h-4 w-4 ${i < likes ? 'text-accent fill-accent' : 'text-muted-foreground/50'}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
@@ -176,7 +211,7 @@ export default function AdminDishesPage() {
   };
 
   if (!isMounted) {
-    return <div>Cargando...</div>; // O un componente de esqueleto/spinner
+    return <div>Cargando...</div>;
   }
 
   return (
