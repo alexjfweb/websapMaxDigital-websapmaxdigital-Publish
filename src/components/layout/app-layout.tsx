@@ -16,13 +16,14 @@ import {
 import AppHeader from '@/components/layout/header';
 import NavigationMenu from '@/components/layout/navigation-menu';
 import { Button } from '@/components/ui/button';
-import { LogOut, Settings, UserCircle } from 'lucide-react';
+import { LogOut, Settings, UserCircle, LoaderCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/language-context';
+import { Toaster } from '@/components/ui/toaster';
 
 const guestUser: User = {
   id: 'guest',
@@ -45,6 +46,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    // This effect runs only on the client, after the initial render.
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
       try {
@@ -58,7 +60,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       }
     }
     setIsMounted(true);
-  }, [pathname]);
+  }, [pathname]); // Re-check on path change
 
   const handleLogout = () => {
     localStorage.removeItem('currentUser');
@@ -67,11 +69,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     router.push('/login');
   };
   
-  // Render a loading state until the component is mounted to prevent hydration mismatch
   if (!isMounted) {
     return (
         <div className="flex min-h-svh w-full items-center justify-center bg-background">
-            <p>{t('appLayout.loading')}</p>
+            <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
         </div>
     );
   }
@@ -85,6 +86,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <main className="flex-1 bg-background">
           {children}
         </main>
+        <Toaster />
       </div>
     );
   }
@@ -157,7 +159,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background">
           {children}
         </main>
+        <Toaster />
       </SidebarInset>
     </SidebarProvider>
   );
 }
+
