@@ -8,19 +8,21 @@ import { z } from "zod";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Edit3, Trash2, Search, UserCog, UploadCloud, X, Save } from "lucide-react";
+import { PlusCircle, Edit3, Trash2, Search, UploadCloud, X, Save } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { User, UserRole } from "@/types"; 
-import { useLanguage } from "@/contexts/language-context";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { translations } from "@/translations";
+import type { Language, TranslationVariables } from "@/types/i18n";
+
 
 // Mock Data for Employees
 const mockEmployees: User[] = [
@@ -29,21 +31,61 @@ const mockEmployees: User[] = [
   { id: "emp-3", username: "mike.delivery", email: "mike.delivery@websapmax.com", contact: "555-3333", role: "employee", status: "inactive", registrationDate: "2023-05-10", avatarUrl: "https://placehold.co/40x40.png?text=MD" },
 ];
 
-const employeeFormSchema = z.object({
-    id: z.string().optional(),
-    username: z.string().min(3, { message: "Username must be at least 3 characters." }),
-    email: z.string().email({ message: "Please enter a valid email." }),
-    contact: z.string().optional(),
-    role: z.enum(["employee", "admin"], { required_error: "Role is required." }),
-    status: z.enum(["active", "inactive", "pending"], { required_error: "Status is required." }),
-    avatar: z.any().optional(),
-});
-
-type EmployeeFormData = z.infer<typeof employeeFormSchema>;
-
 
 export default function AdminEmployeesPage() {
-  const { t } = useLanguage();
+  const [lang, setLang] = useState<Language>('en');
+  const [t, setT] = useState<(key: string, vars?: TranslationVariables) => string>(() => () => '');
+
+  useEffect(() => {
+    const storedLang = localStorage.getItem('language') as Language | null;
+    if (storedLang && translations[storedLang]) {
+      setLang(storedLang);
+    }
+  }, []);
+
+  useEffect(() => {
+    const getTranslation = (language: Language) => (key: string, variables?: TranslationVariables): string => {
+      const keys = key.split('.');
+      let result: any = translations[language] || translations['en'];
+      for (const k of keys) {
+        result = result?.[k];
+        if (result === undefined) {
+          // Fallback to English if key not found in current language
+          let fallbackResult: any = translations['en'];
+          for (const fk of keys) {
+            fallbackResult = fallbackResult?.[fk];
+            if (fallbackResult === undefined) return key;
+          }
+          result = fallbackResult;
+          break;
+        }
+      }
+      
+      if (typeof result !== 'string') return key;
+
+      if (variables) {
+        Object.keys(variables).forEach((varKey) => {
+          const regex = new RegExp(`{${varKey}}`, 'g');
+          result = result.replace(regex, String(variables[varKey]));
+        });
+      }
+      return result;
+    };
+    setT(() => getTranslation(lang));
+  }, [lang]);
+  
+  const employeeFormSchema = z.object({
+      id: z.string().optional(),
+      username: z.string().min(3, { message: t('adminDishes.validation.usernameRequired') }),
+      email: z.string().email({ message: "Please enter a valid email." }),
+      contact: z.string().optional(),
+      role: z.enum(["employee", "admin"], { required_error: "Role is required." }),
+      status: z.enum(["active", "inactive", "pending"], { required_error: "Status is required." }),
+      avatar: z.any().optional(),
+  });
+
+  type EmployeeFormData = z.infer<typeof employeeFormSchema>;
+
   const { toast } = useToast();
   const [employees, setEmployees] = useState<User[]>(mockEmployees);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -84,7 +126,7 @@ export default function AdminEmployeesPage() {
       });
       setAvatarPreview(null);
     }
-  }, [editingEmployee, form]);
+  }, [editingEmployee, form, isDialogOpen]);
   
   const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -141,7 +183,6 @@ export default function AdminEmployeesPage() {
 
   const closeDialog = () => {
     setIsDialogOpen(false);
-    setEditingEmployee(null); // This will trigger useEffect to reset the form
   }
 
   const handleDeleteEmployee = (employeeId: string) => {
@@ -335,5 +376,3 @@ export default function AdminEmployeesPage() {
     </div>
   );
 }
-
-    
