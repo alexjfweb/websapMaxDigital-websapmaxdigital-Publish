@@ -15,13 +15,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { mockDishes } from "@/lib/mock-data"; 
-import { useLanguage } from "@/contexts/language-context";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import type { Dish, DishFormData } from "@/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/language-context";
 
 
 export default function AdminDishesPage() {
@@ -43,6 +43,11 @@ export default function AdminDishesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDish, setEditingDish] = useState<Dish | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const form = useForm<DishFormData>({
     resolver: zodResolver(dishFormSchema),
@@ -58,8 +63,10 @@ export default function AdminDishesPage() {
   
   // Re-validate form when language changes
   useEffect(() => {
-    form.trigger();
-  }, [t, form]);
+    if (isMounted) {
+      form.trigger();
+    }
+  }, [t, form, isMounted]);
 
   // Effect to populate form when editing
   useEffect(() => {
@@ -168,6 +175,9 @@ export default function AdminDishesPage() {
     ));
   };
 
+  if (!isMounted) {
+    return <div>Cargando...</div>; // O un componente de esqueleto/spinner
+  }
 
   return (
     <div className="space-y-8">
