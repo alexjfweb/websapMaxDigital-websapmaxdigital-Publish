@@ -1,9 +1,9 @@
 
-"use client"; 
+"use client";
 
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   SidebarProvider,
   Sidebar,
@@ -16,12 +16,12 @@ import {
 import AppHeader from '@/components/layout/header';
 import NavigationMenu from '@/components/layout/navigation-menu';
 import { Button } from '@/components/ui/button';
-import { LogOut, Settings, UserCircle, Menu as MenuIcon } from 'lucide-react';
+import { LogOut, Settings, UserCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { User } from '@/types';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/language-context';
 
 const guestUser: User = {
@@ -38,52 +38,45 @@ const guestUser: User = {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname(); 
+  const { t } = useLanguage();
+  const { toast } = useToast();
+  
   const [currentUser, setCurrentUser] = useState<User>(guestUser);
   const [isMounted, setIsMounted] = useState(false);
-  const { t } = useLanguage();
 
   useEffect(() => {
-    setIsMounted(true);
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
       try {
-        const parsedUser = JSON.parse(storedUser) as User;
+        const parsedUser = JSON.parse(storedUser);
         if (parsedUser && parsedUser.email && parsedUser.role) {
           setCurrentUser(parsedUser);
-        } else {
-          localStorage.removeItem('currentUser');
-          setCurrentUser(guestUser);
         }
       } catch (error) {
         console.error("Failed to parse user from localStorage", error);
         localStorage.removeItem('currentUser');
-        setCurrentUser(guestUser);
       }
-    } else {
-      setCurrentUser(guestUser);
     }
+    setIsMounted(true);
   }, [pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem('currentUser');
     setCurrentUser(guestUser);
-    toast({ title: t('header.logout'), description: t('appLayout.toastLogoutSuccess', {defaultValue: "You have been successfully logged out."}) }); 
+    toast({ title: t('header.logout'), description: t('appLayout.toastLogoutSuccess') }); 
     router.push('/login');
   };
-
-  const isSpecialPage = ['/login', '/register', '/'].includes(pathname);
-
+  
   // Render a loading state until the component is mounted to prevent hydration mismatch
   if (!isMounted) {
     return (
-      <div 
-        className="flex min-h-svh w-full items-center justify-center bg-background"
-        suppressHydrationWarning={true}
-      >
-        <p>{t('appLayout.loading', { defaultValue: 'Loading application...'})}</p>
-      </div>
+        <div className="flex min-h-svh w-full items-center justify-center bg-background">
+            <p>{t('appLayout.loading')}</p>
+        </div>
     );
   }
+
+  const isSpecialPage = ['/login', '/register', '/'].includes(pathname);
 
   if (isSpecialPage) {
     return (
@@ -106,19 +99,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </svg>
             <span className="group-data-[collapsible=icon]:hidden">websapMax</span>
           </Link>
-          {currentUser.role !== 'guest' ? (
+          {currentUser.role !== 'guest' && (
             <div className="mt-1 text-center group-data-[collapsible=icon]:hidden">
               <p className="text-sm font-medium text-sidebar-foreground truncate max-w-[150px]">
                 {currentUser.name || currentUser.username}
               </p>
               <p className="text-xs text-sidebar-foreground/80 capitalize">
-                {t('appLayout.rolePrefix')}: {t(`userRoles.${currentUser.role}`, {defaultValue: currentUser.role})}
-              </p>
-            </div>
-          ) : (
-            <div className="mt-1 text-center group-data-[collapsible=icon]:hidden">
-              <p className="text-sm text-sidebar-foreground/80">
-                {t('appLayout.guestAccess')}
+                {t('appLayout.rolePrefix')}: {t(`userRoles.${currentUser.role}`)}
               </p>
             </div>
           )}
@@ -132,7 +119,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="w-full justify-start gap-2 p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={currentUser.avatarUrl || `https://placehold.co/40x40.png?text=${currentUser.name?.substring(0,1).toUpperCase()}`} alt={currentUser.name || 'User'} data-ai-hint="user avatar" />
+                        <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name || 'User'} data-ai-hint="user avatar" />
                         <AvatarFallback>{currentUser.name ? currentUser.name.substring(0,1).toUpperCase() : currentUser.username.substring(0,1).toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <div className="group-data-[collapsible=icon]:hidden flex flex-col items-start">
