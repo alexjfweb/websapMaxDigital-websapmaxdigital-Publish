@@ -32,13 +32,13 @@ const guestUser: User = {
   avatarUrl: 'https://placehold.co/100x100.png?text=G',
   role: 'guest',
   status: 'active',
-  registrationDate: new Date(0).toISOString(), // Use a fixed, non-dynamic date
+  registrationDate: new Date(0).toISOString(),
 };
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname(); 
-  const [currentUser, setCurrentUser] = useState<User | null>(null); // Start with null
+  const [currentUser, setCurrentUser] = useState<User>(guestUser);
   const [isMounted, setIsMounted] = useState(false);
   const { t } = useLanguage();
 
@@ -51,7 +51,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         if (parsedUser && parsedUser.email && parsedUser.role) {
           setCurrentUser(parsedUser);
         } else {
-          // Data in localStorage is invalid
           localStorage.removeItem('currentUser');
           setCurrentUser(guestUser);
         }
@@ -72,19 +71,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     router.push('/login');
   };
 
-  // Prevent rendering anything until the component is mounted and user state is determined
-  if (!isMounted || !currentUser) {
+  const isSpecialPage = ['/login', '/register', '/'].includes(pathname);
+
+  // Render a loading state until the component is mounted to prevent hydration mismatch
+  if (!isMounted) {
     return (
       <div 
         className="flex min-h-svh w-full items-center justify-center bg-background"
         suppressHydrationWarning={true}
       >
-        {t('appLayout.loading')}
+        <p>{t('appLayout.loading', { defaultValue: 'Loading application...'})}</p>
       </div>
     );
   }
-
-  const isSpecialPage = ['/login', '/register', '/'].includes(pathname);
 
   if (isSpecialPage) {
     return (
