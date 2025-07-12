@@ -16,13 +16,13 @@ import {
 import AppHeader from '@/components/layout/header';
 import NavigationMenu from '@/components/layout/navigation-menu';
 import { Button } from '@/components/ui/button';
-import { LogOut, Settings, UserCircle, Menu as MenuIcon } from 'lucide-react'; // MenuIcon importado por si acaso, aunque se usa en AppHeader
+import { LogOut, Settings, UserCircle, Menu as MenuIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { User } from '@/types';
 import { toast } from '@/hooks/use-toast';
-import { LanguageProvider, useLanguage } from '@/contexts/language-context';
+import { useLanguage } from '@/contexts/language-context';
 
 const guestUser: User = {
   id: 'guest',
@@ -35,7 +35,7 @@ const guestUser: User = {
   registrationDate: '2024-01-01T00:00:00.000Z', // Static date to prevent hydration mismatch
 };
 
-function AppLayoutContent({ children }: { children: React.ReactNode }) {
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname(); 
   const [currentUser, setCurrentUser] = useState<User>(guestUser);
@@ -194,13 +194,5 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         </main>
       </SidebarInset>
     </SidebarProvider>
-  );
-}
-
-export default function AppLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <LanguageProvider>
-      <AppLayoutContent>{children}</AppLayoutContent>
-    </LanguageProvider>
   );
 }
