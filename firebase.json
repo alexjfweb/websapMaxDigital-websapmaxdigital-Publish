@@ -8,6 +8,18 @@
     ],
     "frameworksBackend": {
       "region": "us-central1"
+    },
+    "targets": {
+      "production": {
+        "hosting": {
+          "websapmaxdigital": {}
+        }
+      },
+      "staging": {
+        "hosting": {
+          "websapmaxdigital-staging": {}
+        }
+      }
     }
   }
 }

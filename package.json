@@ -9,7 +9,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "deploy": "npm run build && firebase deploy --only hosting --project websapmaxdigital",
+    "deploy:staging": "npm run build && firebase deploy --only hosting --project websapmaxdigital-staging",
+    "deploy:production": "npm run build && firebase deploy --only hosting --project websapmaxdigital",
+    "predeploy": "npm run typecheck && npm run lint"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.8.0",
