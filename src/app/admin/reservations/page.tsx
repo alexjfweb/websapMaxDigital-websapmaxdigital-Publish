@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { useLanguage } from "@/contexts/language-context";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { translations } from '@/translations';
+import type { Language, TranslationVariables } from '@/types/i18n';
 
 // Mock Data for Reservations
 const mockReservations = [
@@ -20,26 +21,63 @@ const mockReservations = [
 ];
 
 export default function AdminReservationsPage() {
-  const { t } = useLanguage();
+  const [lang, setLang] = useState<Language>('en');
+  const [t, setT] = useState<(key: string, vars?: TranslationVariables) => string>(() => () => '');
   const [isMounted, setIsMounted] = useState(false);
-  const reservations = mockReservations;
+
+  const getTranslation = useCallback((language: Language, key: string, variables?: TranslationVariables): string => {
+    const keys = key.split('.');
+    let result: any = translations[language];
+    for (const k of keys) {
+      result = result?.[k];
+      if (result === undefined) {
+        let fallbackResult: any = translations['en'];
+        for (const fk of keys) {
+            fallbackResult = fallbackResult?.[fk];
+            if (fallbackResult === undefined) return key;
+        }
+        result = fallbackResult;
+        break;
+      }
+    }
+    
+    if (typeof result !== 'string') return key;
+
+    if (variables) {
+      Object.keys(variables).forEach((varKey) => {
+        const regex = new RegExp(`{${varKey}}`, 'g');
+        result = result.replace(regex, String(variables[varKey]));
+      });
+    }
+    return result;
+  }, []);
 
   useEffect(() => {
+    const storedLang = localStorage.getItem('language') as Language | null;
+    if (storedLang && translations[storedLang]) {
+      setLang(storedLang);
+    }
     setIsMounted(true);
   }, []);
 
+  useEffect(() => {
+    setT(() => (key: string, vars?: TranslationVariables) => getTranslation(lang, key, vars));
+  }, [lang, getTranslation]);
+
   const getStatusBadge = (status: string) => {
+    const statusKey = `adminReservations.status.${status}`;
+    const statusText = t(statusKey);
     switch (status) {
-      case "confirmed": return <Badge className="bg-green-500 text-white hover:bg-green-600">{t('adminReservations.status.confirmed')}</Badge>;
-      case "pending": return <Badge className="bg-yellow-500 text-white hover:bg-yellow-600">{t('adminReservations.status.pending')}</Badge>;
-      case "cancelled": return <Badge variant="destructive">{t('adminReservations.status.cancelled')}</Badge>;
-      case "completed": return <Badge variant="secondary">{t('adminReservations.status.completed')}</Badge>;
+      case "confirmed": return <Badge className="bg-green-500 text-white hover:bg-green-600">{statusText}</Badge>;
+      case "pending": return <Badge className="bg-yellow-500 text-white hover:bg-yellow-600">{statusText}</Badge>;
+      case "cancelled": return <Badge variant="destructive">{statusText}</Badge>;
+      case "completed": return <Badge variant="secondary">{statusText}</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;
     }
   };
 
   if (!isMounted) {
-    return null; // Or a loading spinner
+    return <div>Loading...</div>; // Or a loading spinner
   }
 
   return (
@@ -79,7 +117,7 @@ export default function AdminReservationsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {reservations.map((reservation) => (
+              {mockReservations.map((reservation) => (
                 <TableRow key={reservation.id}>
                   <TableCell className="font-medium">{reservation.customerName}</TableCell>
                   <TableCell>{format(new Date(reservation.date), "MMM d, yyyy 'at' h:mm a")}</TableCell>
