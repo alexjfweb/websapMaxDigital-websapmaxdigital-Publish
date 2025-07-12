@@ -1,46 +1,35 @@
 
-"use client";
-
-import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Utensils, ShoppingCart, Share2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { translations } from '@/translations';
-import type { Language, Translations } from '@/types/i18n';
+import type { Language } from '@/types/i18n';
 
+// Esta página ahora es un Componente de Servidor.
+// Las traducciones se manejan directamente aquí para evitar errores de hidratación.
 export default function HomePage() {
-  const [lang, setLang] = useState<Language>('en');
-  const [t, setT] = useState<(key: string) => string>(() => () => '');
+  const lang: Language = 'en'; // Se define el idioma por defecto en el servidor.
+  const currentYear = new Date().getFullYear();
 
-  useEffect(() => {
-    // A simple translation function that navigates the translations object
-    const getTranslation = (language: Language) => (key: string): string => {
-      const keys = key.split('.');
-      let result: any = translations[language];
-      for (const k of keys) {
-        result = result?.[k];
-        if (result === undefined) {
-          // Fallback to English if key not found
-          let fallbackResult: any = translations['en'];
-          for (const fk of keys) {
-            fallbackResult = fallbackResult?.[fk];
-            if (fallbackResult === undefined) return key;
-          }
-          return fallbackResult || key;
+  // Función de traducción simple que se ejecuta en el servidor.
+  const t = (key: string): string => {
+    const keys = key.split('.');
+    let result: any = translations[lang] || translations['en']; // Fallback a inglés
+    for (const k of keys) {
+      result = result?.[k];
+      if (result === undefined) {
+        let fallbackResult: any = translations['en'];
+        for (const fk of keys) {
+          fallbackResult = fallbackResult?.[fk];
+          if (fallbackResult === undefined) return key;
         }
+        return fallbackResult || key;
       }
-      return result;
-    };
-    setT(() => getTranslation(lang));
-  }, [lang]);
-  
-  const [currentYear, setCurrentYear] = useState<number | null>(null);
-
-  useEffect(() => {
-    setCurrentYear(new Date().getFullYear());
-  }, []);
+    }
+    return result;
+  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-theme(spacing.16))] text-center p-4 md:p-8">
@@ -121,7 +110,7 @@ export default function HomePage() {
       </Link>
 
       <footer className="mt-16 text-muted-foreground text-sm">
-        {currentYear && <p>&copy; {currentYear} {t('home.footerCopyright')}</p>}
+        <p>&copy; {currentYear} {t('home.footerCopyright')}</p>
         <p>{t('home.footerExperience')}</p>
       </footer>
     </div>
