@@ -14,12 +14,11 @@ import { useLanguage, type Language } from '@/contexts/language-context';
 interface AppHeaderProps {
   currentUser: User;
   handleLogout: () => void;
-  showSidebarRelatedUI: boolean; // Nueva prop
+  showSidebarRelatedUI: boolean; 
 }
 
-// Nuevo componente interno para manejar la lógica del SidebarTrigger
 function ConditionalSidebarTrigger() {
-  const { isMobile } = useSidebar(); // Seguro llamar aquí porque este componente solo se monta cuando showSidebarRelatedUI es true
+  const { isMobile } = useSidebar(); 
   if (!isMobile) return null;
 
   return (
@@ -41,7 +40,11 @@ export default function AppHeader({ currentUser, handleLogout, showSidebarRelate
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 sm:px-6 shadow-sm">
-      {showSidebarRelatedUI && <ConditionalSidebarTrigger />}
+      {showSidebarRelatedUI && (
+        <React.Suspense fallback={null}>
+          <ConditionalSidebarTrigger />
+        </React.Suspense>
+      )}
       <div className="flex-1">
         {/* Optional: Search bar or other header elements can go here */}
       </div>

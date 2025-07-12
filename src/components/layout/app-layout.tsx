@@ -32,13 +32,13 @@ const guestUser: User = {
   avatarUrl: 'https://placehold.co/100x100.png?text=G',
   role: 'guest',
   status: 'active',
-  registrationDate: '2024-01-01T00:00:00.000Z', // Static date to prevent hydration mismatch
+  registrationDate: new Date(0).toISOString(), // Use a fixed, non-dynamic date
 };
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname(); 
-  const [currentUser, setCurrentUser] = useState<User>(guestUser);
+  const [currentUser, setCurrentUser] = useState<User | null>(null); // Start with null
   const [isMounted, setIsMounted] = useState(false);
   const { t } = useLanguage();
 
@@ -48,9 +48,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser) as User;
-        if (parsedUser && parsedUser.email && parsedUser.role && (parsedUser.name || parsedUser.username)) {
+        if (parsedUser && parsedUser.email && parsedUser.role) {
           setCurrentUser(parsedUser);
         } else {
+          // Data in localStorage is invalid
           localStorage.removeItem('currentUser');
           setCurrentUser(guestUser);
         }
@@ -64,29 +65,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [pathname]);
 
-  useEffect(() => {
-    if (!isMounted) return;
-
-    const protectedRoutesPrefixes = ['/admin', '/superadmin', '/employee'];
-    const currentPath = pathname;
-    const isGuest = currentUser.role === 'guest';
-
-    if (isGuest && protectedRoutesPrefixes.some(prefix => currentPath.startsWith(prefix))) {
-      toast({ title: t('appLayout.toastAccessDeniedTitle', {defaultValue: "Access Denied"}), description: t('appLayout.toastAccessDeniedDescription', {defaultValue: "Please log in to access this page."}), variant: "destructive" });
-      router.push('/login');
-    } else if (!isGuest && (currentPath === '/login' || currentPath === '/register')) {
-        let dashboardPath = "/menu"; // Default redirect for guest-like roles if somehow logged in
-        switch(currentUser.role) {
-            case "admin": dashboardPath = "/admin/dashboard"; break;
-            case "superadmin": dashboardPath = "/superadmin/dashboard"; break;
-            case "employee": dashboardPath = "/employee/dashboard"; break;
-        }
-        router.push(dashboardPath);
-    }
-
-  }, [currentUser, router, isMounted, pathname, t]); 
-
-
   const handleLogout = () => {
     localStorage.removeItem('currentUser');
     setCurrentUser(guestUser);
@@ -94,7 +72,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     router.push('/login');
   };
 
-  if (!isMounted) {
+  // Prevent rendering anything until the component is mounted and user state is determined
+  if (!isMounted || !currentUser) {
     return (
       <div 
         className="flex min-h-svh w-full items-center justify-center bg-background"
@@ -105,13 +84,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const isHomePage = pathname === '/';
+  const isSpecialPage = ['/login', '/register', '/'].includes(pathname);
 
-  if (isHomePage) {
+  if (isSpecialPage) {
     return (
       <div className="flex flex-col min-h-svh">
         <AppHeader currentUser={currentUser} handleLogout={handleLogout} showSidebarRelatedUI={false} />
-        <main className="flex-1 bg-background p-4 md:p-8">
+        <main className="flex-1 bg-background">
           {children}
         </main>
       </div>
