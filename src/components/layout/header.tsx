@@ -9,7 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import type { User } from '@/types';
-import { useLanguage, type Language } from '@/contexts/language-context';
+import { useLanguage } from '@/contexts/language-context';
+import type { Language } from '@/types/i18n';
 
 interface AppHeaderProps {
   currentUser: User;

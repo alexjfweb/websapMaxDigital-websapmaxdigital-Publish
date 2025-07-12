@@ -7,11 +7,36 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Utensils, ShoppingCart, Share2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useLanguage } from '@/contexts/language-context';
+import { translations } from '@/translations';
+import type { Language, Translations } from '@/types/i18n';
 
 export default function HomePage() {
+  const [lang, setLang] = useState<Language>('en');
+  const [t, setT] = useState<(key: string) => string>(() => () => '');
+
+  useEffect(() => {
+    // A simple translation function that navigates the translations object
+    const getTranslation = (language: Language) => (key: string): string => {
+      const keys = key.split('.');
+      let result: any = translations[language];
+      for (const k of keys) {
+        result = result?.[k];
+        if (result === undefined) {
+          // Fallback to English if key not found
+          let fallbackResult: any = translations['en'];
+          for (const fk of keys) {
+            fallbackResult = fallbackResult?.[fk];
+            if (fallbackResult === undefined) return key;
+          }
+          return fallbackResult || key;
+        }
+      }
+      return result;
+    };
+    setT(() => getTranslation(lang));
+  }, [lang]);
+  
   const [currentYear, setCurrentYear] = useState<number | null>(null);
-  const { t } = useLanguage();
 
   useEffect(() => {
     setCurrentYear(new Date().getFullYear());

@@ -1,5 +1,6 @@
-
 import type { Timestamp } from 'firebase/firestore';
+import type { Language, Translations } from './i18n';
+
 
 export interface RestaurantProfile {
   id: string;
