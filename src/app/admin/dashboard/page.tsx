@@ -1,13 +1,13 @@
 
-"use client"; // Added to make it a Client Component
+"use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Settings, ShoppingBag, Utensils, Users, CreditCard, Share2 } from "lucide-react";
 import Link from "next/link";
-import { useLanguage } from "@/contexts/language-context"; // Added
+import { useLanguage } from "@/contexts/language-context";
 
 export default function AdminDashboardPage() {
-  const { t } = useLanguage(); // Added
+  const { t } = useLanguage();
 
   return (
     <div className="space-y-8">
