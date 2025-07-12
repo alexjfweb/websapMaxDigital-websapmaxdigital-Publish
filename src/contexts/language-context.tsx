@@ -22,27 +22,28 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>('en'); // Default language
 
   const t = useCallback((key: string, variables?: TranslationVariables): string => {
-    // Navigate through nested keys if any, e.g., "home.welcome"
-    const keys = key.split('.');
-    let translation = keys.reduce((acc, currentKey) => {
-        if (acc && typeof acc === 'object' && !Array.isArray(acc)) {
-            return acc[currentKey];
+    // Helper function to get a nested property from an object
+    const getNestedTranslation = (lang: Language, keyToFind: string) => {
+      const keys = keyToFind.split('.');
+      let result: any = translations[lang];
+      for (const k of keys) {
+        result = result?.[k];
+        if (result === undefined) {
+          return undefined;
         }
-        return undefined;
-    }, translations[language] as any) as string | undefined;
+      }
+      return result;
+    }
+
+    let translation = getNestedTranslation(language, key);
 
     if (translation === undefined) {
       // Fallback to English if translation not found in current language
-       translation = keys.reduce((acc, currentKey) => {
-        if (acc && typeof acc === 'object' && !Array.isArray(acc)) {
-            return acc[currentKey];
-        }
-        return undefined;
-      }, translations['en'] as any) as string | undefined;
+      translation = getNestedTranslation('en', key);
     }
     
-    // If still not found, return the key itself
-    if (translation === undefined) {
+    // If still not found, return the key itself as a last resort
+    if (translation === undefined || typeof translation !== 'string') {
       return key;
     }
 
