@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -7,7 +8,7 @@ import type { Dish, CartItem, RestaurantProfile } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { MinusCircle, PlusCircle, ShoppingCart, Star, MessageSquare, Copy, CreditCard, Smartphone } from 'lucide-react';
+import { ShoppingCart, Smartphone, CreditCard, LoaderCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import RestaurantInfoDisplay from '@/components/menu/restaurant-info-display';
 import OrderForm from '@/components/forms/order-form';
@@ -15,6 +16,8 @@ import ReservationForm from '@/components/forms/reservation-form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DishItem from '@/components/menu/dish-item';
 import CartSummary from '@/components/menu/cart-summary';
+import type { Language } from '@/types/i18n';
+import { translations } from '@/translations';
 
 // Cart Hook (simple version for now)
 interface CartStore {
@@ -76,6 +79,11 @@ export default function MenuPage() {
   const dishes = mockDishes;
   const { toast } = useToast();
   const cart = useCart();
+  const [isMounted, setIsMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const categories = React.useMemo(() => {
     const uniqueCategories = new Set<string>();
@@ -92,6 +100,13 @@ export default function MenuPage() {
     return dishes.filter(dish => dish.category === selectedCategory);
   }, [dishes, selectedCategory]);
 
+  if (!isMounted) {
+    return (
+        <div className="flex min-h-[calc(100vh-theme(spacing.16))] w-full items-center justify-center bg-background">
+            <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
+        </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -174,7 +189,7 @@ export default function MenuPage() {
               <CardDescription>We offer the following payment methods.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {restaurant.paymentMethods.nequi && (
+              {restaurant.paymentMethods.nequi?.enabled && restaurant.paymentMethods.nequi.qrCodeUrl && (
                 <div>
                   <h3 className="text-xl font-semibold mb-2 flex items-center">
                     <Smartphone className="h-6 w-6 mr-2 text-primary" /> Nequi
@@ -193,7 +208,7 @@ export default function MenuPage() {
                   </div>
                 </div>
               )}
-              {restaurant.paymentMethods.cod && (
+              {restaurant.paymentMethods.codEnabled && (
                 <div>
                   <h3 className="text-xl font-semibold mb-2 flex items-center">
                     <CreditCard className="h-6 w-6 mr-2 text-primary" /> Cash on Delivery (COD)
