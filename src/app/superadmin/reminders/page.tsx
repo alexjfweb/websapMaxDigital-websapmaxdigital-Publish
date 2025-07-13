@@ -32,7 +32,7 @@ const mockReminderHistory = [
     { id: "rem-4", company: "Taco Tuesday", type: "7 Days Before", date: "2024-07-27T09:00:00Z", status: "Failed" },
 ];
 
-const mockConfigs = [
+const mockConfigs: ReminderConfig[] = [
   { id: 'cfg-1', name: '7-Day Warning', trigger: '7 days before expiration', status: 'active' },
   { id: 'cfg-2', name: 'Expiration Day Notice', trigger: 'On expiration day', status: 'active' },
   { id: 'cfg-3', name: '3-Day Overdue Alert', trigger: '3 days after expiration', status: 'inactive' },

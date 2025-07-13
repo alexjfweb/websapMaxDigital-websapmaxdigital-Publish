@@ -32,14 +32,6 @@ const mockEmployees: User[] = [
 
 export default function AdminEmployeesPage() {
   const { t } = useTranslation();
-  const [lang, setLang] = useState<Language>('en');
-
-  useEffect(() => {
-    const storedLang = localStorage.getItem('language') as Language | null;
-    if (storedLang && translations[storedLang]) {
-      setLang(storedLang);
-    }
-  }, []);
 
   const employeeFormSchema = z.object({
       id: z.string().optional(),

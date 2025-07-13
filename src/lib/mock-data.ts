@@ -24,12 +24,13 @@ export const mockRestaurantProfile: RestaurantProfile = {
     pinterest: "https://pinterest.com/websapmax"
   },
   paymentMethods: {
+    codEnabled: true,
     nequi: {
+      enabled: true,
       qrCodeUrl: 'https://placehold.co/300x300.png?text=Nequi+QR',
       accountHolder: 'websapMax S.A.S',
       accountNumber: '3001234567'
     },
-    cod: true,
   }
 };
 
