@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,7 +24,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "@/lib/firebase"; // Importar db
 import { doc, setDoc } from "firebase/firestore"; // Importar doc y setDoc
 import type { User, UserRole } from "@/types";
-import { useLanguage } from "@/contexts/language-context";
+import { useTranslation } from 'react-i18next';
 
 
 const registerFormSchema = z.object({
@@ -41,7 +40,7 @@ const registerFormSchema = z.object({
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const form = useForm<z.infer<typeof registerFormSchema>>({
     resolver: zodResolver(registerFormSchema),
     defaultValues: {

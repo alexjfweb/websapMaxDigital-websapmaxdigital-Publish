@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +6,7 @@ import { PlusCircle, Edit3, Trash2, Search, Filter, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useLanguage } from "@/contexts/language-context";
+import { useTranslation } from 'react-i18next';
 import Link from "next/link";
 import type { Company } from "@/types";
 import { format } from "date-fns";
@@ -23,7 +22,7 @@ const mockCompanies: Company[] = [
 ];
 
 export default function SuperAdminCompaniesPage() {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const [isMounted, setIsMounted] = useState(false);
   const companies = mockCompanies;
 

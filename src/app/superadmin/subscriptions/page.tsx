@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -9,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Gem, CreditCard, QrCode, History, Save, CheckCircle, UploadCloud } from "lucide-react";
-import { useLanguage } from "@/contexts/language-context";
+import { useTranslation } from 'react-i18next';
 import { format } from "date-fns";
 import { useState, useEffect } from "react";
 import Image from "next/image";
@@ -30,7 +29,7 @@ const mockTransactions = [
 ];
 
 export default function SuperAdminSubscriptionsPage() {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [isMounted, setIsMounted] = useState(false);
   const [bancolombiaQrPreview, setBancolombiaQrPreview] = useState<string | null>(null);

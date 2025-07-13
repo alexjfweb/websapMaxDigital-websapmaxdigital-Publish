@@ -3,15 +3,15 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import AppLayout from '@/components/layout/app-layout';
-import { LanguageProvider } from '@/contexts/language-context';
+import ClientLayout from './client-layout';
 
 const inter = Inter({
   subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
-  title: 'websapMax Digital Menu',
-  description: 'Interactive digital menu for websapMax restaurant.',
+  title: 'WebSapMaxDigital',
+  description: 'Tu solución digital definitiva para menús',
 };
 
 export default function RootLayout({
@@ -20,11 +20,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning>
       <body className={`${inter.className} antialiased`} suppressHydrationWarning>
-        <LanguageProvider>
+        <ClientLayout>
           <AppLayout>{children}</AppLayout>
-        </LanguageProvider>
+        </ClientLayout>
       </body>
     </html>
   );

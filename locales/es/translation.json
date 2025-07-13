@@ -1,0 +1,853 @@
+{
+  "adminDashboard": {
+    "title": "Panel de administración",
+    "description": "Gestiona tu restaurante de forma efectiva.",
+    "profileCard": {
+      "title": "Perfil del restaurante",
+      "mainText": "Gestionar detalles",
+      "subText": "Actualiza nombre, logo, dirección, etc."
+    },
+    "dishCard": {
+      "title": "Gestión de platos",
+      "mainText": "Elementos del menú",
+      "subText": "Agrega, edita o elimina platos."
+    },
+    "employeeCard": {
+      "title": "Gestión de empleados",
+      "mainText": "Cuentas del personal",
+      "subText": "Gestiona el acceso de empleados."
+    },
+    "reservationsCard": {
+      "title": "Reservas",
+      "mainText": "Ver reservas",
+      "subText": "Gestiona las reservas de clientes."
+    },
+    "paymentsCard": {
+      "title": "Métodos de pago",
+      "mainText": "Configurar pagos",
+      "subText": "Configura Nequi, QR, Efectivo."
+    },
+    "shareMenuCard": {
+      "title": "Compartir menú",
+      "mainText": "Distribuir menú",
+      "subText": "Comparte por WhatsApp o enlace."
+    },
+    "quickStats": {
+      "title": "Estadísticas rápidas",
+      "totalDishes": "Total de platos",
+      "pendingOrders": "Pedidos pendientes"
+    }
+  },
+  "adminProfile": {
+    "title": "Perfil del restaurante",
+    "description": "Gestiona la información de tu restaurante",
+    "editButton": "Editar",
+    "saveButton": "Guardar",
+    "deleteButton": "Eliminar perfil",
+    "businessInfoCard": {
+      "title": "Información del negocio",
+      "description": "Detalles básicos de tu restaurante",
+      "nameLabel": "Nombre del restaurante",
+      "phoneLabel": "Teléfono",
+      "addressLabel": "Dirección",
+      "emailLabel": "Correo electrónico",
+      "descriptionLabel": "Descripción"
+    },
+    "logoCard": {
+      "title": "Logo del restaurante",
+      "description": "Sube el logo de tu restaurante",
+      "uploadButton": "Subir logo",
+      "changeButton": "Cambiar logo"
+    },
+    "socialMediaCard": {
+      "title": "Redes sociales",
+      "description": "Configura tus enlaces de redes sociales",
+      "websiteLabel": "Sitio web",
+      "facebookLabel": "Facebook",
+      "instagramLabel": "Instagram",
+      "twitterLabel": "Twitter/X",
+      "whatsappLabel": "WhatsApp",
+      "tiktokLabel": "TikTok",
+      "pinterestLabel": "Pinterest"
+    },
+    "paymentMethodsCard": {
+      "title": "Métodos de pago",
+      "description": "Configura los métodos de pago aceptados",
+      "codLabel": "Efectivo al entregar",
+      "nequiLabel": "Nequi",
+      "daviplataLabel": "Daviplata",
+      "bancolombiaLabel": "Bancolombia",
+      "qrCodeLabel": "Código QR",
+      "accountHolderLabel": "Titular de la cuenta",
+      "accountNumberLabel": "Número de cuenta"
+    },
+    "colorsCard": {
+      "title": "Colores del tema",
+      "description": "Personaliza los colores de tu menú",
+      "primaryColorLabel": "Color primario",
+      "secondaryColorLabel": "Color secundario",
+      "accentColorLabel": "Color de acento"
+    }
+  },
+  "adminDishes": {
+    "title": "Gestión de platos",
+    "description": "Agrega, edita y gestiona los platos de tu menú",
+    "addNewButton": "Agregar nuevo plato",
+    "allDishes": "Todos los platos",
+    "searchPlaceholder": "Buscar platos...",
+    "filterButton": "Filtrar",
+    "validation": {
+      "nameRequired": "El nombre es requerido (mínimo 3 caracteres)",
+      "descriptionRequired": "La descripción es requerida (mínimo 10 caracteres)",
+      "pricePositive": "El precio debe ser positivo",
+      "categoryRequired": "La categoría es requerida (mínimo 3 caracteres)",
+      "stockInvalid": "El stock debe ser -1 (sin límite) o un número positivo"
+    },
+    "form": {
+      "title": "Plato",
+      "nameLabel": "Nombre del plato",
+      "descriptionLabel": "Descripción",
+      "priceLabel": "Precio",
+      "categoryLabel": "Categoría",
+      "stockLabel": "Stock disponible",
+      "imageLabel": "Imagen del plato",
+      "uploadImageButton": "Subir imagen",
+      "saveButton": "Guardar plato",
+      "cancelButton": "Cancelar",
+      "titleEdit": "Editar plato",
+      "titleCreate": "Nuevo plato",
+      "descriptionEdit": "Modifica los datos del plato seleccionado.",
+      "descriptionCreate": "Completa el formulario para agregar un nuevo plato.",
+      "namePlaceholder": "Ej: Pizza Margarita",
+      "descriptionPlaceholder": "Describe el plato...",
+      "categoryPlaceholder": "Ej: Entradas, Postres...",
+      "stockPlaceholder": "Ej: 10, -1 para ilimitado",
+      "imagePreviewAlt": "Vista previa de la imagen del plato",
+      "imageUploadText": "Haz clic o arrastra una imagen aquí",
+      "saveChangesButton": "Guardar cambios",
+      "saveDishButton": "Guardar plato"
+    },
+    "table": {
+      "nameColumn": "Nombre",
+      "descriptionColumn": "Descripción",
+      "priceColumn": "Precio",
+      "categoryColumn": "Categoría",
+      "stockColumn": "Stock",
+      "likesColumn": "Me gusta",
+      "actionsColumn": "Acciones",
+      "editButton": "Editar",
+      "deleteButton": "Eliminar",
+      "image": "Imagen",
+      "name": "Nombre",
+      "category": "Categoría",
+      "price": "Precio",
+      "stock": "Stock",
+      "likes": "Me gusta",
+      "actions": "Acciones"
+    },
+    "toast": {
+      "createSuccessTitle": "Plato creado",
+      "createSuccessDescription": "El plato {{dishName}} ha sido creado exitosamente",
+      "updateSuccessTitle": "Plato actualizado",
+      "updateSuccessDescription": "El plato {{dishName}} ha sido actualizado exitosamente",
+      "deleteSuccessTitle": "Plato eliminado",
+      "deleteSuccessDescription": "El plato {{dishName}} ha sido eliminado exitosamente"
+    },
+    "deleteDialog": {
+      "title": "¿Estás seguro?",
+      "description": "Esta acción no se puede deshacer. El plato será eliminado permanentemente.",
+      "cancelButton": "Cancelar",
+      "deleteButton": "Sí, eliminar",
+      "confirmButton": "Sí, eliminar"
+    },
+    "allDishesCard": {
+      "title": "Todos los platos",
+      "description": "Lista de todos los platos registrados en el sistema."
+    },
+    "searchInputPlaceholder": "Buscar por nombre, categoría..."
+  },
+  "adminEmployees": {
+    "title": "Gestión de empleados",
+    "description": "Gestiona las cuentas de acceso de tu personal",
+    "addNewButton": "Agregar empleado",
+    "allEmployees": "Todos los empleados",
+    "searchPlaceholder": "Buscar empleados...",
+    "form": {
+      "title": "Empleado",
+      "nameLabel": "Nombre completo",
+      "emailLabel": "Correo electrónico",
+      "roleLabel": "Rol",
+      "statusLabel": "Estado",
+      "saveButton": "Guardar empleado",
+      "cancelButton": "Cancelar",
+      "avatarLabel": "Avatar",
+      "changeAvatarButton": "Cambiar avatar",
+      "usernameLabel": "Usuario",
+      "usernamePlaceholder": "Ej: juan.cocinero",
+      "emailPlaceholder": "Ej: juan.cocinero@ejemplo.com",
+      "contactLabel": "Número de contacto (opcional)",
+      "contactPlaceholder": "Ej: 555-1234",
+      "saveChangesButton": "Guardar cambios",
+      "createButton": "Crear empleado"
+    },
+    "table": {
+      "nameColumn": "Nombre",
+      "emailColumn": "Correo",
+      "roleColumn": "Rol",
+      "statusColumn": "Estado",
+      "actionsColumn": "Acciones",
+      "editButton": "Editar",
+      "deleteButton": "Eliminar",
+      "avatar": "Avatar",
+      "username": "Usuario",
+      "contact": "Contacto"
+    },
+    "roles": {
+      "admin": "Administrador",
+      "employee": "Empleado"
+    },
+    "status": {
+      "active": "Activo",
+      "inactive": "Inactivo"
+    },
+    "toast": {
+      "createSuccessTitle": "Empleado creado",
+      "createSuccessDescription": "El empleado {{employeeName}} ha sido creado exitosamente",
+      "updateSuccessTitle": "Empleado actualizado",
+      "updateSuccessDescription": "El empleado {{employeeName}} ha sido actualizado exitosamente",
+      "deleteSuccessTitle": "Empleado eliminado",
+      "deleteSuccessDescription": "El empleado {{employeeName}} ha sido eliminado exitosamente"
+    },
+    "deleteDialog": {
+      "title": "¿Estás seguro?",
+      "description": "Esta acción no se puede deshacer. El empleado será eliminado permanentemente.",
+      "cancelButton": "Cancelar",
+      "deleteButton": "Sí, eliminar"
+    },
+    "allEmployeesCard": {
+      "title": "Todos los empleados",
+      "description": "Lista de todos los empleados registrados."
+    },
+    "searchInputPlaceholder": "Buscar por nombre, correo...",
+    "contact": {
+      "notAvailable": "No disponible"
+    },
+    "dialog": {
+      "editTitle": "Editar empleado",
+      "addTitle": "Agregar empleado",
+      "editDescription": "Actualiza los datos del empleado a continuación.",
+      "addDescription": "Completa el formulario para agregar un nuevo empleado."
+    }
+  },
+  "adminReservations": {
+    "title": "Reservas",
+    "description": "Gestiona las reservas de tus clientes",
+    "addNewButton": "Nueva reserva",
+    "allReservations": "Todas las reservas",
+    "searchPlaceholder": "Buscar reservas...",
+    "form": {
+      "title": "Reserva",
+      "customerNameLabel": "Nombre del cliente",
+      "emailLabel": "Correo electrónico",
+      "phoneLabel": "Teléfono",
+      "dateLabel": "Fecha",
+      "timeLabel": "Hora",
+      "guestsLabel": "Número de personas",
+      "notesLabel": "Notas especiales",
+      "saveButton": "Guardar reserva",
+      "cancelButton": "Cancelar"
+    },
+    "table": {
+      "customerColumn": "Cliente",
+      "dateColumn": "Fecha",
+      "timeColumn": "Hora",
+      "guestsColumn": "Personas",
+      "statusColumn": "Estado",
+      "actionsColumn": "Acciones",
+      "editButton": "Editar",
+      "deleteButton": "Eliminar"
+    },
+    "status": {
+      "confirmed": "Confirmada",
+      "pending": "Pendiente",
+      "cancelled": "Cancelada",
+      "completed": "Completada"
+    },
+    "toast": {
+      "createSuccessTitle": "Reserva creada",
+      "createSuccessDescription": "La reserva para {{customerName}} ha sido creada exitosamente",
+      "updateSuccessTitle": "Reserva actualizada",
+      "updateSuccessDescription": "La reserva para {{customerName}} ha sido actualizada exitosamente",
+      "deleteSuccessTitle": "Reserva eliminada",
+      "deleteSuccessDescription": "La reserva para {{customerName}} ha sido eliminada exitosamente"
+    },
+    "deleteDialog": {
+      "title": "¿Estás seguro?",
+      "description": "Esta acción no se puede deshacer. La reserva será eliminada permanentemente.",
+      "cancelButton": "Cancelar",
+      "deleteButton": "Sí, eliminar"
+    },
+    "allReservationsCard": {
+      "title": "Todas las reservas",
+      "description": "Lista de todas las reservas registradas."
+    },
+    "searchInputPlaceholder": "Buscar por cliente, fecha, teléfono...",
+    "filterStatusButton": "Filtrar por estado",
+    "filterDateButton": "Filtrar por fecha",
+    "table": {
+      "customerName": "Cliente",
+      "dateTime": "Fecha y hora",
+      "guests": "Personas",
+      "phone": "Teléfono",
+      "status": "Estado",
+      "actions": "Acciones"
+    }
+  },
+  "adminShareMenu": {
+    "title": "Compartir menú",
+    "description": "Comparte tu menú con tus clientes",
+    "pageTitle": "Compartir tu menú",
+    "pageDescription": "Distribuye tu menú digital de múltiples formas",
+    "loadingDescription": "Cargando enlaces...",
+    "linkCard": {
+      "title": "Enlace del menú",
+      "description": "Copia y comparte el enlace directo a tu menú",
+      "copyAriaLabel": "Copiar enlace",
+      "infoText": "Este enlace lleva directamente a tu menú público"
+    },
+    "whatsappCard": {
+      "title": "Compartir por WhatsApp",
+      "description": "Comparte tu menú directamente por WhatsApp",
+      "shareButton": "Compartir por WhatsApp",
+      "infoText": "Se abrirá WhatsApp con un mensaje predefinido"
+    },
+    "qrCard": {
+      "title": "Código QR",
+      "description": "Descarga el código QR para imprimir o compartir",
+      "downloadButton": "Descargar QR"
+    },
+    "toast": {
+      "copiedTitle": "Enlace copiado",
+      "copiedDescription": "El enlace del menú ha sido copiado al portapapeles",
+      "errorTitle": "Error al copiar",
+      "errorDescription": "No se pudo copiar el enlace al portapapeles"
+    }
+  },
+  "nav": {
+    "adminDashboard": "Panel de administración",
+    "restaurantProfile": "Perfil del restaurante",
+    "dishManagement": "Gestión de platos",
+    "employeeManagement": "Gestión de empleados",
+    "reservations": "Reservas",
+    "shareMenu": "Compartir menú",
+    "publicMenu": "Menú público",
+    "login": "Iniciar sesión",
+    "register": "Registrarse"
+  },
+  "header": {
+    "loginButton": "Iniciar sesión"
+  },
+  "superAdminDashboard": {
+    "title": "Panel de Super Administrador",
+    "description": "Bienvenido al panel de control del superadministrador. Aquí puedes gestionar usuarios, respaldos, logs y el estado del sistema.",
+    "userManagementCard": {
+      "title": "Gestión de Usuarios",
+      "users": "usuarios",
+      "admins": "administradores",
+      "employees": "empleados"
+    },
+    "systemBackupCard": {
+      "title": "Respaldo del Sistema",
+      "mainText": "Gestionar respaldos",
+      "lastBackupLabel": "Último respaldo:"
+    },
+    "systemLogsCard": {
+      "title": "Registros del Sistema",
+      "mainText": "Ver logs",
+      "criticalLogs": "logs críticos"
+    },
+    "systemStatusCard": {
+      "title": "Estado del Sistema",
+      "description": "Monitorea la salud y actividad del sistema.",
+      "healthLabel": "Salud del sistema",
+      "activeUsersLabel": "Usuarios activos",
+      "securityAlertsLabel": "Alertas de seguridad"
+    },
+    "systemHealthValue": {
+      "good": "Buena"
+    }
+  },
+  "superAdminAnalytics": {
+    "title": "Analíticas del Sistema",
+    "description": "Monitorea el rendimiento y crecimiento de la plataforma",
+    "totalUsers": "Total de Usuarios",
+    "totalCompanies": "Total de Empresas",
+    "totalOrders": "Total de Pedidos",
+    "totalRevenue": "Ingresos Totales",
+    "fromLastMonth": "desde el mes pasado",
+    "thisMonth": "este mes",
+    "thisWeek": "esta semana",
+    "userGrowthChartTitle": "Crecimiento de Usuarios",
+    "userGrowthChartDescription": "Evolución mensual del número de usuarios registrados",
+    "monthlyRevenueChartTitle": "Ingresos Mensuales",
+    "monthlyRevenueChartDescription": "Tendencia de ingresos por mes",
+    "userRoleDistributionChartTitle": "Distribución de Roles",
+    "userRoleDistributionChartDescription": "Distribución de usuarios por tipo de rol",
+    "recentActivityTitle": "Actividad Reciente",
+    "recentActivityDescription": "Últimas actividades del sistema",
+    "table": {
+      "event": "Evento",
+      "details": "Detalles",
+      "timestamp": "Fecha/Hora"
+    }
+  },
+  "superAdminBackup": {
+    "title": "Gestión de Respaldos",
+    "description": "Gestiona los respaldos del sistema y la recuperación de datos",
+    "operationsCard": {
+      "title": "Operaciones de Respaldo",
+      "description": "Realiza respaldos manuales y restauraciones",
+      "startBackupButton": "Iniciar Respaldo",
+      "restoreButton": "Restaurar",
+      "settingsButton": "Configuración"
+    },
+    "historyCard": {
+      "title": "Historial de Respaldos",
+      "description": "Lista de respaldos realizados",
+      "noHistory": "No hay historial de respaldos disponible"
+    },
+    "storageCard": {
+      "title": "Almacenamiento",
+      "description": "Información sobre el almacenamiento de respaldos",
+      "locationLabel": "Ubicación:",
+      "localServer": "Servidor local",
+      "capacityLabel": "Capacidad:",
+      "usedSpaceLabel": "Espacio usado:"
+    },
+    "table": {
+      "dateTime": "Fecha y Hora",
+      "type": "Tipo",
+      "status": "Estado",
+      "size": "Tamaño",
+      "actions": "Acciones"
+    },
+    "status": {
+      "completed": "Completado",
+      "failed": "Fallido"
+    },
+    "type": {
+      "full": "Completo",
+      "incremental": "Incremental"
+    },
+    "actions": {
+      "download": "Descargar",
+      "delete": "Eliminar"
+    }
+  },
+  "superAdminCompanies": {
+    "title": "Gestión de Empresas",
+    "description": "Administra todas las empresas registradas en la plataforma",
+    "registerNewCompanyButton": "Registrar Nueva Empresa",
+    "allCompaniesCard": {
+      "title": "Todas las Empresas",
+      "description": "Lista de todas las empresas registradas"
+    },
+    "searchInputPlaceholder": "Buscar empresas...",
+    "filterByStatusButton": "Filtrar por Estado",
+    "table": {
+      "name": "Nombre",
+      "location": "Ubicación",
+      "status": "Estado",
+      "registered": "Registrada",
+      "actions": "Acciones"
+    },
+    "status": {
+      "active": "Activa",
+      "inactive": "Inactiva",
+      "pending": "Pendiente"
+    },
+    "actions": {
+      "details": "Ver detalles",
+      "edit": "Editar",
+      "delete": "Eliminar"
+    }
+  },
+  "superAdminDatabase": {
+    "title": "Base de Datos",
+    "description": "Monitorea y gestiona la base de datos del sistema",
+    "statusCard": {
+      "title": "Estado de Conexión",
+      "connected": "Conectado",
+      "subtitle": "Conexión estable"
+    },
+    "latencyCard": {
+      "title": "Latencia",
+      "subtitle": "Tiempo de respuesta"
+    },
+    "collectionsCard": {
+      "title": "Colecciones",
+      "subtitle": "Total de colecciones"
+    },
+    "documentsCard": {
+      "title": "Documentos",
+      "subtitle": "Total de documentos"
+    },
+    "collectionsTable": {
+      "title": "Colecciones de la Base de Datos",
+      "description": "Información detallada de cada colección",
+      "header": {
+        "name": "Nombre",
+        "docCount": "Documentos",
+        "actions": "Acciones"
+      },
+      "viewAction": "Ver colección"
+    },
+    "actionsCard": {
+      "title": "Acciones",
+      "description": "Operaciones de mantenimiento de la base de datos",
+      "testConnectionButton": "Probar Conexión"
+    },
+    "toast": {
+      "testingConnection": "Probando conexión...",
+      "testingDescription": "Verificando conectividad con la base de datos",
+      "testSuccessTitle": "Conexión exitosa",
+      "testSuccessDescription": "Conexión establecida. Latencia: {{latency}}"
+    }
+  },
+  "superAdminLogs": {
+    "title": "Registros del Sistema",
+    "description": "Monitorea los logs del sistema para detectar problemas y actividad",
+    "logViewerCard": {
+      "title": "Visor de Logs",
+      "description": "Explora y filtra los registros del sistema",
+      "downloadButton": "Descargar Logs",
+      "noLogs": "No hay logs disponibles"
+    },
+    "searchInputPlaceholder": "Buscar en logs...",
+    "filterByLevelPlaceholder": "Filtrar por nivel",
+    "filterBySourcePlaceholder": "Filtrar por fuente",
+    "table": {
+      "timestamp": "Fecha/Hora",
+      "level": "Nivel",
+      "message": "Mensaje",
+      "source": "Fuente"
+    },
+    "level": {
+      "info": "Información",
+      "warn": "Advertencia",
+      "error": "Error",
+      "debug": "Depuración",
+      "critical": "Crítico"
+    },
+    "levelFilter": {
+      "all": "Todos los niveles",
+      "info": "Solo Información",
+      "warn": "Solo Advertencias",
+      "error": "Solo Errores",
+      "debug": "Solo Depuración",
+      "critical": "Solo Críticos"
+    },
+    "sourceFilter": {
+      "all_sources": "Todas las fuentes",
+      "authservice": "Servicio de Autenticación",
+      "systemmonitor": "Monitor del Sistema",
+      "paymentservice": "Servicio de Pagos",
+      "orderservice": "Servicio de Pedidos",
+      "backupservice": "Servicio de Respaldos",
+      "kernel": "Kernel del Sistema"
+    }
+  },
+  "superAdminMaintenance": {
+    "title": "Mantenimiento del Sistema",
+    "description": "Realiza tareas de mantenimiento y optimización del sistema",
+    "cacheCard": {
+      "title": "Gestión de Caché",
+      "description": "Limpia la caché del sistema para mejorar el rendimiento",
+      "clearButton": "Limpiar Caché",
+      "actionName": "limpieza de caché"
+    },
+    "dbCard": {
+      "title": "Mantenimiento de Base de Datos",
+      "description": "Optimiza y reindexa la base de datos",
+      "reindexButton": "Reindexar BD",
+      "actionName": "reindexación de base de datos"
+    },
+    "diagnosticsCard": {
+      "title": "Diagnósticos del Sistema",
+      "description": "Ejecuta diagnósticos para verificar la salud del sistema",
+      "runButton": "Ejecutar Diagnósticos",
+      "actionName": "diagnósticos del sistema"
+    },
+    "modeCard": {
+      "title": "Modo de Mantenimiento",
+      "description": "Activa el modo de mantenimiento para realizar actualizaciones",
+      "enableLabel": "Habilitar modo de mantenimiento",
+      "enableDescription": "Los usuarios no podrán acceder al sistema durante el mantenimiento",
+      "ariaLabel": "Alternar modo de mantenimiento"
+    },
+    "toast": {
+      "actionTriggeredTitle": "Acción iniciada",
+      "actionTriggeredDescription": "La acción '{{actionName}}' ha sido iniciada"
+    }
+  },
+  "superAdminReminders": {
+    "title": "Gestión de Recordatorios",
+    "description": "Configura y gestiona los recordatorios automáticos del sistema",
+    "backButton": "Volver",
+    "tabs": {
+      "summary": "Resumen",
+      "configuration": "Configuración",
+      "templates": "Plantillas",
+      "history": "Historial",
+      "system": "Sistema"
+    },
+    "summary": {
+      "dueThisWeek": "Vencen esta semana",
+      "overdue": "Vencidos",
+      "sentToday": "Enviados hoy"
+    },
+    "upcoming": {
+      "title": "Próximos Vencimientos",
+      "description": "Recordatorios programados para los próximos días",
+      "emptyState": "No hay recordatorios próximos"
+    },
+    "config": {
+      "title": "Configuraciones de Recordatorios",
+      "description": "Gestiona las reglas de envío de recordatorios",
+      "newButton": "Nueva Configuración",
+      "table": {
+        "name": "Nombre",
+        "trigger": "Disparador",
+        "status": "Estado",
+        "actions": "Acciones"
+      },
+      "statusActive": "Activo",
+      "statusInactive": "Inactivo"
+    },
+    "templates": {
+      "title": "Plantillas de Mensajes",
+      "description": "Edita las plantillas de recordatorios",
+      "beforeExpiryName": "Recordatorio antes del vencimiento",
+      "onExpiryName": "Recordatorio en el día de vencimiento",
+      "afterExpiryName": "Recordatorio después del vencimiento",
+      "editButton": "Editar"
+    },
+    "history": {
+      "title": "Historial de Envíos",
+      "description": "Registro de recordatorios enviados",
+      "table": {
+        "company": "Empresa",
+        "type": "Tipo",
+        "date": "Fecha",
+        "status": "Estado"
+      },
+      "statusSent": "Enviado",
+      "statusOpened": "Abierto",
+      "statusFailed": "Fallido"
+    },
+    "system": {
+      "title": "Estado del Sistema",
+      "description": "Monitorea el estado del servicio de recordatorios",
+      "statusLabel": "Estado del servicio:",
+      "statusRunning": "Ejecutándose",
+      "lastRunLabel": "Última ejecución:",
+      "nextRunLabel": "Próxima ejecución:",
+      "pauseButton": "Pausar",
+      "runNowButton": "Ejecutar Ahora"
+    },
+    "form": {
+      "titleCreate": "Nueva Configuración",
+      "titleEdit": "Editar Configuración",
+      "description": "Configura los parámetros del recordatorio",
+      "nameLabel": "Nombre:",
+      "namePlaceholder": "Ej: Recordatorio 7 días antes",
+      "triggerTypeLabel": "Tipo de disparador:",
+      "triggerTypePlaceholder": "Selecciona el tipo",
+      "triggerTypeBefore": "Antes del vencimiento",
+      "triggerTypeOn": "En el día de vencimiento",
+      "triggerTypeAfter": "Después del vencimiento",
+      "daysLabel": "Días:",
+      "daysPlaceholder": "Ej: 7",
+      "sendingMethodLabel": "Método de envío:",
+      "sendingMethodPlaceholder": "Selecciona el método",
+      "sendingMethodEmail": "Correo electrónico",
+      "sendingMethodSms": "SMS",
+      "sendingMethodWhatsapp": "WhatsApp",
+      "maxRetriesLabel": "Máximo de reintentos:",
+      "maxRetriesPlaceholder": "Ej: 3",
+      "retryIntervalLabel": "Intervalo de reintento (horas):",
+      "retryIntervalPlaceholder": "Ej: 24",
+      "statusLabel": "Estado:",
+      "statusActive": "Activo",
+      "cancelButton": "Cancelar",
+      "saveButton": "Guardar"
+    },
+    "deleteDialog": {
+      "title": "¿Eliminar configuración?",
+      "description": "Esta acción no se puede deshacer. La configuración será eliminada permanentemente.",
+      "cancelButton": "Cancelar",
+      "confirmButton": "Eliminar"
+    }
+  },
+  "superAdminSubscriptions": {
+    "title": "Gestión de Suscripciones",
+    "description": "Administra planes de suscripción y métodos de pago",
+    "plans": {
+      "title": "Planes de Suscripción",
+      "description": "Configura los planes disponibles para las empresas",
+      "manageButton": "Gestionar Plan",
+      "basic": {
+        "name": "Plan Básico",
+        "price": "$10/mes",
+        "features": {
+          "0": "Hasta 5 empleados",
+          "1": "Menú básico",
+          "2": "Soporte por email",
+          "3": "Actualizaciones básicas"
+        }
+      },
+      "pro": {
+        "name": "Plan Profesional",
+        "price": "$25/mes",
+        "features": {
+          "0": "Hasta 20 empleados",
+          "1": "Menú avanzado",
+          "2": "Soporte prioritario",
+          "3": "Todas las funciones"
+        }
+      },
+      "enterprise": {
+        "name": "Plan Empresarial",
+        "price": "$50/mes",
+        "features": {
+          "0": "Empleados ilimitados",
+          "1": "Personalización completa",
+          "2": "Soporte 24/7",
+          "3": "API personalizada"
+        }
+      }
+    },
+    "paymentMethods": {
+      "title": "Métodos de Pago",
+      "description": "Configura los métodos de pago disponibles",
+      "saveButton": "Guardar Configuración",
+      "stripe": {
+        "title": "Stripe",
+        "publishableKey": "Clave pública",
+        "secretKey": "Clave secreta"
+      },
+      "mercadoPago": {
+        "title": "Mercado Pago",
+        "accessToken": "Token de acceso"
+      },
+      "nequi": {
+        "title": "Nequi",
+        "phoneNumber": "Número de teléfono"
+      },
+      "bancolombia": {
+        "title": "BanColombia QR",
+        "qrCodeUrl": "URL del código QR",
+        "or": "o",
+        "uploadButton": "Subir imagen QR",
+        "infoText": "Formatos soportados: PNG, JPG, SVG",
+        "previewAlt": "Vista previa del código QR",
+        "noPreview": "Sin vista previa"
+      }
+    },
+    "qr": {
+      "title": "Gestión de Códigos QR",
+      "description": "Genera y gestiona códigos QR para pagos",
+      "generateButton": "Generar Nuevo QR"
+    },
+    "transactions": {
+      "title": "Historial de Transacciones",
+      "description": "Registro de todas las transacciones de suscripción",
+      "table": {
+        "company": "Empresa",
+        "plan": "Plan",
+        "amount": "Monto",
+        "date": "Fecha",
+        "status": "Estado"
+      },
+      "statusCompleted": "Completada",
+      "statusFailed": "Fallida"
+    }
+  },
+  "superAdminUsers": {
+    "title": "Gestión de Usuarios",
+    "description": "Administra todos los usuarios del sistema",
+    "createUserButton": "Crear Usuario",
+    "allUsersCard": {
+      "title": "Todos los Usuarios",
+      "description": "Lista de todos los usuarios registrados"
+    },
+    "searchInputPlaceholder": "Buscar usuarios...",
+    "filterByRoleButton": "Filtrar por Rol",
+    "filterByStatusButton": "Filtrar por Estado",
+    "table": {
+      "avatar": "Avatar",
+      "username": "Usuario",
+      "email": "Correo",
+      "role": "Rol",
+      "status": "Estado",
+      "registered": "Registrado",
+      "actions": "Acciones"
+    },
+    "role": {
+      "superadmin": "Super Administrador",
+      "admin": "Administrador",
+      "employee": "Empleado"
+    },
+    "status": {
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "pending": "Pendiente"
+    },
+    "actions": {
+      "editUser": "Editar usuario",
+      "activateUser": "Activar usuario",
+      "deactivateUser": "Desactivar usuario",
+      "deleteUser": "Eliminar usuario"
+    }
+  },
+  "superAdminUsersCreate": {
+    "title": "Crear Usuario",
+    "description": "Crea una nueva cuenta de usuario en el sistema",
+    "backButtonAriaLabel": "Volver a gestión de usuarios",
+    "formTitle": "Formulario de Creación",
+    "formDescription": "Completa los datos para crear un nuevo usuario",
+    "usernameLabel": "Nombre de usuario",
+    "usernamePlaceholder": "Ej: juan.admin",
+    "emailLabel": "Correo electrónico",
+    "emailPlaceholder": "Ej: juan@ejemplo.com",
+    "passwordLabel": "Contraseña",
+    "confirmPasswordLabel": "Confirmar contraseña",
+    "roleLabel": "Rol",
+    "rolePlaceholder": "Selecciona un rol",
+    "roleAdmin": "Administrador",
+    "roleEmployee": "Empleado",
+    "nameLabel": "Nombre completo (opcional)",
+    "namePlaceholder": "Ej: Juan Pérez",
+    "nameDescription": "Nombre completo del usuario",
+    "contactLabel": "Contacto (opcional)",
+    "contactPlaceholder": "Ej: 300-123-4567",
+    "contactDescription": "Número de teléfono o contacto",
+    "saveButton": "Crear Usuario",
+    "validation": {
+      "usernameRequired": "El nombre de usuario es requerido (mínimo 3 caracteres)",
+      "emailInvalid": "El correo electrónico no es válido",
+      "passwordMinLength": "La contraseña debe tener al menos 6 caracteres",
+      "roleRequired": "El rol es requerido",
+      "passwordsNoMatch": "Las contraseñas no coinciden"
+    },
+    "toast": {
+      "successTitle": "Usuario creado",
+      "successDescription": "El usuario {{username}} ha sido creado exitosamente",
+      "errorTitle": "Error al crear usuario",
+      "errorDefaultDescription": "Ocurrió un error al crear el usuario",
+      "errorEmailInUse": "El correo electrónico ya está en uso",
+      "errorWeakPassword": "La contraseña es demasiado débil",
+      "errorFirestore": "Error al guardar en la base de datos"
+    }
+  }
+} 

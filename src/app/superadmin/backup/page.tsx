@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +6,7 @@ import { DownloadCloud, PlayCircle, RotateCcw, Settings2, History, Trash2 } from
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { useLanguage } from "@/contexts/language-context";
+import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from "react";
 
 // Mock Data for Backup History - Using static dates to prevent hydration errors
@@ -20,7 +19,7 @@ const mockBackupHistory = [
 
 
 export default function SuperAdminBackupPage() {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const [isMounted, setIsMounted] = useState(false);
   const backupHistory = mockBackupHistory;
 

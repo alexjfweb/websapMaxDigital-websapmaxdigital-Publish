@@ -1,0 +1,860 @@
+{
+  "adminDashboard": {
+    "title": "Admin Dashboard",
+    "description": "Manage your restaurant effectively.",
+    "profileCard": {
+      "title": "Restaurant Profile",
+      "mainText": "Manage Details",
+      "subText": "Update name, logo, address, etc."
+    },
+    "dishCard": {
+      "title": "Dish Management",
+      "mainText": "Menu Items",
+      "subText": "Add, edit, or delete dishes."
+    },
+    "employeeCard": {
+      "title": "Employee Management",
+      "mainText": "Staff Accounts",
+      "subText": "Manage employee access."
+    },
+    "reservationsCard": {
+      "title": "Reservations",
+      "mainText": "View Bookings",
+      "subText": "Manage customer reservations."
+    },
+    "paymentsCard": {
+      "title": "Payment Methods",
+      "mainText": "Configure Payments",
+      "subText": "Set up Nequi, QR, COD."
+    },
+    "shareMenuCard": {
+      "title": "Share Menu",
+      "mainText": "Distribute Menu",
+      "subText": "Share via WhatsApp or link."
+    },
+    "quickStats": {
+      "title": "Quick Stats",
+      "totalDishes": "Total Dishes",
+      "pendingOrders": "Pending Orders"
+    }
+  },
+  "adminProfile": {
+    "title": "Restaurant Profile",
+    "description": "Manage your restaurant information",
+    "editButton": "Edit",
+    "saveButton": "Save",
+    "deleteButton": "Delete Profile",
+    "businessInfoCard": {
+      "title": "Business Information",
+      "description": "Basic details of your restaurant",
+      "nameLabel": "Restaurant Name",
+      "phoneLabel": "Phone",
+      "addressLabel": "Address",
+      "emailLabel": "Email",
+      "descriptionLabel": "Description"
+    },
+    "logoCard": {
+      "title": "Restaurant Logo",
+      "description": "Upload your restaurant logo",
+      "uploadButton": "Upload Logo",
+      "changeButton": "Change Logo"
+    },
+    "socialMediaCard": {
+      "title": "Social Media",
+      "description": "Configure your social media links",
+      "websiteLabel": "Website",
+      "facebookLabel": "Facebook",
+      "instagramLabel": "Instagram",
+      "twitterLabel": "Twitter/X",
+      "whatsappLabel": "WhatsApp",
+      "tiktokLabel": "TikTok",
+      "pinterestLabel": "Pinterest"
+    },
+    "paymentMethodsCard": {
+      "title": "Payment Methods",
+      "description": "Configure accepted payment methods",
+      "codLabel": "Cash on Delivery",
+      "nequiLabel": "Nequi",
+      "daviplataLabel": "Daviplata",
+      "bancolombiaLabel": "Bancolombia",
+      "qrCodeLabel": "QR Code",
+      "accountHolderLabel": "Account Holder",
+      "accountNumberLabel": "Account Number"
+    },
+    "colorsCard": {
+      "title": "Theme Colors",
+      "description": "Customize your menu colors",
+      "primaryColorLabel": "Primary Color",
+      "secondaryColorLabel": "Secondary Color",
+      "accentColorLabel": "Accent Color"
+    }
+  },
+  "adminDishes": {
+    "title": "Dish Management",
+    "description": "Add, edit and manage your menu dishes",
+    "addNewButton": "Add New Dish",
+    "allDishes": "All Dishes",
+    "searchPlaceholder": "Search dishes...",
+    "filterButton": "Filter",
+    "validation": {
+      "nameRequired": "Name is required (minimum 3 characters)",
+      "descriptionRequired": "Description is required (minimum 10 characters)",
+      "pricePositive": "Price must be positive",
+      "categoryRequired": "Category is required (minimum 3 characters)",
+      "stockInvalid": "Stock must be -1 (unlimited) or a positive number"
+    },
+    "allDishesCard": {
+      "title": "All Dishes",
+      "description": "List of all dishes registered in the system."
+    },
+    "searchInputPlaceholder": "Search by name, category...",
+    "form": {
+      "title": "Dish",
+      "nameLabel": "Dish Name",
+      "descriptionLabel": "Description",
+      "priceLabel": "Price",
+      "categoryLabel": "Category",
+      "stockLabel": "Available Stock",
+      "imageLabel": "Dish Image",
+      "uploadImageButton": "Upload Image",
+      "saveButton": "Save Dish",
+      "cancelButton": "Cancel",
+      "titleEdit": "Edit Dish",
+      "titleCreate": "New Dish",
+      "descriptionEdit": "Edit the selected dish details.",
+      "descriptionCreate": "Fill out the form to add a new dish.",
+      "namePlaceholder": "E.g., Margherita Pizza",
+      "descriptionPlaceholder": "Describe the dish...",
+      "categoryPlaceholder": "E.g., Appetizers, Desserts...",
+      "stockPlaceholder": "E.g., 10, -1 for unlimited",
+      "imagePreviewAlt": "Dish image preview",
+      "imageUploadText": "Click or drag an image here",
+      "saveChangesButton": "Save Changes",
+      "saveDishButton": "Save Dish"
+    },
+    "stock": {
+      "unlimited": "Unlimited",
+      "out": "Out of stock"
+    },
+    "table": {
+      "image": "Image",
+      "name": "Name",
+      "category": "Category",
+      "price": "Price",
+      "stock": "Stock",
+      "likes": "Likes",
+      "actions": "Actions",
+      "editButton": "Edit",
+      "deleteButton": "Delete"
+    },
+    "toast": {
+      "createSuccessTitle": "Dish Created",
+      "createSuccessDescription": "Dish {{dishName}} has been created successfully",
+      "updateSuccessTitle": "Dish Updated",
+      "updateSuccessDescription": "Dish {{dishName}} has been updated successfully",
+      "deleteSuccessTitle": "Dish Deleted",
+      "deleteSuccessDescription": "Dish {{dishName}} has been deleted successfully"
+    },
+    "deleteDialog": {
+      "title": "Are you sure?",
+      "description": "This action cannot be undone. The dish will be permanently deleted.",
+      "cancelButton": "Cancel",
+      "deleteButton": "Yes, delete",
+      "confirmButton": "Yes, delete"
+    }
+  },
+  "adminEmployees": {
+    "title": "Employee Management",
+    "description": "Manage your staff access accounts",
+    "addNewButton": "Add Employee",
+    "allEmployees": "All Employees",
+    "searchPlaceholder": "Search employees...",
+    "allEmployeesCard": {
+      "title": "All Employees",
+      "description": "List of all registered employees."
+    },
+    "searchInputPlaceholder": "Search by name, email...",
+    "form": {
+      "title": "Employee",
+      "nameLabel": "Full Name",
+      "emailLabel": "Email",
+      "roleLabel": "Role",
+      "statusLabel": "Status",
+      "saveButton": "Save Employee",
+      "cancelButton": "Cancel",
+      "avatarLabel": "Avatar",
+      "changeAvatarButton": "Change Avatar",
+      "usernameLabel": "Username",
+      "usernamePlaceholder": "e.g., john.chef",
+      "contactLabel": "Contact Number (Optional)",
+      "contactPlaceholder": "e.g., 555-1234"
+    },
+    "table": {
+      "avatar": "Avatar",
+      "username": "Username",
+      "email": "Email",
+      "contact": "Contact",
+      "status": "Status",
+      "actions": "Actions",
+      "editButton": "Edit",
+      "deleteButton": "Delete"
+    },
+    "roles": {
+      "admin": "Administrator",
+      "employee": "Employee"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "toast": {
+      "createSuccessTitle": "Employee Created",
+      "createSuccessDescription": "Employee {{employeeName}} has been created successfully",
+      "updateSuccessTitle": "Employee Updated",
+      "updateSuccessDescription": "Employee {{employeeName}} has been updated successfully",
+      "deleteSuccessTitle": "Employee Deleted",
+      "deleteSuccessDescription": "Employee {{employeeName}} has been deleted successfully"
+    },
+    "deleteDialog": {
+      "title": "Are you sure?",
+      "description": "This action cannot be undone. The employee will be permanently deleted.",
+      "cancelButton": "Cancel",
+      "deleteButton": "Yes, delete"
+    },
+    "contact": {
+      "notAvailable": "Not available"
+    },
+    "dialog": {
+      "editTitle": "Edit Employee",
+      "addTitle": "Add New Employee",
+      "editDescription": "Update the employee's details below.",
+      "addDescription": "Fill in the form to add a new employee."
+    },
+    "form": {
+      "avatarLabel": "Avatar",
+      "changeAvatarButton": "Change Avatar",
+      "usernameLabel": "Username",
+      "usernamePlaceholder": "e.g., john.chef",
+      "emailLabel": "Email",
+      "emailPlaceholder": "e.g., john.chef@example.com",
+      "contactLabel": "Contact Number (Optional)",
+      "contactPlaceholder": "e.g., 555-1234",
+      "roleLabel": "Role",
+      "statusLabel": "Status",
+      "cancelButton": "Cancel",
+      "saveChangesButton": "Save Changes",
+      "createButton": "Create Employee"
+    }
+  },
+  "adminReservations": {
+    "title": "Reservations",
+    "description": "Manage your customer reservations",
+    "addNewButton": "New Reservation",
+    "allReservations": "All Reservations",
+    "searchPlaceholder": "Search reservations...",
+    "form": {
+      "title": "Reservation",
+      "customerNameLabel": "Customer Name",
+      "emailLabel": "Email",
+      "phoneLabel": "Phone",
+      "dateLabel": "Date",
+      "timeLabel": "Time",
+      "guestsLabel": "Number of Guests",
+      "notesLabel": "Special Notes",
+      "saveButton": "Save Reservation",
+      "cancelButton": "Cancel"
+    },
+    "table": {
+      "customerColumn": "Customer",
+      "dateColumn": "Date",
+      "timeColumn": "Time",
+      "guestsColumn": "Guests",
+      "statusColumn": "Status",
+      "actionsColumn": "Actions",
+      "editButton": "Edit",
+      "deleteButton": "Delete"
+    },
+    "status": {
+      "confirmed": "Confirmed",
+      "pending": "Pending",
+      "cancelled": "Cancelled",
+      "completed": "Completed"
+    },
+    "toast": {
+      "createSuccessTitle": "Reservation Created",
+      "createSuccessDescription": "Reservation for {{customerName}} has been created successfully",
+      "updateSuccessTitle": "Reservation Updated",
+      "updateSuccessDescription": "Reservation for {{customerName}} has been updated successfully",
+      "deleteSuccessTitle": "Reservation Deleted",
+      "deleteSuccessDescription": "Reservation for {{customerName}} has been deleted successfully"
+    },
+    "deleteDialog": {
+      "title": "Are you sure?",
+      "description": "This action cannot be undone. The reservation will be permanently deleted.",
+      "cancelButton": "Cancel",
+      "deleteButton": "Yes, delete"
+    },
+    "allReservationsCard": {
+      "title": "All Reservations",
+      "description": "List of all registered reservations."
+    },
+    "searchInputPlaceholder": "Search by customer, date, phone...",
+    "filterStatusButton": "Filter by status",
+    "filterDateButton": "Filter by date",
+    "table": {
+      "customerName": "Customer",
+      "dateTime": "Date & Time",
+      "guests": "Guests",
+      "phone": "Phone",
+      "status": "Status",
+      "actions": "Actions"
+    }
+  },
+  "adminShareMenu": {
+    "title": "Share Menu",
+    "description": "Share your menu with your customers",
+    "pageTitle": "Share Your Menu",
+    "pageDescription": "Distribute your digital menu in multiple ways",
+    "loadingDescription": "Loading links...",
+    "linkCard": {
+      "title": "Menu Link",
+      "description": "Copy and share the direct link to your menu",
+      "copyAriaLabel": "Copy link",
+      "infoText": "This link goes directly to your public menu"
+    },
+    "whatsappCard": {
+      "title": "Share via WhatsApp",
+      "description": "Share your menu directly via WhatsApp",
+      "shareButton": "Share via WhatsApp",
+      "infoText": "Will open WhatsApp with a predefined message"
+    },
+    "qrCard": {
+      "title": "QR Code",
+      "description": "Download the QR code to print or share",
+      "downloadButton": "Download QR"
+    },
+    "toast": {
+      "copiedTitle": "Link Copied",
+      "copiedDescription": "Menu link has been copied to clipboard",
+      "errorTitle": "Copy Error",
+      "errorDescription": "Could not copy link to clipboard"
+    }
+  },
+  "nav": {
+    "adminDashboard": "Admin Dashboard",
+    "restaurantProfile": "Restaurant Profile",
+    "dishManagement": "Dish Management",
+    "employeeManagement": "Employee Management",
+    "reservations": "Reservations",
+    "shareMenu": "Share Menu",
+    "publicMenu": "Public Menu",
+    "login": "Login",
+    "register": "Register"
+  },
+  "header": {
+    "loginButton": "Login"
+  },
+  "superAdminDashboard": {
+    "title": "Super Admin Dashboard",
+    "description": "Welcome to the super admin dashboard. Here you can manage users, backups, logs, and system status.",
+    "userManagementCard": {
+      "title": "User Management",
+      "users": "users",
+      "admins": "admins",
+      "employees": "employees"
+    },
+    "systemBackupCard": {
+      "title": "System Backup",
+      "mainText": "Manage backups",
+      "lastBackupLabel": "Last backup:"
+    },
+    "systemLogsCard": {
+      "title": "System Logs",
+      "mainText": "View logs",
+      "criticalLogs": "critical logs"
+    },
+    "systemStatusCard": {
+      "title": "System Status",
+      "description": "Monitor the health and activity of the system.",
+      "healthLabel": "System health",
+      "activeUsersLabel": "Active users",
+      "securityAlertsLabel": "Security alerts"
+    },
+    "systemHealthValue": {
+      "good": "Good"
+    }
+  },
+  "superAdminAnalytics": {
+    "title": "System Analytics",
+    "description": "Monitor platform performance and growth",
+    "totalUsers": "Total Users",
+    "totalCompanies": "Total Companies",
+    "totalOrders": "Total Orders",
+    "totalRevenue": "Total Revenue",
+    "fromLastMonth": "from last month",
+    "thisMonth": "this month",
+    "thisWeek": "this week",
+    "userGrowthChartTitle": "User Growth",
+    "userGrowthChartDescription": "Monthly evolution of registered users",
+    "monthlyRevenueChartTitle": "Monthly Revenue",
+    "monthlyRevenueChartDescription": "Revenue trend by month",
+    "userRoleDistributionChartTitle": "Role Distribution",
+    "userRoleDistributionChartDescription": "User distribution by role type",
+    "recentActivityTitle": "Recent Activity",
+    "recentActivityDescription": "Latest system activities",
+    "table": {
+      "event": "Event",
+      "details": "Details",
+      "timestamp": "Date/Time"
+    }
+  },
+  "superAdminBackup": {
+    "title": "Backup Management",
+    "description": "Manage system backups and data recovery",
+    "operationsCard": {
+      "title": "Backup Operations",
+      "description": "Perform manual backups and restorations",
+      "startBackupButton": "Start Backup",
+      "restoreButton": "Restore",
+      "settingsButton": "Settings"
+    },
+    "historyCard": {
+      "title": "Backup History",
+      "description": "List of performed backups",
+      "noHistory": "No backup history available"
+    },
+    "storageCard": {
+      "title": "Storage",
+      "description": "Information about backup storage",
+      "locationLabel": "Location:",
+      "localServer": "Local server",
+      "capacityLabel": "Capacity:",
+      "usedSpaceLabel": "Used space:"
+    },
+    "table": {
+      "dateTime": "Date & Time",
+      "type": "Type",
+      "status": "Status",
+      "size": "Size",
+      "actions": "Actions"
+    },
+    "status": {
+      "completed": "Completed",
+      "failed": "Failed"
+    },
+    "type": {
+      "full": "Full",
+      "incremental": "Incremental"
+    },
+    "actions": {
+      "download": "Download",
+      "delete": "Delete"
+    }
+  },
+  "superAdminCompanies": {
+    "title": "Company Management",
+    "description": "Manage all companies registered on the platform",
+    "registerNewCompanyButton": "Register New Company",
+    "allCompaniesCard": {
+      "title": "All Companies",
+      "description": "List of all registered companies"
+    },
+    "searchInputPlaceholder": "Search companies...",
+    "filterByStatusButton": "Filter by Status",
+    "table": {
+      "name": "Name",
+      "location": "Location",
+      "status": "Status",
+      "registered": "Registered",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending"
+    },
+    "actions": {
+      "details": "View details",
+      "edit": "Edit",
+      "delete": "Delete"
+    }
+  },
+  "superAdminDatabase": {
+    "title": "Database",
+    "description": "Monitor and manage the system database",
+    "statusCard": {
+      "title": "Connection Status",
+      "connected": "Connected",
+      "subtitle": "Stable connection"
+    },
+    "latencyCard": {
+      "title": "Latency",
+      "subtitle": "Response time"
+    },
+    "collectionsCard": {
+      "title": "Collections",
+      "subtitle": "Total collections"
+    },
+    "documentsCard": {
+      "title": "Documents",
+      "subtitle": "Total documents"
+    },
+    "collectionsTable": {
+      "title": "Database Collections",
+      "description": "Detailed information of each collection",
+      "header": {
+        "name": "Name",
+        "docCount": "Documents",
+        "actions": "Actions"
+      },
+      "viewAction": "View collection"
+    },
+    "actionsCard": {
+      "title": "Actions",
+      "description": "Database maintenance operations",
+      "testConnectionButton": "Test Connection"
+    },
+    "toast": {
+      "testingConnection": "Testing connection...",
+      "testingDescription": "Verifying database connectivity",
+      "testSuccessTitle": "Connection successful",
+      "testSuccessDescription": "Connection established. Latency: {{latency}}"
+    }
+  },
+  "superAdminLogs": {
+    "title": "System Logs",
+    "description": "Monitor system logs to detect issues and activity",
+    "logViewerCard": {
+      "title": "Log Viewer",
+      "description": "Explore and filter system logs",
+      "downloadButton": "Download Logs",
+      "noLogs": "No logs available"
+    },
+    "searchInputPlaceholder": "Search in logs...",
+    "filterByLevelPlaceholder": "Filter by level",
+    "filterBySourcePlaceholder": "Filter by source",
+    "table": {
+      "timestamp": "Date/Time",
+      "level": "Level",
+      "message": "Message",
+      "source": "Source"
+    },
+    "level": {
+      "info": "Information",
+      "warn": "Warning",
+      "error": "Error",
+      "debug": "Debug",
+      "critical": "Critical"
+    },
+    "levelFilter": {
+      "all": "All levels",
+      "info": "Information only",
+      "warn": "Warnings only",
+      "error": "Errors only",
+      "debug": "Debug only",
+      "critical": "Critical only"
+    },
+    "sourceFilter": {
+      "all_sources": "All sources",
+      "authservice": "Authentication Service",
+      "systemmonitor": "System Monitor",
+      "paymentservice": "Payment Service",
+      "orderservice": "Order Service",
+      "backupservice": "Backup Service",
+      "kernel": "System Kernel"
+    }
+  },
+  "superAdminMaintenance": {
+    "title": "System Maintenance",
+    "description": "Perform system maintenance and optimization tasks",
+    "cacheCard": {
+      "title": "Cache Management",
+      "description": "Clear system cache to improve performance",
+      "clearButton": "Clear Cache",
+      "actionName": "cache clearing"
+    },
+    "dbCard": {
+      "title": "Database Maintenance",
+      "description": "Optimize and reindex the database",
+      "reindexButton": "Reindex DB",
+      "actionName": "database reindexing"
+    },
+    "diagnosticsCard": {
+      "title": "System Diagnostics",
+      "description": "Run diagnostics to verify system health",
+      "runButton": "Run Diagnostics",
+      "actionName": "system diagnostics"
+    },
+    "modeCard": {
+      "title": "Maintenance Mode",
+      "description": "Enable maintenance mode for updates",
+      "enableLabel": "Enable maintenance mode",
+      "enableDescription": "Users will not be able to access the system during maintenance",
+      "ariaLabel": "Toggle maintenance mode"
+    },
+    "toast": {
+      "actionTriggeredTitle": "Action started",
+      "actionTriggeredDescription": "The action '{{actionName}}' has been initiated"
+    }
+  },
+  "superAdminReminders": {
+    "title": "Reminder Management",
+    "description": "Configure and manage automatic system reminders",
+    "backButton": "Back",
+    "tabs": {
+      "summary": "Summary",
+      "configuration": "Configuration",
+      "templates": "Templates",
+      "history": "History",
+      "system": "System"
+    },
+    "summary": {
+      "dueThisWeek": "Due this week",
+      "overdue": "Overdue",
+      "sentToday": "Sent today"
+    },
+    "upcoming": {
+      "title": "Upcoming Expirations",
+      "description": "Reminders scheduled for the coming days",
+      "emptyState": "No upcoming reminders"
+    },
+    "config": {
+      "title": "Reminder Configurations",
+      "description": "Manage reminder sending rules",
+      "newButton": "New Configuration",
+      "table": {
+        "name": "Name",
+        "trigger": "Trigger",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "statusActive": "Active",
+      "statusInactive": "Inactive"
+    },
+    "templates": {
+      "title": "Message Templates",
+      "description": "Edit reminder templates",
+      "beforeExpiryName": "Reminder before expiration",
+      "onExpiryName": "Reminder on expiration day",
+      "afterExpiryName": "Reminder after expiration",
+      "editButton": "Edit"
+    },
+    "history": {
+      "title": "Sending History",
+      "description": "Record of sent reminders",
+      "table": {
+        "company": "Company",
+        "type": "Type",
+        "date": "Date",
+        "status": "Status"
+      },
+      "statusSent": "Sent",
+      "statusOpened": "Opened",
+      "statusFailed": "Failed"
+    },
+    "system": {
+      "title": "System Status",
+      "description": "Monitor the reminder service status",
+      "statusLabel": "Service status:",
+      "statusRunning": "Running",
+      "lastRunLabel": "Last run:",
+      "nextRunLabel": "Next run:",
+      "pauseButton": "Pause",
+      "runNowButton": "Run Now"
+    },
+    "form": {
+      "titleCreate": "New Configuration",
+      "titleEdit": "Edit Configuration",
+      "description": "Configure reminder parameters",
+      "nameLabel": "Name:",
+      "namePlaceholder": "E.g., 7-day reminder",
+      "triggerTypeLabel": "Trigger type:",
+      "triggerTypePlaceholder": "Select type",
+      "triggerTypeBefore": "Before expiration",
+      "triggerTypeOn": "On expiration day",
+      "triggerTypeAfter": "After expiration",
+      "daysLabel": "Days:",
+      "daysPlaceholder": "E.g., 7",
+      "sendingMethodLabel": "Sending method:",
+      "sendingMethodPlaceholder": "Select method",
+      "sendingMethodEmail": "Email",
+      "sendingMethodSms": "SMS",
+      "sendingMethodWhatsapp": "WhatsApp",
+      "maxRetriesLabel": "Max retries:",
+      "maxRetriesPlaceholder": "E.g., 3",
+      "retryIntervalLabel": "Retry interval (hours):",
+      "retryIntervalPlaceholder": "E.g., 24",
+      "statusLabel": "Status:",
+      "statusActive": "Active",
+      "cancelButton": "Cancel",
+      "saveButton": "Save"
+    },
+    "deleteDialog": {
+      "title": "Delete configuration?",
+      "description": "This action cannot be undone. The configuration will be permanently deleted.",
+      "cancelButton": "Cancel",
+      "confirmButton": "Delete"
+    }
+  },
+  "superAdminSubscriptions": {
+    "title": "Subscription Management",
+    "description": "Manage subscription plans and payment methods",
+    "plans": {
+      "title": "Subscription Plans",
+      "description": "Configure plans available for companies",
+      "manageButton": "Manage Plan",
+      "basic": {
+        "name": "Basic Plan",
+        "price": "$10/month",
+        "features": {
+          "0": "Up to 5 employees",
+          "1": "Basic menu",
+          "2": "Email support",
+          "3": "Basic updates"
+        }
+      },
+      "pro": {
+        "name": "Professional Plan",
+        "price": "$25/month",
+        "features": {
+          "0": "Up to 20 employees",
+          "1": "Advanced menu",
+          "2": "Priority support",
+          "3": "All features"
+        }
+      },
+      "enterprise": {
+        "name": "Enterprise Plan",
+        "price": "$50/month",
+        "features": {
+          "0": "Unlimited employees",
+          "1": "Complete customization",
+          "2": "24/7 support",
+          "3": "Custom API"
+        }
+      }
+    },
+    "paymentMethods": {
+      "title": "Payment Methods",
+      "description": "Configure available payment methods",
+      "saveButton": "Save Configuration",
+      "stripe": {
+        "title": "Stripe",
+        "publishableKey": "Publishable key",
+        "secretKey": "Secret key"
+      },
+      "mercadoPago": {
+        "title": "Mercado Pago",
+        "accessToken": "Access token"
+      },
+      "nequi": {
+        "title": "Nequi",
+        "phoneNumber": "Phone number"
+      },
+      "bancolombia": {
+        "title": "BanColombia QR",
+        "qrCodeUrl": "QR code URL",
+        "or": "or",
+        "uploadButton": "Upload QR image",
+        "infoText": "Supported formats: PNG, JPG, SVG",
+        "previewAlt": "QR code preview",
+        "noPreview": "No preview"
+      }
+    },
+    "qr": {
+      "title": "QR Code Management",
+      "description": "Generate and manage QR codes for payments",
+      "generateButton": "Generate New QR"
+    },
+    "transactions": {
+      "title": "Transaction History",
+      "description": "Record of all subscription transactions",
+      "table": {
+        "company": "Company",
+        "plan": "Plan",
+        "amount": "Amount",
+        "date": "Date",
+        "status": "Status"
+      },
+      "statusCompleted": "Completed",
+      "statusFailed": "Failed"
+    }
+  },
+  "superAdminUsers": {
+    "title": "User Management",
+    "description": "Manage all system users",
+    "createUserButton": "Create User",
+    "allUsersCard": {
+      "title": "All Users",
+      "description": "List of all registered users"
+    },
+    "searchInputPlaceholder": "Search users...",
+    "filterByRoleButton": "Filter by Role",
+    "filterByStatusButton": "Filter by Status",
+    "table": {
+      "avatar": "Avatar",
+      "username": "Username",
+      "email": "Email",
+      "role": "Role",
+      "status": "Status",
+      "registered": "Registered",
+      "actions": "Actions"
+    },
+    "role": {
+      "superadmin": "Super Administrator",
+      "admin": "Administrator",
+      "employee": "Employee"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending"
+    },
+    "actions": {
+      "editUser": "Edit user",
+      "activateUser": "Activate user",
+      "deactivateUser": "Deactivate user",
+      "deleteUser": "Delete user"
+    }
+  },
+  "superAdminUsersCreate": {
+    "title": "Create User",
+    "description": "Create a new user account in the system",
+    "backButtonAriaLabel": "Back to user management",
+    "formTitle": "Creation Form",
+    "formDescription": "Complete the data to create a new user",
+    "usernameLabel": "Username",
+    "usernamePlaceholder": "E.g., john.admin",
+    "emailLabel": "Email",
+    "emailPlaceholder": "E.g., john@example.com",
+    "passwordLabel": "Password",
+    "confirmPasswordLabel": "Confirm password",
+    "roleLabel": "Role",
+    "rolePlaceholder": "Select a role",
+    "roleAdmin": "Administrator",
+    "roleEmployee": "Employee",
+    "nameLabel": "Full name (optional)",
+    "namePlaceholder": "E.g., John Doe",
+    "nameDescription": "User's full name",
+    "contactLabel": "Contact (optional)",
+    "contactPlaceholder": "E.g., 300-123-4567",
+    "contactDescription": "Phone number or contact",
+    "saveButton": "Create User",
+    "validation": {
+      "usernameRequired": "Username is required (minimum 3 characters)",
+      "emailInvalid": "Email is not valid",
+      "passwordMinLength": "Password must be at least 6 characters",
+      "roleRequired": "Role is required",
+      "passwordsNoMatch": "Passwords do not match"
+    },
+    "toast": {
+      "successTitle": "User created",
+      "successDescription": "User {{username}} has been created successfully",
+      "errorTitle": "Error creating user",
+      "errorDefaultDescription": "An error occurred while creating the user",
+      "errorEmailInUse": "Email is already in use",
+      "errorWeakPassword": "Password is too weak",
+      "errorFirestore": "Error saving to database"
+    }
+  }
+} 

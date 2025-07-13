@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Database, CheckCircle, Clock, ListTree, FileText, Eye, RefreshCw } from "lucide-react";
-import { useLanguage } from "@/contexts/language-context";
+import { useTranslation } from 'react-i18next';
 import { useToast } from "@/hooks/use-toast";
 
 // Mock Data
@@ -27,7 +26,7 @@ const collectionsData = [
 ];
 
 export default function SuperAdminDatabasePage() {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const { toast } = useToast();
 
   const handleTestConnection = () => {

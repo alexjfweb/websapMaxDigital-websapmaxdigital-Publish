@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, LayoutGrid, Settings, FileText, History, Server, AlertTriangle, CheckCircle, CalendarX2, Play, Pause, Save, Edit, Trash2, PlusCircle } from "lucide-react";
 import Link from "next/link";
-import { useLanguage } from "@/contexts/language-context";
+import { useTranslation } from 'react-i18next';
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -47,7 +46,7 @@ type ReminderConfig = {
 };
 
 export default function SuperAdminRemindersPage() {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [isMounted, setIsMounted] = useState(false);
 

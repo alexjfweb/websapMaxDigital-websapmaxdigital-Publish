@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, type ChangeEvent, useEffect, useCallback } from "react";
@@ -21,52 +20,16 @@ import { useToast } from "@/hooks/use-toast";
 import type { Dish, DishFormData } from "@/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import type { Language, TranslationVariables } from '@/types/i18n';
-import { translations } from '@/translations';
+import { useTranslation } from 'react-i18next';
 
 
 export default function AdminDishesPage() {
-  const [lang, setLang] = useState<Language>('en');
-  const [t, setT] = useState<(key: string, vars?: TranslationVariables) => string>(() => () => '');
-  
-  const getTranslation = useCallback((language: Language, key: string, variables?: TranslationVariables): string => {
-    const keys = key.split('.');
-    let result: any = translations[language];
-    for (const k of keys) {
-      result = result?.[k];
-      if (result === undefined) {
-        let fallbackResult: any = translations['en'];
-        for (const fk of keys) {
-          fallbackResult = fallbackResult?.[fk];
-          if (fallbackResult === undefined) return key;
-        }
-        result = fallbackResult;
-        break;
-      }
-    }
-    
-    if (typeof result !== 'string') return key;
-
-    if (variables) {
-      Object.keys(variables).forEach((varKey) => {
-        const regex = new RegExp(`{${varKey}}`, 'g');
-        result = result.replace(regex, String(variables[varKey]));
-      });
-    }
-    return result;
-  }, []);
+  const { t } = useTranslation();
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    const storedLang = localStorage.getItem('language') as Language | null;
-    if (storedLang && translations[storedLang]) {
-      setLang(storedLang);
-    }
+    setIsMounted(true);
   }, []);
-  
-  useEffect(() => {
-    setT(() => (key: string, vars?: TranslationVariables) => getTranslation(lang, key, vars));
-  }, [lang, getTranslation]);
-
 
   const { toast } = useToast();
 
@@ -84,11 +47,6 @@ export default function AdminDishesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDish, setEditingDish] = useState<Dish | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   const form = useForm<DishFormData>({
     resolver: zodResolver(dishFormSchema),

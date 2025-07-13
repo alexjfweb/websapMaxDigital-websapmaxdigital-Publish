@@ -1,56 +1,13 @@
-
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Settings, ShoppingBag, Utensils, Users, CreditCard, Share2 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useCallback } from 'react';
-import { translations } from '@/translations';
-import type { Language, TranslationVariables } from '@/types/i18n';
+import { useTranslation } from 'react-i18next';
 
 export default function AdminDashboardPage() {
-  const [lang, setLang] = useState<Language>('en');
-  const [t, setT] = useState<(key: string, vars?: TranslationVariables) => string>(() => () => '');
-
-  useEffect(() => {
-    // Determine the language from localStorage or default to 'en'
-    const storedLang = localStorage.getItem('language') as Language;
-    if (storedLang && translations[storedLang]) {
-      setLang(storedLang);
-    }
-  }, []);
-
-  const getTranslation = useCallback((language: Language, key: string, variables?: TranslationVariables): string => {
-    const keys = key.split('.');
-    let result: any = translations[language];
-    for (const k of keys) {
-      result = result?.[k];
-      if (result === undefined) {
-        // Fallback to English
-        let fallbackResult: any = translations['en'];
-        for (const fk of keys) {
-            fallbackResult = fallbackResult?.[fk];
-            if (fallbackResult === undefined) return key;
-        }
-        result = fallbackResult;
-        break;
-      }
-    }
-    
-    if (typeof result !== 'string') return key;
-
-    if (variables) {
-      Object.keys(variables).forEach((varKey) => {
-        const regex = new RegExp(`{${varKey}}`, 'g');
-        result = result.replace(regex, String(variables[varKey]));
-      });
-    }
-    return result;
-  }, []);
-
-  useEffect(() => {
-    setT(() => (key: string, vars?: TranslationVariables) => getTranslation(lang, key, vars));
-  }, [lang, getTranslation]);
+  const { t } = useTranslation();
 
   return (
     <div className="space-y-8">
@@ -82,20 +39,18 @@ export default function AdminDashboardPage() {
             </CardContent>
           </Card>
         </Link>
-        <Link href="/admin/employees">
-           <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('adminDashboard.employeeCard.title')}</CardTitle>
-              <Users className="h-5 w-5 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{t('adminDashboard.employeeCard.mainText')}</div>
-              <p className="text-xs text-muted-foreground">{t('adminDashboard.employeeCard.subText')}</p>
-            </CardContent>
-          </Card>
-        </Link>
-         <Link href="/admin/reservations">
-           <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{t('adminDashboard.employeeCard.title')}</CardTitle>
+            <Users className="h-5 w-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{t('adminDashboard.employeeCard.mainText')}</div>
+            <p className="text-xs text-muted-foreground">{t('adminDashboard.employeeCard.subText')}</p>
+          </CardContent>
+        </Card>
+        <Link href="/admin/reservations">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{t('adminDashboard.reservationsCard.title')}</CardTitle>
               <ShoppingBag className="h-5 w-5 text-muted-foreground" />
@@ -106,20 +61,18 @@ export default function AdminDashboardPage() {
             </CardContent>
           </Card>
         </Link>
-         <Link href="/admin/payments">
-           <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('adminDashboard.paymentsCard.title')}</CardTitle>
-              <CreditCard className="h-5 w-5 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{t('adminDashboard.paymentsCard.mainText')}</div>
-              <p className="text-xs text-muted-foreground">{t('adminDashboard.paymentsCard.subText')}</p>
-            </CardContent>
-          </Card>
-        </Link>
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{t('adminDashboard.paymentsCard.title')}</CardTitle>
+            <CreditCard className="h-5 w-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{t('adminDashboard.paymentsCard.mainText')}</div>
+            <p className="text-xs text-muted-foreground">{t('adminDashboard.paymentsCard.subText')}</p>
+          </CardContent>
+        </Card>
         <Link href="/admin/share-menu">
-           <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{t('adminDashboard.shareMenuCard.title')}</CardTitle>
               <Share2 className="h-5 w-5 text-muted-foreground" />

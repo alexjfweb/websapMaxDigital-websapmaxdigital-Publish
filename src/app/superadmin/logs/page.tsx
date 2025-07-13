@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
-import { useLanguage } from "@/contexts/language-context";
+import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from "react";
 
 // Mock Data for Logs - Using static dates to prevent hydration errors
@@ -23,7 +22,7 @@ const mockLogs = [
 ];
 
 export default function SuperAdminLogsPage() {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const [isMounted, setIsMounted] = useState(false);
   const logs = mockLogs;
 

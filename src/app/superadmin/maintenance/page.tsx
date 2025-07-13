@@ -1,15 +1,14 @@
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { DatabaseZap, PlayCircle, HardDriveDownload, Wrench, ShieldAlert } from "lucide-react";
-import { useLanguage } from "@/contexts/language-context";
+import { useTranslation } from 'react-i18next';
 import { useToast } from "@/hooks/use-toast";
 
 export default function SuperAdminMaintenancePage() {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const { toast } = useToast();
 
   const handleAction = (actionName: string) => {

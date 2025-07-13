@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,10 +9,10 @@ import { useToast } from "@/hooks/use-toast";
 import WhatsAppIcon from "@/components/icons/whatsapp-icon";
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { useLanguage } from "@/contexts/language-context";
+import { useTranslation } from 'react-i18next';
 
 export default function AdminShareMenuPage() {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [menuUrl, setMenuUrl] = useState('');
 

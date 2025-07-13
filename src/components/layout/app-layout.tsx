@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from 'react';
@@ -22,8 +21,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { useLanguage } from '@/contexts/language-context';
 import { Toaster } from '@/components/ui/toaster';
+import { useTranslation } from 'react-i18next';
 
 const guestUser: User = {
   id: 'guest',
@@ -39,7 +38,7 @@ const guestUser: User = {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname(); 
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const { toast } = useToast();
   
   const [currentUser, setCurrentUser] = useState<User>(guestUser);

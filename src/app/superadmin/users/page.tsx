@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { User, UserRole } from "@/types"; 
-import { useLanguage } from "@/contexts/language-context";
+import { useTranslation } from 'react-i18next';
 import Link from "next/link"; // Importado Link
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
@@ -24,7 +23,7 @@ const mockUsers: User[] = [
 ];
 
 export default function SuperAdminUsersPage() {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const [isMounted, setIsMounted] = useState(false);
   const users = mockUsers;
 

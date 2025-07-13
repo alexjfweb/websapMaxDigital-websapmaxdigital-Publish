@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { UploadCloud, Save, Edit, Trash2, XCircle, CheckCircle } from "lucide-react";
-import { useLanguage } from "@/contexts/language-context"; 
+import { useTranslation } from 'react-i18next';
 import TikTokIcon from "@/components/icons/tiktok-icon";
 import PinterestIcon from "@/components/icons/pinterest-icon";
 import DaviplataIcon from "@/components/icons/daviplata-icon";
@@ -68,7 +67,7 @@ const mockProfile = {
 
 
 export default function AdminProfilePage() {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);

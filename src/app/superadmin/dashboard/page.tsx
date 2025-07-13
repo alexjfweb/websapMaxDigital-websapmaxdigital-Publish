@@ -1,13 +1,12 @@
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Server, History, ShieldCheck, BarChart3, AlertTriangle, Activity } from "lucide-react";
 import Link from "next/link";
-import { useLanguage } from "@/contexts/language-context";
+import { useTranslation } from 'react-i18next';
 
 export default function SuperAdminDashboardPage() {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
 
   // Mock data for dashboard widgets - for some values, we'll use translation keys if they represent static UI states
   const mockSaStats = {

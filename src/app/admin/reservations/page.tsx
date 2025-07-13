@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,8 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { useEffect, useState, useCallback } from "react";
-import { translations } from '@/translations';
-import type { Language, TranslationVariables } from '@/types/i18n';
+import { useTranslation } from 'react-i18next';
 
 // Mock Data for Reservations
 const mockReservations = [
@@ -21,48 +19,12 @@ const mockReservations = [
 ];
 
 export default function AdminReservationsPage() {
-  const [lang, setLang] = useState<Language>('en');
-  const [t, setT] = useState<(key: string, vars?: TranslationVariables) => string>(() => () => '');
+  const { t } = useTranslation();
   const [isMounted, setIsMounted] = useState(false);
 
-  const getTranslation = useCallback((language: Language, key: string, variables?: TranslationVariables): string => {
-    const keys = key.split('.');
-    let result: any = translations[language];
-    for (const k of keys) {
-      result = result?.[k];
-      if (result === undefined) {
-        let fallbackResult: any = translations['en'];
-        for (const fk of keys) {
-            fallbackResult = fallbackResult?.[fk];
-            if (fallbackResult === undefined) return key;
-        }
-        result = fallbackResult;
-        break;
-      }
-    }
-    
-    if (typeof result !== 'string') return key;
-
-    if (variables) {
-      Object.keys(variables).forEach((varKey) => {
-        const regex = new RegExp(`{${varKey}}`, 'g');
-        result = result.replace(regex, String(variables[varKey]));
-      });
-    }
-    return result;
-  }, []);
-
   useEffect(() => {
-    const storedLang = localStorage.getItem('language') as Language | null;
-    if (storedLang && translations[storedLang]) {
-      setLang(storedLang);
-    }
     setIsMounted(true);
   }, []);
-
-  useEffect(() => {
-    setT(() => (key: string, vars?: TranslationVariables) => getTranslation(lang, key, vars));
-  }, [lang, getTranslation]);
 
   const getStatusBadge = (status: string) => {
     const statusKey = `adminReservations.status.${status}`;

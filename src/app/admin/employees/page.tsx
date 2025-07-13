@@ -1,10 +1,10 @@
-
 "use client";
 
 import { useState, useEffect, type ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslation } from 'react-i18next';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,8 +20,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { translations } from "@/translations";
-import type { Language, TranslationVariables } from "@/types/i18n";
 
 
 // Mock Data for Employees
@@ -33,8 +31,8 @@ const mockEmployees: User[] = [
 
 
 export default function AdminEmployeesPage() {
+  const { t } = useTranslation();
   const [lang, setLang] = useState<Language>('en');
-  const [t, setT] = useState<(key: string, vars?: TranslationVariables) => string>(() => () => '');
 
   useEffect(() => {
     const storedLang = localStorage.getItem('language') as Language | null;
@@ -43,37 +41,6 @@ export default function AdminEmployeesPage() {
     }
   }, []);
 
-  useEffect(() => {
-    const getTranslation = (language: Language) => (key: string, variables?: TranslationVariables): string => {
-      const keys = key.split('.');
-      let result: any = translations[language] || translations['en'];
-      for (const k of keys) {
-        result = result?.[k];
-        if (result === undefined) {
-          // Fallback to English if key not found in current language
-          let fallbackResult: any = translations['en'];
-          for (const fk of keys) {
-            fallbackResult = fallbackResult?.[fk];
-            if (fallbackResult === undefined) return key;
-          }
-          result = fallbackResult;
-          break;
-        }
-      }
-      
-      if (typeof result !== 'string') return key;
-
-      if (variables) {
-        Object.keys(variables).forEach((varKey) => {
-          const regex = new RegExp(`{${varKey}}`, 'g');
-          result = result.replace(regex, String(variables[varKey]));
-        });
-      }
-      return result;
-    };
-    setT(() => getTranslation(lang));
-  }, [lang]);
-  
   const employeeFormSchema = z.object({
       id: z.string().optional(),
       username: z.string().min(3, { message: t('adminDishes.validation.usernameRequired') }),
@@ -206,15 +173,15 @@ export default function AdminEmployeesPage() {
           </DialogTrigger>
           <DialogContent className="sm:max-w-xl">
              <DialogHeader>
-                <DialogTitle>{editingEmployee ? "Edit Employee" : "Add New Employee"}</DialogTitle>
+                <DialogTitle>{editingEmployee ? t('adminEmployees.dialog.editTitle') : t('adminEmployees.dialog.addTitle')}</DialogTitle>
                 <DialogDescription>
-                  {editingEmployee ? "Update the employee's details below." : "Fill in the form to add a new employee."}
+                  {editingEmployee ? t('adminEmployees.dialog.editDescription') : t('adminEmployees.dialog.addDescription')}
                 </DialogDescription>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                  <div className="space-y-2">
-                    <FormLabel>Avatar</FormLabel>
+                    <FormLabel>{t('adminEmployees.form.avatarLabel')}</FormLabel>
                     <div className="flex items-center gap-4">
                        <Avatar className="h-20 w-20">
                             <AvatarImage src={avatarPreview || `https://placehold.co/80x80.png?text=??`} alt="Avatar Preview" data-ai-hint="user avatar"/>
@@ -223,7 +190,7 @@ export default function AdminEmployeesPage() {
                         <div className="relative">
                             <Button type="button" variant="outline" asChild>
                                 <label htmlFor="avatar-upload" className="cursor-pointer">
-                                    <UploadCloud className="mr-2 h-4 w-4"/> Change Avatar
+                                    <UploadCloud className="mr-2 h-4 w-4"/> {t('adminEmployees.form.changeAvatarButton')}
                                 </label>
                             </Button>
                            <Input id="avatar-upload" type="file" className="hidden" accept="image/*" onChange={handleAvatarChange}/>
@@ -233,16 +200,16 @@ export default function AdminEmployeesPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField control={form.control} name="username" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Username</FormLabel>
-                        <FormControl><Input placeholder="e.g., john.chef" {...field} /></FormControl>
+                        <FormLabel>{t('adminEmployees.form.usernameLabel')}</FormLabel>
+                        <FormControl><Input placeholder={t('adminEmployees.form.usernamePlaceholder')} {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                   <FormField control={form.control} name="email" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl><Input type="email" placeholder="e.g., john.chef@example.com" {...field} /></FormControl>
+                        <FormLabel>{t('adminEmployees.form.emailLabel')}</FormLabel>
+                        <FormControl><Input type="email" placeholder={t('adminEmployees.form.emailPlaceholder')} {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -250,15 +217,15 @@ export default function AdminEmployeesPage() {
                 </div>
                 <FormField control={form.control} name="contact" render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Contact Number (Optional)</FormLabel>
-                        <FormControl><Input type="tel" placeholder="e.g., 555-1234" {...field} /></FormControl>
+                        <FormLabel>{t('adminEmployees.form.contactLabel')}</FormLabel>
+                        <FormControl><Input type="tel" placeholder={t('adminEmployees.form.contactPlaceholder')} {...field} /></FormControl>
                         <FormMessage />
                     </FormItem>
                 )}/>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField control={form.control} name="role" render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Role</FormLabel>
+                            <FormLabel>{t('adminEmployees.form.roleLabel')}</FormLabel>
                              <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                     <SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger>
@@ -273,7 +240,7 @@ export default function AdminEmployeesPage() {
                     )}/>
                     <FormField control={form.control} name="status" render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Status</FormLabel>
+                            <FormLabel>{t('adminEmployees.form.statusLabel')}</FormLabel>
                              <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                     <SelectTrigger><SelectValue placeholder="Select a status" /></SelectTrigger>
@@ -289,8 +256,8 @@ export default function AdminEmployeesPage() {
                     )}/>
                  </div>
                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={closeDialog}>Cancel</Button>
-                    <Button type="submit"><Save className="mr-2 h-4 w-4"/> {editingEmployee ? "Save Changes" : "Create Employee"}</Button>
+                    <Button type="button" variant="outline" onClick={closeDialog}>{t('adminEmployees.form.cancelButton')}</Button>
+                    <Button type="submit"><Save className="mr-2 h-4 w-4"/> {editingEmployee ? t('adminEmployees.form.saveChangesButton') : t('adminEmployees.form.createButton')}</Button>
                 </DialogFooter>
               </form>
             </Form>

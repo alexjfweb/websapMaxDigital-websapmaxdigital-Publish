@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from 'react';
@@ -40,7 +39,7 @@ import {
   BellRing,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import { useLanguage } from '@/contexts/language-context';
+import { useTranslation } from 'react-i18next';
 
 interface NavItem {
   href: string;
@@ -90,7 +89,7 @@ interface NavigationMenuProps {
 
 export default function NavigationMenu({ role }: NavigationMenuProps) {
   const pathname = usePathname();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
 
   const renderNavItems = (items: NavItem[], isSubMenu = false) => {
     return items

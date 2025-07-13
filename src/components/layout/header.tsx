@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from 'react';
@@ -9,8 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import type { User } from '@/types';
-import { useLanguage } from '@/contexts/language-context';
-import type { Language } from '@/types/i18n';
+import { useTranslation } from 'react-i18next';
 
 interface AppHeaderProps {
   currentUser: User;
@@ -30,9 +28,9 @@ function ConditionalSidebarTrigger() {
 }
 
 export default function AppHeader({ currentUser, handleLogout, showSidebarRelatedUI }: AppHeaderProps) {
-  const { language, setLanguage, t } = useLanguage();
+  const { t, i18n } = useTranslation();
 
-  const languages: { code: Language; name: string; flag: string }[] = [
+  const languages = [
     { code: 'en', name: 'English', flag: '🇬🇧' },
     { code: 'es', name: 'Español', flag: '🇪🇸' },
     { code: 'pt', name: 'Português', flag: '🇵🇹' },
@@ -61,10 +59,10 @@ export default function AppHeader({ currentUser, handleLogout, showSidebarRelate
             <DropdownMenuLabel>{t('header.selectLanguage')}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {languages.map((lang) => (
-              <DropdownMenuItem key={lang.code} onSelect={() => setLanguage(lang.code)}>
+              <DropdownMenuItem key={lang.code} onSelect={() => i18n.changeLanguage(lang.code)}>
                 <span className="mr-2">{lang.flag}</span>
                 {lang.name}
-                {language === lang.code && <span className="ml-auto text-xs text-muted-foreground">Current</span>}
+                {i18n.language === lang.code && <span className="ml-auto text-xs text-muted-foreground">Current</span>}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
