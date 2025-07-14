@@ -3,7 +3,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Settings, ShoppingBag, Utensils, Users, CreditCard, Share2 } from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export default function AdminDashboardPage() {

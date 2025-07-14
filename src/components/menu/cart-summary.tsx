@@ -3,7 +3,7 @@ import type { CartItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { MinusCircle, PlusCircle, ShoppingCart, Trash2, MessageSquare } from 'lucide-react';
+import { MinusCircle, PlusCircle, ShoppingCart, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';

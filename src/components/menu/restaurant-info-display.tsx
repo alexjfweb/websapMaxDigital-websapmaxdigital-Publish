@@ -1,8 +1,8 @@
 import * as React from 'react';
 import Image from 'next/image';
 import type { RestaurantProfile } from '@/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Phone, Mail, MapPin, Info } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Phone, MapPin, Info } from 'lucide-react';
 
 interface RestaurantInfoDisplayProps {
   restaurant: RestaurantProfile;

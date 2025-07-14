@@ -2,11 +2,10 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { BarChart as RechartsBarChart, LineChart, PieChart, Bar, Line, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { Users, Store, ShoppingCart, DollarSign, Activity, BarChart3, TrendingUp, UserCheck } from "lucide-react";
+import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
+import { BarChart as RechartsBarChart, LineChart, PieChart, Bar, Line, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import { Users, Store, ShoppingCart, DollarSign, Activity, TrendingUp, UserCheck } from "lucide-react";
 import { useTranslation } from 'react-i18next';
-import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
 

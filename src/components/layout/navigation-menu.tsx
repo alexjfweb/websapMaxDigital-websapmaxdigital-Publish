@@ -11,7 +11,6 @@ import {
   SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import {
-  Home,
   ShoppingBag,
   Users,
   Settings,
@@ -23,10 +22,8 @@ import {
   Newspaper,
   Share2,
   UserCog,
-  FileText,
   Server,
   History,
-  CreditCard,
   CalendarCheck,
   Megaphone,
   LogIn,

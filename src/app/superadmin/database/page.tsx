@@ -3,8 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Database, CheckCircle, Clock, ListTree, FileText, Eye, RefreshCw } from "lucide-react";
+import { CheckCircle, Clock, ListTree, FileText, Eye, RefreshCw } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { useToast } from "@/hooks/use-toast";
 

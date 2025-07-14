@@ -15,10 +15,10 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
-import { UserPlus, ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "@/lib/firebase"; // Importar db
@@ -81,14 +81,15 @@ export default function SuperAdminCreateUserPage() {
 
       router.push("/superadmin/users");
 
-    } catch (error: any) {
-      console.error("Firebase user creation error:", error);
+    } catch (error) {
+      const err = error as { code?: string; message?: string };
+      console.error("Firebase user creation error:", err);
       let errorMessage = t('superAdminUsersCreate.toast.errorDefaultDescription');
-      if (error.code === 'auth/email-already-in-use') {
+      if (err.code === 'auth/email-already-in-use') {
         errorMessage = t('superAdminUsersCreate.toast.errorEmailInUse');
-      } else if (error.code === 'auth/weak-password') {
+      } else if (err.code === 'auth/weak-password') {
         errorMessage = t('superAdminUsersCreate.toast.errorWeakPassword');
-      } else if (error.message.includes("Firestore")) {
+      } else if (err.message && err.message.includes("Firestore")) {
         errorMessage = t('superAdminUsersCreate.toast.errorFirestore');
       }
       toast({

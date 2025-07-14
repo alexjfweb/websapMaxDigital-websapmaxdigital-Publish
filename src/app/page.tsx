@@ -1,4 +1,3 @@
-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Utensils, ShoppingCart, Share2 } from 'lucide-react';
@@ -16,19 +15,25 @@ export default function HomePage() {
   // Función de traducción simple que se ejecuta en el servidor.
   const t = (key: string): string => {
     const keys = key.split('.');
-    let result: any = translations[lang] || translations['en']; // Fallback a inglés
+    let result: unknown = translations[lang] || translations['en']; // Fallback a inglés
     for (const k of keys) {
-      result = result?.[k];
-      if (result === undefined) {
-        let fallbackResult: any = translations['en'];
+      if (typeof result === 'object' && result !== null && k in result) {
+        // @ts-expect-error: index access
+        result = result[k];
+      } else {
+        let fallbackResult: unknown = translations['en'];
         for (const fk of keys) {
-          fallbackResult = fallbackResult?.[fk];
-          if (fallbackResult === undefined) return key;
+          if (typeof fallbackResult === 'object' && fallbackResult !== null && fk in fallbackResult) {
+            // @ts-expect-error: index access
+            fallbackResult = fallbackResult[fk];
+          } else {
+            return key;
+          }
         }
-        return fallbackResult || key;
+        return (typeof fallbackResult === 'string' ? fallbackResult : key) as string;
       }
     }
-    return result;
+    return (typeof result === 'string' ? result : key) as string;
   };
 
   return (

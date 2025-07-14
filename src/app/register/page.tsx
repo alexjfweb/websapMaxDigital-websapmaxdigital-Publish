@@ -90,11 +90,12 @@ export default function RegisterPage() {
         router.push("/");
       }
 
-    } catch (error: any) {
-      console.error("Registration or Firestore save error:", error);
+    } catch (error) {
+      const err = error as { code?: string; message?: string };
+      console.error("Registration or Firestore save error:", err);
       let errorMessage = t('registerPage.toast.errorDefaultDescription');
-      if (error.code) { // Firebase Auth errors have a 'code' property
-        switch (error.code) {
+      if (err.code) { // Firebase Auth errors have a 'code' property
+        switch (err.code) {
           case 'auth/email-already-in-use':
             errorMessage = t('registerPage.toast.errorEmailInUse');
             break;
@@ -102,9 +103,9 @@ export default function RegisterPage() {
             errorMessage = t('registerPage.toast.errorWeakPassword');
             break;
           default:
-            errorMessage = error.message; // Use Firebase error message if not specifically handled
+            errorMessage = err.message || t('registerPage.toast.errorDefaultDescription');
         }
-      } else if (error.message.includes("Firestore")) { // Check if it's a Firestore related error
+      } else if (err.message && err.message.includes("Firestore")) { // Check if it's a Firestore related error
         errorMessage = "Failed to save user details to database. Please try again or contact support.";
       }
       

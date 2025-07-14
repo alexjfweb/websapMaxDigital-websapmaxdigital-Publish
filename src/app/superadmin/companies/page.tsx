@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from 'react-i18next';
-import Link from "next/link";
 import type { Company } from "@/types";
 import { format } from "date-fns";
 import { useEffect, useState } from "react";

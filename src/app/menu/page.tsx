@@ -1,23 +1,19 @@
-
 'use client';
 
 import * as React from 'react';
 import Image from 'next/image';
 import { mockRestaurantProfile, mockDishes } from '@/lib/mock-data';
-import type { Dish, CartItem, RestaurantProfile } from '@/types';
+import type { Dish, CartItem } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ShoppingCart, Smartphone, CreditCard, LoaderCircle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Smartphone, CreditCard, LoaderCircle } from 'lucide-react';
 import RestaurantInfoDisplay from '@/components/menu/restaurant-info-display';
 import OrderForm from '@/components/forms/order-form';
 import ReservationForm from '@/components/forms/reservation-form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DishItem from '@/components/menu/dish-item';
 import CartSummary from '@/components/menu/cart-summary';
-import type { Language } from '@/types/i18n';
-import { translations } from '@/translations';
 
 // Cart Hook (simple version for now)
 interface CartStore {
@@ -77,7 +73,6 @@ const useCart = (): CartStore => {
 export default function MenuPage() {
   const restaurant = mockRestaurantProfile;
   const dishes = mockDishes;
-  const { toast } = useToast();
   const cart = useCart();
   const [isMounted, setIsMounted] = React.useState(false);
 

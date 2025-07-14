@@ -8,7 +8,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
-import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from "react";
 
 
@@ -24,7 +23,6 @@ const mockOrders = [
 
 
 export default function EmployeeOrdersPage() {
-  const { t } = useTranslation();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {

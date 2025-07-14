@@ -66,7 +66,7 @@ export default function EmployeeDashboardPage() {
                 <p className="text-xs text-muted-foreground">2 minutes ago</p>
               </li>
               <li className="p-3 border rounded-md">
-                <p className="font-medium">Reservation for 'John Doe' confirmed for tomorrow.</p>
+                <p className="font-medium">Reservation for &apos;John Doe&apos; confirmed for tomorrow.</p>
                 <p className="text-xs text-muted-foreground">1 hour ago</p>
               </li>
             </ul>
