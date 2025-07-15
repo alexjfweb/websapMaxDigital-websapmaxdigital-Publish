@@ -2,7 +2,7 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
-import { getFirebaseConfig } from './firebase-config';
+import { getFirebaseConfig } from './firebase-config'; // ✅ Conservamos esta línea
 
 // Inicialización de Firebase con configuración centralizada
 let app: FirebaseApp;
@@ -10,7 +10,7 @@ let auth: Auth;
 let db: Firestore;
 
 try {
-  const config = getFirebaseConfig();
+  const config = getFirebaseConfig(); // ✅ Sigue leyendo desde firebase-config
   
   if (!getApps().length) {
     app = initializeApp(config);
