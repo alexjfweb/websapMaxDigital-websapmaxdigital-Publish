@@ -1,30 +1,25 @@
 "use client";
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Utensils, ShoppingCart, Share2 } from 'lucide-react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Check, 
-  Star, 
-  Users, 
-  Zap,
-  DollarSign,
-  Calendar,
-  Palette
-} from 'lucide-react';
 import { motion } from 'framer-motion';
 import Head from "next/head";
 import SubscriptionPlansSection from '@/components/SubscriptionPlansSection';
 import { useLandingConfig } from '@/hooks/use-landing-config';
 import { landingConfigService } from '@/services/landing-config-service';
 import { Skeleton } from '@/components/ui/skeleton';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 
 export default function LandingPage() {
   const { config, isLoading, error } = useLandingConfig();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    // This effect runs only on the client, after hydration
+    setIsClient(true);
+  }, []);
+
 
   // Efecto para inicializar configuración por defecto si no existe
   useEffect(() => {
@@ -174,8 +169,10 @@ export default function LandingPage() {
           </motion.section>
         ))}
 
-        {/* Sección fija de planes de suscripción */}
-        <SubscriptionPlansSection />
+        {/* Sección fija de planes de suscripción, renderizada solo en el cliente */}
+        <ErrorBoundary fallback={<p className="text-red-500 py-10">Error: No se pudieron cargar los planes.</p>}>
+          {isClient && <SubscriptionPlansSection />}
+        </ErrorBoundary>
       </main>
     </>
   );
