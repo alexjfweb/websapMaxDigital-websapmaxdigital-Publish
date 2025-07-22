@@ -10,6 +10,7 @@ interface Props {
 
 interface State {
   hasError: boolean;
+  error?: Error;
 }
 
 class ErrorBoundary extends Component<Props, State> {
@@ -17,13 +18,13 @@ class ErrorBoundary extends Component<Props, State> {
     hasError: false,
   };
 
-  public static getDerivedStateFromError(_: Error): State {
+  public static getDerivedStateFromError(error: Error): State {
     // Update state so the next render will show the fallback UI.
-    return { hasError: true };
+    return { hasError: true, error };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // You can also log the error to an error reporting service
+    // You can also log the error to an error reporting service like Sentry
     console.error("Uncaught error in ErrorBoundary:", error, errorInfo);
   }
 

@@ -1,7 +1,5 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import Head from "next/head";
 import SubscriptionPlansSection from '@/components/SubscriptionPlansSection';
@@ -16,7 +14,7 @@ export default function LandingPage() {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    // This effect runs only on the client, after hydration
+    // Este efecto solo se ejecuta en el cliente, después de la hidratación.
     setIsClient(true);
   }, []);
 
@@ -169,8 +167,8 @@ export default function LandingPage() {
           </motion.section>
         ))}
 
-        {/* Sección fija de planes de suscripción, renderizada solo en el cliente */}
-        <ErrorBoundary fallback={<p className="text-red-500 py-10">Error: No se pudieron cargar los planes.</p>}>
+        {/* Renderizado seguro del lado del cliente para la sección de planes */}
+        <ErrorBoundary fallback={<div className="text-red-500 py-10">Error: No se pudieron cargar los planes.</div>}>
           {isClient && <SubscriptionPlansSection />}
         </ErrorBoundary>
       </main>

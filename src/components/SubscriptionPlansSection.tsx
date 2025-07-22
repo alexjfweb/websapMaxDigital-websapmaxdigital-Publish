@@ -1,8 +1,8 @@
 
 "use client";
-import React, { useEffect } from 'react';
+import React from 'react';
 import { usePublicLandingPlans } from '@/hooks/use-plans';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -89,6 +89,25 @@ const PlanSkeleton = () => (
 export default function SubscriptionPlansSection() {
   const { plans, isLoading, isError, error } = usePublicLandingPlans();
   
+  // Render de error si la carga falla
+  if (isError) {
+    return (
+      <motion.section
+        key="planes-error"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-6xl py-16 flex justify-center"
+      >
+        <div className="col-span-full text-red-600 text-center bg-red-50 p-8 rounded-lg shadow-md border border-red-200 flex flex-col items-center">
+          <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
+          <h3 className="text-xl font-semibold mb-2">No se pudieron cargar los planes</h3>
+          <p className="text-sm">Por favor, intenta de nuevo más tarde.</p>
+          <p className="text-xs mt-4 text-red-400">Detalle: {error?.message || 'Error desconocido'}</p>
+        </div>
+      </motion.section>
+    );
+  }
+
   // Render de esqueletos mientras carga
   if (isLoading) {
     return (
@@ -104,25 +123,6 @@ export default function SubscriptionPlansSection() {
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
           {Array(3).fill(0).map((_, idx) => <PlanSkeleton key={`skeleton-${idx}`} />)}
-        </div>
-      </motion.section>
-    );
-  }
-
-  // Render de error si la carga falla
-  if (isError) {
-    return (
-      <motion.section
-        key="planes-error"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-6xl py-16 flex justify-center"
-      >
-        <div className="col-span-full text-red-600 text-center bg-red-50 p-8 rounded-lg shadow-md border border-red-200 flex flex-col items-center">
-          <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
-          <h3 className="text-xl font-semibold mb-2">No se pudieron cargar los planes</h3>
-          <p className="text-sm">Por favor, intenta de nuevo más tarde.</p>
-          <p className="text-xs mt-4 text-red-400">Detalle: {error?.message || 'Error desconocido'}</p>
         </div>
       </motion.section>
     );
