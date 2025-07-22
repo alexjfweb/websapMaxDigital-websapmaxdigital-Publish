@@ -205,7 +205,8 @@ class LandingPlansService {
     try {
       const q = query(
         collection(db, this.COLLECTION_NAME),
-        where('isActive', '==', true)
+        where('isActive', '==', true),
+        where('isPublic', '==', true)
       );
 
       const snapshot = await getDocs(q);
@@ -213,7 +214,54 @@ class LandingPlansService {
 
       snapshot.forEach(doc => {
         const data = doc.data();
-        if (data.isPublic === true) {
+        plans.push({
+            id: doc.id,
+            slug: data.slug,
+            name: data.name,
+            description: data.description,
+            price: data.price || 0,
+            currency: data.currency || 'USD',
+            period: data.period,
+            features: data.features || [],
+            isActive: data.isActive,
+            isPublic: data.isPublic,
+            isPopular: data.isPopular || false,
+            order: data.order || 0,
+            icon: data.icon,
+            color: data.color,
+            maxUsers: data.maxUsers,
+            maxProjects: data.maxProjects,
+            ctaText: data.ctaText || 'Comenzar Prueba Gratuita',
+            createdAt: this.parseTimestamp(data.createdAt),
+            updatedAt: this.parseTimestamp(data.updatedAt),
+            createdBy: data.createdBy,
+            updatedBy: data.updatedBy
+          });
+      });
+      
+      plans.sort((a, b) => a.order - b.order);
+
+      return plans;
+    } catch (error) {
+      console.error('Error getting plans:', error);
+      throw new Error('Error al obtener los planes');
+    }
+  }
+
+  /**
+   * Suscripción en tiempo real a los planes públicos
+   */
+  subscribeToPlans(callback: (plans: LandingPlan[]) => void, onError: (error: Error) => void): () => void {
+    const q = query(
+      collection(db, this.COLLECTION_NAME),
+      where('isActive', '==', true)
+    );
+  
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const plans: LandingPlan[] = [];
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.isPublic) {
           plans.push({
             id: doc.id,
             slug: data.slug,
@@ -239,55 +287,7 @@ class LandingPlansService {
           });
         }
       });
-      
       plans.sort((a, b) => a.order - b.order);
-
-      return plans;
-    } catch (error) {
-      console.error('Error getting plans:', error);
-      throw new Error('Error al obtener los planes');
-    }
-  }
-
-  /**
-   * Suscripción en tiempo real a los planes públicos
-   */
-  subscribeToPlans(callback: (plans: LandingPlan[]) => void, onError: (error: Error) => void): () => void {
-    // Consulta simplificada para evitar requerir un índice compuesto complejo.
-    const q = query(
-      collection(db, this.COLLECTION_NAME),
-      where('isActive', '==', true)
-    );
-  
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const plans: LandingPlan[] = [];
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        // El filtrado por 'isPublic' y el ordenamiento se harán en el cliente (en el hook)
-        plans.push({
-          id: doc.id,
-          slug: data.slug,
-          name: data.name,
-          description: data.description,
-          price: data.price || 0,
-          currency: data.currency || 'USD',
-          period: data.period,
-          features: data.features || [],
-          isActive: data.isActive,
-          isPublic: data.isPublic,
-          isPopular: data.isPopular || false,
-          order: data.order || 0,
-          icon: data.icon,
-          color: data.color,
-          maxUsers: data.maxUsers,
-          maxProjects: data.maxProjects,
-          ctaText: data.ctaText || 'Comenzar Prueba Gratuita',
-          createdAt: this.parseTimestamp(data.createdAt),
-          updatedAt: this.parseTimestamp(data.updatedAt),
-          createdBy: data.createdBy,
-          updatedBy: data.updatedBy
-        });
-      });
       callback(plans);
     }, onError);
   
