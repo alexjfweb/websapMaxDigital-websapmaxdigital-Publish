@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -8,7 +9,6 @@ import { landingConfigService } from '@/services/landing-config-service';
 import { Skeleton } from '@/components/ui/skeleton';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
-
 export default function LandingPage() {
   const { config, isLoading, error } = useLandingConfig();
   const [isClient, setIsClient] = useState(false);
@@ -17,7 +17,6 @@ export default function LandingPage() {
     // Este efecto solo se ejecuta en el cliente, después de la hidratación.
     setIsClient(true);
   }, []);
-
 
   // Efecto para inicializar configuración por defecto si no existe
   useEffect(() => {

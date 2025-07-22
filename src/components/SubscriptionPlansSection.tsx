@@ -129,7 +129,7 @@ export default function SubscriptionPlansSection() {
   }
 
   // Render cuando no hay planes
-  if (plans.length === 0) {
+  if (!isLoading && plans.length === 0) {
     return (
       <motion.section
         key="planes-empty"
