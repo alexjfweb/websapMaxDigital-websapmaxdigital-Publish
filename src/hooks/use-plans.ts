@@ -1,28 +1,28 @@
+
 "use client";
 
 import useSWR from 'swr';
 import type { LandingPlan } from '@/services/landing-plans-service';
 
-// Tipos para las respuestas de la API
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  message?: string;
-  error?: string;
-  timestamp: Date;
-}
-
-// Función fetcher para SWR
-const fetcher = async (url: string) => {
+// Función fetcher mejorada para SWR
+const fetcher = async (url: string): Promise<LandingPlan[]> => {
   const response = await fetch(url);
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ error: 'Error en la solicitud a la API' }));
-    throw new Error(errorData.error || 'Error en la solicitud');
-  }
-  const result: LandingPlan[] = await response.json();
-  return result;
-};
 
+  if (!response.ok) {
+    let errorInfo = 'Error en la solicitud a la API';
+    try {
+      // Intenta obtener un mensaje de error más específico del cuerpo de la respuesta
+      const errorData = await response.json();
+      errorInfo = errorData.error || errorData.message || JSON.stringify(errorData);
+    } catch (e) {
+      // Si el cuerpo no es JSON o está vacío, usa el texto de estado
+      errorInfo = response.statusText;
+    }
+    throw new Error(errorInfo);
+  }
+  // La API devuelve el array de planes directamente
+  return response.json();
+};
 
 // Hook principal para obtener planes de la landing
 export function usePublicLandingPlans() {
@@ -31,9 +31,19 @@ export function usePublicLandingPlans() {
     fetcher,
     {
       revalidateOnFocus: false,
-      shouldRetryOnError: false, // Evita reintentos que pueden ocultar el estado inicial
+      shouldRetryOnError: false,
     }
   );
+
+  // Logs para depuración en la consola del navegador
+  useEffect(() => {
+    if (data) {
+      console.log('✅ [usePublicLandingPlans] Datos recibidos:', data);
+    }
+    if (error) {
+      console.error('❌ [usePublicLandingPlans] Error al obtener datos:', error.message);
+    }
+  }, [data, error]);
 
   return {
     plans: data || [],

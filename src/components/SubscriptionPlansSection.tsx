@@ -1,5 +1,6 @@
+
 "use client";
-import React from 'react';
+import React, { useEffect } from 'react';
 import { usePublicLandingPlans } from '@/hooks/use-plans';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +14,7 @@ import {
   DollarSign,
   Calendar,
   Palette,
-  Loader2
+  AlertTriangle // Ícono para errores
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -87,12 +88,67 @@ const PlanSkeleton = () => (
 
 export default function SubscriptionPlansSection() {
   const { plans, isLoading, isError, error } = usePublicLandingPlans();
+  
+  // Render de esqueletos mientras carga
+  if (isLoading) {
+    return (
+      <motion.section
+        key="planes-loading"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="w-full max-w-6xl py-16 flex flex-col items-center"
+      >
+        <h2 className="text-3xl font-bold mb-4 text-center">Planes Flexibles para tu Negocio</h2>
+        <p className="text-lg text-gray-600 mb-12 text-center max-w-3xl">
+          Elige el plan que mejor se adapte a tus necesidades. Todos nuestros planes están diseñados para escalar contigo.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
+          {Array(3).fill(0).map((_, idx) => <PlanSkeleton key={`skeleton-${idx}`} />)}
+        </div>
+      </motion.section>
+    );
+  }
 
-  const plansToRender = isLoading ? Array(3).fill({}) : plans;
+  // Render de error si la carga falla
+  if (isError) {
+    return (
+      <motion.section
+        key="planes-error"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-6xl py-16 flex justify-center"
+      >
+        <div className="col-span-full text-red-600 text-center bg-red-50 p-8 rounded-lg shadow-md border border-red-200 flex flex-col items-center">
+          <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
+          <h3 className="text-xl font-semibold mb-2">No se pudieron cargar los planes</h3>
+          <p className="text-sm">Por favor, intenta de nuevo más tarde.</p>
+          <p className="text-xs mt-4 text-red-400">Detalle: {error?.message || 'Error desconocido'}</p>
+        </div>
+      </motion.section>
+    );
+  }
 
+  // Render cuando no hay planes
+  if (plans.length === 0) {
+    return (
+      <motion.section
+        key="planes-empty"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-6xl py-16 flex justify-center"
+      >
+        <div className="col-span-full text-gray-600 text-center bg-gray-50 p-8 rounded-lg shadow-sm border">
+          <h3 className="text-xl font-semibold">No hay planes disponibles</h3>
+          <p>Actualmente no hay planes de suscripción para mostrar. Por favor, vuelve más tarde.</p>
+        </div>
+      </motion.section>
+    );
+  }
+
+  // Render normal con los planes
   return (
     <motion.section
-      key="planes"
+      key="planes-loaded"
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7 }}
@@ -104,73 +160,53 @@ export default function SubscriptionPlansSection() {
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
-        {isError && (
-          <div className="col-span-full text-red-600 text-center bg-red-50 p-8 rounded-lg">
-            <h3 className="text-xl font-semibold">Error al cargar los planes</h3>
-            <p>{error?.message || 'Ocurrió un error inesperado.'}</p>
-          </div>
-        )}
-        
-        {!isError && plansToRender.length === 0 && !isLoading && (
-            <div className="col-span-full text-gray-600 text-center bg-gray-50 p-8 rounded-lg">
-              <h3 className="text-xl font-semibold">No hay planes disponibles</h3>
-              <p>Actualmente no hay planes de suscripción para mostrar. Por favor, vuelve más tarde.</p>
-            </div>
-        )}
-        
-        {!isError && (plansToRender.length > 0 || isLoading) &&
-          plansToRender.map((plan, idx) => {
-            if (isLoading) {
-              return <PlanSkeleton key={`skeleton-${idx}`} />;
-            }
-            
-            const IconComponent = getPlanIcon(plan.icon);
-            const colorClass = getPlanColorClass(plan.color, 'bg');
-            const borderColorClass = getPlanColorClass(plan.color, 'border');
+        {plans.map((plan) => {
+          const IconComponent = getPlanIcon(plan.icon);
+          const colorClass = getPlanColorClass(plan.color, 'bg');
+          const borderColorClass = getPlanColorClass(plan.color, 'border');
 
-            return (
-              <Card key={plan.id} className={`relative overflow-hidden transition-all duration-300 hover:shadow-xl flex flex-col ${plan.isPopular ? 'border-2 ' + borderColorClass : ''}`}>
-                {plan.isPopular && <Badge className="absolute top-4 right-4 bg-yellow-400 text-yellow-900">Popular</Badge>}
+          return (
+            <Card key={plan.id} className={`relative overflow-hidden transition-all duration-300 hover:shadow-xl flex flex-col ${plan.isPopular ? 'border-2 ' + borderColorClass : ''}`}>
+              {plan.isPopular && <Badge className="absolute top-4 right-4 bg-yellow-400 text-yellow-900">Popular</Badge>}
 
-                <CardHeader className="text-center pb-4">
-                  <div className="flex items-center justify-center mb-4">
-                    <div className={`w-12 h-12 rounded-full ${colorClass} flex items-center justify-center text-white text-xl mr-3`}>
-                      <IconComponent size={24} />
-                    </div>
-                    <CardTitle className="text-2xl font-bold text-gray-900">
-                      {plan.name}
-                    </CardTitle>
+              <CardHeader className="text-center pb-4">
+                <div className="flex items-center justify-center mb-4">
+                  <div className={`w-12 h-12 rounded-full ${colorClass} flex items-center justify-center text-white text-xl mr-3`}>
+                    <IconComponent size={24} />
                   </div>
-                  <p className="text-gray-600 text-sm min-h-[40px]">{plan.description}</p>
-                </CardHeader>
-                <CardContent className="text-center pb-6 flex-grow">
-                  <div className="mb-6">
-                    <div className="text-4xl font-bold text-gray-900 mb-2">
-                      ${plan.price}
-                      <span className="text-lg text-gray-500 font-normal">
-                        /{plan.period === 'monthly' ? 'mes' : plan.period === 'yearly' ? 'año' : 'único'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="space-y-3 mb-8">
-                    {plan.features && plan.features.map((feature, featureIndex) => (
-                      <div key={featureIndex} className="flex items-center text-left">
-                        <Check className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
-                        <span className="text-gray-700">{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-                <div className="px-6 pb-6 mt-auto">
-                  <Button className={`w-full ${colorClass} hover:${colorClass}/90 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200`} size="lg">
-                    {plan.ctaText || 'Comenzar Prueba Gratuita'}
-                  </Button>
-                  <p className="text-xs text-gray-500 mt-2 text-center">Prueba gratuita disponible</p>
+                  <CardTitle className="text-2xl font-bold text-gray-900">
+                    {plan.name}
+                  </CardTitle>
                 </div>
-              </Card>
-            );
-          })
-        }
+                <p className="text-gray-600 text-sm min-h-[40px]">{plan.description}</p>
+              </CardHeader>
+              <CardContent className="text-center pb-6 flex-grow">
+                <div className="mb-6">
+                  <div className="text-4xl font-bold text-gray-900 mb-2">
+                    ${plan.price}
+                    <span className="text-lg text-gray-500 font-normal">
+                      /{plan.period === 'monthly' ? 'mes' : plan.period === 'yearly' ? 'año' : 'único'}
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-3 mb-8">
+                  {plan.features && plan.features.map((feature, featureIndex) => (
+                    <div key={featureIndex} className="flex items-center text-left">
+                      <Check className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
+                      <span className="text-gray-700">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+              <div className="px-6 pb-6 mt-auto">
+                <Button className={`w-full ${colorClass} hover:${colorClass}/90 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200`} size="lg">
+                  {plan.ctaText || 'Comenzar Prueba Gratuita'}
+                </Button>
+                <p className="text-xs text-gray-500 mt-2 text-center">Prueba gratuita disponible</p>
+              </div>
+            </Card>
+          );
+        })}
       </div>
     </motion.section>
   );
