@@ -258,41 +258,39 @@ class LandingPlansService {
   subscribeToPlans(callback: (plans: LandingPlan[]) => void, onError: (error: Error) => void): () => void {
     const q = query(
       collection(db, this.COLLECTION_NAME),
-      where('isActive', '==', true)
+      where('isActive', '==', true),
+      where('isPublic', '==', true),
+      orderBy('order', 'asc')
     );
   
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const plans: LandingPlan[] = [];
       snapshot.forEach(doc => {
         const data = doc.data();
-        if (data.isPublic === true) {
-          plans.push({
-            id: doc.id,
-            slug: data.slug,
-            name: data.name,
-            description: data.description,
-            price: data.price || 0,
-            currency: data.currency || 'USD',
-            period: data.period,
-            features: data.features || [],
-            isActive: data.isActive,
-            isPublic: data.isPublic,
-            isPopular: data.isPopular || false,
-            order: data.order || 0,
-            icon: data.icon,
-            color: data.color,
-            maxUsers: data.maxUsers,
-            maxProjects: data.maxProjects,
-            ctaText: data.ctaText || 'Comenzar Prueba Gratuita',
-            createdAt: this.parseTimestamp(data.createdAt),
-            updatedAt: this.parseTimestamp(data.updatedAt),
-            createdBy: data.createdBy,
-            updatedBy: data.updatedBy
-          });
-        }
+        plans.push({
+          id: doc.id,
+          slug: data.slug,
+          name: data.name,
+          description: data.description,
+          price: data.price || 0,
+          currency: data.currency || 'USD',
+          period: data.period,
+          features: data.features || [],
+          isActive: data.isActive,
+          isPublic: data.isPublic,
+          isPopular: data.isPopular || false,
+          order: data.order || 0,
+          icon: data.icon,
+          color: data.color,
+          maxUsers: data.maxUsers,
+          maxProjects: data.maxProjects,
+          ctaText: data.ctaText || 'Comenzar Prueba Gratuita',
+          createdAt: this.parseTimestamp(data.createdAt),
+          updatedAt: this.parseTimestamp(data.updatedAt),
+          createdBy: data.createdBy,
+          updatedBy: data.updatedBy
+        });
       });
-      
-      plans.sort((a, b) => a.order - b.order);
       callback(plans);
     }, onError);
   
