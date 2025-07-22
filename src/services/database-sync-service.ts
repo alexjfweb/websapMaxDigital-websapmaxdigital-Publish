@@ -1,5 +1,5 @@
 // src/services/database-sync-service.ts
-import { collection, getDocs, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, writeBatch, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { landingPlansService } from './landing-plans-service';
 import { examplePlans } from '@/scripts/migrate-landing-plans';
@@ -28,6 +28,7 @@ class DatabaseSyncService {
       const batch = writeBatch(db);
       
       for (const planData of examplePlans) {
+        // Usar doc() sin parámetros para generar un ID automático dentro de la colección
         const docRef = doc(collection(db, 'landingPlans'));
         batch.set(docRef, {
           ...planData,
@@ -40,11 +41,11 @@ class DatabaseSyncService {
 
       // Log de auditoría para la operación de sincronización
       await landingPlansService.logAudit(
-        'system',
+        'system-sync', // planId puede ser un identificador genérico para la acción
         'created',
         userId,
         userEmail,
-        { details: 'Creación masiva de planes de ejemplo mediante sincronización.' }
+        { details: `Creación masiva de ${examplePlans.length} planes de ejemplo mediante sincronización.` }
       );
 
       console.log(`🎉 Sincronización completada. Se crearon ${examplePlans.length} planes.`);
