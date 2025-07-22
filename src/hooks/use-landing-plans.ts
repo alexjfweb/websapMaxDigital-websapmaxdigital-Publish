@@ -19,7 +19,7 @@ export function useLandingPlans() {
       },
       (err) => {
         console.error("Error fetching landing plans:", err);
-        setError("No se pudieron cargar los planes. Verifique los permisos de Firestore.");
+        setError("No se pudieron cargar los planes. Verifique los permisos y el índice de Firestore.");
         setIsLoading(false);
       }
     );
