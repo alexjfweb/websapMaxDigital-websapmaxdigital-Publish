@@ -72,7 +72,7 @@ export default function SubscriptionPlansSection() {
           <p className="mt-4 text-lg text-gray-600">Cargando planes...</p>
         </div>
       ) : error ? (
-        <div className="text-red-600 text-center">
+        <div className="text-red-600 text-center bg-red-50 p-8 rounded-lg">
           <h3 className="text-xl font-semibold">Error al cargar los planes</h3>
           <p>{error}</p>
         </div>
