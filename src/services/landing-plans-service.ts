@@ -206,7 +206,7 @@ class LandingPlansService {
       const q = query(
         collection(db, this.COLLECTION_NAME),
         where('isActive', '==', true),
-        where('isPublic', '==', true), // Asegurar que solo se obtienen planes públicos
+        where('isPublic', '==', true),
         orderBy('order', 'asc')
       );
 
@@ -254,7 +254,7 @@ class LandingPlansService {
     const q = query(
       collection(db, this.COLLECTION_NAME),
       where('isActive', '==', true),
-      where('isPublic', '==', true), // Asegurar que la suscripción también filtre por planes públicos
+      where('isPublic', '==', true),
       orderBy('order', 'asc')
     );
   
@@ -359,8 +359,10 @@ class LandingPlansService {
       }
 
       // Obtener el siguiente orden
-      const existingPlans = await this.getPlans();
-      const nextOrder = Math.max(...existingPlans.map(p => p.order), 0) + 1;
+      const q = query(collection(db, this.COLLECTION_NAME), orderBy('order', 'desc'), limit(1));
+      const lastPlanSnap = await getDocs(q);
+      const lastOrder = lastPlanSnap.empty ? 0 : lastPlanSnap.docs[0].data().order;
+      const nextOrder = lastOrder + 1;
 
       const planData = {
         slug,
@@ -371,7 +373,7 @@ class LandingPlansService {
         period: data.period,
         features: data.features,
         isActive: data.isActive !== false,
-        isPublic: data.isPublic === true,
+        isPublic: data.isPublic !== false,
         isPopular: data.isPopular || false,
         order: data.order || nextOrder,
         icon: data.icon,

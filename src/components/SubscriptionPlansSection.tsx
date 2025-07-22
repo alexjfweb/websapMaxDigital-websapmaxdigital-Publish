@@ -11,7 +11,8 @@ import {
   Zap,
   DollarSign,
   Calendar,
-  Palette
+  Palette,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -60,13 +61,26 @@ export default function SubscriptionPlansSection() {
       transition={{ duration: 0.7 }}
       className="w-full max-w-6xl py-16 flex flex-col items-center"
     >
-      <h2 className="text-3xl font-bold mb-8">Nuestros Planes de Suscripción</h2>
+      <h2 className="text-3xl font-bold mb-4 text-center">Planes Flexibles para tu Negocio</h2>
+      <p className="text-lg text-gray-600 mb-12 text-center max-w-3xl">
+        Elige el plan que mejor se adapte a tus necesidades. Todos nuestros planes están diseñados para escalar contigo.
+      </p>
+
       {isLoading ? (
-        <div className="text-lg">Cargando planes...</div>
+        <div className="flex flex-col items-center justify-center h-40">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          <p className="mt-4 text-lg text-gray-600">Cargando planes...</p>
+        </div>
       ) : error ? (
-        <div className="text-red-600">Error al cargar los planes: {error}</div>
+        <div className="text-red-600 text-center">
+          <h3 className="text-xl font-semibold">Error al cargar los planes</h3>
+          <p>{error}</p>
+        </div>
       ) : plans.length === 0 ? (
-        <div className="text-gray-600">No hay planes disponibles en este momento.</div>
+        <div className="text-gray-600 text-center bg-gray-50 p-8 rounded-lg">
+          <h3 className="text-xl font-semibold">No hay planes disponibles</h3>
+          <p>Actualmente no hay planes de suscripción para mostrar. Por favor, vuelve más tarde.</p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
           {plans.map((plan, idx) => {

@@ -32,6 +32,7 @@ const examplePlans = [
       'Acceso a plantillas básicas'
     ],
     isActive: true,
+    isPublic: true, // Asegurar que es público
     isPopular: false,
     order: 1,
     icon: 'zap',
@@ -62,6 +63,7 @@ const examplePlans = [
       'Backup automático'
     ],
     isActive: true,
+    isPublic: true, // Asegurar que es público
     isPopular: true,
     order: 2,
     icon: 'star',
@@ -94,6 +96,7 @@ const examplePlans = [
       'Compliance y seguridad empresarial'
     ],
     isActive: true,
+    isPublic: true, // Asegurar que es público
     isPopular: false,
     order: 3,
     icon: 'dollar',
@@ -123,6 +126,7 @@ const examplePlans = [
       'Validación de startup requerida'
     ],
     isActive: true,
+    isPublic: true, // Asegurar que es público
     isPopular: false,
     order: 4,
     icon: 'users',
@@ -151,6 +155,7 @@ const examplePlans = [
       'Ahorro del 17% vs plan mensual'
     ],
     isActive: true,
+    isPublic: true, // Asegurar que es público
     isPopular: false,
     order: 5,
     icon: 'calendar',
