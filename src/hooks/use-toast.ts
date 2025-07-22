@@ -8,6 +8,16 @@ import type {
   ToastProps,
 } from "@/components/ui/toast"
 
+interface State {
+  toasts: ToasterToast[]
+}
+
+interface Action {
+  type: "ADD_TOAST" | "UPDATE_TOAST" | "DISMISS_TOAST" | "REMOVE_TOAST"
+  toast?: ToasterToast
+  toastId?: string
+}
+
 const TOAST_LIMIT = 1
 const TOAST_REMOVE_DELAY = 1000000
 
@@ -17,6 +27,8 @@ type ToasterToast = ToastProps & {
   description?: React.ReactNode
   action?: ToastActionElement
 }
+
+const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
 const addToRemoveQueue = (toastId: string) => {
   if (toastTimeouts.has(toastId)) {
@@ -101,6 +113,13 @@ function dispatch(action: Action) {
 }
 
 type Toast = Omit<ToasterToast, "id">
+
+let count = 0;
+
+function genId() {
+  count = (count + 1) % Number.MAX_SAFE_INTEGER;
+  return count.toString();
+}
 
 function toast({ ...props }: Toast) {
   const id = genId()

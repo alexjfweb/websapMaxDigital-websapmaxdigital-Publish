@@ -20,30 +20,44 @@ import { useToast } from "@/hooks/use-toast";
 import type { Dish, DishFormData } from "@/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { useTranslation } from 'react-i18next';
+import { db } from '@/lib/firebase';
+import { collection, addDoc, getDocs, query, where, Timestamp, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 
 
 export default function AdminDishesPage() {
-  const { t } = useTranslation();
   const [isMounted, setIsMounted] = useState(false);
+  const [dishes, setDishes] = useState<Dish[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [dishToDelete, setDishToDelete] = useState<Dish | null>(null);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [filteredDishes, setFilteredDishes] = useState<Dish[]>([]);
 
   useEffect(() => {
     setIsMounted(true);
+    // Leer platos de Firestore filtrando por companyId
+    const q = query(collection(db, 'dishes'), where('companyId', '==', 'websapmax'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const dishesFS = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Dish));
+      setDishes(dishesFS);
+      setFilteredDishes(dishesFS); // Inicializar platos filtrados
+    });
+    return () => unsubscribe();
   }, []);
 
   const { toast } = useToast();
 
   const dishFormSchema = z.object({
     id: z.string().optional(),
-    name: z.string().min(3, { message: t('adminDishes.validation.nameRequired') }),
-    description: z.string().min(10, { message: t('adminDishes.validation.descriptionRequired') }),
-    price: z.coerce.number().positive({ message: t('adminDishes.validation.pricePositive') }),
-    category: z.string().min(3, { message: t('adminDishes.validation.categoryRequired') }),
-    stock: z.coerce.number().int().min(-1, { message: t('adminDishes.validation.stockInvalid') }),
+    name: z.string().min(3, { message: 'Se requiere un nombre mínimo de 3 caracteres' }),
+    description: z.string().min(10, { message: 'Se requiere una descripción mínima de 10 caracteres' }),
+    price: z.coerce.number().positive({ message: 'El precio debe ser positivo' }),
+    category: z.string().min(3, { message: 'Se requiere una categoría mínima de 3 caracteres' }),
+    stock: z.coerce.number().int().min(-1, { message: 'El stock es inválido' }),
     image: z.any().optional(),
   });
 
-  const [dishes, setDishes] = useState<Dish[]>(mockDishes);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDish, setEditingDish] = useState<Dish | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -64,7 +78,7 @@ export default function AdminDishesPage() {
     if (isMounted) {
       form.trigger();
     }
-  }, [t, form, isMounted]);
+  }, [form, isMounted]);
 
   useEffect(() => {
     if (editingDish) {
@@ -106,39 +120,50 @@ export default function AdminDishesPage() {
     }
   };
   
-  const onSubmit = (values: DishFormData) => {
+  const onSubmit = async (values: DishFormData) => {
     if (editingDish) {
-      setDishes(prevDishes => prevDishes.map(d => 
-        d.id === editingDish.id ? { 
-          ...d, 
-          ...values, 
-          imageUrl: imagePreview || d.imageUrl,
-          price: Number(values.price),
-          stock: Number(values.stock) 
-        } : d
-      ));
+      // TODO: Actualización en Firestore (no implementado en este paso)
       toast({
-        title: t('adminDishes.toast.updateSuccessTitle'),
-        description: t('adminDishes.toast.updateSuccessDescription', { dishName: values.name }),
+        title: 'Plato actualizado exitosamente',
+        description: 'El plato "' + values.name + '" se ha actualizado correctamente.',
       });
     } else {
-      const newDish: Dish = {
-          id: `dish-${Date.now()}`,
-          name: values.name,
-          description: values.description,
-          price: Number(values.price),
-          category: values.category,
-          stock: Number(values.stock),
-          likes: 0,
-          imageUrl: imagePreview || "https://placehold.co/600x400.png",
+      // Validar duplicados por nombre, categoría y companyId
+      const q = query(
+        collection(db, 'dishes'),
+        where('companyId', '==', 'websapmax'),
+        where('name', '==', values.name),
+        where('category', '==', values.category)
+      );
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        toast({
+          title: 'Ya existe un plato con ese nombre y categoría',
+          description: 'No se puede crear un plato duplicado.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      // Crear plato en Firestore
+      const newDish = {
+        name: values.name,
+        description: values.description,
+        price: Number(values.price),
+        category: values.category,
+        stock: Number(values.stock),
+        likes: 0,
+        imageUrl: imagePreview || "https://placehold.co/600x400.png",
+        available: true,
+        companyId: 'websapmax',
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
       };
-      setDishes(prevDishes => [newDish, ...prevDishes]);
+      await addDoc(collection(db, 'dishes'), newDish);
       toast({
-          title: t('adminDishes.toast.createSuccessTitle'),
-          description: t('adminDishes.toast.createSuccessDescription', { dishName: values.name }),
+        title: 'Plato creado exitosamente',
+        description: 'El plato "' + values.name + '" se ha creado correctamente.',
       });
     }
-
     setEditingDish(null);
     setIsDialogOpen(false);
   };
@@ -153,19 +178,87 @@ export default function AdminDishesPage() {
     setIsDialogOpen(true);
   }
 
-  const handleDeleteDish = (dishId: string, dishName: string) => {
-    setDishes(prevDishes => prevDishes.filter(d => d.id !== dishId));
-    toast({
-        title: t('adminDishes.toast.deleteSuccessTitle'),
-        description: t('adminDishes.toast.deleteSuccessDescription', { dishName: dishName }),
+  const handleDeleteDish = (dish: Dish) => {
+    setDishToDelete(dish);
+    setIsModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!dishToDelete) return;
+    
+    try {
+      await deleteDoc(doc(db, 'dishes', dishToDelete.id));
+      toast({
+        title: 'Plato eliminado exitosamente',
+        description: 'El plato "' + dishToDelete.name + '" se ha eliminado correctamente.',
         variant: "destructive"
-    })
-  }
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el plato. Inténtalo de nuevo.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsModalOpen(false);
+      setDishToDelete(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setIsModalOpen(false);
+    setDishToDelete(null);
+  };
   
   const renderStars = (likes: number) => {
     return Array(5).fill(0).map((_, i) => (
         <svg key={i} className={`h-4 w-4 ${i < likes ? 'text-accent fill-accent' : 'text-muted-foreground/50'}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
     ));
+  };
+
+  // Función para filtrar platos
+  const filterDishes = () => {
+    let filtered = dishes;
+
+    // Filtrar por búsqueda
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(dish => 
+        dish.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        dish.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        dish.category.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filtrar por categoría
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(dish => dish.category === selectedCategory);
+    }
+
+    setFilteredDishes(filtered);
+  };
+
+  // Aplicar filtros cuando cambien los criterios
+  useEffect(() => {
+    filterDishes();
+  }, [dishes, searchTerm, selectedCategory]);
+
+  // Obtener categorías únicas
+  const getUniqueCategories = () => {
+    const categories = dishes.map(dish => dish.category);
+    return ['all', ...Array.from(new Set(categories))];
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+  };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSelectedCategory('all');
   };
 
   if (!isMounted) {
@@ -176,20 +269,20 @@ export default function AdminDishesPage() {
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-primary">{t('adminDishes.title')}</h1>
-          <p className="text-lg text-muted-foreground">{t('adminDishes.description')}</p>
+          <h1 className="text-3xl font-bold text-primary">Gestión de platos</h1>
+          <p className="text-lg text-muted-foreground">Descripción de la sección de platos</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
                 <Button onClick={openNewDialog}>
-                    <PlusCircle className="mr-2 h-5 w-5" /> {t('adminDishes.addNewButton')}
+                    <PlusCircle className="mr-2 h-5 w-5" /> Agregar nuevo plato
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>{editingDish ? t('adminDishes.form.titleEdit') : t('adminDishes.form.titleCreate')}</DialogTitle>
+                    <DialogTitle>{editingDish ? 'Editar plato' : 'Crear nuevo plato'}</DialogTitle>
                     <DialogDescription>
-                        {editingDish ? t('adminDishes.form.descriptionEdit') : t('adminDishes.form.descriptionCreate')}
+                        {editingDish ? 'Descripción de la edición' : 'Descripción de la creación'}
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -201,9 +294,9 @@ export default function AdminDishesPage() {
                                 name="name"
                                 render={({ field }) => (
                                     <FormItem>
-                                    <FormLabel>{t('adminDishes.form.nameLabel')}</FormLabel>
+                                    <FormLabel>Nombre</FormLabel>
                                     <FormControl>
-                                        <Input placeholder={t('adminDishes.form.namePlaceholder')} {...field} />
+                                        <Input placeholder="Nombre del plato" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                     </FormItem>
@@ -214,9 +307,9 @@ export default function AdminDishesPage() {
                                 name="description"
                                 render={({ field }) => (
                                     <FormItem>
-                                    <FormLabel>{t('adminDishes.form.descriptionLabel')}</FormLabel>
+                                    <FormLabel>Descripción</FormLabel>
                                     <FormControl>
-                                        <Textarea placeholder={t('adminDishes.form.descriptionPlaceholder')} {...field} />
+                                        <Textarea placeholder="Descripción del plato" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                     </FormItem>
@@ -224,11 +317,11 @@ export default function AdminDishesPage() {
                                 />
                            </div>
                            <div className="space-y-4">
-                                <FormLabel>{t('adminDishes.form.imageLabel')}</FormLabel>
+                                <FormLabel>Imagen</FormLabel>
                                 <div className="relative flex items-center justify-center w-full h-40 border-2 border-dashed rounded-lg">
                                     {imagePreview ? (
                                         <>
-                                            <Image src={imagePreview} alt={t('adminDishes.form.imagePreviewAlt')} layout="fill" objectFit="cover" className="rounded-lg"/>
+                                            <Image src={imagePreview} alt="Vista previa de la imagen" layout="fill" objectFit="cover" className="rounded-lg"/>
                                             <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={() => { setImagePreview(null); form.setValue("image", null); }}>
                                                 <X className="h-4 w-4"/>
                                             </Button>
@@ -236,7 +329,7 @@ export default function AdminDishesPage() {
                                     ) : (
                                         <label htmlFor="image-upload" className="flex flex-col items-center justify-center w-full h-full cursor-pointer bg-card hover:bg-muted/50 rounded-lg">
                                             <UploadCloud className="h-8 w-8 text-muted-foreground mb-2"/>
-                                            <span className="text-sm text-muted-foreground">{t('adminDishes.form.imageUploadText')}</span>
+                                            <span className="text-sm text-muted-foreground">Subir imagen</span>
                                         </label>
                                     )}
                                     <Input id="image-upload" type="file" className="hidden" accept="image/*" onChange={handleImageChange}/>
@@ -250,7 +343,7 @@ export default function AdminDishesPage() {
                                 name="price"
                                 render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>{t('adminDishes.form.priceLabel')}</FormLabel>
+                                    <FormLabel>Precio</FormLabel>
                                     <FormControl>
                                     <Input type="number" step="0.01" placeholder="19.99" {...field} />
                                     </FormControl>
@@ -263,9 +356,9 @@ export default function AdminDishesPage() {
                                 name="category"
                                 render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>{t('adminDishes.form.categoryLabel')}</FormLabel>
+                                    <FormLabel>Categoría</FormLabel>
                                     <FormControl>
-                                    <Input placeholder={t('adminDishes.form.categoryPlaceholder')} {...field} />
+                                    <Input placeholder="Categoría del plato" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -276,9 +369,9 @@ export default function AdminDishesPage() {
                                 name="stock"
                                 render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>{t('adminDishes.form.stockLabel')}</FormLabel>
+                                    <FormLabel>Stock</FormLabel>
                                     <FormControl>
-                                    <Input type="number" placeholder={t('adminDishes.form.stockPlaceholder')} {...field} />
+                                    <Input type="number" placeholder="Stock del plato" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -286,8 +379,8 @@ export default function AdminDishesPage() {
                             />
                         </div>
                          <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>{t('adminDishes.form.cancelButton')}</Button>
-                            <Button type="submit"><Save className="mr-2 h-4 w-4"/> {editingDish ? t('adminDishes.form.saveChangesButton') : t('adminDishes.form.saveDishButton')}</Button>
+                            <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
+                            <Button type="submit"><Save className="mr-2 h-4 w-4"/> {editingDish ? 'Guardar cambios' : 'Guardar plato'}</Button>
                         </DialogFooter>
                     </form>
                 </Form>
@@ -297,15 +390,20 @@ export default function AdminDishesPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('adminDishes.allDishesCard.title')}</CardTitle>
-          <CardDescription>{t('adminDishes.allDishesCard.description')}</CardDescription>
+          <CardTitle>Todos los platos</CardTitle>
+          <CardDescription>Descripción de la sección de platos</CardDescription>
           <div className="flex flex-col md:flex-row gap-2 pt-4">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
-              <Input placeholder={t('adminDishes.searchInputPlaceholder')} className="pl-8" />
+              <Input 
+                placeholder="Buscar por nombre, descripción..." 
+                className="pl-8" 
+                value={searchTerm}
+                onChange={handleSearchChange}
+              />
             </div>
-            <Button variant="outline">
-              <Filter className="mr-2 h-4 w-4" /> {t('adminDishes.filterButton')}
+            <Button variant="outline" onClick={() => setIsFilterModalOpen(true)}>
+              <Filter className="mr-2 h-4 w-4" /> Filtrar
             </Button>
           </div>
         </CardHeader>
@@ -313,17 +411,17 @@ export default function AdminDishesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="hidden md:table-cell">{t('adminDishes.table.image')}</TableHead>
-                <TableHead>{t('adminDishes.table.name')}</TableHead>
-                <TableHead>{t('adminDishes.table.category')}</TableHead>
-                <TableHead className="text-right">{t('adminDishes.table.price')}</TableHead>
-                <TableHead className="text-center">{t('adminDishes.table.stock')}</TableHead>
-                <TableHead className="text-center hidden sm:table-cell">{t('adminDishes.table.likes')}</TableHead>
-                <TableHead className="text-right">{t('adminDishes.table.actions')}</TableHead>
+                <TableHead className="hidden md:table-cell">Imagen</TableHead>
+                <TableHead>Nombre</TableHead>
+                <TableHead>Categoría</TableHead>
+                <TableHead className="text-right">Precio</TableHead>
+                <TableHead className="text-center">Stock</TableHead>
+                <TableHead className="text-center hidden sm:table-cell">Likes</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {dishes.map((dish) => (
+              {filteredDishes.map((dish) => (
                 <TableRow key={dish.id}>
                   <TableCell className="hidden md:table-cell">
                     <Image 
@@ -341,8 +439,8 @@ export default function AdminDishesPage() {
                   </TableCell>
                   <TableCell className="text-right">${dish.price.toFixed(2)}</TableCell>
                   <TableCell className="text-center">
-                    {dish.stock === -1 ? <Badge variant="secondary">{t('adminDishes.stock.unlimited')}</Badge> : 
-                     dish.stock === 0 ? <Badge variant="destructive">{t('adminDishes.stock.out')}</Badge> : 
+                    {dish.stock === -1 ? <Badge variant="secondary">Ilimitado</Badge> : 
+                     dish.stock === 0 ? <Badge variant="destructive">Agotado</Badge> : 
                      dish.stock}
                   </TableCell>
                   <TableCell className="text-center hidden sm:table-cell">
@@ -361,15 +459,21 @@ export default function AdminDishesPage() {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                                <AlertDialogTitle>{t('adminDishes.deleteDialog.title')}</AlertDialogTitle>
+                                <AlertDialogTitle>¿Eliminar plato?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    {t('adminDishes.deleteDialog.description', { dishName: dish.name })}
+                                    ¿Estás seguro de que quieres eliminar el plato <strong>"{dish.name}"</strong>? 
+                                    Esta acción no se puede deshacer y el plato desaparecerá del menú público.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                                <AlertDialogCancel>{t('adminDishes.deleteDialog.cancelButton')}</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteDish(dish.id, dish.name)} className={cn(buttonVariants({ variant: "destructive" }))}>
-                                    {t('adminDishes.deleteDialog.confirmButton')}
+                                <AlertDialogCancel onClick={cancelDelete}>
+                                    Cancelar
+                                </AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => handleDeleteDish(dish)} 
+                                  className={cn(buttonVariants({ variant: "destructive" }))}
+                                >
+                                    Sí, eliminar
                                 </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
@@ -382,6 +486,81 @@ export default function AdminDishesPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Modal de filtros */}
+      <Dialog open={isFilterModalOpen} onOpenChange={setIsFilterModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Filtrar platos</DialogTitle>
+            <DialogDescription>
+              Selecciona los criterios para filtrar los platos
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Categoría</label>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                {getUniqueCategories().map((category) => (
+                  <Button
+                    key={category}
+                    variant={selectedCategory === category ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handleCategoryChange(category)}
+                    className="justify-start"
+                  >
+                    {category === 'all' ? 'Todas las categorías' : category}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium">Búsqueda</label>
+              <Input
+                placeholder="Buscar por nombre, descripción..."
+                value={searchTerm}
+                onChange={handleSearchChange}
+                className="mt-2"
+              />
+            </div>
+
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={clearFilters}>
+                Limpiar filtros
+              </Button>
+              <Button onClick={() => setIsFilterModalOpen(false)}>
+                Aplicar filtros
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de confirmación de eliminación */}
+      <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive">
+              ¿Eliminar plato?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Estás seguro de que quieres eliminar el plato <strong>"{dishToDelete?.name}"</strong>? 
+              Esta acción no se puede deshacer y el plato desaparecerá del menú público.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelDelete}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete} 
+              className={cn(buttonVariants({ variant: "destructive" }))}
+            >
+              Sí, eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

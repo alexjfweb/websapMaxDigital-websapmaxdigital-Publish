@@ -24,24 +24,22 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "@/lib/firebase"; // Importar db
 import { doc, setDoc } from "firebase/firestore"; // Importar doc y setDoc
 import type { User, UserRole } from "@/types";
-import { useTranslation } from 'react-i18next';
 
 const createUserFormSchema = z.object({
-  username: z.string().min(3, { message: "superAdminUsersCreate.validation.usernameRequired" }),
-  email: z.string().email({ message: "superAdminUsersCreate.validation.emailInvalid" }),
-  password: z.string().min(6, { message: "superAdminUsersCreate.validation.passwordMinLength" }),
+  username: z.string().min(3, { message: "El nombre de usuario debe tener al menos 3 caracteres" }),
+  email: z.string().email({ message: "Por favor ingresa un correo electrónico válido" }),
+  password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres" }),
   confirmPassword: z.string(),
-  role: z.enum(["admin", "employee"], { required_error: "superAdminUsersCreate.validation.roleRequired" }),
+  role: z.enum(["admin", "employee"], { required_error: "Por favor selecciona un rol" }),
   name: z.string().optional(),
   contact: z.string().optional(),
 }).refine(data => data.password === data.confirmPassword, {
-  message: "superAdminUsersCreate.validation.passwordsNoMatch",
+  message: "Las contraseñas no coinciden",
   path: ["confirmPassword"],
 });
 
 export default function SuperAdminCreateUserPage() {
   const router = useRouter();
-  const { t } = useTranslation();
   const form = useForm<z.infer<typeof createUserFormSchema>>({
     resolver: zodResolver(createUserFormSchema),
     defaultValues: {
@@ -75,8 +73,8 @@ export default function SuperAdminCreateUserPage() {
       await setDoc(doc(db, "users", firebaseUser.uid), newUser);
       
       toast({
-        title: t('superAdminUsersCreate.toast.successTitle'),
-        description: t('superAdminUsersCreate.toast.successDescription', { username: values.username }),
+        title: 'Crear usuario',
+        description: 'Usuario creado exitosamente',
       });
 
       router.push("/superadmin/users");
@@ -84,16 +82,16 @@ export default function SuperAdminCreateUserPage() {
     } catch (error) {
       const err = error as { code?: string; message?: string };
       console.error("Firebase user creation error:", err);
-      let errorMessage = t('superAdminUsersCreate.toast.errorDefaultDescription');
+      let errorMessage = 'Hubo un error al crear el usuario. Por favor, inténtelo más tarde.';
       if (err.code === 'auth/email-already-in-use') {
-        errorMessage = t('superAdminUsersCreate.toast.errorEmailInUse');
+        errorMessage = 'El correo electrónico ya está en uso.';
       } else if (err.code === 'auth/weak-password') {
-        errorMessage = t('superAdminUsersCreate.toast.errorWeakPassword');
+        errorMessage = 'La contraseña es demasiado débil.';
       } else if (err.message && err.message.includes("Firestore")) {
-        errorMessage = t('superAdminUsersCreate.toast.errorFirestore');
+        errorMessage = 'Hubo un error al guardar los datos en Firestore.';
       }
       toast({
-        title: t('superAdminUsersCreate.toast.errorTitle'),
+        title: 'Error al crear usuario',
         description: errorMessage,
         variant: "destructive",
       });
@@ -104,20 +102,20 @@ export default function SuperAdminCreateUserPage() {
     <div className="space-y-8">
       <div className="flex items-center gap-4">
         <Link href="/superadmin/users" passHref>
-          <Button variant="outline" size="icon" aria-label={t('superAdminUsersCreate.backButtonAriaLabel')}>
+          <Button variant="outline" size="icon" aria-label="Volver">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
         <div>
-            <h1 className="text-3xl font-bold text-primary">{t('superAdminUsersCreate.title')}</h1>
-            <p className="text-lg text-muted-foreground">{t('superAdminUsersCreate.description')}</p>
+            <h1 className="text-3xl font-bold text-primary">Crear usuario</h1>
+            <p className="text-lg text-muted-foreground">Descripción de la página</p>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('superAdminUsersCreate.formTitle')}</CardTitle>
-          <CardDescription>{t('superAdminUsersCreate.formDescription')}</CardDescription>
+          <CardTitle>Crear usuario</CardTitle>
+          <CardDescription>Descripción del formulario</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -128,9 +126,9 @@ export default function SuperAdminCreateUserPage() {
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('superAdminUsersCreate.usernameLabel')}</FormLabel>
+                      <FormLabel>Nombre de usuario</FormLabel>
                       <FormControl>
-                        <Input placeholder={t('superAdminUsersCreate.usernamePlaceholder')} {...field} />
+                        <Input placeholder="Nombre de usuario" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -141,9 +139,9 @@ export default function SuperAdminCreateUserPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('superAdminUsersCreate.emailLabel')}</FormLabel>
+                      <FormLabel>Correo electrónico</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder={t('superAdminUsersCreate.emailPlaceholder')} {...field} />
+                        <Input type="email" placeholder="Correo electrónico" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -157,7 +155,7 @@ export default function SuperAdminCreateUserPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('superAdminUsersCreate.passwordLabel')}</FormLabel>
+                      <FormLabel>Contraseña</FormLabel>
                       <FormControl>
                         <Input type="password" placeholder="••••••••" {...field} />
                       </FormControl>
@@ -170,7 +168,7 @@ export default function SuperAdminCreateUserPage() {
                   name="confirmPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('superAdminUsersCreate.confirmPasswordLabel')}</FormLabel>
+                      <FormLabel>Confirmar contraseña</FormLabel>
                       <FormControl>
                         <Input type="password" placeholder="••••••••" {...field} />
                       </FormControl>
@@ -185,16 +183,16 @@ export default function SuperAdminCreateUserPage() {
                 name="role"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('superAdminUsersCreate.roleLabel')}</FormLabel>
+                    <FormLabel>Rol</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={t('superAdminUsersCreate.rolePlaceholder')} />
+                          <SelectValue placeholder="Seleccionar rol" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="admin">{t('superAdminUsersCreate.roleAdmin')}</SelectItem>
-                        <SelectItem value="employee">{t('superAdminUsersCreate.roleEmployee')}</SelectItem>
+                        <SelectItem value="admin">Administrador</SelectItem>
+                        <SelectItem value="employee">Empleado</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -208,11 +206,11 @@ export default function SuperAdminCreateUserPage() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('superAdminUsersCreate.nameLabel')}</FormLabel>
+                      <FormLabel>Nombre</FormLabel>
                       <FormControl>
-                        <Input placeholder={t('superAdminUsersCreate.namePlaceholder')} {...field} />
+                        <Input placeholder="Nombre" {...field} />
                       </FormControl>
-                      <FormDescription>{t('superAdminUsersCreate.nameDescription')}</FormDescription>
+                      <FormDescription>Descripción del nombre</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -222,11 +220,11 @@ export default function SuperAdminCreateUserPage() {
                   name="contact"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('superAdminUsersCreate.contactLabel')}</FormLabel>
+                      <FormLabel>Contacto</FormLabel>
                       <FormControl>
-                        <Input placeholder={t('superAdminUsersCreate.contactPlaceholder')} {...field} />
+                        <Input placeholder="Contacto" {...field} />
                       </FormControl>
-                      <FormDescription>{t('superAdminUsersCreate.contactDescription')}</FormDescription>
+                      <FormDescription>Descripción del contacto</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -234,7 +232,7 @@ export default function SuperAdminCreateUserPage() {
               </div>
               
               <Button type="submit" className="w-full md:w-auto">
-                <Save className="mr-2 h-4 w-4" /> {t('superAdminUsersCreate.saveButton')}
+                <Save className="mr-2 h-4 w-4" /> Guardar
               </Button>
             </form>
           </Form>

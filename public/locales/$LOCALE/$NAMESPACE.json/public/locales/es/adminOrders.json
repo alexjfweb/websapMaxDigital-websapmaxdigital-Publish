@@ -1,0 +1,40 @@
+{
+  "actions": {
+    "filterByStatus": "Filtrar por estado",
+    "markAsPreparing": "Marcar como preparando",
+    "markOutForDelivery": "Marcar en reparto",
+    "markReadyForPickup": "Marcar listo para recoger",
+    "printKOTs": "Imprimir KOTs",
+    "viewDetails": "Ver detalles"
+  },
+  "kotPreviewTitle": "Vista previa de KOT",
+  "kotPrintSuccessDesc": "Las órdenes de cocina se han enviado a impresión.",
+  "kotPrintSuccessTitle": "KOTs impresos",
+  "overview": "Resumen de pedidos",
+  "overviewDescription": "Aquí puedes ver y gestionar todos los pedidos.",
+  "searchPlaceholder": "Buscar pedido...",
+  "status": {
+    "cancelled": "Cancelado",
+    "completed": "Completado",
+    "outForDelivery": "En reparto",
+    "pending": "Pendiente",
+    "preparing": "Preparando",
+    "readyForPickup": "Listo para recoger"
+  },
+  "subtitle": "Administra todos los pedidos en tiempo real.",
+  "table": {
+    "actions": "Acciones",
+    "customer": "Cliente",
+    "date": "Fecha",
+    "items": "Artículos",
+    "noOrders": "No hay pedidos para mostrar",
+    "orderId": "ID",
+    "status": "Estado",
+    "total": "Total"
+  },
+  "tabs": {
+    "activeOrders": "Pedidos activos",
+    "pastOrders": "Pedidos anteriores"
+  },
+  "title": "Gestión de pedidos"
+}

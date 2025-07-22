@@ -4,24 +4,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { DatabaseZap, PlayCircle, HardDriveDownload, Wrench, ShieldAlert } from "lucide-react";
-import { useTranslation } from 'react-i18next';
 import { useToast } from "@/hooks/use-toast";
 
 export default function SuperAdminMaintenancePage() {
-  const { t } = useTranslation();
   const { toast } = useToast();
 
   const handleAction = (actionName: string) => {
     toast({
-      title: t('superAdminMaintenance.toast.actionTriggeredTitle'),
-      description: t('superAdminMaintenance.toast.actionTriggeredDescription', { actionName }),
+      title: 'Acción activada',
+      description: `La acción "${actionName}" ha sido activada correctamente.`,
     });
   };
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-primary">{t('superAdminMaintenance.title')}</h1>
-      <p className="text-lg text-muted-foreground">{t('superAdminMaintenance.description')}</p>
+      <h1 className="text-3xl font-bold text-primary">Mantenimiento</h1>
+      <p className="text-lg text-muted-foreground">Descripción del mantenimiento</p>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* Cache Management Card */}
@@ -29,14 +27,14 @@ export default function SuperAdminMaintenancePage() {
           <CardHeader>
             <div className="flex items-center gap-3">
               <HardDriveDownload className="h-8 w-8 text-primary" />
-              <CardTitle>{t('superAdminMaintenance.cacheCard.title')}</CardTitle>
+              <CardTitle>Título de la tarjeta de caché</CardTitle>
             </div>
-            <CardDescription>{t('superAdminMaintenance.cacheCard.description')}</CardDescription>
+            <CardDescription>Descripción de la tarjeta de caché</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full" onClick={() => handleAction(t('superAdminMaintenance.cacheCard.actionName'))}>
+            <Button className="w-full" onClick={() => handleAction('Accionar la caché')}>
               <PlayCircle className="mr-2 h-5 w-5" />
-              {t('superAdminMaintenance.cacheCard.clearButton')}
+              Limpiar caché
             </Button>
           </CardContent>
         </Card>
@@ -46,14 +44,14 @@ export default function SuperAdminMaintenancePage() {
           <CardHeader>
              <div className="flex items-center gap-3">
               <DatabaseZap className="h-8 w-8 text-primary" />
-              <CardTitle>{t('superAdminMaintenance.dbCard.title')}</CardTitle>
+              <CardTitle>Título de la tarjeta de mantenimiento de la base de datos</CardTitle>
             </div>
-            <CardDescription>{t('superAdminMaintenance.dbCard.description')}</CardDescription>
+            <CardDescription>Descripción de la tarjeta de mantenimiento de la base de datos</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full" variant="outline" onClick={() => handleAction(t('superAdminMaintenance.dbCard.actionName'))}>
+            <Button className="w-full" variant="outline" onClick={() => handleAction('Reindexar la base de datos')}>
               <PlayCircle className="mr-2 h-5 w-5" />
-              {t('superAdminMaintenance.dbCard.reindexButton')}
+              Reindexar base de datos
             </Button>
           </CardContent>
         </Card>
@@ -63,14 +61,14 @@ export default function SuperAdminMaintenancePage() {
           <CardHeader>
              <div className="flex items-center gap-3">
               <Wrench className="h-8 w-8 text-primary" />
-              <CardTitle>{t('superAdminMaintenance.diagnosticsCard.title')}</CardTitle>
+              <CardTitle>Título de la tarjeta de diagnóstico del sistema</CardTitle>
             </div>
-            <CardDescription>{t('superAdminMaintenance.diagnosticsCard.description')}</CardDescription>
+            <CardDescription>Descripción de la tarjeta de diagnóstico del sistema</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full" variant="outline" onClick={() => handleAction(t('superAdminMaintenance.diagnosticsCard.actionName'))}>
+            <Button className="w-full" variant="outline" onClick={() => handleAction('Ejecutar diagnóstico del sistema')}>
               <PlayCircle className="mr-2 h-5 w-5" />
-              {t('superAdminMaintenance.diagnosticsCard.runButton')}
+              Ejecutar diagnóstico del sistema
             </Button>
           </CardContent>
         </Card>
@@ -81,21 +79,21 @@ export default function SuperAdminMaintenancePage() {
         <CardHeader>
           <div className="flex items-center gap-3">
               <ShieldAlert className="h-8 w-8 text-destructive" />
-              <CardTitle>{t('superAdminMaintenance.modeCard.title')}</CardTitle>
+              <CardTitle>Título de la tarjeta de modo de mantenimiento</CardTitle>
             </div>
-          <CardDescription>{t('superAdminMaintenance.modeCard.description')}</CardDescription>
+          <CardDescription>Descripción de la tarjeta de modo de mantenimiento</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center space-x-4 rounded-md border p-4">
             <div className="flex-1 space-y-1">
               <p className="text-sm font-medium leading-none">
-                {t('superAdminMaintenance.modeCard.enableLabel')}
+                Habilitar modo de mantenimiento
               </p>
               <p className="text-xs text-muted-foreground">
-                {t('superAdminMaintenance.modeCard.enableDescription')}
+                Descripción del modo de mantenimiento
               </p>
             </div>
-            <Switch id="maintenance-mode" aria-label={t('superAdminMaintenance.modeCard.ariaLabel')} />
+            <Switch id="maintenance-mode" aria-label="Label del switch de mantenimiento" />
           </div>
         </CardContent>
       </Card>

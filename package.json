@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "build": "next build",
@@ -13,7 +13,10 @@
     "deploy": "npm run build && firebase deploy --only hosting --project websapmaxdigital",
     "deploy:staging": "npm run build && firebase deploy --only hosting --project websapmaxdigital-staging",
     "deploy:production": "npm run build && firebase deploy --only hosting --project websapmaxdigital",
-    "predeploy": "npm run typecheck && npm run lint"
+    "predeploy": "npm run typecheck && npm run lint",
+    "cleanup:plans": "node scripts/cleanup-plans.js",
+    "migrate:plans": "node scripts/migrate-plans.js",
+    "migrate:landing-plans": "node scripts/migrate-landing-plans.js"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.8.0",
@@ -46,18 +49,17 @@
     "date-fns": "^3.6.0",
     "dotenv": "^16.5.0",
     "firebase": "^11.8.1",
+    "framer-motion": "^12.23.6",
     "genkit": "^1.8.0",
-    "i18next": "^25.3.2",
     "lucide-react": "^0.475.0",
     "next": "15.2.3",
-    "next-i18next": "^15.4.2",
     "patch-package": "^8.0.0",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.54.2",
-    "react-i18next": "^15.6.0",
     "recharts": "^2.15.1",
+    "swr": "^2.3.4",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.24.2"

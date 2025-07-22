@@ -5,13 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { UploadCloud, Save, Edit, Trash2, XCircle, CheckCircle } from "lucide-react";
-import { useTranslation } from 'react-i18next';
-import TikTokIcon from "@/components/icons/tiktok-icon";
-import PinterestIcon from "@/components/icons/pinterest-icon";
-import DaviplataIcon from "@/components/icons/daviplata-icon";
-import BancolombiaIcon from "@/components/icons/bancolombia-icon";
-import { Globe, Share2, Facebook, Instagram, Twitter, MessageCircle } from "lucide-react";
+import { UploadCloud, Save, Edit, Trash2, XCircle, CheckCircle, Clipboard, Globe, Share2, Facebook, Instagram, Twitter, MessageCircle } from "lucide-react";
 import { useState, type ChangeEvent } from "react";
 import Image from "next/image";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -19,6 +13,10 @@ import { Switch } from "@/components/ui/switch";
 import NequiIcon from "@/components/icons/nequi-icon";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import TikTokIcon from "@/components/icons/tiktok-icon";
+import PinterestIcon from "@/components/icons/pinterest-icon";
+import DaviplataIcon from "@/components/icons/daviplata-icon";
+import BancolombiaIcon from "@/components/icons/bancolombia-icon";
 
 
 // Mock data - in a real app, this would come from a backend/state management
@@ -67,7 +65,6 @@ const mockProfile = {
 
 
 export default function AdminProfilePage() {
-  const { t } = useTranslation();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -129,40 +126,68 @@ export default function AdminProfilePage() {
     // You might want to redirect the user after deletion, e.g., router.push('/dashboard');
   }
 
+  // Copiar enlace de menú al portapapeles de forma segura
+  const handleCopyMenuLink = async () => {
+    const link = mockProfile.socialLinks.menuShareLink;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(link);
+      } else {
+        // Fallback para contextos inseguros
+        const textArea = document.createElement("textarea");
+        textArea.value = link;
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+      toast({
+        title: '¡Enlace copiado!',
+        description: 'El enlace del menú ha sido copiado al portapapeles.'
+      });
+    } catch (err) {
+      toast({
+        title: 'Error al copiar',
+        description: 'No se pudo copiar el enlace.',
+        variant: 'destructive'
+      });
+    }
+  };
 
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-primary">{t('adminProfile.title')}</h1>
-          <p className="text-lg text-muted-foreground">{t('adminProfile.description')}</p>
+          <h1 className="text-3xl font-bold text-primary">Perfil del restaurante</h1>
+          <p className="text-lg text-muted-foreground">Descripción del perfil del restaurante</p>
         </div>
         <div className="flex justify-end space-x-3 pt-2">
             {!isEditing ? (
-                <Button onClick={() => setIsEditing(true)}><Edit className="mr-2 h-4 w-4" /> {t('adminProfile.editButton')}</Button>
+                <Button onClick={() => setIsEditing(true)}><Edit className="mr-2 h-4 w-4" /> Editar</Button>
             ) : (
                 <>
                     <Button variant="outline" onClick={handleCancel}><XCircle className="mr-2 h-4 w-4" /> Cancelar</Button>
-                    <Button onClick={handleSave}><Save className="mr-2 h-4 w-4" /> {t('adminProfile.saveButton')}</Button>
+                    <Button onClick={handleSave}><Save className="mr-2 h-4 w-4" /> Guardar</Button>
                 </>
             )}
             
             <AlertDialog>
                 <AlertDialogTrigger asChild>
-                    <Button variant="destructive"><Trash2 className="mr-2 h-4 w-4" /> {t('adminProfile.deleteButton')}</Button>
+                    <Button variant="destructive"><Trash2 className="mr-2 h-4 w-4" /> Eliminar</Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogTitle>¿Estás seguro de que quieres eliminar este perfil?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete your restaurant profile,
-                            including all associated dishes, employees, and settings.
+                            Esta acción no se puede deshacer. Esto eliminará permanentemente tu perfil de restaurante,
+                            incluyendo todos los platos asociados, empleados y configuraciones.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-                            Yes, delete profile
+                            Sí, eliminar perfil
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -172,40 +197,40 @@ export default function AdminProfilePage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('adminProfile.businessInfoCard.title')}</CardTitle>
-          <CardDescription>{t('adminProfile.businessInfoCard.description')}</CardDescription>
+          <CardTitle>Información del negocio</CardTitle>
+          <CardDescription>Detalles básicos del negocio</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="restaurantName">{t('adminProfile.businessInfoCard.nameLabel')}</Label>
+              <Label htmlFor="restaurantName">Nombre del restaurante</Label>
               <Input id="restaurantName" defaultValue={mockProfile.name} disabled={!isEditing} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="restaurantPhone">{t('adminProfile.businessInfoCard.phoneLabel')}</Label>
+              <Label htmlFor="restaurantPhone">Teléfono</Label>
               <Input id="restaurantPhone" type="tel" defaultValue={mockProfile.phone} disabled={!isEditing} />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="restaurantAddress">{t('adminProfile.businessInfoCard.addressLabel')}</Label>
+            <Label htmlFor="restaurantAddress">Dirección</Label>
             <Input id="restaurantAddress" defaultValue={mockProfile.address} disabled={!isEditing} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="restaurantEmail">{t('adminProfile.businessInfoCard.emailLabel')}</Label>
+            <Label htmlFor="restaurantEmail">Correo electrónico</Label>
             <Input id="restaurantEmail" type="email" defaultValue={mockProfile.email} disabled={!isEditing} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="restaurantDescription">{t('adminProfile.businessInfoCard.descriptionLabel')}</Label>
+            <Label htmlFor="restaurantDescription">Descripción</Label>
             <Textarea id="restaurantDescription" defaultValue={mockProfile.description} rows={4} disabled={!isEditing} />
           </div>
           
           <div className="space-y-4">
-            <Label>{t('adminProfile.businessInfoCard.logoLabel')}</Label>
+            <Label>Logo</Label>
             <div className="flex items-center gap-4">
                 <Image 
                   src={logoPreview || mockProfile.logoUrl} 
-                  alt={t('adminProfile.businessInfoCard.logoAlt')} 
+                  alt="Logo del restaurante" 
                   width={96}
                   height={96}
                   className="h-24 w-24 rounded-md border object-cover" 
@@ -213,12 +238,12 @@ export default function AdminProfilePage() {
                 />
                 <Button variant="outline" asChild disabled={!isEditing}>
                   <Label htmlFor="logo-upload" className={`cursor-pointer ${!isEditing && 'cursor-not-allowed opacity-50'}`}>
-                    <UploadCloud className="mr-2 h-4 w-4" /> {t('adminProfile.businessInfoCard.uploadLogoButton')}
+                    <UploadCloud className="mr-2 h-4 w-4" /> Subir logo
                     <Input id="logo-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, setLogoPreview)} disabled={!isEditing}/>
                   </Label>
                 </Button>
             </div>
-            <p className="text-xs text-muted-foreground">{t('adminProfile.businessInfoCard.logoHint')}</p>
+            <p className="text-xs text-muted-foreground">Sugerencia: el logo debe ser cuadrado</p>
           </div>
         </CardContent>
       </Card>
@@ -226,42 +251,52 @@ export default function AdminProfilePage() {
        {/* Social Links Card */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('adminProfile.socialLinksCard.title')}</CardTitle>
-          <CardDescription>{t('adminProfile.socialLinksCard.description')}</CardDescription>
+          <CardTitle>Enlaces de redes sociales</CardTitle>
+          <CardDescription>Conéctate con tu audiencia</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="relative">
               <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="website" placeholder={t('adminProfile.socialLinksCard.websitePlaceholder')} defaultValue={mockProfile.socialLinks.website} className="pl-10" disabled={!isEditing}/>
+              <Input id="website" placeholder="Sitio web" defaultValue={mockProfile.socialLinks.website} className="pl-10" disabled={!isEditing}/>
             </div>
             <div className="relative">
               <Share2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="menuShareLink" placeholder={t('adminProfile.socialLinksCard.menuShareLinkPlaceholder')} defaultValue={mockProfile.socialLinks.menuShareLink} className="pl-10" disabled={!isEditing}/>
+              <Input id="menuShareLink" placeholder="Enlace del menú" defaultValue={mockProfile.socialLinks.menuShareLink} className="pl-10 pr-12" disabled={!isEditing}/>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="absolute right-1 top-1/2 -translate-y-1/2"
+                onClick={handleCopyMenuLink}
+                title="Copiar enlace"
+              >
+                <Clipboard className="h-4 w-4" />
+              </Button>
             </div>
             <div className="relative">
               <Facebook className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="facebook" placeholder={t('adminProfile.socialLinksCard.facebookPlaceholder')} defaultValue={mockProfile.socialLinks.facebook} className="pl-10" disabled={!isEditing}/>
+              <Input id="facebook" placeholder="Facebook" defaultValue={mockProfile.socialLinks.facebook} className="pl-10" disabled={!isEditing}/>
             </div>
             <div className="relative">
               <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="instagram" placeholder={t('adminProfile.socialLinksCard.instagramPlaceholder')} defaultValue={mockProfile.socialLinks.instagram} className="pl-10" disabled={!isEditing}/>
+              <Input id="instagram" placeholder="Instagram" defaultValue={mockProfile.socialLinks.instagram} className="pl-10" disabled={!isEditing}/>
             </div>
             <div className="relative">
               <Twitter className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="x" placeholder={t('adminProfile.socialLinksCard.xPlaceholder')} defaultValue={mockProfile.socialLinks.x} className="pl-10" disabled={!isEditing}/>
+              <Input id="x" placeholder="Twitter" defaultValue={mockProfile.socialLinks.x} className="pl-10" disabled={!isEditing}/>
             </div>
-             <div className="relative">
+            <div className="relative">
               <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="whatsapp" placeholder={t('adminProfile.socialLinksCard.whatsappPlaceholder')} defaultValue={mockProfile.socialLinks.whatsapp} className="pl-10" disabled={!isEditing}/>
+              <Input id="whatsapp" placeholder="WhatsApp" defaultValue={mockProfile.socialLinks.whatsapp} className="pl-10" disabled={!isEditing}/>
             </div>
             <div className="relative">
               <TikTokIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="tiktok" placeholder={t('adminProfile.socialLinksCard.tiktokPlaceholder')} defaultValue={mockProfile.socialLinks.tiktok} className="pl-10" disabled={!isEditing}/>
+              <Input id="tiktok" placeholder="TikTok" defaultValue={mockProfile.socialLinks.tiktok} className="pl-10" disabled={!isEditing}/>
             </div>
             <div className="relative">
               <PinterestIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="pinterest" placeholder={t('adminProfile.socialLinksCard.pinterestPlaceholder')} defaultValue={mockProfile.socialLinks.pinterest} className="pl-10" disabled={!isEditing}/>
+              <Input id="pinterest" placeholder="Pinterest" defaultValue={mockProfile.socialLinks.pinterest} className="pl-10" disabled={!isEditing}/>
             </div>
           </div>
         </CardContent>
@@ -403,27 +438,27 @@ export default function AdminProfilePage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('adminProfile.brandingCard.title')}</CardTitle>
-          <CardDescription>{t('adminProfile.brandingCard.description')}</CardDescription>
+          <CardTitle>Colores</CardTitle>
+          <CardDescription>Configura los colores del restaurante</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
-                    <Label htmlFor="primaryColor">{t('adminProfile.brandingCard.primaryColorLabel')}</Label>
+                    <Label htmlFor="primaryColor">Color primario</Label>
                     <div className="flex items-center gap-2">
                         <Input id="primaryColor" type="color" defaultValue={mockProfile.primaryColor} className="w-16 h-10 p-1" disabled={!isEditing} />
                         <Input type="text" defaultValue={mockProfile.primaryColor} readOnly className="flex-1" disabled={!isEditing} />
                     </div>
                 </div>
                  <div className="space-y-2">
-                    <Label htmlFor="secondaryColor">{t('adminProfile.brandingCard.backgroundColorLabel')}</Label>
+                    <Label htmlFor="secondaryColor">Color secundario</Label>
                      <div className="flex items-center gap-2">
                         <Input id="secondaryColor" type="color" defaultValue={mockProfile.secondaryColor} className="w-16 h-10 p-1" disabled={!isEditing} />
                         <Input type="text" defaultValue={mockProfile.secondaryColor} readOnly className="flex-1" disabled={!isEditing} />
                     </div>
                 </div>
                  <div className="space-y-2">
-                    <Label htmlFor="accentColor">{t('adminProfile.brandingCard.accentColorLabel')}</Label>
+                    <Label htmlFor="accentColor">Color de acento</Label>
                     <div className="flex items-center gap-2">
                         <Input id="accentColor" type="color" defaultValue={mockProfile.accentColor} className="w-16 h-10 p-1" disabled={!isEditing} />
                         <Input type="text" defaultValue={mockProfile.accentColor} readOnly className="flex-1" disabled={!isEditing} />

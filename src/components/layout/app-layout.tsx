@@ -22,7 +22,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
 import type { User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { Toaster } from '@/components/ui/toaster';
-import { useTranslation } from 'react-i18next';
 
 const guestUser: User = {
   id: 'guest',
@@ -38,7 +37,6 @@ const guestUser: User = {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname(); 
-  const { t } = useTranslation();
   const { toast } = useToast();
   
   const [currentUser, setCurrentUser] = useState<User>(guestUser);
@@ -64,7 +62,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const handleLogout = () => {
     localStorage.removeItem('currentUser');
     setCurrentUser(guestUser);
-    toast({ title: t('header.logout'), description: t('appLayout.toastLogoutSuccess') }); 
+    toast({ title: 'Cerrar sesión', description: 'Sesión cerrada correctamente' }); 
     router.push('/login');
   };
   
@@ -106,7 +104,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 {currentUser.name || currentUser.username}
               </p>
               <p className="text-xs text-sidebar-foreground/80 capitalize">
-                {t('appLayout.rolePrefix')}: {t(`userRoles.${currentUser.role}`)}
+                Rol: {currentUser.role === 'Employee' ? 'Empleado' : currentUser.role === 'Admin' ? 'Administrador' : currentUser.role === 'SuperAdmin' ? 'Superadministrador' : currentUser.role}
               </p>
             </div>
           )}
@@ -130,22 +128,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56 mb-2 ml-2" side="top" align="start">
-                  <DropdownMenuLabel>{t('header.myAccount')}</DropdownMenuLabel>
+                  <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
                     <DropdownMenuItem disabled> 
                       <UserCircle className="mr-2 h-4 w-4" />
-                      <span>{t('header.profile')}</span>
+                      <span>Perfil</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem disabled>
                       <Settings className="mr-2 h-4 w-4" />
-                      <span>{t('header.settings')}</span>
+                      <span>Configuración</span>
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>{t('header.logout')}</span>
+                    <span>Cerrar sesión</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

@@ -63,8 +63,8 @@ export default function LoginPage() {
       localStorage.setItem('currentUser', JSON.stringify(loggedInUser));
       
       toast({
-        title: "Login Successful!",
-        description: `Welcome, ${userCredential.name}! Redirecting...`,
+        title: 'Iniciar sesión',
+        description: 'Bienvenido, ' + userCredential.name,
       });
 
       switch (userCredential.role) {
@@ -82,8 +82,8 @@ export default function LoginPage() {
       }
     } else {
       toast({
-        title: "Login Failed",
-        description: "Invalid email or password. Please try again.",
+        title: 'Inicio de sesión fallido',
+        description: 'Por favor, verifica tu correo electrónico y contraseña.',
         variant: "destructive",
       });
     }
@@ -98,8 +98,8 @@ export default function LoginPage() {
                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
             </svg>
           </div>
-          <CardTitle className="text-3xl font-bold text-primary">Welcome Back!</CardTitle>
-          <CardDescription>Log in to access your websapMax account.</CardDescription>
+          <CardTitle className="text-3xl font-bold text-primary">Iniciar sesión</CardTitle>
+          <CardDescription>Por favor, ingresa tu correo electrónico y contraseña para iniciar sesión.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -109,7 +109,7 @@ export default function LoginPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Address</FormLabel>
+                    <FormLabel>Correo electrónico</FormLabel>
                     <FormControl>
                       <Input type="email" placeholder="you@example.com" {...field} />
                     </FormControl>
@@ -122,7 +122,7 @@ export default function LoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>Contraseña</FormLabel>
                     <FormControl>
                       <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
@@ -131,19 +131,16 @@ export default function LoginPage() {
                 )}
               />
               <Button type="submit" className="w-full text-lg py-3">
-                <LogIn className="mr-2 h-5 w-5" /> Log In
+                <LogIn className="mr-2 h-5 w-5" /> Iniciar sesión
               </Button>
             </form>
           </Form>
         </CardContent>
         <CardFooter className="flex flex-col items-center space-y-2">
-           <Link href="#" className="text-sm text-primary hover:underline">
-              Forgot your password?
-            </Link>
+           <Link href="#" className="text-sm text-primary hover:underline">¿Olvidaste tu contraseña?</Link>
           <p className="text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
-            <Link href="/register" className="font-medium text-primary hover:underline">
-              Sign up
+            ¿No tienes una cuenta? <Link href="/register" className="font-medium text-primary hover:underline">
+              Regístrate
             </Link>
           </p>
         </CardFooter>

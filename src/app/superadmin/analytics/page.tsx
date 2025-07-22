@@ -5,7 +5,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart as RechartsBarChart, LineChart, PieChart, Bar, Line, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { Users, Store, ShoppingCart, DollarSign, Activity, TrendingUp, UserCheck } from "lucide-react";
-import { useTranslation } from 'react-i18next';
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
 
@@ -50,7 +49,6 @@ const recentActivityData = [
 
 
 export default function SuperAdminAnalyticsPage() {
-  const { t } = useTranslation();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -64,50 +62,50 @@ export default function SuperAdminAnalyticsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-primary">{t('superAdminAnalytics.title')}</h1>
-        <p className="text-lg text-muted-foreground">{t('superAdminAnalytics.description')}</p>
+        <h1 className="text-3xl font-bold text-primary">Analítica de superadmin</h1>
+        <p className="text-lg text-muted-foreground">Descripción de la página de análisis del superadmin</p>
       </div>
 
       {/* Key Metrics Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('superAdminAnalytics.totalUsers')}</CardTitle>
+            <CardTitle className="text-sm font-medium">Total de usuarios</CardTitle>
             <Users className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalUsers}</div>
-            <p className="text-xs text-muted-foreground">+20.1% {t('superAdminAnalytics.fromLastMonth')}</p>
+            <p className="text-xs text-muted-foreground">+20.1% desde el último mes</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('superAdminAnalytics.totalCompanies')}</CardTitle>
+            <CardTitle className="text-sm font-medium">Total de empresas</CardTitle>
             <Store className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalCompanies}</div>
-            <p className="text-xs text-muted-foreground">+1 {t('superAdminAnalytics.thisMonth')}</p>
+            <p className="text-xs text-muted-foreground">+1 este mes</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('superAdminAnalytics.totalOrders')}</CardTitle>
+            <CardTitle className="text-sm font-medium">Total de pedidos</CardTitle>
             <ShoppingCart className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalOrders.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">+180 {t('superAdminAnalytics.thisWeek')}</p>
+            <p className="text-xs text-muted-foreground">+180 esta semana</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('superAdminAnalytics.totalRevenue')}</CardTitle>
+            <CardTitle className="text-sm font-medium">Ingresos totales</CardTitle>
             <DollarSign className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">${totalRevenue.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">+15% {t('superAdminAnalytics.fromLastMonth')}</p>
+            <p className="text-xs text-muted-foreground">+15% desde el último mes</p>
           </CardContent>
         </Card>
       </div>
@@ -116,8 +114,8 @@ export default function SuperAdminAnalyticsPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><UserCheck className="h-5 w-5" /> {t('superAdminAnalytics.userGrowthChartTitle')}</CardTitle>
-            <CardDescription>{t('superAdminAnalytics.userGrowthChartDescription')}</CardDescription>
+            <CardTitle className="flex items-center gap-2"><UserCheck className="h-5 w-5" /> Título del gráfico de crecimiento de usuarios</CardTitle>
+            <CardDescription>Descripción del gráfico de crecimiento de usuarios</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={{}} className="h-[300px] w-full">
@@ -136,8 +134,8 @@ export default function SuperAdminAnalyticsPage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><TrendingUp className="h-5 w-5" /> {t('superAdminAnalytics.monthlyRevenueChartTitle')}</CardTitle>
-            <CardDescription>{t('superAdminAnalytics.monthlyRevenueChartDescription')}</CardDescription>
+            <CardTitle className="flex items-center gap-2"><TrendingUp className="h-5 w-5" /> Título del gráfico de ingresos mensuales</CardTitle>
+            <CardDescription>Descripción del gráfico de ingresos mensuales</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={{}} className="h-[300px] w-full">
@@ -160,8 +158,8 @@ export default function SuperAdminAnalyticsPage() {
         <div className="grid gap-6 lg:grid-cols-3">
              <Card className="lg:col-span-1">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /> {t('superAdminAnalytics.userRoleDistributionChartTitle')}</CardTitle>
-                    <CardDescription>{t('superAdminAnalytics.userRoleDistributionChartDescription')}</CardDescription>
+                    <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /> Título del gráfico de distribución de roles</CardTitle>
+                    <CardDescription>Descripción del gráfico de distribución de roles</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <ChartContainer config={{}} className="h-[250px] w-full">
@@ -180,16 +178,16 @@ export default function SuperAdminAnalyticsPage() {
 
             <Card className="lg:col-span-2">
                 <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5" /> {t('superAdminAnalytics.recentActivityTitle')}</CardTitle>
-                <CardDescription>{t('superAdminAnalytics.recentActivityDescription')}</CardDescription>
+                <CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5" /> Título de actividad reciente</CardTitle>
+                <CardDescription>Descripción de actividad reciente</CardDescription>
                 </CardHeader>
                 <CardContent>
                 <Table>
                     <TableHeader>
                     <TableRow>
-                        <TableHead>{t('superAdminAnalytics.table.event')}</TableHead>
-                        <TableHead>{t('superAdminAnalytics.table.details')}</TableHead>
-                        <TableHead className="text-right">{t('superAdminAnalytics.table.timestamp')}</TableHead>
+                        <TableHead>Evento</TableHead>
+                        <TableHead>Detalles</TableHead>
+                        <TableHead className="text-right">Timestamp</TableHead>
                     </TableRow>
                     </TableHeader>
                     <TableBody>

@@ -8,10 +8,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { User, UserRole } from "@/types"; 
-import { useTranslation } from 'react-i18next';
 import Link from "next/link"; // Importado Link
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { useRouter } from 'next/navigation';
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 
 // Mock Data for Users
 const mockUsers: User[] = [
@@ -23,35 +26,89 @@ const mockUsers: User[] = [
 ];
 
 export default function SuperAdminUsersPage() {
-  const { t } = useTranslation();
   const [isMounted, setIsMounted] = useState(false);
   const users = mockUsers;
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [openDetail, setOpenDetail] = useState(false);
+  const [openStatus, setOpenStatus] = useState(false);
+  const [openDelete, setOpenDelete] = useState(false);
+  const [statusAction, setStatusAction] = useState<'activate' | 'deactivate'>('activate');
+  const router = useRouter();
+  const [selectedRole, setSelectedRole] = useState<string>("all");
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+
+  // Opciones de roles y estados traducidas
+  const roleOptions = [
+    { value: "all", label: "Todos los roles" },
+    { value: "superadmin", label: "Superadmin" },
+    { value: "admin", label: "Admin" },
+    { value: "employee", label: "Empleado" },
+  ];
+  const statusOptions = [
+    { value: "all", label: "Todos los estados" },
+    { value: "active", label: "Activo" },
+    { value: "inactive", label: "Inactivo" },
+    { value: "pending", label: "Pendiente" },
+  ];
+
+  // Filtrado de usuarios
+  const filteredUsers = users.filter(user =>
+    (selectedRole === "all" || user.role === selectedRole) &&
+    (selectedStatus === "all" || user.status === selectedStatus)
+  );
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   const getRoleBadge = (role: UserRole) => {
-    const roleKey = `superAdminUsers.role.${role}`;
-    const roleText = t(roleKey);
+    // Traducciones directas en español
+    const roleTranslations = {
+      superadmin: "Superadmin",
+      admin: "Admin", 
+      employee: "Empleado"
+    };
+    
+    const roleText = roleTranslations[role] || role;
+    
     switch (role) {
-      case "superadmin": return <Badge className="bg-red-600 text-white hover:bg-red-700"><ShieldCheck className="mr-1 h-3 w-3"/>{roleText}</Badge>;
-      case "admin": return <Badge className="bg-blue-600 text-white hover:bg-blue-700"><UserCog className="mr-1 h-3 w-3"/>{roleText}</Badge>;
-      case "employee": return <Badge className="bg-green-600 text-white hover:bg-green-700">{roleText}</Badge>;
-      default: return <Badge variant="outline">{roleText}</Badge>;
+      case "superadmin": 
+        return <Badge className="bg-red-600 text-white hover:bg-red-700"><ShieldCheck className="mr-1 h-3 w-3"/>{roleText}</Badge>;
+      case "admin": 
+        return <Badge className="bg-blue-600 text-white hover:bg-blue-700"><UserCog className="mr-1 h-3 w-3"/>{roleText}</Badge>;
+      case "employee": 
+        return <Badge className="bg-green-600 text-white hover:bg-green-700">{roleText}</Badge>;
+      default: 
+        return <Badge variant="outline">{roleText}</Badge>;
     }
   };
 
   const getStatusBadge = (status: User["status"]) => {
-    const statusKey = `superAdminUsers.status.${status}`; // Asegúrate que las claves existen en translations.ts
-    const statusText = t(statusKey);
+    // Traducciones directas en español
+    const statusTranslations = {
+      active: "Activo",
+      inactive: "Inactivo", 
+      pending: "Pendiente"
+    };
+    
+    const statusText = statusTranslations[status] || status;
+    
     switch (status) {
-      case "active": return <Badge variant="default" className="bg-green-500 text-white">{statusText}</Badge>;
-      case "inactive": return <Badge variant="outline" className="text-gray-500 border-gray-400">{statusText}</Badge>;
-      case "pending": return <Badge variant="secondary" className="bg-yellow-500 text-white">{statusText}</Badge>; // Usando amarillo para pendiente
-      default: return <Badge variant="outline">{statusText}</Badge>;
+      case "active": 
+        return <Badge variant="default" className="bg-green-500 text-white">{statusText}</Badge>;
+      case "inactive": 
+        return <Badge variant="outline" className="text-gray-500 border-gray-400">{statusText}</Badge>;
+      case "pending": 
+        return <Badge variant="secondary" className="bg-yellow-500 text-white">{statusText}</Badge>;
+      default: 
+        return <Badge variant="outline">{statusText}</Badge>;
     }
   };
+
+  const handleOpenDetail = (user: User) => { setSelectedUser(user); setOpenDetail(true); };
+  const handleOpenStatus = (user: User, action: 'activate' | 'deactivate') => { setSelectedUser(user); setStatusAction(action); setOpenStatus(true); };
+  const handleOpenDelete = (user: User) => { setSelectedUser(user); setOpenDelete(true); };
+  const handleCloseModals = () => { setOpenDetail(false); setOpenStatus(false); setOpenDelete(false); setSelectedUser(null); };
 
   if (!isMounted) {
     return null; // or a loading skeleton
@@ -62,48 +119,62 @@ export default function SuperAdminUsersPage() {
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-primary">{t('superAdminUsers.title')}</h1>
-          <p className="text-lg text-muted-foreground">{t('superAdminUsers.description')}</p>
+          <h1 className="text-3xl font-bold text-primary">Usuarios</h1>
+          <p className="text-lg text-muted-foreground">Descripción de la página de usuarios</p>
         </div>
         <Link href="/superadmin/users/create" passHref>
           <Button>
-            <PlusCircle className="mr-2 h-5 w-5" /> {t('superAdminUsers.createUserButton')}
+            <PlusCircle className="mr-2 h-5 w-5" /> Crear Usuario
           </Button>
         </Link>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('superAdminUsers.allUsersCard.title')}</CardTitle>
-          <CardDescription>{t('superAdminUsers.allUsersCard.description')}</CardDescription>
+          <CardTitle>Todos los Usuarios</CardTitle>
+          <CardDescription>Descripción de la sección de todos los usuarios</CardDescription>
           <div className="flex flex-col md:flex-row gap-2 pt-4">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
-              <Input placeholder={t('superAdminUsers.searchInputPlaceholder')} className="pl-8" />
+              <Input placeholder="Buscar usuario..." className="pl-8" />
             </div>
-            <Button variant="outline">
-              <Filter className="mr-2 h-4 w-4" /> {t('superAdminUsers.filterByRoleButton')}
-            </Button>
-             <Button variant="outline">
-              <Filter className="mr-2 h-4 w-4" /> {t('superAdminUsers.filterByStatusButton')}
-            </Button>
+            <Select value={selectedRole} onValueChange={setSelectedRole}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Filtrar por rol" />
+              </SelectTrigger>
+              <SelectContent>
+                {roleOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Filtrar por estado" />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="hidden lg:table-cell">{t('superAdminUsers.table.avatar')}</TableHead>
-                <TableHead>{t('superAdminUsers.table.username')}</TableHead>
-                <TableHead>{t('superAdminUsers.table.email')}</TableHead>
-                <TableHead className="text-center">{t('superAdminUsers.table.role')}</TableHead>
-                <TableHead className="text-center">{t('superAdminUsers.table.status')}</TableHead>
-                <TableHead className="hidden sm:table-cell">{t('superAdminUsers.table.registered')}</TableHead>
-                <TableHead className="text-right">{t('superAdminUsers.table.actions')}</TableHead>
+                <TableHead className="hidden lg:table-cell">Avatar</TableHead>
+                <TableHead>Nombre de usuario</TableHead>
+                <TableHead>Correo electrónico</TableHead>
+                <TableHead className="text-center">Rol</TableHead>
+                <TableHead className="text-center">Estado</TableHead>
+                <TableHead className="hidden sm:table-cell">Registrado</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user) => (
+              {filteredUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="hidden lg:table-cell">
                     <Avatar>
@@ -120,20 +191,34 @@ export default function SuperAdminUsersPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="hover:text-primary" title={t('superAdminUsers.actions.editUser')}>
-                        <Edit3 className="h-4 w-4" />
-                      </Button>
-                      {user.status === 'active' ? 
-                        <Button variant="ghost" size="icon" className="hover:text-yellow-600" title={t('superAdminUsers.actions.deactivateUser')}>
-                          <ShieldOff className="h-4 w-4" />
-                        </Button> :
-                         <Button variant="ghost" size="icon" className="hover:text-green-600" title={t('superAdminUsers.actions.activateUser')}>
-                          <ShieldCheck className="h-4 w-4" />
-                        </Button>
-                      }
-                      <Button variant="ghost" size="icon" className="hover:text-destructive" title={t('superAdminUsers.actions.deleteUser')}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="hover:text-primary" title="Acciones">
+                            <span className="sr-only">Acciones</span>
+                            <Edit3 className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onSelect={() => handleOpenDetail(user)}>
+                            Ver detalles
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => router.push(`/superadmin/users/create?edit=${user.id}`)}>
+                            Editar Usuario
+                          </DropdownMenuItem>
+                          {user.status === 'active' ? (
+                            <DropdownMenuItem onSelect={() => handleOpenStatus(user, 'deactivate')}>
+                              Desactivar Usuario
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem onSelect={() => handleOpenStatus(user, 'activate')}>
+                              Activar Usuario
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem onSelect={() => handleOpenDelete(user)} className="text-destructive">
+                            Eliminar Usuario
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -142,7 +227,67 @@ export default function SuperAdminUsersPage() {
           </Table>
         </CardContent>
       </Card>
-       {/* Placeholder for Add/Edit User Dialog */}
+       {/* Modales de acciones */}
+      <Dialog open={openDetail} onOpenChange={setOpenDetail}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Ver detalles</DialogTitle>
+            <DialogDescription>{selectedUser?.username}</DialogDescription>
+          </DialogHeader>
+          {selectedUser && (
+            <div className="space-y-2 text-base">
+              <div className="flex items-center gap-3 mb-2">
+                <Avatar>
+                  <AvatarImage src={selectedUser.avatarUrl || `https://placehold.co/40x40.png?text=${selectedUser.username.substring(0,1).toUpperCase()}`} alt={selectedUser.username} />
+                  <AvatarFallback>{selectedUser.username.substring(0,2).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <span className="font-bold text-lg">{selectedUser.name || selectedUser.username}</span>
+              </div>
+              <div><b>Nombre de usuario:</b> {selectedUser.username}</div>
+              <div><b>Correo electrónico:</b> {selectedUser.email}</div>
+              <div><b>Rol:</b> {getRoleBadge(selectedUser.role)}</div>
+              <div><b>Estado:</b> {getStatusBadge(selectedUser.status)}</div>
+              <div><b>Registrado:</b> {format(new Date(selectedUser.registrationDate), "P")}</div>
+              {selectedUser.contact && <div><b>Contacto:</b> {selectedUser.contact}</div>}
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={handleCloseModals}>Cerrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={openStatus} onOpenChange={setOpenStatus}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {statusAction === 'activate'
+                ? 'Activar Usuario'
+                : 'Desactivar Usuario'}
+            </DialogTitle>
+            <DialogDescription>
+              {statusAction === 'activate'
+                ? '¿Seguro que deseas activar este usuario?'
+                : '¿Seguro que deseas desactivar este usuario?'}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseModals}>Cancelar</Button>
+            <Button onClick={handleCloseModals}>Confirmar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={openDelete} onOpenChange={setOpenDelete}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Eliminar Usuario</DialogTitle>
+            <DialogDescription>¿Seguro que deseas eliminar este usuario?</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseModals}>Cancelar</Button>
+            <Button onClick={handleCloseModals} variant="destructive">Eliminar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

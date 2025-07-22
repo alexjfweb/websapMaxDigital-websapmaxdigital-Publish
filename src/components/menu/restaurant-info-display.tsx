@@ -15,8 +15,9 @@ export default function RestaurantInfoDisplay({ restaurant }: RestaurantInfoDisp
         <Image
           src="https://placehold.co/1200x400.png" // Replace with actual banner image if available
           alt={`${restaurant.name} Banner`}
-          layout="fill"
-          objectFit="cover"
+          fill
+          style={{ objectFit: 'cover' }}
+          priority
           className="opacity-80"
           data-ai-hint="restaurant interior"
         />
@@ -41,21 +42,21 @@ export default function RestaurantInfoDisplay({ restaurant }: RestaurantInfoDisp
         <div className="grid md:grid-cols-2 gap-6">
           <div>
             <h2 className="text-xl font-semibold text-primary mb-2 flex items-center">
-              <Info className="h-5 w-5 mr-2" /> About Us
+              <Info className="h-5 w-5 mr-2" /> Sobre nosotros
             </h2>
-            <p className="text-muted-foreground leading-relaxed">{restaurant.description}</p>
+            <p className="text-muted-foreground leading-relaxed">Descripción del restaurante</p>
           </div>
           <div>
             <h2 className="text-xl font-semibold text-primary mb-2 flex items-center">
-              <MapPin className="h-5 w-5 mr-2" /> Visit Us
+              <MapPin className="h-5 w-5 mr-2" /> Visítanos
             </h2>
-            <p className="text-muted-foreground">{restaurant.address}</p>
+            <p className="text-muted-foreground">Dirección del restaurante</p>
             
             <h2 className="text-xl font-semibold text-primary mt-4 mb-2 flex items-center">
-              <Phone className="h-5 w-5 mr-2" /> Contact
+              <Phone className="h-5 w-5 mr-2" /> Contacto
             </h2>
-            <p className="text-muted-foreground">Phone: {restaurant.phone}</p>
-            <p className="text-muted-foreground">Email: <a href={`mailto:${restaurant.email}`} className="hover:text-primary transition-colors">{restaurant.email}</a></p>
+            <p className="text-muted-foreground">Teléfono del restaurante</p>
+            <p className="text-muted-foreground">Email: <a href="mailto:correo@ejemplo.com" className="hover:text-primary transition-colors">correo@ejemplo.com</a></p>
           </div>
         </div>
       </CardContent>

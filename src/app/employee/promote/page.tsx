@@ -23,14 +23,37 @@ export default function EmployeePromotePage() {
 
   const handleCopyToClipboard = () => {
     if (!menuUrl) return;
-    navigator.clipboard.writeText(menuUrl)
-      .then(() => {
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(menuUrl)
+        .then(() => {
+          toast({
+            title: 'Link copiado',
+            description: 'El link del menú se ha copiado al portapapeles',
+          });
+        })
+        .catch(err => console.error('Failed to copy: ', err));
+    } else {
+      // Fallback para contextos inseguros o navegadores antiguos
+      const textArea = document.createElement('textarea');
+      textArea.value = menuUrl;
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
         toast({
-          title: "Link Copied!",
-          description: "Menu link copied to clipboard.",
+          title: 'Link copiado',
+          description: 'El link del menú se ha copiado al portapapeles',
         });
-      })
-      .catch(err => console.error('Failed to copy: ', err));
+      } catch (err) {
+        toast({
+          title: 'Error al copiar',
+          description: 'No se pudo copiar el enlace.',
+          variant: 'destructive',
+        });
+      }
+      document.body.removeChild(textArea);
+    }
   };
 
   const shareOnSocialMedia = (platformUrlTemplate: string) => {
@@ -43,35 +66,35 @@ export default function EmployeePromotePage() {
   if (!menuUrl) {
     return (
       <div className="space-y-8">
-        <h1 className="text-3xl font-bold text-primary">Promote Our Menu</h1>
-        <p className="text-lg text-muted-foreground">Loading promotion options...</p>
+        <h1 className="text-3xl font-bold text-primary">Cargando...</h1>
+        <p className="text-lg text-muted-foreground">Cargando descripción...</p>
       </div>
     );
   }
 
   const socialPlatforms = [
-    { name: "WhatsApp", icon: <WhatsAppIcon className="h-6 w-6" />, action: () => shareOnSocialMedia('https://wa.me/?text={TEXT}') },
-    { name: "Facebook", icon: <FacebookIcon className="h-6 w-6" />, action: () => shareOnSocialMedia('https://www.facebook.com/sharer/sharer.php?u={URL}&quote={TEXT}') },
-    { name: "Instagram", icon: <InstagramIcon className="h-6 w-6" />, action: () => alert("Share on Instagram: Copy link and post manually or share to stories if app allows.") }, // Instagram sharing is complex
-    { name: "X (Twitter)", icon: <XIcon className="h-6 w-6" />, action: () => shareOnSocialMedia('https://twitter.com/intent/tweet?url={URL}&text={TEXT}') },
-    { name: "TikTok", icon: <TikTokIcon className="h-6 w-6" />, action: () => alert("Share on TikTok: Create a video and add the link in your bio or description.") }, // TikTok sharing is primarily via app
+    { name: 'WhatsApp', icon: <WhatsAppIcon className="h-6 w-6" />, action: () => shareOnSocialMedia('https://wa.me/?text={TEXT}'), color: 'hover:bg-[#25D366]/20 hover:text-[#25D366]' },
+    { name: 'Facebook', icon: <FacebookIcon className="h-6 w-6" />, action: () => shareOnSocialMedia('https://www.facebook.com/sharer/sharer.php?u={URL}&quote={TEXT}'), color: 'hover:bg-[#1877F2]/20 hover:text-[#1877F2]' },
+    { name: 'Instagram', icon: <InstagramIcon className="h-6 w-6" />, action: () => alert('Instagram no está disponible en este momento'), color: 'hover:bg-gradient-to-tr hover:from-pink-500/20 hover:to-yellow-400/20 hover:text-pink-500' },
+    { name: 'X', icon: <XIcon className="h-6 w-6" />, action: () => shareOnSocialMedia('https://twitter.com/intent/tweet?url={URL}&text={TEXT}'), color: 'hover:bg-black/20 hover:text-black' },
+    { name: 'TikTok', icon: <TikTokIcon className="h-6 w-6" />, action: () => alert('TikTok no está disponible en este momento'), color: 'hover:bg-black/20 hover:text-[#EE1D52]' },
   ];
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-primary">Promote Our Menu!</h1>
-        <p className="text-lg text-muted-foreground mt-2">Help spread the word about websapMax. Share our digital menu with your network.</p>
+        <h1 className="text-3xl font-bold text-primary">Promover menú</h1>
+        <p className="text-lg text-muted-foreground mt-2">Descubre cómo promocionar tu menú de manera efectiva</p>
       </div>
 
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Copy className="h-5 w-5"/> Copy Menu Link</CardTitle>
-          <CardDescription>Share this direct link to our menu.</CardDescription>
+          <CardTitle className="flex items-center gap-2"><Copy className="h-5 w-5"/>Título del enlace</CardTitle>
+          <CardDescription>Descripción del enlace</CardDescription>
         </CardHeader>
         <CardContent className="flex items-center space-x-2">
           <input type="text" value={menuUrl} readOnly className="flex-grow p-2 border rounded-md bg-muted text-sm" />
-          <Button onClick={handleCopyToClipboard} variant="outline" size="icon" aria-label="Copy link">
+          <Button onClick={handleCopyToClipboard} variant="outline" size="icon" aria-label="Copiar enlace">
             <Copy className="h-4 w-4" />
           </Button>
         </CardContent>
@@ -79,14 +102,19 @@ export default function EmployeePromotePage() {
 
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Share2 className="h-5 w-5"/> Share on Social Media</CardTitle>
-          <CardDescription>One-click sharing to popular platforms.</CardDescription>
+          <CardTitle className="flex items-center gap-2"><Share2 className="h-5 w-5"/>Compartir</CardTitle>
+          <CardDescription>Comparte el enlace en tus redes sociales</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
           {socialPlatforms.map(platform => (
-            <Button key={platform.name} onClick={platform.action} variant="outline" className="flex flex-col items-center justify-center h-24 p-2 gap-2 hover:bg-accent/10">
+            <Button
+              key={platform.name}
+              onClick={platform.action}
+              variant="outline"
+              className={`flex flex-col items-center justify-center h-24 p-2 gap-2 group transition-all duration-200 hover:shadow-lg hover:scale-105 focus-visible:scale-105 focus-visible:shadow-lg ${platform.color}`}
+            >
               {platform.icon}
-              <span className="text-xs">{platform.name}</span>
+              <span className={`text-xs transition-colors duration-200 group-hover:text-inherit`}>{platform.name}</span>
             </Button>
           ))}
         </CardContent>
@@ -94,12 +122,12 @@ export default function EmployeePromotePage() {
       
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle>Promotion Tips</CardTitle>
+          <CardTitle>Consejos para promocionar</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground space-y-2">
-            <p><strong>Personalize your message:</strong> When sharing, add a personal note about your favorite dish or a current promotion.</p>
-            <p><strong>Use relevant hashtags:</strong> Consider using hashtags like #websapMax #RestaurantName #[City]Food #Foodie.</p>
-            <p><strong>Best times to post:</strong> Share around meal times (lunch, dinner) when people are most likely thinking about food.</p>
+          <p><strong>Personalizar:</strong> Agrega el logo, colores y fotos de tus platos para que tu menú sea único y reconocible.</p>
+          <p><strong>Hashtags:</strong> Usa hashtags populares y relacionados con tu restaurante para llegar a más personas.</p>
+          <p><strong>Mejores momentos:</strong> Comparte el menú en horarios de mayor actividad, como almuerzos y cenas.</p>
         </CardContent>
       </Card>
 

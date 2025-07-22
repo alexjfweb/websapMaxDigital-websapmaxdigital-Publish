@@ -34,9 +34,9 @@ import {
   Database,
   Gem,
   BellRing,
+  Palette,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import { useTranslation } from 'react-i18next';
 
 interface NavItem {
   href: string;
@@ -48,36 +48,42 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  // Public/Guest routes
-  { href: '/menu', labelKey: 'nav.publicMenu', icon: Newspaper, allowedRoles: ['guest'], tooltipKey: 'nav.publicMenu' },
-  { href: '/login', labelKey: 'nav.login', icon: LogIn, allowedRoles: ['guest'], tooltipKey: 'nav.login' },
-  { href: '/register', labelKey: 'nav.register', icon: UserPlus, allowedRoles: ['guest'], tooltipKey: 'nav.register' },
+  // Rutas públicas/invitado
+  { href: '/menu', labelKey: 'Menú', icon: Newspaper, allowedRoles: ['guest'], tooltipKey: 'Ver menú' },
+  { href: '/login', labelKey: 'Iniciar sesión', icon: LogIn, allowedRoles: ['guest'], tooltipKey: 'Iniciar sesión' },
+  { href: '/register', labelKey: 'Registrarse', icon: UserPlus, allowedRoles: ['guest'], tooltipKey: 'Crear cuenta' },
 
-  // Superadmin routes
-  { href: '/superadmin/dashboard', labelKey: 'nav.superAdminDashboard', icon: ShieldCheck, allowedRoles: ['superadmin'], tooltipKey: 'nav.superAdminDashboard' },
-  { href: '/superadmin/analytics', labelKey: 'nav.globalAnalytics', icon: BarChart3, allowedRoles: ['superadmin'], tooltipKey: 'nav.globalAnalytics' },
-  { href: '/superadmin/companies', labelKey: 'nav.companyManagement', icon: Store, allowedRoles: ['superadmin'], tooltipKey: 'nav.companyManagement' },
-  { href: '/superadmin/subscriptions', labelKey: 'nav.subscriptionManagement', icon: Gem, allowedRoles: ['superadmin'], tooltipKey: 'nav.subscriptionManagement' },
-  { href: '/superadmin/reminders', labelKey: 'nav.paymentReminders', icon: BellRing, allowedRoles: ['superadmin'], tooltipKey: 'nav.paymentReminders' },
-  { href: '/superadmin/users', labelKey: 'nav.userManagement', icon: Users, allowedRoles: ['superadmin'], tooltipKey: 'nav.userManagement' },
-  { href: '/superadmin/maintenance', labelKey: 'nav.maintenance', icon: Wrench, allowedRoles: ['superadmin'], tooltipKey: 'nav.maintenance' },
-  { href: '/superadmin/database', labelKey: 'nav.databaseStatus', icon: Database, allowedRoles: ['superadmin'], tooltipKey: 'nav.databaseStatus' },
-  { href: '/superadmin/backup', labelKey: 'nav.backup', icon: Server, allowedRoles: ['superadmin'], tooltipKey: 'nav.backup' },
-  { href: '/superadmin/logs', labelKey: 'nav.logs', icon: History, allowedRoles: ['superadmin'], tooltipKey: 'nav.logs' },
+  // Superadmin
+  { href: '/superadmin/dashboard', labelKey: 'Panel', icon: ShieldCheck, allowedRoles: ['superadmin'], tooltipKey: 'Panel de superadministrador' },
+  { href: '/superadmin/analytics', labelKey: 'Analítica', icon: BarChart3, allowedRoles: ['superadmin'], tooltipKey: 'Analítica global' },
+  { href: '/superadmin/companies', labelKey: 'Empresas', icon: Store, allowedRoles: ['superadmin'], tooltipKey: 'Gestión de empresas' },
+  { href: '/superadmin/subscriptions', labelKey: 'Suscripciones', icon: Gem, allowedRoles: ['superadmin'], tooltipKey: 'Gestión de suscripciones' },
+  { href: '/superadmin/reminders', labelKey: 'Recordatorios', icon: BellRing, allowedRoles: ['superadmin'], tooltipKey: 'Recordatorios de pago' },
+  { href: '/superadmin/users', labelKey: 'Usuarios', icon: Users, allowedRoles: ['superadmin'], tooltipKey: 'Gestión de usuarios' },
+  { href: '/superadmin/maintenance', labelKey: 'Mantenimiento', icon: Wrench, allowedRoles: ['superadmin'], tooltipKey: 'Mantenimiento' },
+  { href: '/superadmin/database', labelKey: 'Base de datos', icon: Database, allowedRoles: ['superadmin'], tooltipKey: 'Estado de la base de datos' },
+  { href: '/superadmin/backup', labelKey: 'Respaldo', icon: Server, allowedRoles: ['superadmin'], tooltipKey: 'Respaldo' },
+  { href: '/superadmin/logs', labelKey: 'Registros', icon: History, allowedRoles: ['superadmin'], tooltipKey: 'Registros' },
+  { href: '/superadmin/landing-public', labelKey: 'Landing pública', icon: Palette, allowedRoles: ['superadmin'], tooltipKey: 'Gestionar landing pública' },
+  { href: '/superadmin/subscription-plans', labelKey: 'Planes de Suscripción', icon: Gem, allowedRoles: ['superadmin'], tooltipKey: 'Gestionar planes de suscripción' },
 
-  // Admin routes
-  { href: '/admin/dashboard', labelKey: 'nav.adminDashboard', icon: LayoutDashboard, allowedRoles: ['admin'], tooltipKey: 'nav.adminDashboard' },
-  { href: '/admin/profile', labelKey: 'nav.restaurantProfile', icon: Settings, allowedRoles: ['admin'], tooltipKey: 'nav.restaurantProfile' },
-  { href: '/admin/dishes', labelKey: 'nav.dishManagement', icon: Utensils, allowedRoles: ['admin'], tooltipKey: 'nav.dishManagement' },
-  { href: '/admin/employees', labelKey: 'nav.employeeManagement', icon: UserCog, allowedRoles: ['admin'], tooltipKey: 'nav.employeeManagement' },
-  { href: '/admin/reservations', labelKey: 'nav.reservations', icon: CalendarCheck, allowedRoles: ['admin'], tooltipKey: 'nav.reservations' },
-  { href: '/admin/share-menu', labelKey: 'nav.shareMenu', icon: Share2, allowedRoles: ['admin'], tooltipKey: 'nav.shareMenu' },
+  // Admin
+  { href: '/admin/dashboard', labelKey: 'Panel', icon: LayoutDashboard, allowedRoles: ['admin'], tooltipKey: 'Panel de administración' },
+  { href: '/admin/profile', labelKey: 'Perfil', icon: Settings, allowedRoles: ['admin'], tooltipKey: 'Perfil del restaurante' },
+  { href: '/admin/dishes', labelKey: 'Platos', icon: Utensils, allowedRoles: ['admin'], tooltipKey: 'Gestión de platos' },
+  { href: '/admin/employees', labelKey: 'Empleados', icon: UserCog, allowedRoles: ['admin'], tooltipKey: 'Gestión de empleados' },
+  { href: '/admin/tables', labelKey: 'Mesas', icon: ClipboardList, allowedRoles: ['admin'], tooltipKey: 'Gestión de mesas' },
+  { href: '/admin/reservations', labelKey: 'Reservas', icon: CalendarCheck, allowedRoles: ['admin'], tooltipKey: 'Reservas' },
+  { href: '/admin/orders', labelKey: 'Pedidos', icon: ShoppingBag, allowedRoles: ['admin'], tooltipKey: 'Gestión de pedidos' },
+  { href: '/admin/dashboard/personalizacion', labelKey: 'Personalización', icon: Palette, allowedRoles: ['admin'], tooltipKey: 'Personalizar menú' },
+  { href: '/admin/share-menu', labelKey: 'Compartir menú', icon: Share2, allowedRoles: ['admin'], tooltipKey: 'Compartir menú' },
 
-  // Employee routes
-  { href: '/employee/dashboard', labelKey: 'nav.employeeDashboard', icon: ClipboardList, allowedRoles: ['employee'], tooltipKey: 'nav.employeeDashboard' },
-  { href: '/employee/orders', labelKey: 'nav.manageOrders', icon: ShoppingBag, allowedRoles: ['employee'], tooltipKey: 'nav.manageOrders' },
-  { href: '/employee/reservations', labelKey: 'nav.manageReservations', icon: BookUser, allowedRoles: ['employee'], tooltipKey: 'nav.manageReservations' },
-  { href: '/employee/promote', labelKey: 'nav.promoteMenu', icon: Megaphone, allowedRoles: ['employee'], tooltipKey: 'nav.promoteMenu' },
+  // Empleado
+  { href: '/employee/dashboard', labelKey: 'Panel', icon: ClipboardList, allowedRoles: ['employee'], tooltipKey: 'Panel de empleado' },
+  { href: '/employee/orders', labelKey: 'Pedidos', icon: ShoppingBag, allowedRoles: ['employee'], tooltipKey: 'Gestionar pedidos' },
+  { href: '/employee/tables', labelKey: 'Mesas', icon: ClipboardList, allowedRoles: ['employee'], tooltipKey: 'Ver mesas' },
+  { href: '/employee/reservations', labelKey: 'Reservas', icon: BookUser, allowedRoles: ['employee'], tooltipKey: 'Gestionar reservas' },
+  { href: '/employee/promote', labelKey: 'Promocionar', icon: Megaphone, allowedRoles: ['employee'], tooltipKey: 'Promocionar menú' },
 ];
 
 interface NavigationMenuProps {
@@ -86,7 +92,6 @@ interface NavigationMenuProps {
 
 export default function NavigationMenu({ role }: NavigationMenuProps) {
   const pathname = usePathname();
-  const { t } = useTranslation();
 
   const renderNavItems = (items: NavItem[], isSubMenu = false) => {
     return items
@@ -112,8 +117,8 @@ export default function NavigationMenu({ role }: NavigationMenuProps) {
       .map((item) => {
         const Icon = item.icon;
         const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
-        const translatedLabel = t(item.labelKey);
-        const translatedTooltip = item.tooltipKey ? t(item.tooltipKey) : translatedLabel;
+        const translatedLabel = item.labelKey;
+        const translatedTooltip = item.tooltipKey ? item.tooltipKey : translatedLabel;
         
         if (isSubMenu) {
           return (

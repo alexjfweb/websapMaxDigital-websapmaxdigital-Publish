@@ -4,11 +4,10 @@ import { useState, useEffect, type ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useTranslation } from 'react-i18next';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Edit3, Trash2, Search, UploadCloud, Save } from "lucide-react";
+import { PlusCircle, Edit3, Trash2, Search, UploadCloud, Save, Filter, CalendarDays } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +18,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { addDays, isWithinInterval, parseISO } from "date-fns";
 
 
 // Mock Data for Employees
@@ -30,25 +33,26 @@ const mockEmployees: User[] = [
 
 
 export default function AdminEmployeesPage() {
-  const { t } = useTranslation();
-
-  const employeeFormSchema = z.object({
-      id: z.string().optional(),
-      username: z.string().min(3, { message: t('adminDishes.validation.usernameRequired') }),
-      email: z.string().email({ message: "Please enter a valid email." }),
-      contact: z.string().optional(),
-      role: z.enum(["employee", "admin"], { required_error: "Role is required." }),
-      status: z.enum(["active", "inactive", "pending"], { required_error: "Status is required." }),
-      avatar: z.any().optional(),
-  });
-
-  type EmployeeFormData = z.infer<typeof employeeFormSchema>;
-
   const { toast } = useToast();
   const [employees, setEmployees] = useState<User[]>(mockEmployees);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<User | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null }>({ from: null, to: null });
+  const [search, setSearch] = useState('');
+
+  const employeeFormSchema = z.object({
+      id: z.string().optional(),
+      username: z.string().min(3, { message: 'Se requiere el nombre de usuario' }),
+      email: z.string().email({ message: "Por favor, ingrese una dirección de correo electrónico válida." }),
+      contact: z.string().optional(),
+      role: z.enum(["employee", "admin"], { required_error: "Se requiere el rol." }),
+      status: z.enum(["active", "inactive", "pending"], { required_error: "Se requiere el estado." }),
+      avatar: z.any().optional(),
+  });
+
+  type EmployeeFormData = z.infer<typeof employeeFormSchema>;
 
   const form = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeFormSchema),
@@ -111,7 +115,7 @@ export default function AdminEmployeesPage() {
             avatarUrl: avatarPreview || emp.avatarUrl 
         } : emp
       ));
-      toast({ title: "Employee Updated!", description: `Details for ${values.username} have been updated.` });
+      toast({ title: "Empleado Actualizado!", description: `Detalles para ${values.username} han sido actualizados.` });
     } else {
       const newEmployee: User = {
         id: `emp-${Date.now()}`,
@@ -124,7 +128,7 @@ export default function AdminEmployeesPage() {
         avatarUrl: avatarPreview || `https://placehold.co/40x40.png?text=${values.username.substring(0,1).toUpperCase()}`,
       };
       setEmployees(prev => [newEmployee, ...prev]);
-      toast({ title: "Employee Added!", description: `${values.username} has been added to the team.` });
+      toast({ title: "Empleado Agregado!", description: `${values.username} ha sido agregado al equipo.` });
     }
     closeDialog();
   };
@@ -145,34 +149,50 @@ export default function AdminEmployeesPage() {
 
   const handleDeleteEmployee = (employeeId: string) => {
     setEmployees(prev => prev.filter(emp => emp.id !== employeeId));
-    toast({ title: "Employee Deleted", description: "The employee has been removed from the system.", variant: "destructive" });
+    toast({ title: "Empleado Eliminado", description: "El empleado ha sido eliminado del sistema.", variant: "destructive" });
   };
 
+  const filteredEmployees = employees.filter((emp) => {
+    // Filtrar por estado
+    if (statusFilter && statusFilter !== 'all' && emp.status !== statusFilter) return false;
+    // Filtrar por rango de fechas
+    if (dateRange.from && dateRange.to) {
+      const regDate = parseISO(emp.registrationDate);
+      if (!isWithinInterval(regDate, { start: dateRange.from, end: addDays(dateRange.to, 1) })) return false;
+    }
+    // Filtrar por búsqueda
+    if (search && !(
+      emp.username.toLowerCase().includes(search.toLowerCase()) ||
+      emp.email.toLowerCase().includes(search.toLowerCase()) ||
+      (emp.contact && emp.contact.includes(search))
+    )) return false;
+    return true;
+  });
 
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-primary">{t('adminEmployees.title')}</h1>
-          <p className="text-lg text-muted-foreground">{t('adminEmployees.description')}</p>
+          <h1 className="text-3xl font-bold text-primary">Gestión de empleados</h1>
+          <p className="text-lg text-muted-foreground">Descripción de la página de empleados</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={openNewDialog}>
-              <PlusCircle className="mr-2 h-5 w-5" /> {t('adminEmployees.addNewButton')}
+              <PlusCircle className="mr-2 h-5 w-5" /> Agregar Nuevo
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-xl">
              <DialogHeader>
-                <DialogTitle>{editingEmployee ? t('adminEmployees.dialog.editTitle') : t('adminEmployees.dialog.addTitle')}</DialogTitle>
+                <DialogTitle>{editingEmployee ? 'Editar Empleado' : 'Agregar Empleado'}</DialogTitle>
                 <DialogDescription>
-                  {editingEmployee ? t('adminEmployees.dialog.editDescription') : t('adminEmployees.dialog.addDescription')}
+                  {editingEmployee ? 'Descripción de la edición' : 'Descripción de la creación'}
                 </DialogDescription>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                  <div className="space-y-2">
-                    <FormLabel>{t('adminEmployees.form.avatarLabel')}</FormLabel>
+                    <FormLabel>Avatar</FormLabel>
                     <div className="flex items-center gap-4">
                        <Avatar className="h-20 w-20">
                             <AvatarImage src={avatarPreview || `https://placehold.co/80x80.png?text=??`} alt="Avatar Preview" data-ai-hint="user avatar"/>
@@ -181,7 +201,7 @@ export default function AdminEmployeesPage() {
                         <div className="relative">
                             <Button type="button" variant="outline" asChild>
                                 <label htmlFor="avatar-upload" className="cursor-pointer">
-                                    <UploadCloud className="mr-2 h-4 w-4"/> {t('adminEmployees.form.changeAvatarButton')}
+                                    <UploadCloud className="mr-2 h-4 w-4"/> Cambiar Avatar
                                 </label>
                             </Button>
                            <Input id="avatar-upload" type="file" className="hidden" accept="image/*" onChange={handleAvatarChange}/>
@@ -191,16 +211,16 @@ export default function AdminEmployeesPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField control={form.control} name="username" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('adminEmployees.form.usernameLabel')}</FormLabel>
-                        <FormControl><Input placeholder={t('adminEmployees.form.usernamePlaceholder')} {...field} /></FormControl>
+                        <FormLabel>Nombre de Usuario</FormLabel>
+                        <FormControl><Input placeholder="Nombre de usuario" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                   <FormField control={form.control} name="email" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('adminEmployees.form.emailLabel')}</FormLabel>
-                        <FormControl><Input type="email" placeholder={t('adminEmployees.form.emailPlaceholder')} {...field} /></FormControl>
+                        <FormLabel>Correo Electrónico</FormLabel>
+                        <FormControl><Input type="email" placeholder="Correo electrónico" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -208,21 +228,21 @@ export default function AdminEmployeesPage() {
                 </div>
                 <FormField control={form.control} name="contact" render={({ field }) => (
                     <FormItem>
-                        <FormLabel>{t('adminEmployees.form.contactLabel')}</FormLabel>
-                        <FormControl><Input type="tel" placeholder={t('adminEmployees.form.contactPlaceholder')} {...field} /></FormControl>
+                        <FormLabel>Contacto</FormLabel>
+                        <FormControl><Input type="tel" placeholder="Contacto" {...field} /></FormControl>
                         <FormMessage />
                     </FormItem>
                 )}/>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField control={form.control} name="role" render={({ field }) => (
                         <FormItem>
-                            <FormLabel>{t('adminEmployees.form.roleLabel')}</FormLabel>
+                            <FormLabel>Rol</FormLabel>
                              <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
-                                    <SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger>
+                                    <SelectTrigger><SelectValue placeholder="Seleccionar rol" /></SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    <SelectItem value="employee">Employee</SelectItem>
+                                    <SelectItem value="employee">Empleado</SelectItem>
                                     <SelectItem value="admin">Admin</SelectItem>
                                 </SelectContent>
                             </Select>
@@ -231,15 +251,15 @@ export default function AdminEmployeesPage() {
                     )}/>
                     <FormField control={form.control} name="status" render={({ field }) => (
                         <FormItem>
-                            <FormLabel>{t('adminEmployees.form.statusLabel')}</FormLabel>
+                            <FormLabel>Estado</FormLabel>
                              <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
-                                    <SelectTrigger><SelectValue placeholder="Select a status" /></SelectTrigger>
+                                    <SelectTrigger><SelectValue placeholder="Seleccionar estado" /></SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    <SelectItem value="active">Active</SelectItem>
-                                    <SelectItem value="inactive">Inactive</SelectItem>
-                                    <SelectItem value="pending">Pending</SelectItem>
+                                    <SelectItem value="active">Activo</SelectItem>
+                                    <SelectItem value="inactive">Inactivo</SelectItem>
+                                    <SelectItem value="pending">Pendiente</SelectItem>
                                 </SelectContent>
                             </Select>
                             <FormMessage />
@@ -247,8 +267,8 @@ export default function AdminEmployeesPage() {
                     )}/>
                  </div>
                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={closeDialog}>{t('adminEmployees.form.cancelButton')}</Button>
-                    <Button type="submit"><Save className="mr-2 h-4 w-4"/> {editingEmployee ? t('adminEmployees.form.saveChangesButton') : t('adminEmployees.form.createButton')}</Button>
+                    <Button type="button" variant="outline" onClick={closeDialog}>Cancelar</Button>
+                    <Button type="submit"><Save className="mr-2 h-4 w-4"/> {editingEmployee ? 'Guardar Cambios' : 'Crear'}</Button>
                 </DialogFooter>
               </form>
             </Form>
@@ -258,12 +278,62 @@ export default function AdminEmployeesPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('adminEmployees.allEmployeesCard.title')}</CardTitle>
-          <CardDescription>{t('adminEmployees.allEmployeesCard.description')}</CardDescription>
-          <div className="flex flex-col md:flex-row gap-2 pt-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
-              <Input placeholder={t('adminEmployees.searchInputPlaceholder')} className="pl-8" />
+          <CardTitle>Todos los Empleados</CardTitle>
+          <CardDescription>Descripción de la sección de empleados</CardDescription>
+          <div className="flex flex-col gap-2 pt-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex w-full gap-2 items-center">
+              <div className="relative flex-grow min-w-[12rem] md:min-w-[20rem] lg:min-w-[28rem]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Buscar empleados"
+                  className="pl-10 pr-4 py-2 rounded-md border border-border bg-background focus:ring-2 focus:ring-primary/30 transition-all w-full"
+                />
+              </div>
+              <div className="flex gap-2 flex-shrink-0 ml-auto">
+                <Button
+                  variant="outline"
+                  asChild
+                  className={`flex items-center gap-2 rounded-md px-4 py-2 font-medium bg-background border border-border shadow-sm hover:shadow-lg hover:bg-primary/10 hover:text-primary transition-all duration-200 ${statusFilter && statusFilter !== 'all' ? 'ring-2 ring-primary/40 bg-primary/10 text-primary' : ''}`}
+                >
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      className="flex items-center w-full bg-background border border-border shadow-sm hover:shadow-lg hover:bg-primary/10 hover:text-primary transition-all duration-200 px-4 py-2 rounded-md font-medium"
+                      tabIndex={0}
+                    >
+                      <Filter className="mr-2 h-4 w-4" /> Filtrar por Estado
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setStatusFilter('all')}>Todos</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setStatusFilter('active')}>Activo</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setStatusFilter('inactive')}>Inactivo</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </Button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={`flex items-center gap-2 rounded-md px-4 py-2 font-medium bg-background border border-border shadow-sm hover:shadow-lg hover:bg-primary/10 hover:text-primary transition-all duration-200 ${dateRange.from && dateRange.to ? 'ring-2 ring-primary/40 bg-primary/10 text-primary' : ''}`}
+                    >
+                      <CalendarDays className="mr-2 h-4 w-4" /> Filtrar por Fecha
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-auto p-0">
+                    <Calendar
+                      mode="range"
+                      selected={dateRange}
+                      onSelect={setDateRange}
+                      numberOfMonths={2}
+                      initialFocus
+                    />
+                    <div className="flex justify-end p-2">
+                      <Button size="sm" variant="ghost" onClick={() => setDateRange({ from: null, to: null })}>Limpiar Filtro de Fecha</Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -271,16 +341,16 @@ export default function AdminEmployeesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="hidden md:table-cell">{t('adminEmployees.table.avatar')}</TableHead>
-                <TableHead>{t('adminEmployees.table.username')}</TableHead>
-                <TableHead>{t('adminEmployees.table.email')}</TableHead>
-                <TableHead className="hidden sm:table-cell">{t('adminEmployees.table.contact')}</TableHead>
-                <TableHead className="text-center">{t('adminEmployees.table.status')}</TableHead>
-                <TableHead className="text-right">{t('adminEmployees.table.actions')}</TableHead>
+                <TableHead className="hidden md:table-cell">Avatar</TableHead>
+                <TableHead>Nombre de Usuario</TableHead>
+                <TableHead>Correo Electrónico</TableHead>
+                <TableHead className="hidden sm:table-cell">Contacto</TableHead>
+                <TableHead className="text-center">Estado</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {employees.map((employee) => (
+              {filteredEmployees.map((employee) => (
                 <TableRow key={employee.id}>
                   <TableCell className="hidden md:table-cell">
                     <Avatar>
@@ -290,7 +360,7 @@ export default function AdminEmployeesPage() {
                   </TableCell>
                   <TableCell className="font-medium">{employee.username}</TableCell>
                   <TableCell>{employee.email}</TableCell>
-                  <TableCell className="hidden sm:table-cell">{employee.contact || t('adminEmployees.contact.notAvailable')}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{employee.contact || 'No disponible'}</TableCell>
                   <TableCell className="text-center">
                     <Badge variant={employee.status === 'active' ? 'default' : 'outline'} 
                            className={employee.status === 'active' ? 'bg-green-500 text-white' : 'border-yellow-500 text-yellow-600'}>
@@ -310,15 +380,15 @@ export default function AdminEmployeesPage() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                               <AlertDialogHeader>
-                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                  <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                      This will permanently delete the employee &quot;{employee.username}&quot;. This action cannot be undone.
+                                      Esta acción eliminará permanentemente el empleado &quot;{employee.username}&quot;. Esta acción no se puede deshacer.
                                   </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                   <AlertDialogAction onClick={() => handleDeleteEmployee(employee.id)} className="bg-destructive hover:bg-destructive/90">
-                                      Yes, delete employee
+                                      Sí, eliminar empleado
                                   </AlertDialogAction>
                               </AlertDialogFooter>
                           </AlertDialogContent>

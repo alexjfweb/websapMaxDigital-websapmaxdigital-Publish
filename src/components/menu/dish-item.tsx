@@ -9,9 +9,10 @@ import { Badge } from '@/components/ui/badge';
 interface DishItemProps {
   dish: Dish;
   onAddToCart: (dish: Dish) => void;
+  t?: any;
 }
 
-export default function DishItem({ dish, onAddToCart }: DishItemProps) {
+export default function DishItem({ dish, onAddToCart, t }: DishItemProps) {
   const renderStars = (likes: number) => {
     return Array(5).fill(0).map((_, i) => (
       <Star key={i} className={`h-4 w-4 ${i < likes ? 'text-accent fill-accent' : 'text-muted-foreground/50'}`} />
@@ -29,7 +30,7 @@ export default function DishItem({ dish, onAddToCart }: DishItemProps) {
           data-ai-hint={`${dish.category} food`}
         />
         {dish.stock === 0 && (
-          <Badge variant="destructive" className="absolute top-2 right-2">Out of Stock</Badge>
+          <Badge variant="destructive" className="absolute top-2 right-2">Agotado</Badge>
         )}
       </div>
       <CardHeader className="pb-2">
@@ -43,7 +44,7 @@ export default function DishItem({ dish, onAddToCart }: DishItemProps) {
         <CardDescription className="text-sm text-muted-foreground mb-2 line-clamp-3">{dish.description}</CardDescription>
         <p className="text-lg font-semibold text-primary">${dish.price.toFixed(2)}</p>
         {dish.stock > 0 && dish.stock < 10 && (
-          <p className="text-xs text-destructive mt-1">Only {dish.stock} left in stock!</p>
+          <p className="text-xs text-destructive mt-1">¡Solo {dish.stock} en stock!</p>
         )}
       </CardContent>
       <CardFooter>
@@ -53,7 +54,7 @@ export default function DishItem({ dish, onAddToCart }: DishItemProps) {
           className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
         >
           {dish.stock === 0 ? <XCircle className="mr-2 h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
-          {dish.stock === 0 ? 'Unavailable' : 'Add to Order'}
+          {dish.stock === 0 ? 'No disponible' : 'Agregar al pedido'}
         </Button>
       </CardFooter>
     </Card>

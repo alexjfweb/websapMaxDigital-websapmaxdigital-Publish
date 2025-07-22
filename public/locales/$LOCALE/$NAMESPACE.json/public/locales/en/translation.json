@@ -1,0 +1,41 @@
+{
+  "adminDashboard": {
+    "description": "Manage your restaurant effectively.",
+    "dishCard": {
+      "mainText": "Menu Items",
+      "subText": "Add, edit, or delete dishes.",
+      "title": "Dish Management"
+    },
+    "employeeCard": {
+      "mainText": "Staff Accounts",
+      "subText": "Manage employee access.",
+      "title": "Employee Management"
+    },
+    "paymentsCard": {
+      "mainText": "Configure Payments",
+      "subText": "Set up Nequi, QR, COD.",
+      "title": "Payment Methods"
+    },
+    "profileCard": {
+      "mainText": "Manage Details",
+      "subText": "Update name, logo, address, etc.",
+      "title": "Restaurant Profile"
+    },
+    "quickStats": {
+      "pendingOrders": "Pending Orders",
+      "title": "Quick Stats",
+      "totalDishes": "Total Dishes"
+    },
+    "reservationsCard": {
+      "mainText": "View Bookings",
+      "subText": "Manage customer reservations.",
+      "title": "Reservations"
+    },
+    "shareMenuCard": {
+      "mainText": "Distribute Menu",
+      "subText": "Share via WhatsApp or link.",
+      "title": "Share Menu"
+    },
+    "title": "Admin Dashboard"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "adminDashboard": {
+    "description": "Gestiona tu restaurante de forma efectiva.",
+    "dishCard": {
+      "mainText": "Elementos del menú",
+      "subText": "Agrega, edita o elimina platos.",
+      "title": "Gestión de platos"
+    },
+    "employeeCard": {
+      "mainText": "Cuentas del personal",
+      "subText": "Gestiona el acceso de empleados.",
+      "title": "Gestión de empleados"
+    },
+    "paymentsCard": {
+      "mainText": "Configurar pagos",
+      "subText": "Configura Nequi, QR, Efectivo.",
+      "title": "Métodos de pago"
+    },
+    "profileCard": {
+      "mainText": "Gestionar detalles",
+      "subText": "Actualiza nombre, logo, dirección, etc.",
+      "title": "Perfil del restaurante"
+    },
+    "quickStats": {
+      "pendingOrders": "Pedidos pendientes",
+      "title": "Estadísticas rápidas",
+      "totalDishes": "Total de platos"
+    },
+    "reservationsCard": {
+      "mainText": "Ver reservas",
+      "subText": "Gestiona las reservas de clientes.",
+      "title": "Reservas"
+    },
+    "shareMenuCard": {
+      "mainText": "Distribuir menú",
+      "subText": "Comparte por WhatsApp o enlace.",
+      "title": "Compartir menú"
+    },
+    "title": "Panel de administración"
+  }
+}

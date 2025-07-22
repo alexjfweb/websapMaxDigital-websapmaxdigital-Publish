@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +8,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import ReservationForm from '@/components/forms/reservation-form';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
 // Mock Data for Reservations (can be same as admin or filtered for employee view)
 const mockReservations = [
@@ -19,7 +21,12 @@ const mockReservations = [
 
 export default function EmployeeReservationsPage() {
   const [isMounted, setIsMounted] = useState(false);
+  const [open, setOpen] = useState(false);
   const reservations = mockReservations;
+  const [selectedReservation, setSelectedReservation] = useState<any>(null);
+  const [openDetail, setOpenDetail] = useState(false);
+  const [openConfirm, setOpenConfirm] = useState(false);
+  const [openCancel, setOpenCancel] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -27,12 +34,17 @@ export default function EmployeeReservationsPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "confirmed": return <Badge className="bg-green-500 text-white hover:bg-green-600">Confirmed</Badge>;
-      case "pending": return <Badge className="bg-yellow-500 text-white hover:bg-yellow-600">Pending</Badge>;
-      case "cancelled": return <Badge variant="destructive">Cancelled</Badge>;
+      case "confirmed": return <Badge className="bg-green-500 text-white hover:bg-green-600">Confirmada</Badge>;
+      case "pending": return <Badge className="bg-yellow-500 text-white hover:bg-yellow-600">Pendiente</Badge>;
+      case "cancelled": return <Badge variant="destructive">Cancelada</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;
     }
   };
+
+  const handleOpenDetail = (reservation: any) => { setSelectedReservation(reservation); setOpenDetail(true); };
+  const handleOpenConfirm = (reservation: any) => { setSelectedReservation(reservation); setOpenConfirm(true); };
+  const handleOpenCancel = (reservation: any) => { setSelectedReservation(reservation); setOpenCancel(true); };
+  const handleCloseModals = () => { setOpenDetail(false); setOpenConfirm(false); setOpenCancel(false); setSelectedReservation(null); };
 
   if (!isMounted) {
     return null; // or a loading skeleton
@@ -42,29 +54,40 @@ export default function EmployeeReservationsPage() {
     <div className="space-y-8">
        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-            <h1 className="text-3xl font-bold text-primary">Manage Reservations</h1>
-            <p className="text-lg text-muted-foreground">Oversee and update customer table bookings.</p>
+            <h1 className="text-3xl font-bold text-primary">Reservas del empleado</h1>
+            <p className="text-lg text-muted-foreground">Gestiona y visualiza tus reservas</p>
         </div>
-        <Button>
-            <PlusCircle className="mr-2 h-5 w-5" /> Add New Reservation
-        </Button>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle className="mr-2 h-5 w-5" /> Agregar nueva reserva
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Agregar nueva reserva</DialogTitle>
+              <DialogDescription>Complete el formulario para agregar una nueva reserva</DialogDescription>
+            </DialogHeader>
+            <ReservationForm />
+          </DialogContent>
+        </Dialog>
       </div>
 
 
       <Card>
         <CardHeader>
-          <CardTitle>Upcoming & Recent Reservations</CardTitle>
-          <CardDescription>Manage all table bookings assigned to you or your section.</CardDescription>
+          <CardTitle>Reservas del empleado</CardTitle>
+          <CardDescription>Resumen de tus reservas</CardDescription>
           <div className="flex flex-col md:flex-row gap-2 pt-4">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search by name or phone..." className="pl-8" />
+              <Input placeholder="Buscar por nombre o teléfono" className="pl-8" />
             </div>
             <Button variant="outline">
-              <Filter className="mr-2 h-4 w-4" /> Filter by Status
+              <Filter className="mr-2 h-4 w-4" /> Filtrar por estado
             </Button>
              <Button variant="outline">
-              <CalendarDays className="mr-2 h-4 w-4" /> View Calendar
+              <CalendarDays className="mr-2 h-4 w-4" /> Ver calendario
             </Button>
           </div>
         </CardHeader>
@@ -72,12 +95,12 @@ export default function EmployeeReservationsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Customer Name</TableHead>
-                <TableHead>Date & Time</TableHead>
-                <TableHead className="text-center">Guests</TableHead>
-                <TableHead className="hidden sm:table-cell">Notes</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>Nombre del cliente</TableHead>
+                <TableHead>Fecha y hora</TableHead>
+                <TableHead className="text-center">Invitados</TableHead>
+                <TableHead className="hidden sm:table-cell">Notas</TableHead>
+                <TableHead className="text-center">Estado</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -87,26 +110,36 @@ export default function EmployeeReservationsPage() {
                   <TableCell>{format(new Date(reservation.date), "MMM d, yyyy 'at' h:mm a")}</TableCell>
                   <TableCell className="text-center">{reservation.guests}</TableCell>
                   <TableCell className="hidden sm:table-cell text-xs text-muted-foreground truncate max-w-xs">
-                    {reservation.notes || "N/A"}
+                    {reservation.notes || 'Sin notas'}
                   </TableCell>
                   <TableCell className="text-center">
                     {getStatusBadge(reservation.status)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell>
                     <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="hover:text-blue-500" title="View Details">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      {reservation.status === 'pending' && (
-                        <>
-                        <Button variant="ghost" size="icon" className="hover:text-green-500" title="Confirm Reservation">
-                            <CheckCircle className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="hover:text-red-500" title="Cancel Reservation">
-                            <XCircle className="h-4 w-4" />
-                        </Button>
-                        </>
-                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="hover:text-primary" title="Acciones">
+                            <span className="sr-only">Acciones</span>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onSelect={() => handleOpenDetail(reservation)}>
+                            Ver detalles
+                          </DropdownMenuItem>
+                          {reservation.status === 'pending' && (
+                            <DropdownMenuItem onSelect={() => handleOpenConfirm(reservation)}>
+                              Confirmar
+                            </DropdownMenuItem>
+                          )}
+                          {reservation.status === 'pending' && (
+                            <DropdownMenuItem onSelect={() => handleOpenCancel(reservation)}>
+                              Cancelar
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -114,7 +147,7 @@ export default function EmployeeReservationsPage() {
                {reservations.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                    No reservations found.
+                    No hay reservas disponibles
                     </TableCell>
                 </TableRow>
                 )}
@@ -122,7 +155,59 @@ export default function EmployeeReservationsPage() {
           </Table>
         </CardContent>
       </Card>
-       {/* Placeholder for View/Edit Reservation Details Dialog */}
+       {/* Modales de acciones */}
+      <Dialog open={openDetail} onOpenChange={setOpenDetail}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Ver detalles</DialogTitle>
+            <DialogDescription>Resumen de la reserva</DialogDescription>
+          </DialogHeader>
+          {selectedReservation && (
+            <div className="space-y-2 text-base">
+              <div><b>Nombre del cliente:</b> {selectedReservation.customerName}</div>
+              <div><b>Fecha y hora:</b> {format(new Date(selectedReservation.date), 'PPPp')}</div>
+              <div><b>Invitados:</b> {selectedReservation.guests}</div>
+              <div><b>Notas:</b> {selectedReservation.notes || 'Sin notas'}</div>
+              <div className="flex items-center gap-2"><b>Estado:</b> {getStatusBadge(selectedReservation.status)}</div>
+            </div>
+          )}
+          <div className="flex justify-end pt-4">
+            <Button onClick={handleCloseModals}>Cerrar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={openConfirm} onOpenChange={setOpenConfirm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmar reserva</DialogTitle>
+            <DialogDescription>Resumen de la reserva</DialogDescription>
+          </DialogHeader>
+          <div className="py-4 text-center">
+            <span className="text-lg font-semibold">Nombre del cliente: {selectedReservation?.customerName}</span>
+            <div className="mt-2 text-muted-foreground">¿Estás seguro de confirmar esta reserva?</div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseModals}>Cancelar</Button>
+            <Button onClick={handleCloseModals}>Confirmar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={openCancel} onOpenChange={setOpenCancel}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancelar reserva</DialogTitle>
+            <DialogDescription>Resumen de la reserva</DialogDescription>
+          </DialogHeader>
+          <div className="py-4 text-center">
+            <span className="text-lg font-semibold">Nombre del cliente: {selectedReservation?.customerName}</span>
+            <div className="mt-2 text-muted-foreground">¿Estás seguro de cancelar esta reserva?</div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseModals}>Cancelar</Button>
+            <Button onClick={handleCloseModals}>Confirmar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

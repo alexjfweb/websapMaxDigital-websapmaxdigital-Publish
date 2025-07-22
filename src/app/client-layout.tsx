@@ -1,7 +1,12 @@
 "use client";
 import React from 'react';
-import '../lib/i18n';
+import { OrderProvider } from '@/contexts/order-context';
+import AppLayout from '@/components/layout/app-layout';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return (
+    <OrderProvider>
+      <AppLayout>{children}</AppLayout>
+    </OrderProvider>
+  );
 } 

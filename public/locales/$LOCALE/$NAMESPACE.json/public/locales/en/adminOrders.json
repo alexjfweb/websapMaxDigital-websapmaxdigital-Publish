@@ -1,0 +1,40 @@
+{
+  "actions": {
+    "filterByStatus": "Filter by status",
+    "markAsPreparing": "Mark as preparing",
+    "markOutForDelivery": "Mark out for delivery",
+    "markReadyForPickup": "Mark ready for pickup",
+    "printKOTs": "Print KOTs",
+    "viewDetails": "View details"
+  },
+  "kotPreviewTitle": "KOT Preview",
+  "kotPrintSuccessDesc": "Kitchen order tickets have been sent to print.",
+  "kotPrintSuccessTitle": "KOTs Printed",
+  "overview": "Order Overview",
+  "overviewDescription": "Here you can view and manage all orders.",
+  "searchPlaceholder": "Search order...",
+  "status": {
+    "cancelled": "Cancelled",
+    "completed": "Completed",
+    "outForDelivery": "Out for Delivery",
+    "pending": "Pending",
+    "preparing": "Preparing",
+    "readyForPickup": "Ready for Pickup"
+  },
+  "subtitle": "Manage all orders in real time.",
+  "table": {
+    "actions": "Actions",
+    "customer": "Customer",
+    "date": "Date",
+    "items": "Items",
+    "noOrders": "No orders to display",
+    "orderId": "ID",
+    "status": "Status",
+    "total": "Total"
+  },
+  "tabs": {
+    "activeOrders": "Active Orders",
+    "pastOrders": "Past Orders"
+  },
+  "title": "Order Management"
+}
