@@ -28,6 +28,7 @@ export interface LandingPlan {
   period: 'monthly' | 'yearly' | 'lifetime';
   features: string[];
   isActive: boolean;
+  isPublic: boolean; // Campo para visibilidad pública
   isPopular?: boolean;
   order: number;
   icon: string;
@@ -49,6 +50,7 @@ export interface CreatePlanRequest {
   period: 'monthly' | 'yearly' | 'lifetime';
   features: string[];
   isActive?: boolean;
+  isPublic?: boolean;
   isPopular?: boolean;
   order?: number;
   icon: string;
@@ -197,13 +199,14 @@ class LandingPlansService {
   }
 
   /**
-   * Obtiene todos los planes activos ordenados
+   * Obtiene todos los planes públicos y activos ordenados
    */
   async getPlans(): Promise<LandingPlan[]> {
     try {
       const q = query(
         collection(db, this.COLLECTION_NAME),
         where('isActive', '==', true),
+        where('isPublic', '==', true), // Asegurar que solo se obtienen planes públicos
         orderBy('order', 'asc')
       );
 
@@ -222,6 +225,7 @@ class LandingPlansService {
           period: data.period,
           features: data.features || [],
           isActive: data.isActive,
+          isPublic: data.isPublic,
           isPopular: data.isPopular || false,
           order: data.order || 0,
           icon: data.icon,
@@ -244,12 +248,13 @@ class LandingPlansService {
   }
 
   /**
-   * Suscripción en tiempo real a los planes
+   * Suscripción en tiempo real a los planes públicos
    */
   subscribeToPlans(callback: (plans: LandingPlan[]) => void, onError: (error: Error) => void): () => void {
     const q = query(
       collection(db, this.COLLECTION_NAME),
       where('isActive', '==', true),
+      where('isPublic', '==', true), // Asegurar que la suscripción también filtre por planes públicos
       orderBy('order', 'asc')
     );
   
@@ -267,6 +272,7 @@ class LandingPlansService {
           period: data.period,
           features: data.features || [],
           isActive: data.isActive,
+          isPublic: data.isPublic,
           isPopular: data.isPopular || false,
           order: data.order || 0,
           icon: data.icon,
@@ -309,6 +315,7 @@ class LandingPlansService {
         period: data.period,
         features: data.features || [],
         isActive: data.isActive !== false,
+        isPublic: data.isPublic === true,
         isPopular: data.isPopular || false,
         order: data.order || 0,
         icon: data.icon,
@@ -364,6 +371,7 @@ class LandingPlansService {
         period: data.period,
         features: data.features,
         isActive: data.isActive !== false,
+        isPublic: data.isPublic === true,
         isPopular: data.isPopular || false,
         order: data.order || nextOrder,
         icon: data.icon,

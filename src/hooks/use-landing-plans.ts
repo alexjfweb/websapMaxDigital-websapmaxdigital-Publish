@@ -13,8 +13,8 @@ export function useLandingPlans() {
 
     // Suscripción en tiempo real
     const unsubscribe = landingPlansService.subscribeToPlans(
-      (plans) => {
-        setPlans(plans);
+      (fetchedPlans) => {
+        setPlans(fetchedPlans);
         setIsLoading(false);
       },
       (err) => {
@@ -30,14 +30,19 @@ export function useLandingPlans() {
     };
   }, []);
 
+  const refetch = useCallback(() => {
+    setIsLoading(true);
+    landingPlansService.getPlans()
+      .then(setPlans)
+      .catch((err) => setError(err.message))
+      .finally(() => setIsLoading(false));
+  }, []);
+
   return {
     plans,
     isLoading,
     error,
-    refetch: () => {
-      setIsLoading(true);
-      landingPlansService.getPlans().then(setPlans).catch((err) => setError(err.message)).finally(() => setIsLoading(false));
-    }
+    refetch
   };
 }
 
