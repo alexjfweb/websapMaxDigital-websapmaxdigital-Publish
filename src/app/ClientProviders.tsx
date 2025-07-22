@@ -14,21 +14,6 @@ export default function ClientProviders({ children }: { children: React.ReactNod
     errorRetryInterval: 5000,
     dedupingInterval: 2000,
   };
-  
-  React.useEffect(() => {
-    const ensureDatabaseSync = async () => {
-      try {
-        const response = await fetch('/api/sync-database', { method: 'POST' });
-        const data = await response.json();
-        console.log('Sync response:', data.message);
-      } catch (error) {
-        console.error('Failed to sync database on startup:', error);
-      }
-    };
-
-    ensureDatabaseSync();
-  }, []);
-
 
   return (
     <SWRConfig value={swrConfig}>
