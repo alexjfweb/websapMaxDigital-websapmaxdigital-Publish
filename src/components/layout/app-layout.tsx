@@ -21,7 +21,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { Toaster } from '@/components/ui/toaster';
 
 const guestUser: User = {
   id: 'guest',
@@ -66,14 +65,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     router.push('/login');
   };
   
-  if (!isMounted) {
-    return (
-        <div className="flex min-h-svh w-full items-center justify-center bg-background">
-            <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
-        </div>
-    );
-  }
-
   const isSpecialPage = ['/login', '/register', '/'].includes(pathname);
 
   if (isSpecialPage) {
@@ -83,8 +74,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <main className="flex-1 bg-background">
           {children}
         </main>
-        <Toaster />
       </div>
+    );
+  }
+  
+  if (!isMounted) {
+    return (
+        <div className="flex min-h-svh w-full items-center justify-center bg-background">
+            <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
+        </div>
     );
   }
 
@@ -156,9 +154,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background">
           {children}
         </main>
-        <Toaster />
       </SidebarInset>
     </SidebarProvider>
   );
 }
-
