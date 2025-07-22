@@ -14,7 +14,11 @@ export function useLandingPlans() {
     // Suscripción en tiempo real
     const unsubscribe = landingPlansService.subscribeToPlans(
       (fetchedPlans) => {
-        setPlans(fetchedPlans);
+        // Filtrar y ordenar aquí
+        const visiblePlans = fetchedPlans
+          .filter(p => p.isPublic)
+          .sort((a, b) => a.order - b.order);
+        setPlans(visiblePlans);
         setIsLoading(false);
       },
       (err) => {

@@ -203,10 +203,9 @@ class LandingPlansService {
    */
   async getPlans(): Promise<LandingPlan[]> {
     try {
-      // Simplificar la consulta para evitar la necesidad del índice compuesto
       const q = query(
         collection(db, this.COLLECTION_NAME),
-        where('isActive', '==', true) // Filtrar solo por activo
+        where('isActive', '==', true)
       );
 
       const snapshot = await getDocs(q);
@@ -214,7 +213,6 @@ class LandingPlansService {
 
       snapshot.forEach(doc => {
         const data = doc.data();
-        // Filtrar por isPublic en el lado del cliente
         if (data.isPublic === true) {
           plans.push({
             id: doc.id,
@@ -242,7 +240,6 @@ class LandingPlansService {
         }
       });
       
-      // Ordenar en el lado del cliente
       plans.sort((a, b) => a.order - b.order);
 
       return plans;
@@ -256,17 +253,17 @@ class LandingPlansService {
    * Suscripción en tiempo real a los planes públicos
    */
   subscribeToPlans(callback: (plans: LandingPlan[]) => void, onError: (error: Error) => void): () => void {
+    // Consulta simplificada para evitar requerir un índice compuesto complejo.
     const q = query(
       collection(db, this.COLLECTION_NAME),
-      where('isActive', '==', true),
-      where('isPublic', '==', true),
-      orderBy('order', 'asc')
+      where('isActive', '==', true)
     );
   
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const plans: LandingPlan[] = [];
       snapshot.forEach(doc => {
         const data = doc.data();
+        // El filtrado por 'isPublic' y el ordenamiento se harán en el cliente (en el hook)
         plans.push({
           id: doc.id,
           slug: data.slug,
