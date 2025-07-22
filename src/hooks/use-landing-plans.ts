@@ -1,74 +1,33 @@
 import { useState, useEffect, useCallback } from 'react';
+import useSWR from 'swr';
 import { landingPlansService, LandingPlan, CreatePlanRequest, UpdatePlanRequest, PlanAuditLog } from '@/services/landing-plans-service';
+
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 // Hook para obtener planes con sincronización en tiempo real
 export function useLandingPlans() {
-  const [plans, setPlans] = useState<LandingPlan[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setIsLoading(true);
-    setError(null);
-
-    // Suscripción en tiempo real
-    const unsubscribe = landingPlansService.subscribeToPlans(
-      (fetchedPlans) => {
-        setPlans(fetchedPlans);
-        setIsLoading(false);
-      },
-      (err) => {
-        console.error("Error fetching landing plans:", err);
-        setError("No se pudieron cargar los planes. Verifique los permisos y el índice de Firestore.");
-        setIsLoading(false);
-      }
-    );
-
-    // Cleanup al desmontar
-    return () => {
-      unsubscribe();
-    };
-  }, []);
-
-  const refetch = useCallback(() => {
-    setIsLoading(true);
-    landingPlansService.getPlans()
-      .then(setPlans)
-      .catch((err) => setError(err.message))
-      .finally(() => setIsLoading(false));
-  }, []);
+  const { data, error, isLoading, mutate } = useSWR('/api/landing-plans', fetcher, {
+      revalidateOnFocus: false,
+  });
 
   return {
-    plans,
+    plans: data || [],
     isLoading,
-    error,
-    refetch
+    error: error ? error.message : null,
+    refetch: mutate,
   };
 }
 
 // Hook para obtener un plan específico
 export function useLandingPlan(id: string) {
-  const [plan, setPlan] = useState<LandingPlan | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, error, isLoading } = useSWR(id ? `/api/landing-plans/${id}` : null, fetcher);
 
-  useEffect(() => {
-    if (!id) {
-      setPlan(null);
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    landingPlansService.getPlanById(id)
-      .then(setPlan)
-      .catch((err) => setError(err.message))
-      .finally(() => setIsLoading(false));
-  }, [id]);
-
-  return { plan, isLoading, error };
+  return { 
+    plan: data, 
+    isLoading, 
+    error: error ? error.message : null
+  };
 }
 
 // Hook para operaciones CRUD

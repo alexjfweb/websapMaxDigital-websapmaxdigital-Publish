@@ -1,6 +1,6 @@
 "use client";
 import React from 'react';
-import { useLandingPlans } from '@/hooks/use-landing-plans';
+import { usePublicLandingPlans } from '@/hooks/use-plans';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -51,7 +51,7 @@ const getPlanColorClass = (colorValue: string, type: 'bg' | 'border' | 'text') =
 
 
 export default function SubscriptionPlansSection() {
-  const { plans, isLoading, error } = useLandingPlans();
+  const { plans, isLoading, isError, error } = usePublicLandingPlans();
 
   return (
     <motion.section
@@ -71,7 +71,7 @@ export default function SubscriptionPlansSection() {
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
           <p className="mt-4 text-lg text-gray-600">Cargando planes...</p>
         </div>
-      ) : error ? (
+      ) : isError ? (
         <div className="text-red-600 text-center bg-red-50 p-8 rounded-lg">
           <h3 className="text-xl font-semibold">Error al cargar los planes</h3>
           <p>{error}</p>
