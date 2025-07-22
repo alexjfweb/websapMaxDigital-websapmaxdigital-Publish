@@ -1,8 +1,97 @@
 // src/services/database-sync-service.ts
-import { collection, getDocs, writeBatch, doc } from 'firebase/firestore';
+import { collection, getDocs, writeBatch, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { landingPlansService } from './landing-plans-service';
-import { examplePlans } from '@/scripts/migrate-landing-plans';
+
+// Datos de ejemplo movidos aquí para resolver el problema de importación
+const examplePlans = [
+  {
+    slug: 'basico',
+    name: 'Básico',
+    description: 'Perfecto para pequeñas empresas que están comenzando',
+    price: 29.99,
+    currency: 'USD',
+    period: 'monthly',
+    features: [
+      'Hasta 5 usuarios',
+      'Funciones básicas de gestión',
+      'Soporte por email',
+      'Actualizaciones gratuitas',
+      'Acceso a plantillas básicas'
+    ],
+    isActive: true,
+    isPublic: true,
+    isPopular: false,
+    order: 1,
+    icon: 'zap',
+    color: 'blue',
+    maxUsers: 5,
+    maxProjects: 10,
+    ctaText: 'Comenzar Prueba Gratuita',
+    createdBy: 'system',
+    updatedBy: 'system'
+  },
+  {
+    slug: 'profesional',
+    name: 'Profesional',
+    description: 'Ideal para equipos en crecimiento que necesitan más funcionalidades',
+    price: 79.99,
+    currency: 'USD',
+    period: 'monthly',
+    features: [
+      'Hasta 25 usuarios',
+      'Todas las funciones del plan básico',
+      'Soporte prioritario',
+      'Integraciones avanzadas',
+      'Reportes detallados',
+      'Personalización avanzada',
+      'API de acceso',
+      'Backup automático'
+    ],
+    isActive: true,
+    isPublic: true,
+    isPopular: true,
+    order: 2,
+    icon: 'star',
+    color: 'purple',
+    maxUsers: 25,
+    maxProjects: 50,
+    ctaText: 'Comenzar Prueba Gratuita',
+    createdBy: 'system',
+    updatedBy: 'system'
+  },
+  {
+    slug: 'empresarial',
+    name: 'Empresarial',
+    description: 'Para grandes organizaciones que requieren máxima funcionalidad y soporte',
+    price: 199.99,
+    currency: 'USD',
+    period: 'monthly',
+    features: [
+      'Usuarios ilimitados',
+      'Todas las funciones del plan profesional',
+      'Soporte 24/7 con chat en vivo',
+      'API personalizada',
+      'SLA garantizado del 99.9%',
+      'Onboarding dedicado',
+      'Capacitación personalizada',
+      'Integraciones personalizadas',
+      'Análisis avanzado',
+      'Compliance y seguridad empresarial'
+    ],
+    isActive: true,
+    isPublic: true,
+    isPopular: false,
+    order: 3,
+    icon: 'dollar',
+    color: 'green',
+    maxUsers: -1,
+    maxProjects: -1,
+    ctaText: 'Contactar Ventas',
+    createdBy: 'system',
+    updatedBy: 'system'
+  }
+];
 
 class DatabaseSyncService {
   /**
@@ -28,20 +117,21 @@ class DatabaseSyncService {
       const batch = writeBatch(db);
       
       for (const planData of examplePlans) {
-        // Usar doc() sin parámetros para generar un ID automático dentro de la colección
         const docRef = doc(collection(db, 'landingPlans'));
-        batch.set(docRef, {
+        const fullPlanData = {
           ...planData,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
           createdBy: userId,
           updatedBy: userId,
-        });
+        };
+        batch.set(docRef, fullPlanData);
       }
       
       await batch.commit();
 
-      // Log de auditoría para la operación de sincronización
       await landingPlansService.logAudit(
-        'system-sync', // planId puede ser un identificador genérico para la acción
+        'system-sync',
         'created',
         userId,
         userEmail,
