@@ -1,631 +1,718 @@
 "use client";
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Eye, 
+  History,
+  ArrowUp, 
+  ArrowDown,
+  Zap,
+  Star,
+  DollarSign,
+  Users,
+  Calendar,
+  Palette,
+  Check,
+  X
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useLandingPlans, useLandingPlansCRUD, usePlanState, usePlanAuditLogs } from '@/hooks/use-landing-plans';
+import { LandingPlan, CreatePlanRequest, UpdatePlanRequest } from '@/services/landing-plans-service';
+import { toast } from '@/hooks/use-toast';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Gem, CreditCard, QrCode, History, Save, CheckCircle, UploadCloud, Trash2, Edit2, Plus, AlertTriangle } from "lucide-react";
-import { format } from "date-fns";
-import { useState, useEffect } from "react";
-import Image from "next/image";
-import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-
-
-// Mock Data
-const subscriptionPlans = [
-  {
-    id: "basic",
-    name: "Plan Básico",
-    price: 10,
-    features: [
-      "Hasta 50 productos",
-      "Soporte por email",
-      "Estadísticas básicas",
-      "1 usuario administrador"
-    ]
-  },
-  {
-    id: "pro",
-    name: "Plan Pro",
-    price: 25,
-    features: [
-      "Hasta 500 productos",
-      "Soporte prioritario",
-      "Estadísticas avanzadas",
-      "5 usuarios administradores"
-    ]
-  },
-  {
-    id: "enterprise",
-    name: "Plan Empresarial",
-    price: 50,
-    features: [
-      "Productos ilimitados",
-      "Soporte 24/7",
-      "Estadísticas premium",
-      "Usuarios ilimitados"
-    ]
-  }
+// Opciones para íconos y colores
+const PLAN_ICONS = [
+  { value: 'zap', label: '⚡ Zap', icon: Zap },
+  { value: 'star', label: '⭐ Star', icon: Star },
+  { value: 'dollar', label: '💰 Dollar', icon: DollarSign },
+  { value: 'users', label: '👥 Users', icon: Users },
+  { value: 'calendar', label: '📅 Calendar', icon: Calendar },
+  { value: 'palette', label: '🎨 Palette', icon: Palette },
 ];
 
-const mockTransactions = [
-  { id: "txn_1", company: "The Burger Joint", plan: "Pro", amount: 25.00, date: "2024-07-31T10:00:00Z", status: "Completed" },
-  { id: "txn_2", company: "Pizza Palace", plan: "Basic", amount: 10.00, date: "2024-07-30T11:00:00Z", status: "Completed" },
-  { id: "txn_3", company: "Sushi Central", plan: "Pro", amount: 25.00, date: "2024-07-29T12:00:00Z", status: "Failed" },
+const PLAN_COLORS = [
+  { value: 'blue', label: 'Azul', class: 'bg-blue-500' },
+  { value: 'green', label: 'Verde', class: 'bg-green-500' },
+  { value: 'purple', label: 'Púrpura', class: 'bg-purple-500' },
+  { value: 'orange', label: 'Naranja', class: 'bg-orange-500' },
+  { value: 'red', label: 'Rojo', class: 'bg-red-500' },
+  { value: 'indigo', label: 'Índigo', class: 'bg-indigo-500' },
 ];
 
-export default function SuperAdminSubscriptionsPage() {
-  const { toast } = useToast();
-  const [isMounted, setIsMounted] = useState(false);
-  const [bancolombiaQrPreview, setBancolombiaQrPreview] = useState<string | null>(null);
-  const [plans, setPlans] = useState([
-    {
-      id: "basic",
-      name: "Plan Básico",
-      price: 10,
-      features: [
-        "Hasta 50 productos",
-        "Soporte por email",
-        "Estadísticas básicas",
-        "1 usuario administrador"
-      ]
-    },
-    {
-      id: "pro",
-      name: "Plan Pro",
-      price: 25,
-      features: [
-        "Hasta 500 productos",
-        "Soporte prioritario",
-        "Estadísticas avanzadas",
-        "5 usuarios administradores"
-      ]
-    },
-    {
-      id: "enterprise",
-      name: "Plan Empresarial",
-      price: 50,
-      features: [
-        "Productos ilimitados",
-        "Soporte 24/7",
-        "Estadísticas premium",
-        "Usuarios ilimitados"
-      ]
-    }
-  ]);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState(null);
-  const [isEdit, setIsEdit] = useState(false);
-  const [form, setForm] = useState({
-    id: '',
+const PERIODS = [
+  { value: 'monthly', label: 'Mensual' },
+  { value: 'yearly', label: 'Anual' },
+  { value: 'lifetime', label: 'De por vida' },
+];
+
+export default function SubscriptionPlansPage() {
+  const { plans, isLoading } = useLandingPlans();
+  const { createPlan, updatePlan, deletePlan, reorderPlans, isLoading: isCRUDLoading } = useLandingPlansCRUD();
+  const { selectedPlan, isEditing, isCreating, startEditing, startCreating, cancelEdit } = usePlanState();
+  const [selectedPlanForHistory, setSelectedPlanForHistory] = useState<string | null>(null);
+  const [formData, setFormData] = useState<Partial<CreatePlanRequest>>({
     name: '',
-    price: '',
-    features: ['']
+    description: '',
+    price: 0,
+    currency: 'USD',
+    period: 'monthly',
+    features: [''],
+    isActive: true,
+    isPopular: false,
+    icon: 'zap',
+    color: 'blue',
+    maxUsers: 5,
+    maxProjects: 10,
+    ctaText: 'Comenzar Prueba Gratuita'
   });
-  const [errorModal, setErrorModal] = useState({ open: false, message: '' });
-  const [successModal, setSuccessModal] = useState({ open: false, message: '' });
 
-  // Métodos de pago dinámicos
-  const [paymentMethods, setPaymentMethods] = useState([
-    { id: 'stripe', name: 'Stripe', type: 'tarjeta', fields: [{ label: 'Clave pública', value: '' }, { label: 'Clave secreta', value: '' }] },
-    { id: 'mercadopago', name: 'Mercado Pago', type: 'tarjeta', fields: [{ label: 'Token de acceso', value: '' }] },
-    { id: 'nequi', name: 'Nequi', type: 'transferencia', fields: [{ label: 'Número de teléfono', value: '' }] },
-    { id: 'bancolombia', name: 'BanColombia', type: 'qr', fields: [{ label: 'URL del código QR', value: '' }] },
-  ]);
-  const [pmModalOpen, setPmModalOpen] = useState(false);
-  const [pmDeleteModalOpen, setPmDeleteModalOpen] = useState(false);
-  const [selectedPm, setSelectedPm] = useState(null);
-  const [pmForm, setPmForm] = useState({ id: '', name: '', type: '', fields: [{ label: '', value: '' }] });
-  const [isPmEdit, setIsPmEdit] = useState(false);
-  const [pmErrorModal, setPmErrorModal] = useState({ open: false, message: '' });
-  const [pmSuccessModal, setPmSuccessModal] = useState({ open: false, message: '' });
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  const handleQrUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Basic validation for URL format
-    if (e.target.value && (e.target.value.startsWith('http://') || e.target.value.startsWith('https://'))) {
-        setBancolombiaQrPreview(e.target.value);
-    } else if (!e.target.value) {
-        setBancolombiaQrPreview(null);
-    }
+  // Simular datos del usuario (en producción vendría del contexto de autenticación)
+  const currentUser = {
+    id: 'superadmin',
+    email: 'superadmin@websapmax.com'
   };
 
-  const handleQrFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setBancolombiaQrPreview(reader.result as string);
-        };
-        reader.readAsDataURL(file);
-    } else if (file) {
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleFeatureChange = (index: number, value: string) => {
+    const newFeatures = [...(formData.features || [])];
+    newFeatures[index] = value;
+    setFormData(prev => ({ ...prev, features: newFeatures }));
+  };
+
+  const addFeature = () => {
+    setFormData(prev => ({
+      ...prev,
+      features: [...(prev.features || []), '']
+    }));
+  };
+
+  const removeFeature = (index: number) => {
+    const newFeatures = [...(formData.features || [])];
+    newFeatures.splice(index, 1);
+    setFormData(prev => ({ ...prev, features: newFeatures }));
+  };
+
+  const handleSubmit = async () => {
+    try {
+      if (!formData.name || !formData.description || !formData.features?.length) {
         toast({
-            title: "Invalid File Type",
-            description: "Please select a valid image file (PNG, JPG, SVG).",
-            variant: "destructive"
-        })
+          title: "Error",
+          description: "Por favor completa todos los campos obligatorios",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const planData: CreatePlanRequest = {
+        name: formData.name,
+        description: formData.description,
+        price: formData.price || 0,
+        currency: formData.currency || 'USD',
+        period: formData.period || 'monthly',
+        features: formData.features.filter(f => f.trim() !== ''),
+        isActive: formData.isActive !== false,
+        isPopular: formData.isPopular || false,
+        icon: formData.icon || 'zap',
+        color: formData.color || 'blue',
+        maxUsers: formData.maxUsers,
+        maxProjects: formData.maxProjects,
+        ctaText: formData.ctaText
+      };
+
+      if (isEditing && selectedPlan) {
+        await updatePlan(selectedPlan.id, planData, currentUser.id, currentUser.email);
+        toast({
+          title: "Éxito",
+          description: "Plan actualizado correctamente"
+        });
+      } else {
+        await createPlan(planData, currentUser.id, currentUser.email);
+        toast({
+          title: "Éxito",
+          description: "Plan creado correctamente"
+        });
+      }
+
+      cancelEdit();
+      resetForm();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
     }
   };
 
-  const handleOpenCreate = () => {
-    setForm({ id: '', name: '', price: '', features: [''] });
-    setIsEdit(false);
-    setModalOpen(true);
+  const handleDelete = async (plan: LandingPlan) => {
+    try {
+      await deletePlan(plan.id, currentUser.id, currentUser.email);
+      toast({
+        title: "Éxito",
+        description: "Plan eliminado correctamente"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
-  const handleOpenEdit = (plan) => {
-    setForm({
-      id: plan.id,
-      name: plan.name,
-      price: plan.price.toString(),
-      features: [...plan.features]
+
+  const handleReorder = async (planId: string, direction: 'up' | 'down') => {
+    const currentIndex = plans.findIndex(p => p.id === planId);
+    if (currentIndex === -1) return;
+
+    const newPlans = [...plans];
+    if (direction === 'up' && currentIndex > 0) {
+      [newPlans[currentIndex], newPlans[currentIndex - 1]] = [newPlans[currentIndex - 1], newPlans[currentIndex]];
+    } else if (direction === 'down' && currentIndex < newPlans.length - 1) {
+      [newPlans[currentIndex], newPlans[currentIndex + 1]] = [newPlans[currentIndex + 1], newPlans[currentIndex]];
+    }
+
+    try {
+      await reorderPlans(newPlans.map(p => p.id), currentUser.id, currentUser.email);
+      toast({
+        title: "Éxito",
+        description: "Orden actualizado correctamente"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      price: 0,
+      currency: 'USD',
+      period: 'monthly',
+      features: [''],
+      isActive: true,
+      isPopular: false,
+      icon: 'zap',
+      color: 'blue',
+      maxUsers: 5,
+      maxProjects: 10,
+      ctaText: 'Comenzar Prueba Gratuita'
     });
-    setIsEdit(true);
-    setModalOpen(true);
-  };
-  const handleOpenDetails = (plan) => {
-    setSelectedPlan(plan);
-    setIsEdit(false);
-    setModalOpen(true);
-  };
-  const handleOpenDelete = (plan) => {
-    setSelectedPlan(plan);
-    setDeleteModalOpen(true);
-  };
-  const handleCloseModal = () => {
-    setModalOpen(false);
-    setSelectedPlan(null);
-  };
-  const handleCloseDelete = () => {
-    setDeleteModalOpen(false);
-    setSelectedPlan(null);
-  };
-  const handleSave = () => {
-    // Validaciones
-    if (!form.name.trim()) {
-      setErrorModal({ open: true, message: 'El nombre del plan es obligatorio.' });
-      return;
-    }
-    if (form.name.length < 3 || form.name.length > 30) {
-      setErrorModal({ open: true, message: 'El nombre debe tener entre 3 y 30 caracteres.' });
-      return;
-    }
-    if (!form.price || isNaN(Number(form.price)) || Number(form.price) < 0) {
-      setErrorModal({ open: true, message: 'El precio debe ser un número positivo.' });
-      return;
-    }
-    if (form.features.length === 0 || form.features.some(f => !f.trim())) {
-      setErrorModal({ open: true, message: 'Debes agregar al menos una característica y no pueden estar vacías.' });
-      return;
-    }
-    // Validar nombre único
-    const nameExists = plans.some(p => p.name.toLowerCase() === form.name.trim().toLowerCase() && (!isEdit || p.id !== form.id));
-    if (nameExists) {
-      setErrorModal({ open: true, message: 'Ya existe un plan con ese nombre.' });
-      return;
-    }
-    if (isEdit) {
-      setPlans(plans.map(p => p.id === form.id ? {
-        ...form,
-        price: parseFloat(form.price),
-        features: form.features.filter(f => f.trim() !== '')
-      } : p));
-      setSuccessModal({ open: true, message: '¡Plan actualizado correctamente!' });
-    } else {
-      setPlans([
-        ...plans,
-        {
-          ...form,
-          id: form.name.toLowerCase().replace(/ /g, '-'),
-          price: parseFloat(form.price),
-          features: form.features.filter(f => f.trim() !== '')
-        }
-      ]);
-      setSuccessModal({ open: true, message: '¡Plan creado correctamente!' });
-    }
-    setModalOpen(false);
-    setSelectedPlan(null);
-  };
-  const handleDelete = () => {
-    setPlans(plans.filter(p => p.id !== selectedPlan.id));
-    setDeleteModalOpen(false);
-    setSelectedPlan(null);
-    setSuccessModal({ open: true, message: '¡Plan eliminado correctamente!' });
-  };
-  const handleFormChange = (e, idx = null) => {
-    const { name, value } = e.target;
-    if (name === 'features' && idx !== null) {
-      const newFeatures = [...form.features];
-      newFeatures[idx] = value;
-      setForm({ ...form, features: newFeatures });
-    } else {
-      setForm({ ...form, [name]: value });
-    }
-  };
-  const handleAddFeature = () => setForm({ ...form, features: [...form.features, ''] });
-  const handleRemoveFeature = (idx) => setForm({ ...form, features: form.features.filter((_, i) => i !== idx) });
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "Completed": return <Badge className="bg-green-500 text-white hover:bg-green-600">Completado</Badge>;
-      case "Failed": return <Badge variant="destructive">Fallido</Badge>;
-      default: return <Badge variant="outline">{status}</Badge>;
-    }
   };
 
-  const handleOpenPmCreate = () => {
-    setPmForm({ id: '', name: '', type: '', fields: [{ label: '', value: '' }] });
-    setIsPmEdit(false);
-    setPmModalOpen(true);
-  };
-  const handleOpenPmEdit = (pm) => {
-    setPmForm({ ...pm, fields: pm.fields.map(f => ({ ...f })) });
-    setIsPmEdit(true);
-    setPmModalOpen(true);
-  };
-  const handleOpenPmDelete = (pm) => {
-    setSelectedPm(pm);
-    setPmDeleteModalOpen(true);
-  };
-  const handleClosePmModal = () => {
-    setPmModalOpen(false);
-    setSelectedPm(null);
-  };
-  const handleClosePmDelete = () => {
-    setPmDeleteModalOpen(false);
-    setSelectedPm(null);
-  };
-  const handlePmFormChange = (e, idx = null) => {
-    const { name, value } = e.target;
-    if (name === 'fields' && idx !== null) {
-      const newFields = [...pmForm.fields];
-      newFields[idx].value = value;
-      setPmForm({ ...pmForm, fields: newFields });
-    } else {
-      setPmForm({ ...pmForm, [name]: value });
-    }
-  };
-  const handlePmFieldLabelChange = (e, idx) => {
-    const newFields = [...pmForm.fields];
-    newFields[idx].label = e.target.value;
-    setPmForm({ ...pmForm, fields: newFields });
-  };
-  const handleAddPmField = () => setPmForm({ ...pmForm, fields: [...pmForm.fields, { label: '', value: '' }] });
-  const handleRemovePmField = (idx) => setPmForm({ ...pmForm, fields: pmForm.fields.filter((_, i) => i !== idx) });
-  const handlePmSave = () => {
-    if (!pmForm.name.trim()) {
-      setPmErrorModal({ open: true, message: 'El nombre del método de pago es obligatorio.' });
-      return;
-    }
-    if (!pmForm.type.trim()) {
-      setPmErrorModal({ open: true, message: 'El tipo de método de pago es obligatorio.' });
-      return;
-    }
-    if (pmForm.fields.length === 0 || pmForm.fields.some(f => !f.label.trim())) {
-      setPmErrorModal({ open: true, message: 'Debes agregar al menos un campo y todos deben tener nombre.' });
-      return;
-    }
-    const nameExists = paymentMethods.some(pm => pm.name.toLowerCase() === pmForm.name.trim().toLowerCase() && (!isPmEdit || pm.id !== pmForm.id));
-    if (nameExists) {
-      setPmErrorModal({ open: true, message: 'Ya existe un método de pago con ese nombre.' });
-      return;
-    }
-    if (isPmEdit) {
-      setPaymentMethods(paymentMethods.map(pm => pm.id === pmForm.id ? { ...pmForm, id: pmForm.name.toLowerCase().replace(/ /g, '-') } : pm));
-      setPmSuccessModal({ open: true, message: '¡Método de pago actualizado correctamente!' });
-    } else {
-      setPaymentMethods([
-        ...paymentMethods,
-        { ...pmForm, id: pmForm.name.toLowerCase().replace(/ /g, '-') }
-      ]);
-      setPmSuccessModal({ open: true, message: '¡Método de pago creado correctamente!' });
-    }
-    setPmModalOpen(false);
-    setSelectedPm(null);
-  };
-  const handlePmDelete = () => {
-    setPaymentMethods(paymentMethods.filter(pm => pm.id !== selectedPm.id));
-    setPmDeleteModalOpen(false);
-    setSelectedPm(null);
-    setPmSuccessModal({ open: true, message: '¡Método de pago eliminado correctamente!' });
+  const openEditForm = (plan: LandingPlan) => {
+    setFormData({
+      name: plan.name,
+      description: plan.description,
+      price: plan.price,
+      currency: plan.currency,
+      period: plan.period,
+      features: plan.features,
+      isActive: plan.isActive,
+      isPopular: plan.isPopular,
+      icon: plan.icon,
+      color: plan.color,
+      maxUsers: plan.maxUsers,
+      maxProjects: plan.maxProjects,
+      ctaText: plan.ctaText
+    });
+    startEditing(plan);
   };
 
-  if (!isMounted) {
-    return null; // or a loading skeleton
+  const getIconComponent = (iconValue: string) => {
+    const iconData = PLAN_ICONS.find(icon => icon.value === iconValue);
+    return iconData ? iconData.icon : Zap;
+  };
+
+  const getColorClass = (colorValue: string) => {
+    const colorData = PLAN_COLORS.find(color => color.value === colorValue);
+    return colorData ? colorData.class : 'bg-blue-500';
+  };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <div className="text-2xl font-bold mb-4">Cargando planes...</div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-primary">Suscripciones</h1>
-        <p className="text-lg text-muted-foreground">Descripción de la página de suscripciones</p>
+    <div className="container mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Gestión de Planes de Suscripción</h1>
+          <p className="text-gray-600 mt-2">
+            Administra los planes que se muestran en la página principal
+          </p>
+        </div>
+        <Button onClick={startCreating} className="bg-blue-600 hover:bg-blue-700">
+          <Plus className="w-4 h-4 mr-2" />
+          Crear Plan
+        </Button>
       </div>
 
-      {/* Subscription Plans Card */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="flex items-center gap-2"><Gem className="h-5 w-5" /> Título de la sección de planes</CardTitle>
-          <Button variant="outline" size="sm" onClick={handleOpenCreate}><Plus className="h-4 w-4 mr-1" /> Nuevo plan</Button>
-        </CardHeader>
-        <CardContent className="grid gap-6 md:grid-cols-3">
-          {plans.map(plan => (
-            <Card key={plan.id} className="flex flex-col">
-              <CardHeader>
-                <CardTitle>{plan.name}</CardTitle>
-                <p className="text-2xl font-bold text-primary">${plan.price} USD/mes</p>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  {plan.features.map((feature, index) => (
-                    <li key={index} className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-              <CardFooter className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => handleOpenDetails(plan)}>
-                  Ver detalles
-                </Button>
-                <Button variant="outline" className="flex-1" onClick={() => handleOpenEdit(plan)}>
-                  <Edit2 className="h-4 w-4 mr-1" /> Editar
-                </Button>
-                <Button variant="destructive" className="flex-1" onClick={() => handleOpenDelete(plan)}>
-                  <Trash2 className="h-4 w-4 mr-1" /> Eliminar
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* Payment Methods Card */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5" /> Título de la sección de métodos de pago</CardTitle>
-          <Button variant="outline" size="sm" onClick={handleOpenPmCreate}><Plus className="h-4 w-4 mr-1" /> Nuevo método</Button>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {paymentMethods.map((pm, idx) => (
-            <div key={pm.id} className="space-y-4 p-4 border rounded-lg">
-              <div className="flex items-center justify-between">
-                <Label className="text-lg font-semibold">{pm.name}</Label>
-                <span className="text-xs text-muted-foreground">{pm.type}</span>
-                <Button variant="outline" size="icon" onClick={() => handleOpenPmEdit(pm)}><Edit2 className="h-4 w-4" /></Button>
-                <Button variant="destructive" size="icon" onClick={() => handleOpenPmDelete(pm)}><Trash2 className="h-4 w-4" /></Button>
-              </div>
-              {pm.fields.map((field, fidx) => (
-                <div key={fidx} className="space-y-2">
-                  <Label>{field.label}</Label>
-                  <Input value={field.value} readOnly disabled />
-                </div>
-              ))}
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-blue-600">{plans.length}</div>
+            <div className="text-sm text-gray-600">Total de Planes</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-green-600">
+              {plans.filter(p => p.isActive).length}
             </div>
-          ))}
-        </CardContent>
-      </Card>
+            <div className="text-sm text-gray-600">Planes Activos</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-yellow-600">
+              {plans.filter(p => p.isPopular).length}
+            </div>
+            <div className="text-sm text-gray-600">Planes Populares</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-purple-600">
+              ${plans.reduce((sum, p) => sum + p.price, 0).toFixed(2)}
+            </div>
+            <div className="text-sm text-gray-600">Precio Total</div>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* QR Code Management */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><QrCode className="h-5 w-5" /> Título de la sección de códigos QR</CardTitle>
-          <CardDescription>Descripción de la sección de códigos QR</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <Button>Generar QR</Button>
-             {/* TODO: List of generated QRs here */}
-        </CardContent>
-      </Card>
-      
-      {/* Transaction History Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><History className="h-5 w-5" /> Título de la sección de historial de transacciones</CardTitle>
-          <CardDescription>Descripción de la sección de historial de transacciones</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nombre de la empresa</TableHead>
-                <TableHead>Plan</TableHead>
-                <TableHead className="text-right">Monto</TableHead>
-                <TableHead className="hidden sm:table-cell">Fecha</TableHead>
-                <TableHead className="text-center">Estado</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mockTransactions.map((tx) => (
-                <TableRow key={tx.id}>
-                  <TableCell className="font-medium">{tx.company}</TableCell>
-                  <TableCell>{tx.plan}</TableCell>
-                  <TableCell className="text-right">${tx.amount.toFixed(2)}</TableCell>
-                  <TableCell className="hidden sm:table-cell">{format(new Date(tx.date), "PPp")}</TableCell>
-                  <TableCell className="text-center">{getStatusBadge(tx.status)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{isEdit ? 'Editar plan' : selectedPlan ? 'Detalles del plan' : 'Nuevo plan'}</DialogTitle>
-            <DialogDescription>
-              {isEdit || !selectedPlan ? (
-                <div>
-                  <form className="space-y-4" onSubmit={e => { e.preventDefault(); handleSave(); }}>
-                    <div>
-                      <Label>Nombre del plan</Label>
-                      <Input name="name" value={form.name} onChange={handleFormChange} required />
-                    </div>
-                    <div>
-                      <Label>Precio (USD/mes)</Label>
-                      <Input name="price" type="number" min="0" value={form.price} onChange={handleFormChange} required />
-                    </div>
-                    <div>
-                      <Label>Características</Label>
-                      {form.features.map((feature, idx) => (
-                        <div key={idx} className="flex gap-2 mb-2">
-                          <Input name="features" value={feature} onChange={e => handleFormChange(e, idx)} required />
-                          {form.features.length > 1 && (
-                            <Button type="button" variant="destructive" size="icon" onClick={() => handleRemoveFeature(idx)}><Trash2 className="h-4 w-4" /></Button>
-                          )}
+      {/* Plans List */}
+      <div className="space-y-4">
+        <AnimatePresence>
+          {plans.map((plan, index) => {
+            const IconComponent = getIconComponent(plan.icon);
+            const colorClass = getColorClass(plan.color);
+            
+            return (
+              <motion.div
+                key={plan.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className={`w-12 h-12 rounded-full ${colorClass} flex items-center justify-center text-white`}>
+                          <IconComponent size={24} />
                         </div>
-                      ))}
-                      <Button type="button" variant="outline" size="sm" onClick={handleAddFeature}>Agregar característica</Button>
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <h3 className="text-xl font-semibold">{plan.name}</h3>
+                            {plan.isPopular && (
+                              <Badge className="bg-yellow-400 text-yellow-900">Popular</Badge>
+                            )}
+                            {!plan.isActive && (
+                              <Badge variant="secondary">Inactivo</Badge>
+                            )}
+                          </div>
+                          <p className="text-gray-600">{plan.description}</p>
+                          <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                            <span>${plan.price}/{plan.period === 'monthly' ? 'mes' : plan.period === 'yearly' ? 'año' : 'único'}</span>
+                            <span>Orden: {plan.order}</span>
+                            <span>{plan.features.length} características</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        {/* Reorder Buttons */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleReorder(plan.id, 'up')}
+                          disabled={index === 0}
+                        >
+                          <ArrowUp className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleReorder(plan.id, 'down')}
+                          disabled={index === plans.length - 1}
+                        >
+                          <ArrowDown className="w-4 h-4" />
+                        </Button>
+
+                        {/* History Button */}
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedPlanForHistory(plan.id)}
+                            >
+                              <History className="w-4 h-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl">
+                            <DialogHeader>
+                              <DialogTitle>Historial de Cambios - {plan.name}</DialogTitle>
+                            </DialogHeader>
+                            {selectedPlanForHistory && (
+                              <PlanHistoryDialog planId={selectedPlanForHistory} />
+                            )}
+                          </DialogContent>
+                        </Dialog>
+
+                        {/* Edit Button */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditForm(plan)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+
+                        {/* Delete Button */}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Eliminar plan?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta acción no se puede deshacer. El plan será marcado como inactivo.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(plan)}>
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
-                    <DialogFooter>
-                      <Button type="submit">{isEdit ? 'Actualizar' : 'Crear'}</Button>
-                      <Button type="button" variant="outline" onClick={handleCloseModal}>Cancelar</Button>
-                    </DialogFooter>
-                  </form>
-                </div>
-              ) : (
-                <>
-                  <div className="text-lg font-bold mb-2">{selectedPlan.name}</div>
-                  <div className="text-primary text-xl font-bold mb-2">${selectedPlan.price} USD/mes</div>
-                  <ul className="space-y-1 text-sm text-muted-foreground mb-2">
-                    {selectedPlan.features.map((feature, idx) => (
-                      <li key={idx}>- {feature}</li>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={isCreating || isEditing} onOpenChange={cancelEdit}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {isCreating ? 'Crear Nuevo Plan' : 'Editar Plan'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Basic Info */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="name">Nombre *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  placeholder="Plan Básico"
+                />
+              </div>
+              <div>
+                <Label htmlFor="price">Precio *</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  value={formData.price}
+                  onChange={(e) => handleInputChange('price', parseFloat(e.target.value) || 0)}
+                  placeholder="29.99"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="description">Descripción *</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+                placeholder="Descripción del plan..."
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="currency">Moneda</Label>
+                <Select value={formData.currency} onValueChange={(value) => handleInputChange('currency', value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD</SelectItem>
+                    <SelectItem value="EUR">EUR</SelectItem>
+                    <SelectItem value="COP">COP</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="period">Período</Label>
+                <Select value={formData.period} onValueChange={(value) => handleInputChange('period', value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PERIODS.map(period => (
+                      <SelectItem key={period.value} value={period.value}>
+                        {period.label}
+                      </SelectItem>
                     ))}
-                  </ul>
-                  <DialogFooter>
-                    <Button onClick={handleCloseModal}>Cerrar</Button>
-                  </DialogFooter>
-                </>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="ctaText">Texto del Botón</Label>
+                <Input
+                  id="ctaText"
+                  value={formData.ctaText}
+                  onChange={(e) => handleInputChange('ctaText', e.target.value)}
+                  placeholder="Comenzar Prueba Gratuita"
+                />
+              </div>
+            </div>
+
+            {/* Visual Settings */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="icon">Ícono</Label>
+                <Select value={formData.icon} onValueChange={(value) => handleInputChange('icon', value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PLAN_ICONS.map(icon => (
+                      <SelectItem key={icon.value} value={icon.value}>
+                        <div className="flex items-center space-x-2">
+                          <span>{icon.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="color">Color</Label>
+                <Select value={formData.color} onValueChange={(value) => handleInputChange('color', value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PLAN_COLORS.map(color => (
+                      <SelectItem key={color.value} value={color.value}>
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-4 h-4 rounded ${color.class}`}></div>
+                          <span>{color.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Limits */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="maxUsers">Límite de Usuarios (-1 = ilimitado)</Label>
+                <Input
+                  id="maxUsers"
+                  type="number"
+                  value={formData.maxUsers}
+                  onChange={(e) => handleInputChange('maxUsers', parseInt(e.target.value) || 0)}
+                  placeholder="5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="maxProjects">Límite de Proyectos (-1 = ilimitado)</Label>
+                <Input
+                  id="maxProjects"
+                  type="number"
+                  value={formData.maxProjects}
+                  onChange={(e) => handleInputChange('maxProjects', parseInt(e.target.value) || 0)}
+                  placeholder="10"
+                />
+              </div>
+            </div>
+
+            {/* Features */}
+            <div>
+              <Label>Características *</Label>
+              <div className="space-y-2">
+                {formData.features?.map((feature, index) => (
+                  <div key={index} className="flex space-x-2">
+                    <Input
+                      value={feature}
+                      onChange={(e) => handleFeatureChange(index, e.target.value)}
+                      placeholder={`Característica ${index + 1}`}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeFeature(index)}
+                      disabled={formData.features?.length === 1}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" onClick={addFeature}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Agregar Característica
+                </Button>
+              </div>
+            </div>
+
+            {/* Switches */}
+            <div className="flex space-x-6">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="isActive"
+                  checked={formData.isActive}
+                  onCheckedChange={(checked) => handleInputChange('isActive', checked)}
+                />
+                <Label htmlFor="isActive">Plan Activo</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="isPopular"
+                  checked={formData.isPopular}
+                  onCheckedChange={(checked) => handleInputChange('isPopular', checked)}
+                />
+                <Label htmlFor="isPopular">Plan Popular</Label>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button variant="outline" onClick={cancelEdit}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSubmit} disabled={isCRUDLoading}>
+              {isCRUDLoading ? 'Guardando...' : (isCreating ? 'Crear Plan' : 'Actualizar Plan')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// Componente para mostrar el historial de cambios
+function PlanHistoryDialog({ planId }: { planId: string }) {
+  const { logs, isLoading, rollbackPlan } = usePlanAuditLogs(planId);
+  
+  // Simular datos del usuario
+  const currentUser = {
+    id: 'superadmin',
+    email: 'superadmin@websapmax.com'
+  };
+
+  const handleRollback = async (auditLogId: string) => {
+    try {
+      await rollbackPlan(auditLogId, currentUser.id, currentUser.email);
+      toast({
+        title: "Éxito",
+        description: "Plan restaurado correctamente"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (isLoading) {
+    return <div className="text-center py-4">Cargando historial...</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {logs.length === 0 ? (
+        <p className="text-gray-500 text-center py-4">No hay historial de cambios</p>
+      ) : (
+        logs.map((log) => (
+          <Card key={log.id} className="p-4">
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Badge variant={log.action === 'created' ? 'default' : log.action === 'updated' ? 'secondary' : 'destructive'}>
+                    {log.action === 'created' ? 'Creado' : log.action === 'updated' ? 'Actualizado' : 'Eliminado'}
+                  </Badge>
+                  <span className="text-sm text-gray-500">
+                    {new Date(log.timestamp).toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 mb-2">
+                  Por: {log.userEmail}
+                </p>
+                {log.details && Object.keys(log.details).length > 0 && (
+                  <div className="text-xs text-gray-500">
+                    <pre className="whitespace-pre-wrap">
+                      {JSON.stringify(log.details, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+              {log.previousData && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleRollback(log.id)}
+                >
+                  Restaurar
+                </Button>
               )}
-            </DialogDescription>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Eliminar plan</DialogTitle>
-            <DialogDescription>
-              ¿Estás seguro de que deseas eliminar el plan "{selectedPlan?.name}"?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="destructive" onClick={handleDelete}>Eliminar</Button>
-            <Button variant="outline" onClick={handleCloseDelete}>Cancelar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={errorModal.open} onOpenChange={open => setErrorModal({ ...errorModal, open })}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600"><AlertTriangle className="h-5 w-5" /> Error</DialogTitle>
-            <DialogDescription>{errorModal.message}</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setErrorModal({ open: false, message: '' })}>Cerrar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={successModal.open} onOpenChange={open => setSuccessModal({ ...successModal, open })}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-green-600"><CheckCircle className="h-5 w-5" /> Éxito</DialogTitle>
-            <DialogDescription>{successModal.message}</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSuccessModal({ open: false, message: '' })}>Cerrar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal Crear/Editar método de pago */}
-      <Dialog open={pmModalOpen} onOpenChange={setPmModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{isPmEdit ? 'Editar método de pago' : 'Nuevo método de pago'}</DialogTitle>
-            <DialogDescription>
-              <form className="space-y-4" onSubmit={e => { e.preventDefault(); handlePmSave(); }}>
-                <div>
-                  <Label>Nombre</Label>
-                  <Input name="name" value={pmForm.name} onChange={handlePmFormChange} required />
-                </div>
-                <div>
-                  <Label>Tipo</Label>
-                  <Input name="type" value={pmForm.type} onChange={handlePmFormChange} required />
-                </div>
-                <div>
-                  <Label>Campos configurables</Label>
-                  {pmForm.fields.map((field, idx) => (
-                    <div key={idx} className="flex gap-2 mb-2">
-                      <Input name="fieldLabel" value={field.label} onChange={e => handlePmFieldLabelChange(e, idx)} placeholder="Nombre del campo" required />
-                      <Input name="fields" value={field.value} onChange={e => handlePmFormChange(e, idx)} placeholder="Valor" />
-                      {pmForm.fields.length > 1 && (
-                        <Button type="button" variant="destructive" size="icon" onClick={() => handleRemovePmField(idx)}><Trash2 className="h-4 w-4" /></Button>
-                      )}
-                    </div>
-                  ))}
-                  <Button type="button" variant="outline" size="sm" onClick={handleAddPmField}>Agregar campo</Button>
-                </div>
-                <DialogFooter>
-                  <Button type="submit">{isPmEdit ? 'Actualizar' : 'Crear'}</Button>
-                  <Button type="button" variant="outline" onClick={handleClosePmModal}>Cancelar</Button>
-                </DialogFooter>
-              </form>
-            </DialogDescription>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal Confirmar Eliminación método de pago */}
-      <Dialog open={pmDeleteModalOpen} onOpenChange={setPmDeleteModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Eliminar método de pago</DialogTitle>
-            <DialogDescription>
-              ¿Estás seguro de que deseas eliminar el método de pago "{selectedPm?.name}"?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="destructive" onClick={handlePmDelete}>Eliminar</Button>
-            <Button variant="outline" onClick={handleClosePmDelete}>Cancelar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal de error y éxito para métodos de pago */}
-      <Dialog open={pmErrorModal.open} onOpenChange={open => setPmErrorModal({ ...pmErrorModal, open })}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600"><AlertTriangle className="h-5 w-5" /> Error</DialogTitle>
-            <DialogDescription>{pmErrorModal.message}</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPmErrorModal({ open: false, message: '' })}>Cerrar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <Dialog open={pmSuccessModal.open} onOpenChange={open => setPmSuccessModal({ ...pmSuccessModal, open })}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-green-600"><CheckCircle className="h-5 w-5" /> Éxito</DialogTitle>
-            <DialogDescription>{pmSuccessModal.message}</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPmSuccessModal({ open: false, message: '' })}>Cerrar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </div>
+          </Card>
+        ))
+      )}
     </div>
   );
 }
