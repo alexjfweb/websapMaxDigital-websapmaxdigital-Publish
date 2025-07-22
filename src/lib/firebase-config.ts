@@ -4,22 +4,24 @@
 export const firebaseConfig = {
   // Configuración de producción (reemplaza con tus credenciales reales)
   production: {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'BB7zCrAz2u0wJBGuhAAVuoSk6Hx3lYv8dTGweV8TD_7oHCYhj56iKGxfogwuLiMREVq3PMLRnOIQU8Fma4Gt2YA',
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'websapmaxdigital.firebaseapp.com',
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'websapmaxdigital',
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'websapmaxdigital.appspot.com',
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '1069538883515',
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:1069538883515:web:a2b165b485292444747b2c',
+    apiKey: "AIzaSyC3UzUVh_OPavejyo-kviYVX_Zy9494yjg",
+    authDomain: "websapmax.firebaseapp.com",
+    projectId: "websapmax",
+    storageBucket: "websapmax.appspot.com",
+    messagingSenderId: "560613070255",
+    appId: "1:560613070255:web:7ce75870dbe6b19a084b5a",
+    measurementId: "G-DD5JWPV701"
   },
   
   // Configuración de desarrollo (fallback)
   development: {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'BB7zCrAz2u0wJBGuhAAVuoSk6Hx3lYv8dTGweV8TD_7oHCYhj56iKGxfogwuLiMREVq3PMLRnOIQU8Fma4Gt2YA',
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'websapmaxdigital.firebaseapp.com',
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'websapmaxdigital',
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'websapmaxdigital.appspot.com',
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '1069538883515',
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:1069538883515:web:a2b165b485292444747b2c',
+    apiKey: "AIzaSyC3UzUVh_OPavejyo-kviYVX_Zy9494yjg",
+    authDomain: "websapmax.firebaseapp.com",
+    projectId: "websapmax",
+    storageBucket: "websapmax.appspot.com",
+    messagingSenderId: "560613070255",
+    appId: "1:560613070255:web:7ce75870dbe6b19a084b5a",
+    measurementId: "G-DD5JWPV701"
   }
 };
 
@@ -34,9 +36,18 @@ export const getFirebaseConfig = () => {
   
   if (hasEnvVars) {
     console.log('✅ Firebase: Usando configuración de variables de entorno');
-    return firebaseConfig.production;
+    // Si usas .env.local, asegúrate que las variables coincidan
+    return {
+        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+        appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+        measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    };
   } else {
-    console.log('⚠️ Firebase: Usando configuración de desarrollo');
+    console.log('⚠️ Firebase: Usando configuración de desarrollo desde firebase-config.ts');
     return firebaseConfig.development;
   }
 };
