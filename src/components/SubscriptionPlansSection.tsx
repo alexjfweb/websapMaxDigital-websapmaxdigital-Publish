@@ -88,6 +88,8 @@ const PlanSkeleton = () => (
 export default function SubscriptionPlansSection() {
   const { plans, isLoading, isError, error } = usePublicLandingPlans();
 
+  const plansToRender = isLoading ? Array(3).fill({}) : plans;
+
   return (
     <motion.section
       key="planes"
@@ -102,24 +104,26 @@ export default function SubscriptionPlansSection() {
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
-        {isLoading ? (
-          <>
-            <PlanSkeleton />
-            <PlanSkeleton />
-            <PlanSkeleton />
-          </>
-        ) : isError ? (
+        {isError && (
           <div className="col-span-full text-red-600 text-center bg-red-50 p-8 rounded-lg">
             <h3 className="text-xl font-semibold">Error al cargar los planes</h3>
             <p>{error?.message || 'Ocurrió un error inesperado.'}</p>
           </div>
-        ) : plans.length === 0 ? (
-          <div className="col-span-full text-gray-600 text-center bg-gray-50 p-8 rounded-lg">
-            <h3 className="text-xl font-semibold">No hay planes disponibles</h3>
-            <p>Actualmente no hay planes de suscripción para mostrar. Por favor, vuelve más tarde.</p>
-          </div>
-        ) : (
-          plans.map((plan, idx) => {
+        )}
+        
+        {!isError && plansToRender.length === 0 && !isLoading && (
+            <div className="col-span-full text-gray-600 text-center bg-gray-50 p-8 rounded-lg">
+              <h3 className="text-xl font-semibold">No hay planes disponibles</h3>
+              <p>Actualmente no hay planes de suscripción para mostrar. Por favor, vuelve más tarde.</p>
+            </div>
+        )}
+        
+        {!isError && (plansToRender.length > 0 || isLoading) &&
+          plansToRender.map((plan, idx) => {
+            if (isLoading) {
+              return <PlanSkeleton key={`skeleton-${idx}`} />;
+            }
+            
             const IconComponent = getPlanIcon(plan.icon);
             const colorClass = getPlanColorClass(plan.color, 'bg');
             const borderColorClass = getPlanColorClass(plan.color, 'border');
@@ -166,7 +170,7 @@ export default function SubscriptionPlansSection() {
               </Card>
             );
           })
-        )}
+        }
       </div>
     </motion.section>
   );
