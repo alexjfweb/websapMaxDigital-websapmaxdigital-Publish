@@ -16,8 +16,8 @@ interface ApiResponse<T> {
 const fetcher = async (url: string) => {
   const response = await fetch(url);
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Error en la solicitud');
+    const errorData = await response.json().catch(() => ({ error: 'Error en la solicitud a la API' }));
+    throw new Error(errorData.error || 'Error en la solicitud');
   }
   const result: LandingPlan[] = await response.json();
   return result;
@@ -26,11 +26,12 @@ const fetcher = async (url: string) => {
 
 // Hook principal para obtener planes de la landing
 export function usePublicLandingPlans() {
-  const { data, error, isLoading } = useSWR<LandingPlan[]>(
+  const { data, error, isLoading } = useSWR<LandingPlan[], Error>(
     '/api/landing-plans',
     fetcher,
     {
-      revalidateOnFocus: false, // Opcional: ajustar según necesidad
+      revalidateOnFocus: false,
+      shouldRetryOnError: false, // Evita reintentos que pueden ocultar el estado inicial
     }
   );
 
@@ -38,6 +39,6 @@ export function usePublicLandingPlans() {
     plans: data || [],
     isLoading,
     isError: !!error,
-    error: error?.message,
+    error: error,
   };
 }

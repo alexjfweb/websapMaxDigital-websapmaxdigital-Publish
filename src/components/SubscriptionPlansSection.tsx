@@ -4,6 +4,7 @@ import { usePublicLandingPlans } from '@/hooks/use-plans';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Check, 
   Star, 
@@ -49,6 +50,40 @@ const getPlanColorClass = (colorValue: string, type: 'bg' | 'border' | 'text') =
   return `text-${colorValue}-500`; // Asumiendo que los colores de texto existen
 };
 
+const PlanSkeleton = () => (
+  <Card className="relative overflow-hidden transition-all duration-300 flex flex-col">
+    <CardHeader className="text-center pb-4">
+      <div className="flex items-center justify-center mb-4">
+        <Skeleton className="w-12 h-12 rounded-full mr-3" />
+        <Skeleton className="h-8 w-32" />
+      </div>
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-3/4 mx-auto mt-2" />
+    </CardHeader>
+    <CardContent className="text-center pb-6 flex-grow">
+      <div className="mb-6">
+        <Skeleton className="h-10 w-24 mx-auto mb-2" />
+      </div>
+      <div className="space-y-3 mb-8">
+        <div className="flex items-center text-left">
+          <Skeleton className="h-5 w-5 rounded-full mr-3" />
+          <Skeleton className="h-4 w-full" />
+        </div>
+        <div className="flex items-center text-left">
+          <Skeleton className="h-5 w-5 rounded-full mr-3" />
+          <Skeleton className="h-4 w-4/5" />
+        </div>
+        <div className="flex items-center text-left">
+          <Skeleton className="h-5 w-5 rounded-full mr-3" />
+          <Skeleton className="h-4 w-full" />
+        </div>
+      </div>
+    </CardContent>
+    <div className="px-6 pb-6 mt-auto">
+      <Skeleton className="h-12 w-full rounded-lg" />
+    </div>
+  </Card>
+);
 
 export default function SubscriptionPlansSection() {
   const { plans, isLoading, isError, error } = usePublicLandingPlans();
@@ -66,24 +101,25 @@ export default function SubscriptionPlansSection() {
         Elige el plan que mejor se adapte a tus necesidades. Todos nuestros planes están diseñados para escalar contigo.
       </p>
 
-      {isLoading ? (
-        <div className="flex flex-col items-center justify-center h-40">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-          <p className="mt-4 text-lg text-gray-600">Cargando planes...</p>
-        </div>
-      ) : isError ? (
-        <div className="text-red-600 text-center bg-red-50 p-8 rounded-lg">
-          <h3 className="text-xl font-semibold">Error al cargar los planes</h3>
-          <p>{error}</p>
-        </div>
-      ) : plans.length === 0 ? (
-        <div className="text-gray-600 text-center bg-gray-50 p-8 rounded-lg">
-          <h3 className="text-xl font-semibold">No hay planes disponibles</h3>
-          <p>Actualmente no hay planes de suscripción para mostrar. Por favor, vuelve más tarde.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
-          {plans.map((plan, idx) => {
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
+        {isLoading ? (
+          <>
+            <PlanSkeleton />
+            <PlanSkeleton />
+            <PlanSkeleton />
+          </>
+        ) : isError ? (
+          <div className="col-span-full text-red-600 text-center bg-red-50 p-8 rounded-lg">
+            <h3 className="text-xl font-semibold">Error al cargar los planes</h3>
+            <p>{error?.message || 'Ocurrió un error inesperado.'}</p>
+          </div>
+        ) : plans.length === 0 ? (
+          <div className="col-span-full text-gray-600 text-center bg-gray-50 p-8 rounded-lg">
+            <h3 className="text-xl font-semibold">No hay planes disponibles</h3>
+            <p>Actualmente no hay planes de suscripción para mostrar. Por favor, vuelve más tarde.</p>
+          </div>
+        ) : (
+          plans.map((plan, idx) => {
             const IconComponent = getPlanIcon(plan.icon);
             const colorClass = getPlanColorClass(plan.color, 'bg');
             const borderColorClass = getPlanColorClass(plan.color, 'border');
@@ -129,9 +165,9 @@ export default function SubscriptionPlansSection() {
                 </div>
               </Card>
             );
-          })}
-        </div>
-      )}
+          })
+        )}
+      </div>
     </motion.section>
   );
 }
