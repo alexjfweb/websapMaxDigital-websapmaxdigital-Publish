@@ -4,22 +4,22 @@
 export const firebaseConfig = {
   // Configuración de producción (reemplaza con tus credenciales reales)
   production: {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyC3UzUVh_OPavejyo-kviYVX_Zy9494yjg',
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'websapmaxdigital-demo.firebaseapp.com',
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'websapmaxdigital-demo',
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'websapmaxdigital-demo.appspot.com',
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '123456789012',
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:123456789012:web:abcdef1234567890',
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'BB7zCrAz2u0wJBGuhAAVuoSk6Hx3lYv8dTGweV8TD_7oHCYhj56iKGxfogwuLiMREVq3PMLRnOIQU8Fma4Gt2YA',
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'websapmaxdigital.firebaseapp.com',
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'websapmaxdigital',
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'websapmaxdigital.appspot.com',
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '1069538883515',
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:1069538883515:web:a2b165b485292444747b2c',
   },
   
   // Configuración de desarrollo (fallback)
   development: {
-    apiKey: 'AIzaSyC3UzUVh_OPavejyo-kviYVX_Zy9494yjg',
-    authDomain: 'websapmaxdigital-demo.firebaseapp.com',
-    projectId: 'websapmaxdigital-demo',
-    storageBucket: 'websapmaxdigital-demo.appspot.com',
-    messagingSenderId: '123456789012',
-    appId: '1:123456789012:web:abcdef1234567890',
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'BB7zCrAz2u0wJBGuhAAVuoSk6Hx3lYv8dTGweV8TD_7oHCYhj56iKGxfogwuLiMREVq3PMLRnOIQU8Fma4Gt2YA',
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'websapmaxdigital.firebaseapp.com',
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'websapmaxdigital',
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'websapmaxdigital.appspot.com',
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '1069538883515',
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:1069538883515:web:a2b165b485292444747b2c',
   }
 };
 
@@ -39,4 +39,4 @@ export const getFirebaseConfig = () => {
     console.log('⚠️ Firebase: Usando configuración de desarrollo');
     return firebaseConfig.development;
   }
-}; 
+};

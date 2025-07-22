@@ -12,10 +12,17 @@ export function useLandingPlans() {
     setError(null);
 
     // Suscripción en tiempo real
-    const unsubscribe = landingPlansService.subscribeToPlans((plans) => {
-      setPlans(plans);
-      setIsLoading(false);
-    });
+    const unsubscribe = landingPlansService.subscribeToPlans(
+      (plans) => {
+        setPlans(plans);
+        setIsLoading(false);
+      },
+      (err) => {
+        console.error("Error fetching landing plans:", err);
+        setError("No se pudieron cargar los planes.");
+        setIsLoading(false);
+      }
+    );
 
     // Cleanup al desmontar
     return () => {
@@ -29,7 +36,7 @@ export function useLandingPlans() {
     error,
     refetch: () => {
       setIsLoading(true);
-      landingPlansService.getPlans().then(setPlans).catch(setError).finally(() => setIsLoading(false));
+      landingPlansService.getPlans().then(setPlans).catch((err) => setError(err.message)).finally(() => setIsLoading(false));
     }
   };
 }
@@ -52,7 +59,7 @@ export function useLandingPlan(id: string) {
 
     landingPlansService.getPlanById(id)
       .then(setPlan)
-      .catch(setError)
+      .catch((err) => setError(err.message))
       .finally(() => setIsLoading(false));
   }, [id]);
 
@@ -175,7 +182,7 @@ export function usePlanAuditLogs(planId: string) {
 
     landingPlansService.getPlanAuditLogs(planId)
       .then(setLogs)
-      .catch(setError)
+      .catch((err) => setError(err.message))
       .finally(() => setIsLoading(false));
   }, [planId]);
 
@@ -243,4 +250,4 @@ export function usePlanState() {
     startCreating,
     cancelEdit
   };
-} 
+}
