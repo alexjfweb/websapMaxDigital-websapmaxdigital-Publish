@@ -182,3 +182,17 @@ export interface Order {
     tableNumber: number;
   };
 }
+
+// Definición de una Reserva
+export interface Reservation {
+  id: string;
+  companyId: string;
+  customerName: string;
+  customerPhone: string;
+  dateTime: string; // ISO date string
+  numberOfGuests: number;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  notes?: string;
+  createdAt: string; // ISO date string
+  updatedAt: string; // ISO date string
+}

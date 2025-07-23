@@ -1,8 +1,9 @@
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, Eye, Search, Filter, CalendarDays, PlusCircle } from "lucide-react";
+import { Eye, Search, Filter, CalendarDays, PlusCircle, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -11,28 +12,23 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import ReservationForm from '@/components/forms/reservation-form';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-
-// Mock Data for Reservations (can be same as admin or filtered for employee view)
-const mockReservations = [
-  { id: "res-e1", customerName: "Alice Wonderland", date: "2024-08-15T19:00:00Z", guests: 4, phone: "555-0101", status: "confirmed", notes: "Window seat preferred" },
-  { id: "res-e2", customerName: "Bob The Builder", date: "2024-08-16T20:30:00Z", guests: 2, phone: "555-0102", status: "pending", notes: "Birthday celebration" },
-  { id: "res-e3", customerName: "Charlie Brown", date: "2024-08-15T18:00:00Z", guests: 6, phone: "555-0103", status: "cancelled", notes: "" },
-];
+import { useReservations } from "@/hooks/use-reservations";
+import { reservationService } from "@/services/reservation-service";
+import { useToast } from "@/hooks/use-toast";
+import type { Reservation } from "@/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function EmployeeReservationsPage() {
-  const [isMounted, setIsMounted] = useState(false);
+  const companyId = "websapmax"; // Hardcoded for now
+  const { reservations, isLoading, error, refreshReservations } = useReservations(companyId);
+  const { toast } = useToast();
+
   const [open, setOpen] = useState(false);
-  const reservations = mockReservations;
-  const [selectedReservation, setSelectedReservation] = useState<any>(null);
+  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [openDetail, setOpenDetail] = useState(false);
-  const [openConfirm, setOpenConfirm] = useState(false);
-  const [openCancel, setOpenCancel] = useState(false);
+  const [actionToConfirm, setActionToConfirm] = useState<{ action: 'confirm' | 'cancel', reservation: Reservation } | null>(null);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: Reservation['status']) => {
     switch (status) {
       case "confirmed": return <Badge className="bg-green-500 text-white hover:bg-green-600">Confirmada</Badge>;
       case "pending": return <Badge className="bg-yellow-500 text-white hover:bg-yellow-600">Pendiente</Badge>;
@@ -41,14 +37,92 @@ export default function EmployeeReservationsPage() {
     }
   };
 
-  const handleOpenDetail = (reservation: any) => { setSelectedReservation(reservation); setOpenDetail(true); };
-  const handleOpenConfirm = (reservation: any) => { setSelectedReservation(reservation); setOpenConfirm(true); };
-  const handleOpenCancel = (reservation: any) => { setSelectedReservation(reservation); setOpenCancel(true); };
-  const handleCloseModals = () => { setOpenDetail(false); setOpenConfirm(false); setOpenCancel(false); setSelectedReservation(null); };
+  const handleOpenDetail = (reservation: Reservation) => { setSelectedReservation(reservation); setOpenDetail(true); };
+  
+  const handleUpdateStatus = async (reservationId: string, status: 'confirmed' | 'cancelled') => {
+    try {
+      await reservationService.updateReservationStatus(reservationId, status);
+      toast({
+        title: "Estado actualizado",
+        description: `La reserva ha sido marcada como ${status === 'confirmed' ? 'confirmada' : 'cancelada'}.`,
+        variant: "success",
+      });
+      await refreshReservations();
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado.",
+        variant: "destructive",
+      });
+    }
+    setActionToConfirm(null);
+  };
+  
+  const renderTableBody = () => {
+    if (isLoading) {
+      return Array.from({ length: 5 }).map((_, index) => (
+        <TableRow key={index}>
+          <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+          <TableCell className="text-center"><Skeleton className="h-4 w-12 mx-auto" /></TableCell>
+          <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-full" /></TableCell>
+          <TableCell className="text-center"><Skeleton className="h-6 w-24 mx-auto" /></TableCell>
+          <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+        </TableRow>
+      ));
+    }
+    
+    if (error) {
+       return (
+        <TableRow>
+          <TableCell colSpan={6} className="text-center text-red-500 py-8">
+            <div className="flex flex-col items-center gap-2">
+              <AlertCircle className="h-8 w-8" />
+              <span className="font-semibold">Error al cargar las reservas.</span>
+            </div>
+          </TableCell>
+        </TableRow>
+      );
+    }
+    
+    if (reservations.length === 0) {
+      return (
+        <TableRow>
+          <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+            No hay reservas disponibles.
+          </TableCell>
+        </TableRow>
+      );
+    }
+    
+    return reservations.map((reservation) => (
+      <TableRow key={reservation.id}>
+        <TableCell className="font-medium">{reservation.customerName}</TableCell>
+        <TableCell>{format(new Date(reservation.dateTime), "MMM d, yyyy 'at' h:mm a")}</TableCell>
+        <TableCell className="text-center">{reservation.numberOfGuests}</TableCell>
+        <TableCell className="hidden sm:table-cell text-xs text-muted-foreground truncate max-w-xs">
+          {reservation.notes || 'Sin notas'}
+        </TableCell>
+        <TableCell className="text-center">{getStatusBadge(reservation.status)}</TableCell>
+        <TableCell className="text-right">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="hover:text-primary" title="Acciones">
+                <span className="sr-only">Acciones</span>
+                <Eye className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => handleOpenDetail(reservation)}>Ver detalles</DropdownMenuItem>
+              {reservation.status === 'pending' && <DropdownMenuItem onSelect={() => setActionToConfirm({ action: 'confirm', reservation })}>Confirmar</DropdownMenuItem>}
+              {reservation.status === 'pending' && <DropdownMenuItem onSelect={() => setActionToConfirm({ action: 'cancel', reservation })}>Cancelar</DropdownMenuItem>}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TableCell>
+      </TableRow>
+    ));
+  };
 
-  if (!isMounted) {
-    return null; // or a loading skeleton
-  }
 
   return (
     <div className="space-y-8">
@@ -73,23 +147,10 @@ export default function EmployeeReservationsPage() {
         </Dialog>
       </div>
 
-
       <Card>
         <CardHeader>
-          <CardTitle>Reservas del empleado</CardTitle>
+          <CardTitle>Reservas</CardTitle>
           <CardDescription>Resumen de tus reservas</CardDescription>
-          <div className="flex flex-col md:flex-row gap-2 pt-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Buscar por nombre o teléfono" className="pl-8" />
-            </div>
-            <Button variant="outline">
-              <Filter className="mr-2 h-4 w-4" /> Filtrar por estado
-            </Button>
-             <Button variant="outline">
-              <CalendarDays className="mr-2 h-4 w-4" /> Ver calendario
-            </Button>
-          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -103,108 +164,47 @@ export default function EmployeeReservationsPage() {
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
-              {reservations.map((reservation) => (
-                <TableRow key={reservation.id}>
-                  <TableCell className="font-medium">{reservation.customerName}</TableCell>
-                  <TableCell>{format(new Date(reservation.date), "MMM d, yyyy 'at' h:mm a")}</TableCell>
-                  <TableCell className="text-center">{reservation.guests}</TableCell>
-                  <TableCell className="hidden sm:table-cell text-xs text-muted-foreground truncate max-w-xs">
-                    {reservation.notes || 'Sin notas'}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {getStatusBadge(reservation.status)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-end gap-1">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="hover:text-primary" title="Acciones">
-                            <span className="sr-only">Acciones</span>
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onSelect={() => handleOpenDetail(reservation)}>
-                            Ver detalles
-                          </DropdownMenuItem>
-                          {reservation.status === 'pending' && (
-                            <DropdownMenuItem onSelect={() => handleOpenConfirm(reservation)}>
-                              Confirmar
-                            </DropdownMenuItem>
-                          )}
-                          {reservation.status === 'pending' && (
-                            <DropdownMenuItem onSelect={() => handleOpenCancel(reservation)}>
-                              Cancelar
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-               {reservations.length === 0 && (
-                <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                    No hay reservas disponibles
-                    </TableCell>
-                </TableRow>
-                )}
-            </TableBody>
+            <TableBody>{renderTableBody()}</TableBody>
           </Table>
         </CardContent>
       </Card>
-       {/* Modales de acciones */}
+      
       <Dialog open={openDetail} onOpenChange={setOpenDetail}>
         <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Ver detalles</DialogTitle>
-            <DialogDescription>Resumen de la reserva</DialogDescription>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Ver detalles</DialogTitle></DialogHeader>
           {selectedReservation && (
             <div className="space-y-2 text-base">
               <div><b>Nombre del cliente:</b> {selectedReservation.customerName}</div>
-              <div><b>Fecha y hora:</b> {format(new Date(selectedReservation.date), 'PPPp')}</div>
-              <div><b>Invitados:</b> {selectedReservation.guests}</div>
+              <div><b>Fecha y hora:</b> {format(new Date(selectedReservation.dateTime), 'PPPp')}</div>
+              <div><b>Invitados:</b> {selectedReservation.numberOfGuests}</div>
               <div><b>Notas:</b> {selectedReservation.notes || 'Sin notas'}</div>
               <div className="flex items-center gap-2"><b>Estado:</b> {getStatusBadge(selectedReservation.status)}</div>
             </div>
           )}
-          <div className="flex justify-end pt-4">
-            <Button onClick={handleCloseModals}>Cerrar</Button>
-          </div>
+          <DialogFooter><Button onClick={() => setOpenDetail(false)}>Cerrar</Button></DialogFooter>
         </DialogContent>
       </Dialog>
-      <Dialog open={openConfirm} onOpenChange={setOpenConfirm}>
+      
+      <Dialog open={!!actionToConfirm} onOpenChange={() => setActionToConfirm(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Confirmar reserva</DialogTitle>
-            <DialogDescription>Resumen de la reserva</DialogDescription>
+            <DialogTitle>Confirmar Acción</DialogTitle>
+            <DialogDescription>
+              {actionToConfirm && `¿Estás seguro de que quieres ${actionToConfirm.action === 'confirm' ? 'confirmar' : 'cancelar'} la reserva para ${actionToConfirm.reservation.customerName}?`}
+            </DialogDescription>
           </DialogHeader>
-          <div className="py-4 text-center">
-            <span className="text-lg font-semibold">Nombre del cliente: {selectedReservation?.customerName}</span>
-            <div className="mt-2 text-muted-foreground">¿Estás seguro de confirmar esta reserva?</div>
-          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={handleCloseModals}>Cancelar</Button>
-            <Button onClick={handleCloseModals}>Confirmar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <Dialog open={openCancel} onOpenChange={setOpenCancel}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Cancelar reserva</DialogTitle>
-            <DialogDescription>Resumen de la reserva</DialogDescription>
-          </DialogHeader>
-          <div className="py-4 text-center">
-            <span className="text-lg font-semibold">Nombre del cliente: {selectedReservation?.customerName}</span>
-            <div className="mt-2 text-muted-foreground">¿Estás seguro de cancelar esta reserva?</div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleCloseModals}>Cancelar</Button>
-            <Button onClick={handleCloseModals}>Confirmar</Button>
+            <Button variant="outline" onClick={() => setActionToConfirm(null)}>No, volver</Button>
+            <Button
+              className={actionToConfirm?.action === 'cancel' ? 'bg-destructive hover:bg-destructive/90' : ''}
+              onClick={() => {
+                if (actionToConfirm) {
+                  handleUpdateStatus(actionToConfirm.reservation.id, actionToConfirm.action);
+                }
+              }}
+            >
+              Sí, proceder
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
