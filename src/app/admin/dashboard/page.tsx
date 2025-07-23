@@ -3,8 +3,19 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Settings, ShoppingBag, Utensils, Users, CreditCard, Share2, Palette } from "lucide-react";
 import Link from "next/link";
+import React, { useState, useEffect } from 'react';
 
 export default function AdminDashboardPage() {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) {
+    return null; // O un componente de carga
+  }
+
   return (
     <div className="space-y-8">
       <h1 className="text-3xl font-bold text-primary">Panel de administración</h1>

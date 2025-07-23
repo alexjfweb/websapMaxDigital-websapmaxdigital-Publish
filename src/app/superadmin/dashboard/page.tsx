@@ -3,8 +3,15 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Server, History, ShieldCheck, BarChart3, AlertTriangle, Activity } from "lucide-react";
 import Link from "next/link";
+import React, { useState, useEffect } from 'react';
 
 export default function SuperAdminDashboardPage() {
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+      setIsClient(true);
+    }, []);
+
   // Mock data for dashboard widgets
   const mockSaStats = {
     totalUsers: 150,
@@ -14,6 +21,10 @@ export default function SuperAdminDashboardPage() {
     lastBackup: "2024-07-30 02:00 AM", // This would typically be dynamic
     criticalLogs: 3,
   };
+  
+  if (!isClient) {
+    return null; // O un componente de carga
+  }
 
   return (
     <div className="space-y-8">

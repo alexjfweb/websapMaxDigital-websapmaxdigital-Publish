@@ -2,14 +2,25 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ShoppingBag, BookUser, Megaphone, Bell } from "lucide-react";
 import Link from "next/link";
+import React, { useState, useEffect } from 'react';
 
 export default function EmployeeDashboardPage() {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
   // Mock data for dashboard widgets
   const mockStats = {
     pendingOrders: 5,
     upcomingReservations: 3,
     newNotifications: 2,
   };
+  
+  if (!isClient) {
+    return null; // O un componente de carga
+  }
 
   return (
     <div className="space-y-8">
