@@ -14,6 +14,7 @@ import { AlertTriangle, CreditCard, XCircle, Save, UploadCloud } from "lucide-re
 import { storageService } from "@/services/storage-service";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PaymentMethodsState {
   daviplata: boolean;
@@ -74,14 +75,13 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     async function fetchPaymentConfig() {
-      setLoading(true);
       try {
         const docRef = doc(db, 'payment_configs', RESTAURANT_ID);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
-          setMethods(data.methods);
-          setForm(data.form);
+          if (data.methods) setMethods(data.methods);
+          if (data.form) setForm(data.form);
         }
       } catch (error) {
         toast({ title: "Error", description: "No se pudo cargar la configuración de pagos.", variant: "destructive" });
@@ -105,12 +105,15 @@ export default function PaymentsPage() {
         let updatedForm = { ...form };
 
         if (files.daviplataQRFile) {
+            if (form.daviplataQRUrl) await storageService.deleteFile(form.daviplataQRUrl);
             updatedForm.daviplataQRUrl = await storageService.uploadFile(files.daviplataQRFile, `qrs/${RESTAURANT_ID}/daviplata`);
         }
         if (files.bancolombiaQRFile) {
+            if (form.bancolombiaQRUrl) await storageService.deleteFile(form.bancolombiaQRUrl);
             updatedForm.bancolombiaQRUrl = await storageService.uploadFile(files.bancolombiaQRFile, `qrs/${RESTAURANT_ID}/bancolombia`);
         }
         if (files.nequiQRFile) {
+            if (form.nequiQRUrl) await storageService.deleteFile(form.nequiQRUrl);
             updatedForm.nequiQRUrl = await storageService.uploadFile(files.nequiQRFile, `qrs/${RESTAURANT_ID}/nequi`);
         }
 
@@ -130,8 +133,20 @@ export default function PaymentsPage() {
     }
   };
   
-  // The rest of the component remains largely the same, but input values and image sources need to be updated.
-  // ... (rest of the component, with updated value={form.X} and src={files.Y ? URL.createObjectURL(files.Y) : form.Z})
+  if (loading) {
+    return (
+       <div className="space-y-8">
+        <h1 className="text-3xl font-bold text-primary">{'Métodos de pago'}</h1>
+        <p className="text-lg text-muted-foreground mb-6">{'Descripción de la sección'}</p>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({length: 4}).map((_, i) => (
+             <Card key={i}><CardContent className="p-6"><Skeleton className="h-24 w-full"/></CardContent></Card>
+          ))}
+        </div>
+        <div className="flex justify-end mt-8"><Skeleton className="h-10 w-24"/></div>
+      </div>
+    );
+  }
 
   return (
     <>
