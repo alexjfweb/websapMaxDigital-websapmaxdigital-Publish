@@ -44,6 +44,7 @@ export const mockDishes: Dish[] = [
     stock: 50,
     likes: 5,
     category: 'Main Courses',
+    isFeatured: true, // Example of featured dish
   },
   {
     id: 'dish-2',
@@ -74,6 +75,7 @@ export const mockDishes: Dish[] = [
     stock: 30,
     likes: 5,
     category: 'Desserts',
+    isFeatured: true,
   },
   {
     id: 'dish-5',

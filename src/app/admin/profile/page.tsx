@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,19 +18,23 @@ import TikTokIcon from "@/components/icons/tiktok-icon";
 import PinterestIcon from "@/components/icons/pinterest-icon";
 import DaviplataIcon from "@/components/icons/daviplata-icon";
 import BancolombiaIcon from "@/components/icons/bancolombia-icon";
+import type { RestaurantProfile } from "@/types";
 
 
 // Mock data - in a real app, this would come from a backend/state management
-const mockProfile = {
+const mockProfile: RestaurantProfile = {
+  id: 'websapmax-1',
   name: "websapMax Restaurant",
   logoUrl: "https://placehold.co/150x150.png?text=Logo",
   address: "123 Foodie Lane, Flavor Town",
   phone: "+1 (555) 123-4567",
   email: "contact@websapmax.com",
   description: "The best place for delicious food!",
-  primaryColor: "#FF4500",
-  secondaryColor: "#FFF2E6",
-  accentColor: "#FFB347",
+  corporateColors: {
+    primary: "#FF4500",
+    secondary: "#FFF2E6",
+    accent: "#FFB347",
+  },
   socialLinks: {
     website: "https://www.websapmax.com",
     menuShareLink: "https://menu.websapmax.com",
@@ -258,11 +263,11 @@ export default function AdminProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="relative">
               <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="website" placeholder="Sitio web" defaultValue={mockProfile.socialLinks.website} className="pl-10" disabled={!isEditing}/>
+              <Input id="website" placeholder="Sitio web" defaultValue={mockProfile.socialLinks?.website} className="pl-10" disabled={!isEditing}/>
             </div>
             <div className="relative">
               <Share2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="menuShareLink" placeholder="Enlace del menú" defaultValue={mockProfile.socialLinks.menuShareLink} className="pl-10 pr-12" disabled={!isEditing}/>
+              <Input id="menuShareLink" placeholder="Enlace del menú" defaultValue={mockProfile.socialLinks?.menuShareLink} className="pl-10 pr-12" disabled={!isEditing}/>
               <Button
                 type="button"
                 size="icon"
@@ -276,27 +281,27 @@ export default function AdminProfilePage() {
             </div>
             <div className="relative">
               <Facebook className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="facebook" placeholder="Facebook" defaultValue={mockProfile.socialLinks.facebook} className="pl-10" disabled={!isEditing}/>
+              <Input id="facebook" placeholder="Facebook" defaultValue={mockProfile.socialLinks?.facebook} className="pl-10" disabled={!isEditing}/>
             </div>
             <div className="relative">
               <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="instagram" placeholder="Instagram" defaultValue={mockProfile.socialLinks.instagram} className="pl-10" disabled={!isEditing}/>
+              <Input id="instagram" placeholder="Instagram" defaultValue={mockProfile.socialLinks?.instagram} className="pl-10" disabled={!isEditing}/>
             </div>
             <div className="relative">
               <Twitter className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="x" placeholder="Twitter" defaultValue={mockProfile.socialLinks.x} className="pl-10" disabled={!isEditing}/>
+              <Input id="x" placeholder="Twitter" defaultValue={mockProfile.socialLinks?.x} className="pl-10" disabled={!isEditing}/>
             </div>
             <div className="relative">
               <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="whatsapp" placeholder="WhatsApp" defaultValue={mockProfile.socialLinks.whatsapp} className="pl-10" disabled={!isEditing}/>
+              <Input id="whatsapp" placeholder="WhatsApp" defaultValue={mockProfile.socialLinks?.whatsapp} className="pl-10" disabled={!isEditing}/>
             </div>
             <div className="relative">
               <TikTokIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="tiktok" placeholder="TikTok" defaultValue={mockProfile.socialLinks.tiktok} className="pl-10" disabled={!isEditing}/>
+              <Input id="tiktok" placeholder="TikTok" defaultValue={mockProfile.socialLinks?.tiktok} className="pl-10" disabled={!isEditing}/>
             </div>
             <div className="relative">
               <PinterestIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="pinterest" placeholder="Pinterest" defaultValue={mockProfile.socialLinks.pinterest} className="pl-10" disabled={!isEditing}/>
+              <Input id="pinterest" placeholder="Pinterest" defaultValue={mockProfile.socialLinks?.pinterest} className="pl-10" disabled={!isEditing}/>
             </div>
           </div>
         </CardContent>
@@ -326,21 +331,21 @@ export default function AdminProfilePage() {
                         <NequiIcon className="h-6 w-6" />
                         <Label htmlFor="nequiEnabled" className={`text-lg font-semibold ${!isEditing && 'text-muted-foreground'}`}>Nequi</Label>
                     </div>
-                    <Switch id="nequiEnabled" defaultChecked={mockProfile.paymentMethods.nequi.enabled} disabled={!isEditing} />
+                    <Switch id="nequiEnabled" defaultChecked={mockProfile.paymentMethods.nequi?.enabled} disabled={!isEditing} />
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="nequiAccountHolder">Titular de la cuenta</Label>
-                    <Input id="nequiAccountHolder" defaultValue={mockProfile.paymentMethods.nequi.accountHolder} placeholder="Nombre del titular" disabled={!isEditing} />
+                    <Input id="nequiAccountHolder" defaultValue={mockProfile.paymentMethods.nequi?.accountHolder} placeholder="Nombre del titular" disabled={!isEditing} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="nequiAccountNumber">Número de cuenta</Label>
-                    <Input id="nequiAccountNumber" type="text" defaultValue={mockProfile.paymentMethods.nequi.accountNumber} placeholder="Número de celular" disabled={!isEditing} />
+                    <Input id="nequiAccountNumber" type="text" defaultValue={mockProfile.paymentMethods.nequi?.accountNumber} placeholder="Número de celular" disabled={!isEditing} />
                 </div>
                 <div className="space-y-2">
                     <Label>Código QR Nequi</Label>
                     <div className="flex items-center gap-4">
                         <Image 
-                            src={nequiQrPreview || mockProfile.paymentMethods.nequi.qrCodeUrl || "https://placehold.co/100x100.png?text=Nequi"}
+                            src={nequiQrPreview || mockProfile.paymentMethods.nequi?.qrCodeUrl || "https://placehold.co/100x100.png?text=Nequi"}
                             alt="Vista previa QR Nequi" 
                             width={100} 
                             height={100} 
@@ -364,21 +369,21 @@ export default function AdminProfilePage() {
                         <DaviplataIcon className="h-6 w-6" />
                         <Label htmlFor="daviplataEnabled" className={`text-lg font-semibold ${!isEditing && 'text-muted-foreground'}`}>Daviplata</Label>
                     </div>
-                    <Switch id="daviplataEnabled" defaultChecked={mockProfile.paymentMethods.daviplata.enabled} disabled={!isEditing} />
+                    <Switch id="daviplataEnabled" defaultChecked={mockProfile.paymentMethods.daviplata?.enabled} disabled={!isEditing} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="daviplataAccountHolder">Titular de la cuenta</Label>
-                    <Input id="daviplataAccountHolder" placeholder="Nombre del titular" defaultValue={mockProfile.paymentMethods.daviplata.accountHolder} disabled={!isEditing} />
+                    <Input id="daviplataAccountHolder" placeholder="Nombre del titular" defaultValue={mockProfile.paymentMethods.daviplata?.accountHolder} disabled={!isEditing} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="daviplataAccountNumber">Número de cuenta</Label>
-                    <Input id="daviplataAccountNumber" type="tel" placeholder="Número de celular" defaultValue={mockProfile.paymentMethods.daviplata.accountNumber} disabled={!isEditing}/>
+                    <Input id="daviplataAccountNumber" type="tel" placeholder="Número de celular" defaultValue={mockProfile.paymentMethods.daviplata?.accountNumber} disabled={!isEditing}/>
                 </div>
                 <div className="space-y-2">
                     <Label>Código QR Daviplata</Label>
                     <div className="flex items-center gap-4">
                         <Image 
-                            src={daviplataQrPreview || mockProfile.paymentMethods.daviplata.qrCodeUrl || "https://placehold.co/100x100.png?text=Daviplata"}
+                            src={daviplataQrPreview || mockProfile.paymentMethods.daviplata?.qrCodeUrl || "https://placehold.co/100x100.png?text=Daviplata"}
                             alt="Vista previa QR Daviplata" 
                             width={100} 
                             height={100} 
@@ -402,21 +407,21 @@ export default function AdminProfilePage() {
                         <BancolombiaIcon className="h-6 w-6" />
                         <Label htmlFor="bancolombiaEnabled" className={`text-lg font-semibold ${!isEditing && 'text-muted-foreground'}`}>QR Bancolombia</Label>
                     </div>
-                    <Switch id="bancolombiaEnabled" defaultChecked={mockProfile.paymentMethods.bancolombia.enabled} disabled={!isEditing} />
+                    <Switch id="bancolombiaEnabled" defaultChecked={mockProfile.paymentMethods.bancolombia?.enabled} disabled={!isEditing} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="bancolombiaAccountHolder">Titular de la cuenta</Label>
-                    <Input id="bancolombiaAccountHolder" defaultValue={mockProfile.paymentMethods.bancolombia.accountHolder} placeholder="Nombre del titular" disabled={!isEditing} />
+                    <Input id="bancolombiaAccountHolder" defaultValue={mockProfile.paymentMethods.bancolombia?.accountHolder} placeholder="Nombre del titular" disabled={!isEditing} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="bancolombiaAccountNumber">Número de cuenta</Label>
-                    <Input id="bancolombiaAccountNumber" type="text" defaultValue={mockProfile.paymentMethods.bancolombia.accountNumber} placeholder="Número de cuenta" disabled={!isEditing} />
+                    <Input id="bancolombiaAccountNumber" type="text" defaultValue={mockProfile.paymentMethods.bancolombia?.accountNumber} placeholder="Número de cuenta" disabled={!isEditing} />
                 </div>
                 <div className="space-y-2">
                     <Label>Código QR Bancolombia</Label>
                     <div className="flex items-center gap-4">
                         <Image 
-                            src={bancolombiaQrPreview || mockProfile.paymentMethods.bancolombia.qrCodeUrl || "https://placehold.co/100x100.png?text=Bancolombia"}
+                            src={bancolombiaQrPreview || mockProfile.paymentMethods.bancolombia?.qrCodeUrl || "https://placehold.co/100x100.png?text=Bancolombia"}
                             alt="Vista previa QR Bancolombia" 
                             width={100} 
                             height={100} 
@@ -446,22 +451,22 @@ export default function AdminProfilePage() {
                 <div className="space-y-2">
                     <Label htmlFor="primaryColor">Color primario</Label>
                     <div className="flex items-center gap-2">
-                        <Input id="primaryColor" type="color" defaultValue={mockProfile.primaryColor} className="w-16 h-10 p-1" disabled={!isEditing} />
-                        <Input type="text" defaultValue={mockProfile.primaryColor} readOnly className="flex-1" disabled={!isEditing} />
+                        <Input id="primaryColor" type="color" defaultValue={mockProfile.corporateColors.primary} className="w-16 h-10 p-1" disabled={!isEditing} />
+                        <Input type="text" defaultValue={mockProfile.corporateColors.primary} readOnly className="flex-1" disabled={!isEditing} />
                     </div>
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="secondaryColor">Color secundario</Label>
                      <div className="flex items-center gap-2">
-                        <Input id="secondaryColor" type="color" defaultValue={mockProfile.secondaryColor} className="w-16 h-10 p-1" disabled={!isEditing} />
-                        <Input type="text" defaultValue={mockProfile.secondaryColor} readOnly className="flex-1" disabled={!isEditing} />
+                        <Input id="secondaryColor" type="color" defaultValue={mockProfile.corporateColors.secondary} className="w-16 h-10 p-1" disabled={!isEditing} />
+                        <Input type="text" defaultValue={mockProfile.corporateColors.secondary} readOnly className="flex-1" disabled={!isEditing} />
                     </div>
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="accentColor">Color de acento</Label>
                     <div className="flex items-center gap-2">
-                        <Input id="accentColor" type="color" defaultValue={mockProfile.accentColor} className="w-16 h-10 p-1" disabled={!isEditing} />
-                        <Input type="text" defaultValue={mockProfile.accentColor} readOnly className="flex-1" disabled={!isEditing} />
+                        <Input id="accentColor" type="color" defaultValue={mockProfile.corporateColors.accent} className="w-16 h-10 p-1" disabled={!isEditing} />
+                        <Input type="text" defaultValue={mockProfile.corporateColors.accent} readOnly className="flex-1" disabled={!isEditing} />
                     </div>
                 </div>
             </div>
