@@ -193,4 +193,4 @@ export function TableForm({ table, onSubmit, onCancel }: TableFormProps) {
       )}
     </>
   );
-} 
+}

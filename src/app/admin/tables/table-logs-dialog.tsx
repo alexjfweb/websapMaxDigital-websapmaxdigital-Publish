@@ -72,4 +72,4 @@ export function TableLogsDialog({ table, open, onOpenChange }: TableLogsDialogPr
       </DialogContent>
     </Dialog>
   );
-} 
+}

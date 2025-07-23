@@ -257,6 +257,18 @@ class TableService {
     }
   }
 
+  getActionText(action: TableLog['action']): string {
+    switch (action) {
+      case 'created': return 'Mesa Creada';
+      case 'updated': return 'Mesa Actualizada';
+      case 'deleted': return 'Mesa Eliminada';
+      case 'status_changed': return 'Cambio de Estado';
+      case 'reserved': return 'Mesa Reservada';
+      case 'released': return 'Mesa Liberada';
+      default: return action;
+    }
+  }
+
   getStatusText(status: TableStatus): string {
     switch (status) {
       case 'available':
@@ -273,4 +285,4 @@ class TableService {
   }
 }
 
-export const tableService = new TableService(); 
+export const tableService = new TableService();
