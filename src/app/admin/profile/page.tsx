@@ -20,61 +20,106 @@ import DaviplataIcon from "@/components/icons/daviplata-icon";
 import BancolombiaIcon from "@/components/icons/bancolombia-icon";
 import type { RestaurantProfile } from "@/types";
 import { mockRestaurantProfile } from "@/lib/mock-data";
+import { storageService } from "@/services/storage-service";
 
 
 export default function AdminProfilePage() {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [nequiQrPreview, setNequiQrPreview] = useState<string | null>(null);
-  const [daviplataQrPreview, setDaviplataQrPreview] = useState<string | null>(null);
-  const [bancolombiaQrPreview, setBancolombiaQrPreview] = useState<string | null>(null);
-  const [isSaveAlertOpen, setIsSaveAlertOpen] = useState(false);
+  
+  const [profileData, setProfileData] = useState<RestaurantProfile>(mockRestaurantProfile);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [nequiQrFile, setNequiQrFile] = useState<File | null>(null);
+  const [daviplataQrFile, setDaviplataQrFile] = useState<File | null>(null);
+  const [bancolombiaQrFile, setBancolombiaQrFile] = useState<File | null>(null);
+
+  const [logoPreview, setLogoPreview] = useState<string | null>(profileData.logoUrl);
+  const [nequiQrPreview, setNequiQrPreview] = useState<string | null>(profileData.paymentMethods.nequi?.qrCodeUrl || null);
+  const [daviplataQrPreview, setDaviplataQrPreview] = useState<string | null>(profileData.paymentMethods.daviplata?.qrCodeUrl || null);
+  const [bancolombiaQrPreview, setBancolombiaQrPreview] = useState<string | null>(profileData.paymentMethods.bancolombia?.qrCodeUrl || null);
+  
+  const [isSaving, setIsSaving] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-
   const handleImageChange = (
     event: ChangeEvent<HTMLInputElement>,
-    setter: React.Dispatch<React.SetStateAction<string | null>>
+    setFile: React.Dispatch<React.SetStateAction<File | null>>,
+    setPreview: React.Dispatch<React.SetStateAction<string | null>>
   ) => {
     const file = event.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
+      setFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setter(reader.result as string);
+        setPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     } else {
-      setter(null);
+      setFile(null);
+      setPreview(null);
     }
   };
 
-  const handleSave = () => {
-    // Here you would typically send the data to your backend
-    setIsSaveAlertOpen(true);
-  };
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      let updatedData = { ...profileData };
 
-  const handleConfirmSave = () => {
-    setIsEditing(false);
-    setIsSaveAlertOpen(false);
-    // You can also reset image previews here if needed after save
+      if (logoFile) {
+        updatedData.logoUrl = await storageService.uploadFile(logoFile, `logos/${profileData.id}`);
+      }
+      if (nequiQrFile && updatedData.paymentMethods.nequi) {
+        updatedData.paymentMethods.nequi.qrCodeUrl = await storageService.uploadFile(nequiQrFile, `qrs/${profileData.id}`);
+      }
+      if (daviplataQrFile && updatedData.paymentMethods.daviplata) {
+        updatedData.paymentMethods.daviplata.qrCodeUrl = await storageService.uploadFile(daviplataQrFile, `qrs/${profileData.id}`);
+      }
+      if (bancolombiaQrFile && updatedData.paymentMethods.bancolombia) {
+        updatedData.paymentMethods.bancolombia.qrCodeUrl = await storageService.uploadFile(bancolombiaQrFile, `qrs/${profileData.id}`);
+      }
+      
+      // Aquí llamarías a tu API para guardar `updatedData`
+      // Por ejemplo: await fetch(`/api/companies/${profileData.id}`, { method: 'PUT', body: JSON.stringify(updatedData) });
+      console.log("Saving data:", updatedData);
+      
+      setProfileData(updatedData);
+      setIsEditing(false);
+      toast({
+          title: "¡Perfil Guardado!",
+          description: "Tus cambios en el perfil del restaurante han sido guardados exitosamente.",
+      });
+
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      toast({
+          title: "Error al guardar",
+          description: "No se pudieron guardar los cambios. Inténtalo de nuevo.",
+          variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
     // Reset any changed state if necessary
     setIsEditing(false);
     // Reset image previews
-    setLogoPreview(null);
-    setNequiQrPreview(null);
-    setDaviplataQrPreview(null);
-    setBancolombiaQrPreview(null);
+    setLogoPreview(profileData.logoUrl);
+    setNequiQrPreview(profileData.paymentMethods.nequi?.qrCodeUrl || null);
+    setDaviplataQrPreview(profileData.paymentMethods.daviplata?.qrCodeUrl || null);
+    setBancolombiaQrPreview(profileData.paymentMethods.bancolombia?.qrCodeUrl || null);
+    setLogoFile(null);
+    setNequiQrFile(null);
+    setDaviplataQrFile(null);
+    setBancolombiaQrFile(null);
     toast({
-        title: "Edit Canceled",
-        description: "Your changes have been discarded.",
+        title: "Edición cancelada",
+        description: "Tus cambios han sido descartados.",
         variant: "destructive"
     });
   };
@@ -91,7 +136,7 @@ export default function AdminProfilePage() {
 
   // Copiar enlace de menú al portapapeles de forma segura
   const handleCopyMenuLink = async () => {
-    const link = mockRestaurantProfile.socialLinks.menuShareLink;
+    const link = profileData.socialLinks?.menuShareLink || "";
     try {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(link);
@@ -134,8 +179,10 @@ export default function AdminProfilePage() {
                 <Button onClick={() => setIsEditing(true)}><Edit className="mr-2 h-4 w-4" /> Editar</Button>
             ) : (
                 <>
-                    <Button variant="outline" onClick={handleCancel}><XCircle className="mr-2 h-4 w-4" /> Cancelar</Button>
-                    <Button onClick={handleSave}><Save className="mr-2 h-4 w-4" /> Guardar</Button>
+                    <Button variant="outline" onClick={handleCancel} disabled={isSaving}><XCircle className="mr-2 h-4 w-4" /> Cancelar</Button>
+                    <Button onClick={handleSave} disabled={isSaving}>
+                      {isSaving ? "Guardando..." : <><Save className="mr-2 h-4 w-4" /> Guardar</>}
+                    </Button>
                 </>
             )}
             
@@ -171,32 +218,32 @@ export default function AdminProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="restaurantName">Nombre del restaurante</Label>
-              <Input id="restaurantName" defaultValue={mockRestaurantProfile.name} disabled={!isEditing} />
+              <Input id="restaurantName" defaultValue={profileData.name} disabled={!isEditing} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="restaurantPhone">Teléfono</Label>
-              <Input id="restaurantPhone" type="tel" defaultValue={mockRestaurantProfile.phone} disabled={!isEditing} />
+              <Input id="restaurantPhone" type="tel" defaultValue={profileData.phone} disabled={!isEditing} />
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="restaurantAddress">Dirección</Label>
-            <Input id="restaurantAddress" defaultValue={mockRestaurantProfile.address} disabled={!isEditing} />
+            <Input id="restaurantAddress" defaultValue={profileData.address} disabled={!isEditing} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="restaurantEmail">Correo electrónico</Label>
-            <Input id="restaurantEmail" type="email" defaultValue={mockRestaurantProfile.email} disabled={!isEditing} />
+            <Input id="restaurantEmail" type="email" defaultValue={profileData.email} disabled={!isEditing} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="restaurantDescription">Descripción</Label>
-            <Textarea id="restaurantDescription" defaultValue={mockRestaurantProfile.description} rows={4} disabled={!isEditing} />
+            <Textarea id="restaurantDescription" defaultValue={profileData.description} rows={4} disabled={!isEditing} />
           </div>
           
           <div className="space-y-4">
             <Label>Logo</Label>
             <div className="flex items-center gap-4">
                 <Image 
-                  src={logoPreview || mockRestaurantProfile.logoUrl} 
+                  src={logoPreview || "https://placehold.co/100x100.png?text=Logo"}
                   alt="Logo del restaurante" 
                   width={96}
                   height={96}
@@ -206,7 +253,7 @@ export default function AdminProfilePage() {
                 <Button variant="outline" asChild disabled={!isEditing}>
                   <Label htmlFor="logo-upload" className={`cursor-pointer ${!isEditing && 'cursor-not-allowed opacity-50'}`}>
                     <UploadCloud className="mr-2 h-4 w-4" /> Subir logo
-                    <Input id="logo-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, setLogoPreview)} disabled={!isEditing}/>
+                    <Input id="logo-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, setLogoFile, setLogoPreview)} disabled={!isEditing}/>
                   </Label>
                 </Button>
             </div>
@@ -225,11 +272,11 @@ export default function AdminProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="relative">
               <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="website" placeholder="Sitio web" defaultValue={mockRestaurantProfile.socialLinks?.website} className="pl-10" disabled={!isEditing}/>
+              <Input id="website" placeholder="Sitio web" defaultValue={profileData.socialLinks?.website} className="pl-10" disabled={!isEditing}/>
             </div>
             <div className="relative">
               <Share2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="menuShareLink" placeholder="Enlace del menú" defaultValue={mockRestaurantProfile.socialLinks?.menuShareLink} className="pl-10 pr-12" disabled={!isEditing}/>
+              <Input id="menuShareLink" placeholder="Enlace del menú" defaultValue={profileData.socialLinks?.menuShareLink} className="pl-10 pr-12" disabled={!isEditing}/>
               <Button
                 type="button"
                 size="icon"
@@ -243,27 +290,27 @@ export default function AdminProfilePage() {
             </div>
             <div className="relative">
               <Facebook className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="facebook" placeholder="Facebook" defaultValue={mockRestaurantProfile.socialLinks?.facebook} className="pl-10" disabled={!isEditing}/>
+              <Input id="facebook" placeholder="Facebook" defaultValue={profileData.socialLinks?.facebook} className="pl-10" disabled={!isEditing}/>
             </div>
             <div className="relative">
               <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="instagram" placeholder="Instagram" defaultValue={mockRestaurantProfile.socialLinks?.instagram} className="pl-10" disabled={!isEditing}/>
+              <Input id="instagram" placeholder="Instagram" defaultValue={profileData.socialLinks?.instagram} className="pl-10" disabled={!isEditing}/>
             </div>
             <div className="relative">
               <Twitter className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="x" placeholder="Twitter" defaultValue={mockRestaurantProfile.socialLinks?.x} className="pl-10" disabled={!isEditing}/>
+              <Input id="x" placeholder="Twitter" defaultValue={profileData.socialLinks?.x} className="pl-10" disabled={!isEditing}/>
             </div>
             <div className="relative">
               <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="whatsapp" placeholder="WhatsApp" defaultValue={mockRestaurantProfile.socialLinks?.whatsapp} className="pl-10" disabled={!isEditing}/>
+              <Input id="whatsapp" placeholder="WhatsApp" defaultValue={profileData.socialLinks?.whatsapp} className="pl-10" disabled={!isEditing}/>
             </div>
             <div className="relative">
               <TikTokIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="tiktok" placeholder="TikTok" defaultValue={mockRestaurantProfile.socialLinks?.tiktok} className="pl-10" disabled={!isEditing}/>
+              <Input id="tiktok" placeholder="TikTok" defaultValue={profileData.socialLinks?.tiktok} className="pl-10" disabled={!isEditing}/>
             </div>
             <div className="relative">
               <PinterestIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="pinterest" placeholder="Pinterest" defaultValue={mockRestaurantProfile.socialLinks?.pinterest} className="pl-10" disabled={!isEditing}/>
+              <Input id="pinterest" placeholder="Pinterest" defaultValue={profileData.socialLinks?.pinterest} className="pl-10" disabled={!isEditing}/>
             </div>
           </div>
         </CardContent>
@@ -278,7 +325,7 @@ export default function AdminProfilePage() {
             {/* Contra Entrega */}
             <div className="space-y-4 p-4 border rounded-lg">
                 <div className="flex items-center space-x-2">
-                    <Checkbox id="codEnabled" defaultChecked={mockRestaurantProfile.paymentMethods.codEnabled} disabled={!isEditing} />
+                    <Checkbox id="codEnabled" defaultChecked={profileData.paymentMethods.codEnabled} disabled={!isEditing} />
                     <Label htmlFor="codEnabled" className={`text-lg font-semibold leading-none ${!isEditing && 'text-muted-foreground'}`}>
                         Pago Contra Entrega
                     </Label>
@@ -293,21 +340,21 @@ export default function AdminProfilePage() {
                         <NequiIcon className="h-6 w-6" />
                         <Label htmlFor="nequiEnabled" className={`text-lg font-semibold ${!isEditing && 'text-muted-foreground'}`}>Nequi</Label>
                     </div>
-                    <Switch id="nequiEnabled" defaultChecked={mockRestaurantProfile.paymentMethods.nequi?.enabled} disabled={!isEditing} />
+                    <Switch id="nequiEnabled" defaultChecked={profileData.paymentMethods.nequi?.enabled} disabled={!isEditing} />
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="nequiAccountHolder">Titular de la cuenta</Label>
-                    <Input id="nequiAccountHolder" defaultValue={mockRestaurantProfile.paymentMethods.nequi?.accountHolder} placeholder="Nombre del titular" disabled={!isEditing} />
+                    <Input id="nequiAccountHolder" defaultValue={profileData.paymentMethods.nequi?.accountHolder} placeholder="Nombre del titular" disabled={!isEditing} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="nequiAccountNumber">Número de cuenta</Label>
-                    <Input id="nequiAccountNumber" type="text" defaultValue={mockRestaurantProfile.paymentMethods.nequi?.accountNumber} placeholder="Número de celular" disabled={!isEditing} />
+                    <Input id="nequiAccountNumber" type="text" defaultValue={profileData.paymentMethods.nequi?.accountNumber} placeholder="Número de celular" disabled={!isEditing} />
                 </div>
                 <div className="space-y-2">
                     <Label>Código QR Nequi</Label>
                     <div className="flex items-center gap-4">
                         <Image 
-                            src={nequiQrPreview || mockRestaurantProfile.paymentMethods.nequi?.qrCodeUrl || "https://placehold.co/100x100.png?text=Nequi"}
+                            src={nequiQrPreview || "https://placehold.co/100x100.png?text=Nequi"}
                             alt="Vista previa QR Nequi" 
                             width={100} 
                             height={100} 
@@ -317,7 +364,7 @@ export default function AdminProfilePage() {
                         <Button variant="outline" asChild disabled={!isEditing}>
                             <Label htmlFor="nequiQrUpload" className={`cursor-pointer ${!isEditing && 'cursor-not-allowed opacity-50'}`}>
                                 <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
-                                <Input id="nequiQrUpload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, setNequiQrPreview)} disabled={!isEditing} />
+                                <Input id="nequiQrUpload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, setNequiQrFile, setNequiQrPreview)} disabled={!isEditing} />
                             </Label>
                         </Button>
                     </div>
@@ -331,21 +378,21 @@ export default function AdminProfilePage() {
                         <DaviplataIcon className="h-6 w-6" />
                         <Label htmlFor="daviplataEnabled" className={`text-lg font-semibold ${!isEditing && 'text-muted-foreground'}`}>Daviplata</Label>
                     </div>
-                    <Switch id="daviplataEnabled" defaultChecked={mockRestaurantProfile.paymentMethods.daviplata?.enabled} disabled={!isEditing} />
+                    <Switch id="daviplataEnabled" defaultChecked={profileData.paymentMethods.daviplata?.enabled} disabled={!isEditing} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="daviplataAccountHolder">Titular de la cuenta</Label>
-                    <Input id="daviplataAccountHolder" placeholder="Nombre del titular" defaultValue={mockRestaurantProfile.paymentMethods.daviplata?.accountHolder} disabled={!isEditing} />
+                    <Input id="daviplataAccountHolder" placeholder="Nombre del titular" defaultValue={profileData.paymentMethods.daviplata?.accountHolder} disabled={!isEditing} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="daviplataAccountNumber">Número de cuenta</Label>
-                    <Input id="daviplataAccountNumber" type="tel" placeholder="Número de celular" defaultValue={mockRestaurantProfile.paymentMethods.daviplata?.accountNumber} disabled={!isEditing}/>
+                    <Input id="daviplataAccountNumber" type="tel" placeholder="Número de celular" defaultValue={profileData.paymentMethods.daviplata?.accountNumber} disabled={!isEditing}/>
                 </div>
                 <div className="space-y-2">
                     <Label>Código QR Daviplata</Label>
                     <div className="flex items-center gap-4">
                         <Image 
-                            src={daviplataQrPreview || mockRestaurantProfile.paymentMethods.daviplata?.qrCodeUrl || "https://placehold.co/100x100.png?text=Daviplata"}
+                            src={daviplataQrPreview || "https://placehold.co/100x100.png?text=Daviplata"}
                             alt="Vista previa QR Daviplata" 
                             width={100} 
                             height={100} 
@@ -355,7 +402,7 @@ export default function AdminProfilePage() {
                         <Button variant="outline" asChild disabled={!isEditing}>
                             <Label htmlFor="daviplataQrUpload" className={`cursor-pointer ${!isEditing && 'cursor-not-allowed opacity-50'}`}>
                                 <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
-                                <Input id="daviplataQrUpload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, setDaviplataQrPreview)} disabled={!isEditing} />
+                                <Input id="daviplataQrUpload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, setDaviplataQrFile, setDaviplataQrPreview)} disabled={!isEditing} />
                             </Label>
                         </Button>
                     </div>
@@ -369,21 +416,21 @@ export default function AdminProfilePage() {
                         <BancolombiaIcon className="h-6 w-6" />
                         <Label htmlFor="bancolombiaEnabled" className={`text-lg font-semibold ${!isEditing && 'text-muted-foreground'}`}>QR Bancolombia</Label>
                     </div>
-                    <Switch id="bancolombiaEnabled" defaultChecked={mockRestaurantProfile.paymentMethods.bancolombia?.enabled} disabled={!isEditing} />
+                    <Switch id="bancolombiaEnabled" defaultChecked={profileData.paymentMethods.bancolombia?.enabled} disabled={!isEditing} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="bancolombiaAccountHolder">Titular de la cuenta</Label>
-                    <Input id="bancolombiaAccountHolder" defaultValue={mockRestaurantProfile.paymentMethods.bancolombia?.accountHolder} placeholder="Nombre del titular" disabled={!isEditing} />
+                    <Input id="bancolombiaAccountHolder" defaultValue={profileData.paymentMethods.bancolombia?.accountHolder} placeholder="Nombre del titular" disabled={!isEditing} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="bancolombiaAccountNumber">Número de cuenta</Label>
-                    <Input id="bancolombiaAccountNumber" type="text" defaultValue={mockRestaurantProfile.paymentMethods.bancolombia?.accountNumber} placeholder="Número de cuenta" disabled={!isEditing} />
+                    <Input id="bancolombiaAccountNumber" type="text" defaultValue={profileData.paymentMethods.bancolombia?.accountNumber} placeholder="Número de cuenta" disabled={!isEditing} />
                 </div>
                 <div className="space-y-2">
                     <Label>Código QR Bancolombia</Label>
                     <div className="flex items-center gap-4">
                         <Image 
-                            src={bancolombiaQrPreview || mockRestaurantProfile.paymentMethods.bancolombia?.qrCodeUrl || "https://placehold.co/100x100.png?text=Bancolombia"}
+                            src={bancolombiaQrPreview || "https://placehold.co/100x100.png?text=Bancolombia"}
                             alt="Vista previa QR Bancolombia" 
                             width={100} 
                             height={100} 
@@ -393,7 +440,7 @@ export default function AdminProfilePage() {
                         <Button variant="outline" asChild disabled={!isEditing}>
                             <Label htmlFor="bancolombiaQrUpload" className={`cursor-pointer ${!isEditing && 'cursor-not-allowed opacity-50'}`}>
                                 <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
-                                <Input id="bancolombiaQrUpload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, setBancolombiaQrPreview)} disabled={!isEditing} />
+                                <Input id="bancolombiaQrUpload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, setBancolombiaQrFile, setBancolombiaQrPreview)} disabled={!isEditing} />
                             </Label>
                         </Button>
                     </div>
@@ -413,47 +460,27 @@ export default function AdminProfilePage() {
                 <div className="space-y-2">
                     <Label htmlFor="primaryColor">Color primario</Label>
                     <div className="flex items-center gap-2">
-                        <Input id="primaryColor" type="color" defaultValue={mockRestaurantProfile.corporateColors.primary} className="w-16 h-10 p-1" disabled={!isEditing} />
-                        <Input type="text" defaultValue={mockRestaurantProfile.corporateColors.primary} readOnly className="flex-1" disabled={!isEditing} />
+                        <Input id="primaryColor" type="color" defaultValue={profileData.corporateColors.primary} className="w-16 h-10 p-1" disabled={!isEditing} />
+                        <Input type="text" defaultValue={profileData.corporateColors.primary} readOnly className="flex-1" disabled={!isEditing} />
                     </div>
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="secondaryColor">Color secundario</Label>
                      <div className="flex items-center gap-2">
-                        <Input id="secondaryColor" type="color" defaultValue={mockRestaurantProfile.corporateColors.secondary} className="w-16 h-10 p-1" disabled={!isEditing} />
-                        <Input type="text" defaultValue={mockRestaurantProfile.corporateColors.secondary} readOnly className="flex-1" disabled={!isEditing} />
+                        <Input id="secondaryColor" type="color" defaultValue={profileData.corporateColors.secondary} className="w-16 h-10 p-1" disabled={!isEditing} />
+                        <Input type="text" defaultValue={profileData.corporateColors.secondary} readOnly className="flex-1" disabled={!isEditing} />
                     </div>
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="accentColor">Color de acento</Label>
                     <div className="flex items-center gap-2">
-                        <Input id="accentColor" type="color" defaultValue={mockRestaurantProfile.corporateColors.accent} className="w-16 h-10 p-1" disabled={!isEditing} />
-                        <Input type="text" defaultValue={mockRestaurantProfile.corporateColors.accent} readOnly className="flex-1" disabled={!isEditing} />
+                        <Input id="accentColor" type="color" defaultValue={profileData.corporateColors.accent} className="w-16 h-10 p-1" disabled={!isEditing} />
+                        <Input type="text" defaultValue={profileData.corporateColors.accent} readOnly className="flex-1" disabled={!isEditing} />
                     </div>
                 </div>
             </div>
         </CardContent>
       </Card>
-      
-      {/* Save Confirmation Dialog */}
-      <AlertDialog open={isSaveAlertOpen} onOpenChange={setIsSaveAlertOpen}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <div className="flex justify-center">
-                   <CheckCircle className="h-16 w-16 text-green-500"/>
-                </div>
-                <AlertDialogTitle className="text-center text-xl">¡Perfil Guardado!</AlertDialogTitle>
-                <AlertDialogDescription className="text-center">
-                    Tus cambios en el perfil del restaurante han sido guardados exitosamente.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter className="sm:justify-center">
-                <AlertDialogAction onClick={handleConfirmSave}>
-                    Aceptar
-                </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
