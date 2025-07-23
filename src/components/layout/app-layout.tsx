@@ -34,15 +34,31 @@ const guestUser: User = {
   registrationDate: new Date(0).toISOString(),
 };
 
+// Función para obtener el usuario de forma segura solo en el cliente
+const getInitialUser = (): User => {
+  if (typeof window === 'undefined') {
+    return guestUser;
+  }
+  try {
+    const storedUser = localStorage.getItem('currentUser');
+    return storedUser ? JSON.parse(storedUser) : guestUser;
+  } catch (error) {
+    return guestUser;
+  }
+};
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname(); 
   const { toast } = useToast();
   
-  const [currentUser, setCurrentUser] = useState<User>(guestUser);
+  const [currentUser, setCurrentUser] = useState<User>(getInitialUser);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+    
+    // Sincronizar el estado con localStorage al cambiar de ruta
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
       try {
@@ -53,9 +69,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error("Failed to parse user from localStorage", error);
         localStorage.removeItem('currentUser');
+        setCurrentUser(guestUser);
       }
+    } else {
+      setCurrentUser(guestUser);
     }
-    setIsMounted(true);
   }, [pathname]);
 
   const handleLogout = () => {
