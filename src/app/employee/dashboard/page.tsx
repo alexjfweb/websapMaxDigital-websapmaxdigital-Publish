@@ -1,8 +1,10 @@
+
 "use client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ShoppingBag, BookUser, Megaphone, Bell } from "lucide-react";
 import Link from "next/link";
 import React, { useState, useEffect } from 'react';
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function EmployeeDashboardPage() {
   const [isClient, setIsClient] = useState(false);
@@ -19,7 +21,15 @@ export default function EmployeeDashboardPage() {
   };
   
   if (!isClient) {
-    return null; // O un componente de carga
+    return (
+      <div className="space-y-8">
+        <Skeleton className="h-12 w-1/2" />
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-36" />)}
+        </div>
+        <Skeleton className="h-48 w-full" />
+      </div>
+    );
   }
 
   return (

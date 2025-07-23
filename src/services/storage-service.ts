@@ -26,9 +26,9 @@ class StorageService {
       return downloadURL;
     } catch (error: any) {
       console.error("❌ Error al subir el archivo a Firebase Storage:", error);
-      if (error.code === 'storage/unauthorized') {
+      if (error.code === 'storage/unauthorized' || error.message.includes('CORS')) {
         console.error("   - Causa probable: Problema de CORS. Revisa la configuración del bucket en Google Cloud.");
-        throw new Error("No tienes permiso para subir archivos. Por favor, revisa la configuración CORS de tu bucket de Firebase Storage.");
+        throw new Error("Error de permisos al subir archivo. Revisa la configuración CORS de tu bucket de Firebase Storage y asegúrate de que tu dominio esté permitido.");
       }
       throw new Error("No se pudo subir el archivo.");
     }

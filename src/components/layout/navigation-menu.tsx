@@ -58,7 +58,7 @@ const navItems: NavItem[] = [
   { href: '/superadmin/dashboard', labelKey: 'Panel', icon: ShieldCheck, allowedRoles: ['superadmin'], tooltipKey: 'Panel de superadministrador' },
   { href: '/superadmin/analytics', labelKey: 'Analítica', icon: BarChart3, allowedRoles: ['superadmin'], tooltipKey: 'Analítica global' },
   { href: '/superadmin/companies', labelKey: 'Empresas', icon: Store, allowedRoles: ['superadmin'], tooltipKey: 'Gestión de empresas' },
-  { href: '/superadmin/subscriptions', labelKey: 'Suscripciones', icon: Gem, allowedRoles: ['superadmin'], tooltipKey: 'Gestión de suscripciones' },
+  { href: '/superadmin/subscription-plans', labelKey: 'Planes de Suscripción', icon: Gem, allowedRoles: ['superadmin'], tooltipKey: 'Gestionar planes de suscripción' },
   { href: '/superadmin/reminders', labelKey: 'Recordatorios', icon: BellRing, allowedRoles: ['superadmin'], tooltipKey: 'Recordatorios de pago' },
   { href: '/superadmin/users', labelKey: 'Usuarios', icon: Users, allowedRoles: ['superadmin'], tooltipKey: 'Gestión de usuarios' },
   { href: '/superadmin/maintenance', labelKey: 'Mantenimiento', icon: Wrench, allowedRoles: ['superadmin'], tooltipKey: 'Mantenimiento' },
@@ -66,7 +66,6 @@ const navItems: NavItem[] = [
   { href: '/superadmin/backup', labelKey: 'Respaldo', icon: Server, allowedRoles: ['superadmin'], tooltipKey: 'Respaldo' },
   { href: '/superadmin/logs', labelKey: 'Registros', icon: History, allowedRoles: ['superadmin'], tooltipKey: 'Registros' },
   { href: '/superadmin/landing-public', labelKey: 'Landing pública', icon: Palette, allowedRoles: ['superadmin'], tooltipKey: 'Gestionar landing pública' },
-  { href: '/superadmin/subscription-plans', labelKey: 'Planes de Suscripción', icon: Gem, allowedRoles: ['superadmin'], tooltipKey: 'Gestionar planes de suscripción' },
 
   // Admin
   { href: '/admin/dashboard', labelKey: 'Panel', icon: LayoutDashboard, allowedRoles: ['admin'], tooltipKey: 'Panel de administración' },
@@ -124,7 +123,7 @@ export default function NavigationMenu({ role }: NavigationMenuProps) {
         if (isSubMenu) {
           return (
             <SidebarMenuSubItem key={item.href}>
-              <Link href={item.href} passHref legacyBehavior>
+              <Link href={item.href} passHref>
                 <SidebarMenuSubButton isActive={isActive}>
                   <span>{translatedLabel}</span>
                 </SidebarMenuSubButton>
@@ -135,7 +134,7 @@ export default function NavigationMenu({ role }: NavigationMenuProps) {
 
         return (
           <SidebarMenuItem key={item.href}>
-            <Link href={item.href} passHref legacyBehavior>
+            <Link href={item.href} passHref>
               <SidebarMenuButton isActive={isActive} tooltip={translatedTooltip}>
                 <Icon />
                 <span>{translatedLabel}</span>

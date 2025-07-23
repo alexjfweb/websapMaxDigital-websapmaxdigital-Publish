@@ -13,12 +13,14 @@ import type { Order } from '@/types';
 class OrderService {
   private ordersCollection = collection(db, 'orders');
 
-  /**
-   * Obtiene todos los pedidos activos de una compañía específica, ordenados por fecha.
-   * Valida que cada pedido tenga los campos esenciales.
-   * @param companyId - El ID de la compañía.
-   * @returns Un array de objetos Order.
-   */
+  private parseTimestamp(timestamp: any): string {
+    if (!timestamp) return new Date().toISOString();
+    if (timestamp instanceof Timestamp) return timestamp.toDate().toISOString();
+    if (typeof timestamp === 'string') return new Date(timestamp).toISOString();
+    if (typeof timestamp.seconds === 'number') return new Date(timestamp.seconds * 1000).toISOString();
+    return new Date().toISOString();
+  }
+
   async getOrdersByCompany(companyId: string): Promise<Order[]> {
     if (!companyId) {
       throw new Error('El ID de la compañía es requerido.');
@@ -37,7 +39,6 @@ class OrderService {
       querySnapshot.forEach(doc => {
         const data = doc.data();
         
-        // Validación de campos esenciales
         if (
           !data.cliente?.nombre ||
           !data.fecha ||
@@ -51,7 +52,7 @@ class OrderService {
           return;
         }
 
-        const date = data.fecha instanceof Timestamp ? data.fecha.toDate().toISOString() : new Date(data.fecha).toISOString();
+        const date = this.parseTimestamp(data.fecha);
 
         orders.push({
           id: doc.id,
