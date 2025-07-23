@@ -75,6 +75,8 @@ export default function SuperAdminCompaniesPage() {
       !searchTerm ||
       company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       company.ruc.includes(searchTerm) ||
+      (company.email && company.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (company.phone && company.phone.includes(searchTerm)) ||
       (company.location && company.location.toLowerCase().includes(searchTerm.toLowerCase()));
     return statusMatch && searchMatch;
   });
@@ -128,10 +130,29 @@ export default function SuperAdminCompaniesPage() {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
   };
 
-  const handleEditSave = () => {
-    // Aquí iría la lógica para llamar al servicio de actualización
-    console.log("Guardando cambios para:", selectedCompany?.id, editForm);
-    setEditModalOpen(false);
+  const handleEditSave = async () => {
+    if (!selectedCompany?.id) return;
+
+    setIsSubmitting(true);
+    setFeedback(null);
+    try {
+        const response = await fetch(`/api/companies/${selectedCompany.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(editForm),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.error || 'Error al actualizar la empresa');
+        }
+        setFeedback({ type: 'success', message: 'Empresa actualizada exitosamente.' });
+        setEditModalOpen(false);
+        await refreshCompanies();
+    } catch (err: any) {
+        setFeedback({ type: 'error', message: err.message });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
   const handleDelete = (company: Company) => {
@@ -183,7 +204,7 @@ export default function SuperAdminCompaniesPage() {
       <TableRow key={company.id}>
         <TableCell className="font-medium">{company.name}</TableCell>
         <TableCell>{company.ruc}</TableCell>
-        <TableCell className="hidden sm:table-cell">{company.location}</TableCell>
+        <TableCell className="hidden sm:table-cell">{company.email || 'N/A'}</TableCell>
         <TableCell className="text-center">{getStatusBadge(company.status)}</TableCell>
         <TableCell className="hidden md:table-cell text-center text-xs text-muted-foreground">
           {company.registrationDate ? format(new Date(company.registrationDate), "P") : 'N/A'}
@@ -323,7 +344,7 @@ export default function SuperAdminCompaniesPage() {
               <TableRow>
                 <TableHead>Nombre</TableHead>
                 <TableHead>RUC</TableHead>
-                <TableHead className="hidden sm:table-cell">Ubicación</TableHead>
+                <TableHead className="hidden sm:table-cell">Email</TableHead>
                 <TableHead className="text-center">Estado</TableHead>
                 <TableHead className="hidden md:table-cell text-center">Registrado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
@@ -363,24 +384,71 @@ export default function SuperAdminCompaniesPage() {
 
       {/* Modal Editar empresa */}
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Editar empresa</DialogTitle>
+            <DialogTitle>Editar Empresa</DialogTitle>
+             <DialogDescription>
+                Actualice los datos de la empresa.
+              </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-                <label className="block text-sm font-medium">Nombre</label>
-                <input name="name" value={editForm.name || ''} onChange={handleEditChange} className="w-full border rounded px-2 py-1 mt-1" />
-            </div>
-            <div>
-                <label className="block text-sm font-medium">RUC</label>
-                <input name="ruc" value={editForm.ruc || ''} onChange={handleEditChange} className="w-full border rounded px-2 py-1 mt-1" />
-            </div>
-            <div>
-                <label className="block text-sm font-medium">Ubicación</label>
-                <input name="location" value={editForm.location || ''} onChange={handleEditChange} className="w-full border rounded px-2 py-1 mt-1" />
-            </div>
-            <div>
+           <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium">Nombre *</label>
+                  <Input name="name" value={editForm.name || ''} onChange={handleEditChange} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium">RUC *</label>
+                  <Input name="ruc" value={editForm.ruc || ''} onChange={handleEditChange} />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium">Email</label>
+                  <Input name="email" type="email" value={editForm.email || ''} onChange={handleEditChange} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium">Tipo de Empresa</label>
+                  <Input name="companyType" value={editForm.companyType || ''} onChange={handleEditChange} />
+                </div>
+              </div>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium">Teléfono Fijo</label>
+                  <Input name="phoneFixed" value={editForm.phoneFixed || ''} onChange={handleEditChange} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium">Móvil (WhatsApp)</label>
+                  <Input name="phone" value={editForm.phone || ''} onChange={handleEditChange} />
+                </div>
+              </div>
+              <hr className="my-4"/>
+              <h3 className="text-lg font-semibold">Dirección</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium">Calle y Número</label>
+                  <Input name="addressStreet" value={editForm.addressStreet || ''} onChange={handleEditChange} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium">Barrio</label>
+                  <Input name="addressNeighborhood" value={editForm.addressNeighborhood || ''} onChange={handleEditChange} />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium">Ciudad</label>
+                  <Input name="location" value={editForm.location || ''} onChange={handleEditChange} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium">Estado</label>
+                  <Input name="addressState" value={editForm.addressState || ''} onChange={handleEditChange} />
+                </div>
+                 <div>
+                  <label className="block text-sm font-medium">Código Postal</label>
+                  <Input name="addressPostalCode" value={editForm.addressPostalCode || ''} onChange={handleEditChange} />
+                </div>
+              </div>
+              <div>
                 <label className="block text-sm font-medium">Estado</label>
                 <select name="status" value={editForm.status} onChange={handleEditChange} className="w-full border rounded px-2 py-1 mt-1">
                   <option value="active">{statusTranslations.active}</option>
@@ -388,10 +456,10 @@ export default function SuperAdminCompaniesPage() {
                   <option value="pending">{statusTranslations.pending}</option>
                 </select>
             </div>
-          </div>
+            </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditModalOpen(false)} disabled={isSubmitting}>Cancelar</Button>
-            <Button onClick={handleEditSave} disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar'}</Button>
+            <Button onClick={handleEditSave} disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar Cambios'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -24,10 +24,10 @@ class CompanyService {
    * @param data - Datos de la empresa a validar.
    */
   private validateCompanyData(data: Partial<CreateCompanyInput>): void {
-    if (!data.name || data.name.trim() === '') {
+    if ('name' in data && (!data.name || data.name.trim() === '')) {
       throw new Error("El campo 'name' es obligatorio.");
     }
-    if (!data.ruc || data.ruc.trim() === '') {
+    if ('ruc' in data && (!data.ruc || data.ruc.trim() === '')) {
       throw new Error("El campo 'ruc' es obligatorio.");
     }
     if (data.email && !/^\S+@\S+\.\S+$/.test(data.email)) {
@@ -111,6 +111,51 @@ class CompanyService {
     } catch (error) {
       console.error('❌ Error al obtener las empresas de Firestore:', error);
       throw new Error('No se pudieron obtener las empresas.');
+    }
+  }
+
+  /**
+   * Obtiene una empresa por su ID.
+   */
+  async getCompanyById(id: string): Promise<Company | null> {
+    const docRef = doc(db, 'companies', id);
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) {
+      return null;
+    }
+    return { id: docSnap.id, ...docSnap.data() } as Company;
+  }
+  
+  /**
+   * Actualiza una empresa existente en Firestore.
+   * @param companyId - El ID de la empresa a actualizar.
+   * @param companyData - Los campos a actualizar.
+   * @returns La empresa actualizada.
+   */
+  async updateCompany(companyId: string, companyData: Partial<Company>): Promise<Company> {
+    const docRef = doc(db, 'companies', companyId);
+
+    // Opcional: validar que la empresa exista antes de actualizar
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) {
+      throw new Error("La empresa no existe.");
+    }
+    
+    // Validar los datos que se van a actualizar
+    this.validateCompanyData(companyData);
+
+    try {
+      const updatePayload = {
+        ...companyData,
+        updatedAt: serverTimestamp(),
+      };
+      await updateDoc(docRef, updatePayload);
+      const updatedDoc = await getDoc(docRef);
+      console.log(`✅ Empresa actualizada con éxito en Firestore. ID: ${companyId}`);
+      return { id: updatedDoc.id, ...updatedDoc.data() } as Company;
+    } catch (error) {
+      console.error(`❌ Error al actualizar la empresa ${companyId} en Firestore:`, error);
+      throw new Error('No se pudo actualizar la empresa en la base de datos.');
     }
   }
 }
