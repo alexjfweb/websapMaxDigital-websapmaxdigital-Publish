@@ -1,12 +1,13 @@
+
 import type { Timestamp } from 'firebase/firestore';
 
 // Sistema de Gestión de Mesas
 export interface Table {
   id: string;
-  number: string;
+  number: number;
   capacity: number;
   zone: string;
-  status: 'available |occupied |reserved | out_of_service';
+  status: 'available' | 'occupied' | 'reserved' | 'out_of_service';
   isActive: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -20,7 +21,7 @@ export type TableInput = {
   number: string;
   capacity: number;
   zone: string;
-  status: 'available |occupied |reserved | out_of_service';
+  status: 'available' | 'occupied' | 'reserved' | 'out_of_service';
 };
 
 export interface TableAuditLog {

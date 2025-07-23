@@ -1,31 +1,37 @@
-"use client";
-import React, { createContext, useContext, useState, ReactNode } from "react";
 
-// Tipo de pedido (puedes expandir según tus necesidades)
+"use client";
+import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import { db } from '@/lib/firebase';
+import { collection, query, onSnapshot, orderBy, addDoc, updateDoc, doc, Timestamp, where } from 'firebase/firestore';
+
+// Definición del tipo Order
 export interface Order {
   id: string;
   customerName: string;
   date: string;
   items: number;
   total: number;
-  status: string;
-  type: string;
+  status: 'pending' | 'preparing' | 'ready_for_pickup' | 'out_for_delivery' | 'completed' | 'cancelled';
+  type: 'delivery' | 'pickup' | 'dine-in';
+  restaurantId: string;
+  productos: { id: string, nombre: string, cantidad: number, precio: number }[];
+  cliente: {
+    nombre: string;
+    telefono: string;
+    direccion: string;
+    correo?: string;
+    notas?: string;
+  };
+  mesa?: {
+    tableId: string;
+    tableNumber: number;
+  };
 }
-
-// Mock inicial (puedes reemplazar por fetch o persistencia luego)
-const initialOrders: Order[] = [
-  { id: "order-001", customerName: "Eva Green", date: "2024-07-31T12:30:00Z", items: 3, total: 45.50, status: "pending", type: "delivery" },
-  { id: "order-002", customerName: "Frank Blue", date: "2024-07-31T11:30:00Z", items: 2, total: 22.00, status: "preparing", type: "pickup" },
-  { id: "order-003", customerName: "Grace Red", date: "2024-07-31T10:30:00Z", items: 5, total: 78.25, status: "ready_for_pickup", type: "pickup" },
-  { id: "order-004", customerName: "Henry Yellow", date: "2024-07-31T09:30:00Z", items: 1, total: 15.75, status: "out_for_delivery", type: "delivery" },
-  { id: "order-005", customerName: "Ivy White", date: "2024-07-30T15:00:00Z", items: 4, total: 55.00, status: "completed", type: "delivery" },
-  { id: "order-006", customerName: "Jack Black", date: "2024-07-29T18:00:00Z", items: 2, total: 30.50, status: "cancelled", type: "pickup" },
-];
 
 interface OrderContextType {
   orders: Order[];
-  addOrder: (order: Order) => void;
-  updateOrder: (id: string, updates: Partial<Order>) => void;
+  addOrder: (order: Omit<Order, 'id' | 'date'>) => Promise<string>;
+  updateOrder: (id: string, updates: Partial<Order>) => Promise<void>;
   loading: boolean;
 }
 
@@ -38,22 +44,54 @@ export const useOrderContext = () => {
 };
 
 export const OrderProvider = ({ children }: { children: ReactNode }) => {
-  const [orders, setOrders] = useState<Order[]>(initialOrders);
-  const [loading, setLoading] = useState(false);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  React.useEffect(() => {
-    // Usar datos mock para evitar problemas de Firebase
-    console.log('📝 OrderContext: Usando datos mock (modo estático)');
-    setOrders(initialOrders);
-    setLoading(false);
+  useEffect(() => {
+    // Escucha en tiempo real para todos los pedidos
+    const q = query(collection(db, 'orders'), orderBy('fecha', 'desc'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedOrders = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          date: (data.fecha as Timestamp).toDate().toISOString(),
+          customerName: data.cliente.nombre,
+          items: data.productos.reduce((sum: number, p: any) => sum + p.cantidad, 0),
+          total: data.total,
+          status: data.estado,
+          type: data.mesa ? 'dine-in' : 'delivery', // Lógica simple para determinar tipo
+          ...data
+        } as Order;
+      });
+      setOrders(fetchedOrders);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error al obtener pedidos en tiempo real:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const addOrder = (order: Order) => {
-    setOrders(prev => [order, ...prev]);
+  const addOrder = async (order: Omit<Order, 'id' | 'date'>) => {
+    const orderWithTimestamp = {
+      ...order,
+      fecha: Timestamp.now(), // Usar 'fecha' como en la lectura
+    };
+    const docRef = await addDoc(collection(db, 'orders'), orderWithTimestamp);
+    return docRef.id;
   };
 
-  const updateOrder = (id: string, updates: Partial<Order>) => {
-    setOrders(prev => prev.map(o => o.id === id ? { ...o, ...updates } : o));
+  const updateOrder = async (id: string, updates: Partial<Order>) => {
+    const orderRef = doc(db, 'orders', id);
+    // Renombrar 'status' a 'estado' para coincidir con la BD
+    const updatePayload: any = {};
+    if (updates.status) {
+      updatePayload.estado = updates.status;
+    }
+    await updateDoc(orderRef, updatePayload);
   };
 
   return (
@@ -61,4 +99,4 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
       {children}
     </OrderContext.Provider>
   );
-}; 
+};

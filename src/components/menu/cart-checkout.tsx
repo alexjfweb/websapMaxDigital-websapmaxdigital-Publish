@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,8 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { useOrderContext, type Order } from '@/contexts/order-context';
 import { DialogTitle } from '@/components/ui/dialog';
 import { tableService, Table } from '@/services/table-service';
 
@@ -60,6 +60,7 @@ const paymentMethods = [
 ];
 
 export default function CartCheckout({ cart, onQuantity, onRemove, onClear, restaurantId, onClose }: CartCheckoutProps) {
+  const { addOrder } = useOrderContext();
   const envio = cart.length > 0 ? 5.0 : 0;
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const total = subtotal + envio;
@@ -101,11 +102,11 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
 
   useEffect(() => {
     setLoadingMesas(true);
-    tableService.getAllTables().then((todas) => {
+    tableService.getAllTables(restaurantId).then((todas) => {
       // Solo mesas activas y disponibles
       setMesas(todas.filter(m => m.isActive && m.status === 'available'));
     }).finally(() => setLoadingMesas(false));
-  }, []);
+  }, [restaurantId]);
 
   const handleConfirmAndSend = async () => {
     if (cart.length === 0) {
@@ -122,15 +123,14 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
       setAccordionOpen('payment');
       return;
     }
-    // --- REGISTRO AUTOMÁTICO DEL PEDIDO EN FIRESTORE ---
+
     let pedidoGuardado = false;
     try {
-      // Buscar datos de la mesa seleccionada
       const mesaObj = mesas.find(m => m.id === mesaSeleccionada);
-      const pedido = {
+      
+      const newOrderData: Omit<Order, 'id' | 'date'> = {
         restaurantId,
         productos: cart.map(item => ({ id: item.id, nombre: item.name, cantidad: item.quantity, precio: item.price })),
-        metodoPago: paymentMethods.find(m => m.key === selectedPayment)?.label || '',
         cliente: {
           nombre: cliente.nombre,
           telefono: cliente.telefono,
@@ -138,28 +138,30 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
           correo: cliente.correo,
           notas: cliente.notas,
         },
-        fecha: Timestamp.now(),
-        estado: 'pendiente',
+        status: 'pending',
         total,
-        subtotal,
-        envio,
+        // --- Campos calculados que el contexto necesita ---
+        customerName: cliente.nombre,
+        items: cart.reduce((sum, item) => sum + item.quantity, 0),
+        type: mesaObj ? 'dine-in' : 'delivery',
         // --- Mesa ---
         mesa: mesaObj ? {
-          tableId: mesaObj.id,
+          tableId: mesaObj.id!,
           tableNumber: mesaObj.number,
         } : undefined,
       };
-      await addDoc(collection(db, 'orders'), pedido);
-      // Si hay mesa seleccionada, actualizar estado a 'reserved'
+
+      await addOrder(newOrderData);
+      
       if (mesaObj) {
-        await tableService.changeTableStatus(mesaObj.id!, 'reserved');
+        await tableService.changeTableStatus(mesaObj.id!, 'occupied');
       }
       pedidoGuardado = true;
     } catch (err) {
       toast({ title: 'Error al registrar pedido', description: 'No se pudo guardar el pedido en el sistema.', variant: 'destructive' });
       return;
     }
-    // --- ENVÍO POR WHATSAPP (ya existente) ---
+
     const productos = cart.map(item => `• ${item.quantity}x ${item.name} – $${(item.price * item.quantity).toFixed(2)}`).join('\n');
     const totalStr = (cart.reduce((acc, item) => acc + item.price * item.quantity, 0) + envio).toFixed(2);
     const metodo = paymentMethods.find(m => m.key === selectedPayment)?.label || '';
@@ -409,4 +411,4 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
       </Card>
     </div>
   );
-} 
+}

@@ -1,3 +1,4 @@
+
 import type { Timestamp } from 'firebase/firestore';
 
 
@@ -127,10 +128,10 @@ export interface Company {
 // Sistema de Gestión de Mesas
 export interface Table {
   id: string;
-  number: string;
+  number: number;
   capacity: number;
   zone: string;
-  status: 'available |occupied |reserved' | out_of_service';
+  status: 'available' | 'occupied' | 'reserved' | 'out_of_service';
   isActive: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -140,16 +141,17 @@ export interface Table {
   reservationTime?: string;
 }
 
-export type TableInput = [object Object]  number: string;
+export type TableInput = {
+  number: number;
   capacity: number;
   zone: string;
-  status: 'available |occupied |reserved' | out_of_service';
+  status: 'available' | 'occupied' | 'reserved' | 'out_of_service';
 };
 
 export interface TableAuditLog {
   id: string;
   tableId: string;
-  action: 'created' | 'updated' | 'deleted' | status_changed | 'reserved' | 'freed';
+  action: 'created' | 'updated' | 'deleted' | 'status_changed' | 'reserved' | 'freed';
   previousStatus?: string;
   newStatus?: string;
   userId: string;
@@ -158,10 +160,26 @@ export interface TableAuditLog {
   details?: string;
 }
 
-// Extender la interfaz Order para incluir información de mesa
-export interface OrderWithTable extends Order {
-  tableId?: string;
-  tableNumber?: string;
-  reservationDate?: string;
-  reservationTime?: string;
+// Definición de un Pedido
+export interface Order {
+  id: string;
+  customerName: string;
+  date: string; // ISO date string
+  items: number;
+  total: number;
+  status: 'pending' | 'preparing' | 'ready_for_pickup' | 'out_for_delivery' | 'completed' | 'cancelled';
+  type: 'delivery' | 'pickup' | 'dine-in';
+  restaurantId: string;
+  productos: { id: string, nombre: string, cantidad: number, precio: number }[];
+  cliente: {
+    nombre: string;
+    telefono: string;
+    direccion: string;
+    correo?: string;
+    notas?: string;
+  };
+  mesa?: {
+    tableId: string;
+    tableNumber: number;
+  };
 }
