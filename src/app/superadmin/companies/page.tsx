@@ -15,11 +15,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 
 // Mock Data for Companies
 const mockCompanies: Company[] = [
-  { id: "com-1", name: "websapMax Restaurant", location: "Flavor Town", status: "active", registrationDate: "2023-01-15T00:00:00Z" },
-  { id: "com-2", name: "The Burger Joint", location: "Metropolis", status: "active", registrationDate: "2023-03-20T00:00:00Z" },
-  { id: "com-3", name: "Pizza Palace", location: "Gotham City", status: "inactive", registrationDate: "2023-05-10T00:00:00Z" },
-  { id: "com-4", name: "Sushi Central", location: "Star City", status: "pending", registrationDate: "2024-07-28T00:00:00Z" },
-  { id: "com-5", name: "Taco Tuesday", location: "Central City", status: "active", registrationDate: "2023-09-01T00:00:00Z" },
+  { id: "com-1", name: "websapMax Restaurant", ruc: "123456789-1", location: "Flavor Town", status: "active", registrationDate: "2023-01-15T00:00:00Z" },
+  { id: "com-2", name: "The Burger Joint", ruc: "987654321-2", location: "Metropolis", status: "active", registrationDate: "2023-03-20T00:00:00Z" },
+  { id: "com-3", name: "Pizza Palace", ruc: "112233445-5", location: "Gotham City", status: "inactive", registrationDate: "2023-05-10T00:00:00Z" },
+  { id: "com-4", name: "Sushi Central", ruc: "556677889-9", location: "Star City", status: "pending", registrationDate: "2024-07-28T00:00:00Z" },
+  { id: "com-5", name: "Taco Tuesday", ruc: "998877665-5", location: "Central City", status: "active", registrationDate: "2023-09-01T00:00:00Z" },
 ];
 
 export default function SuperAdminCompaniesPage() {
@@ -31,7 +31,7 @@ export default function SuperAdminCompaniesPage() {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [editForm, setEditForm] = useState<{ name: string; location: string; status: string }>({ name: '', location: '', status: 'active' });
+  const [editForm, setEditForm] = useState<{ name: string; location: string; status: string; ruc: string }>({ name: '', location: '', status: 'active', ruc: '' });
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -67,6 +67,7 @@ export default function SuperAdminCompaniesPage() {
     const searchMatch =
       !searchTerm ||
       company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      company.ruc.includes(searchTerm) ||
       (company.location && company.location.toLowerCase().includes(searchTerm.toLowerCase()));
     return statusMatch && searchMatch;
   });
@@ -82,7 +83,7 @@ export default function SuperAdminCompaniesPage() {
   const handleEdit = (company: Company) => {
     console.log('Editar empresa:', company);
     setSelectedCompany(company);
-    setEditForm({ name: company.name, location: company.location, status: company.status });
+    setEditForm({ name: company.name, location: company.location, status: company.status, ruc: company.ruc });
     setEditModalOpen(true);
   };
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -137,7 +138,7 @@ export default function SuperAdminCompaniesPage() {
           <div className="flex flex-col md:flex-row gap-2 pt-4">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Buscar..." className="pl-8" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+              <Input placeholder="Buscar por nombre, RUC o ubicación..." className="pl-8" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -160,6 +161,7 @@ export default function SuperAdminCompaniesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nombre</TableHead>
+                <TableHead>RUC</TableHead>
                 <TableHead className="hidden sm:table-cell">Ubicación</TableHead>
                 <TableHead className="text-center">Estado</TableHead>
                 <TableHead className="hidden md:table-cell text-center">Registrado</TableHead>
@@ -170,6 +172,7 @@ export default function SuperAdminCompaniesPage() {
               {filteredCompanies.map((company) => (
                 <TableRow key={company.id}>
                   <TableCell className="font-medium">{company.name}</TableCell>
+                  <TableCell>{company.ruc}</TableCell>
                   <TableCell className="hidden sm:table-cell">{company.location}</TableCell>
                   <TableCell className="text-center">{getStatusBadge(company.status)}</TableCell>
                   <TableCell className="hidden md:table-cell text-center text-xs text-muted-foreground">
@@ -202,8 +205,9 @@ export default function SuperAdminCompaniesPage() {
             <DialogTitle>Detalles de la empresa</DialogTitle>
             <DialogDescription>
               {selectedCompany && (
-                <div className="space-y-2">
+                <div className="space-y-2 mt-4">
                   <div><b>Nombre:</b> {selectedCompany.name}</div>
+                  <div><b>RUC:</b> {selectedCompany.ruc}</div>
                   <div><b>Ubicación:</b> {selectedCompany.location}</div>
                   <div><b>Estado:</b> {statusTranslations[selectedCompany.status]}</div>
                   <div><b>Registrado:</b> {format(new Date(selectedCompany.registrationDate), "P")}</div>
@@ -224,17 +228,27 @@ export default function SuperAdminCompaniesPage() {
           <DialogHeader>
             <DialogTitle>Editar empresa</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <label className="block text-sm font-medium">Nombre</label>
-            <input name="name" value={editForm.name} onChange={handleEditChange} className="w-full border rounded px-2 py-1" />
-            <label className="block text-sm font-medium">Ubicación</label>
-            <input name="location" value={editForm.location} onChange={handleEditChange} className="w-full border rounded px-2 py-1" />
-            <label className="block text-sm font-medium">Estado</label>
-            <select name="status" value={editForm.status} onChange={handleEditChange} className="w-full border rounded px-2 py-1">
-              <option value="active">{statusTranslations.active}</option>
-              <option value="inactive">{statusTranslations.inactive}</option>
-              <option value="pending">{statusTranslations.pending}</option>
-            </select>
+          <div className="space-y-4 py-4">
+            <div>
+                <label className="block text-sm font-medium">Nombre</label>
+                <input name="name" value={editForm.name} onChange={handleEditChange} className="w-full border rounded px-2 py-1 mt-1" />
+            </div>
+            <div>
+                <label className="block text-sm font-medium">RUC</label>
+                <input name="ruc" value={editForm.ruc} onChange={handleEditChange} className="w-full border rounded px-2 py-1 mt-1" />
+            </div>
+            <div>
+                <label className="block text-sm font-medium">Ubicación</label>
+                <input name="location" value={editForm.location} onChange={handleEditChange} className="w-full border rounded px-2 py-1 mt-1" />
+            </div>
+            <div>
+                <label className="block text-sm font-medium">Estado</label>
+                <select name="status" value={editForm.status} onChange={handleEditChange} className="w-full border rounded px-2 py-1 mt-1">
+                  <option value="active">{statusTranslations.active}</option>
+                  <option value="inactive">{statusTranslations.inactive}</option>
+                  <option value="pending">{statusTranslations.pending}</option>
+                </select>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditModalOpen(false)} disabled={loading}>Cancelar</Button>

@@ -108,12 +108,15 @@ export type ProjectInput = {
 export interface Company {
   id: string;
   name: string;
+  ruc: string; // Registro Único de Contribuyentes o ID fiscal
   location: string;
   status: 'active' | 'inactive' | 'pending';
   registrationDate: string; // ISO date string
   phone?: string;
   email?: string;
   category?: 'Company' | 'Restaurant';
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
 }
 
 // Sistema de Gestión de Mesas
