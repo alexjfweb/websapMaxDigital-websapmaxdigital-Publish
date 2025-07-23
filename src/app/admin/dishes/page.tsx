@@ -5,7 +5,6 @@ import { useState, type ChangeEvent, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { PlusCircle, Edit3, Trash2, Search, Filter, UploadCloud, X, Save } from "lucide-react";
@@ -22,32 +21,30 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { cn } from "@/lib/utils";
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, Timestamp, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
-
+import { useDishes } from "@/hooks/use-dishes";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminDishesPage() {
-  const [isMounted, setIsMounted] = useState(false);
-  const [dishes, setDishes] = useState<Dish[]>([]);
+  const companyId = 'websapmax'; // Hardcoded for now
+  const { dishes, isLoading, error, refreshDishes } = useDishes(companyId);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [dishToDelete, setDishToDelete] = useState<Dish | null>(null);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [filteredDishes, setFilteredDishes] = useState<Dish[]>([]);
-  const companyId = 'websapmax'; // Hardcoded for now
+  const { toast } = useToast();
 
   useEffect(() => {
-    setIsMounted(true);
-    // Leer platos de Firestore filtrando por companyId
-    const q = query(collection(db, 'dishes'), where('companyId', '==', companyId));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const dishesFS = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Dish));
-      setDishes(dishesFS);
-      setFilteredDishes(dishesFS); // Inicializar platos filtrados
-    });
-    return () => unsubscribe();
-  }, [companyId]);
+    if (dishes) {
+      console.log('🟢 Platos recibidos en el componente:', dishes);
+      setFilteredDishes(dishes);
+    }
+    if(error){
+      console.error('🔴 Error al cargar platos:', error);
+    }
+  }, [dishes, error]);
 
-  const { toast } = useToast();
 
   const dishFormSchema = z.object({
     id: z.string().optional(),
@@ -74,12 +71,6 @@ export default function AdminDishesPage() {
       image: null,
     },
   });
-  
-  useEffect(() => {
-    if (isMounted) {
-      form.trigger();
-    }
-  }, [form, isMounted]);
 
   useEffect(() => {
     if (editingDish) {
@@ -135,7 +126,6 @@ export default function AdminDishesPage() {
         const snapshot = await getDocs(q);
 
         if (!snapshot.empty) {
-            // Si estamos actualizando, permitimos guardar si el plato encontrado es el mismo que estamos editando.
             const isSameDish = isUpdating && snapshot.docs[0].id === editingDish.id;
             if (!isSameDish) {
                 toast({
@@ -181,6 +171,7 @@ export default function AdminDishesPage() {
         
         setEditingDish(null);
         setIsDialogOpen(false);
+        await refreshDishes();
 
     } catch (error) {
         console.error("Error guardando el plato: ", error);
@@ -216,6 +207,7 @@ export default function AdminDishesPage() {
         description: `El plato "${dishToDelete.name}" se ha eliminado correctamente.`,
         variant: "destructive"
       });
+      await refreshDishes();
     } catch (error) {
       toast({
         title: "Error",
@@ -233,11 +225,8 @@ export default function AdminDishesPage() {
     ));
   };
 
-  // Función para filtrar platos
-  const filterDishes = () => {
-    let filtered = dishes;
-
-    // Filtrar por búsqueda
+  useEffect(() => {
+    let filtered = dishes || [];
     if (searchTerm.trim()) {
       filtered = filtered.filter(dish => 
         dish.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -245,23 +234,14 @@ export default function AdminDishesPage() {
         dish.category.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-
-    // Filtrar por categoría
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(dish => dish.category === selectedCategory);
     }
-
     setFilteredDishes(filtered);
-  };
-
-  // Aplicar filtros cuando cambien los criterios
-  useEffect(() => {
-    filterDishes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dishes, searchTerm, selectedCategory]);
 
-  // Obtener categorías únicas
   const getUniqueCategories = () => {
+    if (!dishes) return ['all'];
     const categories = dishes.map(dish => dish.category);
     return ['all', ...Array.from(new Set(categories))];
   };
@@ -279,9 +259,104 @@ export default function AdminDishesPage() {
     setSelectedCategory('all');
   };
 
-  if (!isMounted) {
-    return <div>Cargando...</div>;
-  }
+  const renderTableBody = () => {
+    if (isLoading) {
+      return Array.from({ length: 5 }).map((_, index) => (
+        <TableRow key={`skeleton-${index}`}>
+          <TableCell className="hidden md:table-cell"><Skeleton className="h-12 w-12 rounded-md" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+          <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+          <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+          <TableCell className="text-center"><Skeleton className="h-6 w-20 mx-auto rounded-full" /></TableCell>
+          <TableCell className="text-center hidden sm:table-cell"><Skeleton className="h-4 w-20 mx-auto" /></TableCell>
+          <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
+        </TableRow>
+      ));
+    }
+
+    if (error) {
+      return (
+        <TableRow>
+          <TableCell colSpan={7} className="text-center text-red-500 py-8">
+            Error al cargar los platos. Por favor, intente de nuevo más tarde.
+          </TableCell>
+        </TableRow>
+      );
+    }
+
+    if (filteredDishes.length === 0) {
+      return (
+        <TableRow>
+          <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+            No se encontraron platos.
+          </TableCell>
+        </TableRow>
+      );
+    }
+
+    return filteredDishes.map((dish) => (
+      <TableRow key={dish.id}>
+        <TableCell className="hidden md:table-cell">
+          <Image 
+              src={dish.imageUrl} 
+              alt={dish.name} 
+              width={48} 
+              height={48} 
+              className="rounded-md object-cover"
+              data-ai-hint="food item"
+          />
+        </TableCell>
+        <TableCell className="font-medium">{dish.name}</TableCell>
+        <TableCell>
+          <Badge variant="outline">{dish.category}</Badge>
+        </TableCell>
+        <TableCell className="text-right">${dish.price.toFixed(2)}</TableCell>
+        <TableCell className="text-center">
+          {dish.stock === -1 ? <Badge variant="secondary">Ilimitado</Badge> : 
+           dish.stock === 0 ? <Badge variant="destructive">Agotado</Badge> : 
+           dish.stock}
+        </TableCell>
+        <TableCell className="text-center hidden sm:table-cell">
+          <div className="flex justify-center">{renderStars(dish.likes)}</div>
+        </TableCell>
+        <TableCell className="text-right">
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" size="icon" className="hover:text-primary" onClick={() => openEditDialog(dish)}>
+              <Edit3 className="h-4 w-4" />
+            </Button>
+            <AlertDialog onOpenChange={(open) => !open && setDishToDelete(null)}>
+              <AlertDialogTrigger asChild>
+                 <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeleteDish(dish)}>
+                   <Trash2 className="h-4 w-4" />
+                 </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                  <AlertDialogHeader>
+                      <AlertDialogTitle>¿Eliminar plato?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                          ¿Estás seguro de que quieres eliminar el plato <strong>"{dish.name}"</strong>? 
+                          Esta acción no se puede deshacer y el plato desaparecerá del menú público.
+                      </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                      <AlertDialogCancel>
+                          Cancelar
+                      </AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={confirmDelete}
+                        className={cn(buttonVariants({ variant: "destructive" }))}
+                      >
+                          Sí, eliminar
+                      </AlertDialogAction>
+                  </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </TableCell>
+      </TableRow>
+    ));
+  };
+
 
   return (
     <div className="space-y-8">
@@ -439,67 +514,7 @@ export default function AdminDishesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredDishes.map((dish) => (
-                <TableRow key={dish.id}>
-                  <TableCell className="hidden md:table-cell">
-                    <Image 
-                        src={dish.imageUrl} 
-                        alt={dish.name} 
-                        width={48} 
-                        height={48} 
-                        className="rounded-md object-cover"
-                        data-ai-hint="food item"
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium">{dish.name}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{dish.category}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right">${dish.price.toFixed(2)}</TableCell>
-                  <TableCell className="text-center">
-                    {dish.stock === -1 ? <Badge variant="secondary">Ilimitado</Badge> : 
-                     dish.stock === 0 ? <Badge variant="destructive">Agotado</Badge> : 
-                     dish.stock}
-                  </TableCell>
-                  <TableCell className="text-center hidden sm:table-cell">
-                    <div className="flex justify-center">{renderStars(dish.likes)}</div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" className="hover:text-primary" onClick={() => openEditDialog(dish)}>
-                        <Edit3 className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog onOpenChange={(open) => !open && setDishToDelete(null)}>
-                        <AlertDialogTrigger asChild>
-                           <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeleteDish(dish)}>
-                             <Trash2 className="h-4 w-4" />
-                           </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>¿Eliminar plato?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    ¿Estás seguro de que quieres eliminar el plato <strong>"{dish.name}"</strong>? 
-                                    Esta acción no se puede deshacer y el plato desaparecerá del menú público.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>
-                                    Cancelar
-                                </AlertDialogCancel>
-                                <AlertDialogAction 
-                                  onClick={confirmDelete}
-                                  className={cn(buttonVariants({ variant: "destructive" }))}
-                                >
-                                    Sí, eliminar
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {renderTableBody()}
             </TableBody>
           </Table>
         </CardContent>
@@ -556,5 +571,3 @@ export default function AdminDishesPage() {
     </div>
   );
 }
-
-    
