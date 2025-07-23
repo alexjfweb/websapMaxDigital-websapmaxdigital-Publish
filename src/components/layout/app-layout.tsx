@@ -34,47 +34,32 @@ const guestUser: User = {
   registrationDate: new Date(0).toISOString(),
 };
 
-// Función para obtener el usuario de forma segura solo en el cliente
-const getInitialUser = (): User => {
-  if (typeof window === 'undefined') {
-    return guestUser;
-  }
-  try {
-    const storedUser = localStorage.getItem('currentUser');
-    return storedUser ? JSON.parse(storedUser) : guestUser;
-  } catch (error) {
-    return guestUser;
-  }
-};
-
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname(); 
   const { toast } = useToast();
   
-  const [currentUser, setCurrentUser] = useState<User>(getInitialUser);
+  const [currentUser, setCurrentUser] = useState<User>(guestUser);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
-    
-    // Sincronizar el estado con localStorage al cambiar de ruta
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) {
-      try {
+    // Correct way to read from localStorage to avoid hydration mismatch.
+    // This code runs only on the client, after the initial render.
+    try {
+      const storedUser = localStorage.getItem('currentUser');
+      if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
         if (parsedUser && parsedUser.email && parsedUser.role) {
           setCurrentUser(parsedUser);
         }
-      } catch (error) {
-        console.error("Failed to parse user from localStorage", error);
-        localStorage.removeItem('currentUser');
-        setCurrentUser(guestUser);
       }
-    } else {
+    } catch (error) {
+      console.error("Failed to parse user from localStorage", error);
+      localStorage.removeItem('currentUser');
       setCurrentUser(guestUser);
     }
-  }, [pathname]);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('currentUser');
