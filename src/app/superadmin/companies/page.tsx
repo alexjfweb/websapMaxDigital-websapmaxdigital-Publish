@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { useCompanies } from "@/hooks/use-companies";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CreateCompanyInput } from "@/services/company-service";
 
 export default function SuperAdminCompaniesPage() {
   const { companies, isLoading, error, refreshCompanies } = useCompanies();
@@ -26,9 +27,15 @@ export default function SuperAdminCompaniesPage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   
+  const initialFormState: CreateCompanyInput = {
+    name: '', ruc: '', location: '', email: '', phone: '', phoneFixed: '',
+    addressStreet: '', addressNeighborhood: '', addressState: '', addressPostalCode: '',
+    companyType: ''
+  };
+
   // States for forms and feedback
-  const [newCompanyForm, setNewCompanyForm] = useState({ name: '', ruc: '', location: '' });
-  const [editForm, setEditForm] = useState<{ name: string; location: string; status: string; ruc: string }>({ name: '', location: '', status: 'active', ruc: '' });
+  const [newCompanyForm, setNewCompanyForm] = useState<CreateCompanyInput>(initialFormState);
+  const [editForm, setEditForm] = useState<Partial<Company>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -72,12 +79,18 @@ export default function SuperAdminCompaniesPage() {
     return statusMatch && searchMatch;
   });
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setNewCompanyForm(prev => ({ ...prev, [name]: value }));
+  };
+
   const handleCreateNew = async () => {
     if (!newCompanyForm.name || !newCompanyForm.ruc) {
       setFeedback({ type: 'error', message: 'El nombre y el RUC son obligatorios.' });
       return;
     }
     setIsSubmitting(true);
+    setFeedback(null);
     try {
       const response = await fetch('/api/companies', {
         method: 'POST',
@@ -90,7 +103,7 @@ export default function SuperAdminCompaniesPage() {
       }
       setFeedback({ type: 'success', message: 'Empresa creada exitosamente.' });
       setIsCreateModalOpen(false);
-      setNewCompanyForm({ name: '', ruc: '', location: '' }); // Reset form
+      setNewCompanyForm(initialFormState); // Reset form
       await refreshCompanies(); // Refresh the list
     } catch (err: any) {
       setFeedback({ type: 'error', message: err.message });
@@ -107,7 +120,7 @@ export default function SuperAdminCompaniesPage() {
 
   const handleEdit = (company: Company) => {
     setSelectedCompany(company);
-    setEditForm({ name: company.name, location: company.location || '', status: company.status, ruc: company.ruc });
+    setEditForm(company);
     setEditModalOpen(true);
   };
 
@@ -206,25 +219,69 @@ export default function SuperAdminCompaniesPage() {
               <PlusCircle className="mr-2 h-5 w-5" /> Registrar nueva empresa
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Registrar Nueva Empresa</DialogTitle>
               <DialogDescription>
                 Complete los siguientes campos para registrar una nueva empresa.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div>
-                <label className="block text-sm font-medium">Nombre</label>
-                <Input value={newCompanyForm.name} onChange={e => setNewCompanyForm({...newCompanyForm, name: e.target.value})} placeholder="Ej. Restaurante S.A." />
+            <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium">Nombre de la Empresa *</label>
+                  <Input name="name" value={newCompanyForm.name} onChange={handleInputChange} placeholder="Ej. Restaurante S.A.S" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium">RUC / ID Fiscal *</label>
+                  <Input name="ruc" value={newCompanyForm.ruc} onChange={handleInputChange} placeholder="Ej. 123456789-0" />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium">RUC</label>
-                <Input value={newCompanyForm.ruc} onChange={e => setNewCompanyForm({...newCompanyForm, ruc: e.target.value})} placeholder="Ej. 123456789" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium">Email de Contacto</label>
+                  <Input name="email" type="email" value={newCompanyForm.email} onChange={handleInputChange} placeholder="contacto@empresa.com" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium">Tipo de Empresa</label>
+                  <Input name="companyType" value={newCompanyForm.companyType} onChange={handleInputChange} placeholder="Ej. SAS, Ltda." />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium">Ubicación</label>
-                <Input value={newCompanyForm.location} onChange={e => setNewCompanyForm({...newCompanyForm, location: e.target.value})} placeholder="Ej. Ciudad, País" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium">Teléfono Fijo</label>
+                  <Input name="phoneFixed" value={newCompanyForm.phoneFixed} onChange={handleInputChange} placeholder="Ej. (1) 2345678" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium">Teléfono Móvil (WhatsApp)</label>
+                  <Input name="phone" value={newCompanyForm.phone} onChange={handleInputChange} placeholder="Ej. 3001234567" />
+                </div>
+              </div>
+              <hr className="my-4"/>
+              <h3 className="text-lg font-semibold">Dirección Detallada</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium">Calle y Número</label>
+                  <Input name="addressStreet" value={newCompanyForm.addressStreet} onChange={handleInputChange} placeholder="Ej. Calle 100 # 19-50" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium">Barrio / Colonia</label>
+                  <Input name="addressNeighborhood" value={newCompanyForm.addressNeighborhood} onChange={handleInputChange} placeholder="Ej. Chapinero" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium">Ciudad</label>
+                  <Input name="location" value={newCompanyForm.location} onChange={handleInputChange} placeholder="Ej. Bogotá" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium">Departamento / Estado</label>
+                  <Input name="addressState" value={newCompanyForm.addressState} onChange={handleInputChange} placeholder="Ej. Cundinamarca" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium">Código Postal</label>
+                  <Input name="addressPostalCode" value={newCompanyForm.addressPostalCode} onChange={handleInputChange} placeholder="Ej. 110221" />
+                </div>
               </div>
             </div>
             <DialogFooter>
@@ -281,21 +338,23 @@ export default function SuperAdminCompaniesPage() {
 
       {/* Modal Ver empresa */}
       <Dialog open={viewModalOpen} onOpenChange={setViewModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Detalles de la empresa</DialogTitle>
-            <DialogDescription>
-              {selectedCompany && (
-                <div className="space-y-2 mt-4">
-                  <div><b>Nombre:</b> {selectedCompany.name}</div>
-                  <div><b>RUC:</b> {selectedCompany.ruc}</div>
-                  <div><b>Ubicación:</b> {selectedCompany.location}</div>
-                  <div><b>Estado:</b> {statusTranslations[selectedCompany.status]}</div>
-                  <div><b>Registrado:</b> {selectedCompany.registrationDate ? format(new Date(selectedCompany.registrationDate), "P") : 'N/A'}</div>
-                </div>
-              )}
-            </DialogDescription>
           </DialogHeader>
+            {selectedCompany && (
+              <div className="space-y-3 mt-4 text-sm max-h-[70vh] overflow-y-auto">
+                <p><strong>Nombre:</strong> {selectedCompany.name}</p>
+                <p><strong>RUC:</strong> {selectedCompany.ruc}</p>
+                <p><strong>Tipo:</strong> {selectedCompany.companyType || 'N/A'}</p>
+                <p><strong>Email:</strong> {selectedCompany.email || 'N/A'}</p>
+                <p><strong>Teléfono Fijo:</strong> {selectedCompany.phoneFixed || 'N/A'}</p>
+                <p><strong>Teléfono Móvil:</strong> {selectedCompany.phone || 'N/A'}</p>
+                <p><strong>Dirección:</strong> {`${selectedCompany.addressStreet || ''}, ${selectedCompany.addressNeighborhood || ''}, ${selectedCompany.location}, ${selectedCompany.addressState || ''}, ${selectedCompany.addressPostalCode || ''}`}</p>
+                <p><strong>Estado:</strong> {statusTranslations[selectedCompany.status]}</p>
+                <p><strong>Registrado:</strong> {selectedCompany.registrationDate ? format(new Date(selectedCompany.registrationDate), "P") : 'N/A'}</p>
+              </div>
+            )}
           <DialogFooter>
             <Button onClick={() => setViewModalOpen(false)}>Cerrar</Button>
           </DialogFooter>
@@ -311,15 +370,15 @@ export default function SuperAdminCompaniesPage() {
           <div className="space-y-4 py-4">
             <div>
                 <label className="block text-sm font-medium">Nombre</label>
-                <input name="name" value={editForm.name} onChange={handleEditChange} className="w-full border rounded px-2 py-1 mt-1" />
+                <input name="name" value={editForm.name || ''} onChange={handleEditChange} className="w-full border rounded px-2 py-1 mt-1" />
             </div>
             <div>
                 <label className="block text-sm font-medium">RUC</label>
-                <input name="ruc" value={editForm.ruc} onChange={handleEditChange} className="w-full border rounded px-2 py-1 mt-1" />
+                <input name="ruc" value={editForm.ruc || ''} onChange={handleEditChange} className="w-full border rounded px-2 py-1 mt-1" />
             </div>
             <div>
                 <label className="block text-sm font-medium">Ubicación</label>
-                <input name="location" value={editForm.location} onChange={handleEditChange} className="w-full border rounded px-2 py-1 mt-1" />
+                <input name="location" value={editForm.location || ''} onChange={handleEditChange} className="w-full border rounded px-2 py-1 mt-1" />
             </div>
             <div>
                 <label className="block text-sm font-medium">Estado</label>

@@ -23,12 +23,15 @@ class CompanyService {
    * Lanza un error si la validación falla.
    * @param data - Datos de la empresa a validar.
    */
-  private validateCompanyData(data: CreateCompanyInput): void {
+  private validateCompanyData(data: Partial<CreateCompanyInput>): void {
     if (!data.name || data.name.trim() === '') {
       throw new Error("El campo 'name' es obligatorio.");
     }
     if (!data.ruc || data.ruc.trim() === '') {
       throw new Error("El campo 'ruc' es obligatorio.");
+    }
+    if (data.email && !/^\S+@\S+\.\S+$/.test(data.email)) {
+      throw new Error("El formato del correo electrónico no es válido.");
     }
     // Aquí se pueden agregar más validaciones, como formato de RUC, etc.
   }
@@ -88,8 +91,16 @@ class CompanyService {
           name: data.name,
           ruc: data.ruc,
           location: data.location,
+          addressStreet: data.addressStreet,
+          addressNeighborhood: data.addressNeighborhood,
+          addressState: data.addressState,
+          addressPostalCode: data.addressPostalCode,
+          companyType: data.companyType,
           status: data.status,
           registrationDate: data.registrationDate,
+          phone: data.phone,
+          phoneFixed: data.phoneFixed,
+          email: data.email,
           createdAt: data.createdAt?.toDate(),
           updatedAt: data.updatedAt?.toDate(),
         } as Company);

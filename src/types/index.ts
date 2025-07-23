@@ -109,16 +109,21 @@ export interface Company {
   id: string;
   name: string;
   ruc: string; // Registro Único de Contribuyentes o ID fiscal
-  location: string;
+  location: string; // Ciudad/País
+  addressStreet?: string;
+  addressNeighborhood?: string;
+  addressState?: string;
+  addressPostalCode?: string;
+  companyType?: string; // SAS, Ltda.
   status: 'active' | 'inactive' | 'pending';
   registrationDate: string; // ISO date string
-  phone?: string;
+  phone?: string; // Teléfono móvil (WhatsApp)
+  phoneFixed?: string; // Teléfono fijo
   email?: string;
   category?: 'Company' | 'Restaurant';
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
-
 // Sistema de Gestión de Mesas
 export interface Table {
   id: string;
