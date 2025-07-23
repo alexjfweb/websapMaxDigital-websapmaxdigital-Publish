@@ -97,7 +97,7 @@ class CompanyService {
           addressPostalCode: data.addressPostalCode,
           companyType: data.companyType,
           status: data.status,
-          registrationDate: data.registrationDate,
+          registrationDate: data.registrationDate || new Date(0).toISOString(),
           phone: data.phone,
           phoneFixed: data.phoneFixed,
           email: data.email,
