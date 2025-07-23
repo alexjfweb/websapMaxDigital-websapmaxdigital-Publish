@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, type ChangeEvent } from "react";
@@ -22,6 +23,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { addDays, isWithinInterval, parseISO } from "date-fns";
+import { storageService } from "@/services/storage-service";
 
 
 // Mock Data for Employees
@@ -41,6 +43,7 @@ export default function AdminEmployeesPage() {
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null }>({ from: null, to: null });
   const [search, setSearch] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const employeeFormSchema = z.object({
       id: z.string().optional(),
@@ -105,32 +108,49 @@ export default function AdminEmployeesPage() {
     }
   };
 
-  const onSubmit = (values: EmployeeFormData) => {
-    if (editingEmployee) {
-      setEmployees(prev => prev.map(emp => 
-        emp.id === editingEmployee.id ? { 
-            ...emp, 
-            ...values,
-            role: values.role as UserRole,
-            avatarUrl: avatarPreview || emp.avatarUrl 
-        } : emp
-      ));
-      toast({ title: "Empleado Actualizado!", description: `Detalles para ${values.username} han sido actualizados.` });
-    } else {
-      const newEmployee: User = {
-        id: `emp-${Date.now()}`,
-        username: values.username,
-        email: values.email,
-        contact: values.contact,
-        role: values.role as UserRole,
-        status: values.status,
-        registrationDate: new Date().toISOString(),
-        avatarUrl: avatarPreview || `https://placehold.co/40x40.png?text=${values.username.substring(0,1).toUpperCase()}`,
-      };
-      setEmployees(prev => [newEmployee, ...prev]);
-      toast({ title: "Empleado Agregado!", description: `${values.username} ha sido agregado al equipo.` });
+  const onSubmit = async (values: EmployeeFormData) => {
+    setIsSubmitting(true);
+    try {
+        let avatarUrl = editingEmployee?.avatarUrl;
+
+        if (values.avatar instanceof File) {
+            if (editingEmployee?.avatarUrl && !editingEmployee.avatarUrl.includes('placehold.co')) {
+                await storageService.deleteFile(editingEmployee.avatarUrl);
+            }
+            avatarUrl = await storageService.uploadFile(values.avatar, 'avatars/');
+        }
+
+        if (editingEmployee) {
+            setEmployees(prev => prev.map(emp => 
+              emp.id === editingEmployee.id ? { 
+                  ...emp, 
+                  ...values,
+                  role: values.role as UserRole,
+                  avatarUrl: avatarUrl
+              } : emp
+            ));
+            toast({ title: "Empleado Actualizado!", description: `Detalles para ${values.username} han sido actualizados.` });
+        } else {
+            const newEmployee: User = {
+              id: `emp-${Date.now()}`,
+              username: values.username,
+              email: values.email,
+              contact: values.contact,
+              role: values.role as UserRole,
+              status: values.status,
+              registrationDate: new Date().toISOString(),
+              avatarUrl: avatarUrl || `https://placehold.co/40x40.png?text=${values.username.substring(0,1).toUpperCase()}`,
+            };
+            setEmployees(prev => [newEmployee, ...prev]);
+            toast({ title: "Empleado Agregado!", description: `${values.username} ha sido agregado al equipo.` });
+        }
+        closeDialog();
+    } catch (error) {
+        console.error("Error saving employee:", error);
+        toast({ title: "Error", description: "No se pudo guardar el empleado.", variant: "destructive" });
+    } finally {
+        setIsSubmitting(false);
     }
-    closeDialog();
   };
   
   const openEditDialog = (employee: User) => {
@@ -267,8 +287,10 @@ export default function AdminEmployeesPage() {
                     )}/>
                  </div>
                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={closeDialog}>Cancelar</Button>
-                    <Button type="submit"><Save className="mr-2 h-4 w-4"/> {editingEmployee ? 'Guardar Cambios' : 'Crear'}</Button>
+                    <Button type="button" variant="outline" onClick={closeDialog} disabled={isSubmitting}>Cancelar</Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? 'Guardando...' : <><Save className="mr-2 h-4 w-4"/> {editingEmployee ? 'Guardar Cambios' : 'Crear'}</>}
+                    </Button>
                 </DialogFooter>
               </form>
             </Form>

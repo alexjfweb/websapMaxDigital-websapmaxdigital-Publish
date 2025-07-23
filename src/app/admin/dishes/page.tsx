@@ -23,6 +23,7 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, Timestamp, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { useDishes } from "@/hooks/use-dishes";
 import { Skeleton } from "@/components/ui/skeleton";
+import { storageService } from "@/services/storage-service";
 
 export default function AdminDishesPage() {
   const companyId = 'websapmax'; // Hardcoded for now
@@ -59,6 +60,7 @@ export default function AdminDishesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDish, setEditingDish] = useState<Dish | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<DishFormData>({
     resolver: zodResolver(dishFormSchema),
@@ -113,28 +115,20 @@ export default function AdminDishesPage() {
   };
   
   const onSubmit = async (values: DishFormData) => {
+    setIsSubmitting(true);
     const isUpdating = !!editingDish;
 
     try {
-        // Validar duplicados por nombre y categoría para el mismo companyId
-        const q = query(
-            collection(db, 'dishes'),
-            where('companyId', '==', companyId),
-            where('name', '==', values.name),
-            where('category', '==', values.category)
-        );
-        const snapshot = await getDocs(q);
+        let imageUrl = editingDish?.imageUrl || "https://placehold.co/600x400.png";
 
-        if (!snapshot.empty) {
-            const isSameDish = isUpdating && snapshot.docs[0].id === editingDish.id;
-            if (!isSameDish) {
-                toast({
-                    title: 'Plato duplicado',
-                    description: 'Ya existe un plato con ese nombre y categoría.',
-                    variant: 'destructive',
-                });
-                return;
+        if (values.image instanceof File) {
+            if (isUpdating && editingDish.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
+                await storageService.deleteFile(editingDish.imageUrl);
             }
+            imageUrl = await storageService.uploadFile(values.image, `dishes/${companyId}/`);
+        } else if (imagePreview === null && isUpdating && editingDish.imageUrl) {
+            await storageService.deleteFile(editingDish.imageUrl);
+            imageUrl = "https://placehold.co/600x400.png";
         }
         
         const dishData = {
@@ -143,7 +137,7 @@ export default function AdminDishesPage() {
             price: Number(values.price),
             category: values.category,
             stock: Number(values.stock),
-            imageUrl: imagePreview || "https://placehold.co/600x400.png",
+            imageUrl: imageUrl,
             updatedAt: Timestamp.now(),
         };
 
@@ -180,6 +174,8 @@ export default function AdminDishesPage() {
             description: 'No se pudo guardar el plato. Inténtelo de nuevo.',
             variant: 'destructive',
         });
+    } finally {
+        setIsSubmitting(false);
     }
 };
 
@@ -201,6 +197,9 @@ export default function AdminDishesPage() {
     if (!dishToDelete) return;
     
     try {
+      if (dishToDelete.imageUrl && !dishToDelete.imageUrl.includes('placehold.co')) {
+        await storageService.deleteFile(dishToDelete.imageUrl);
+      }
       await deleteDoc(doc(db, 'dishes', dishToDelete.id));
       toast({
         title: 'Plato eliminado',
@@ -472,8 +471,10 @@ export default function AdminDishesPage() {
                             />
                         </div>
                          <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
-                            <Button type="submit"><Save className="mr-2 h-4 w-4"/> {editingDish ? 'Guardar cambios' : 'Guardar plato'}</Button>
+                            <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>Cancelar</Button>
+                            <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? 'Guardando...' : <><Save className="mr-2 h-4 w-4"/> {editingDish ? 'Guardar cambios' : 'Guardar plato'}</>}
+                            </Button>
                         </DialogFooter>
                     </form>
                 </Form>
