@@ -2,6 +2,32 @@ import { NextRequest, NextResponse } from 'next/server';
 import { companyService, type CreateCompanyInput } from '@/services/company-service';
 
 /**
+ * Maneja las solicitudes GET para obtener todas las empresas.
+ */
+export async function GET(request: NextRequest) {
+  try {
+    console.log('📝 [API] GET /api/companies - Solicitud recibida para obtener empresas');
+
+    const companies = await companyService.getCompanies();
+
+    console.log(`✅ [API] GET /api/companies - Se encontraron ${companies.length} empresas.`);
+
+    return NextResponse.json({
+      message: 'Empresas obtenidas exitosamente',
+      data: companies
+    }, { status: 200 });
+
+  } catch (error: any) {
+    console.error('❌ [API] GET /api/companies - Error:', error.message);
+    return NextResponse.json(
+      { error: 'Error interno del servidor al obtener las empresas.' },
+      { status: 500 }
+    );
+  }
+}
+
+
+/**
  * Maneja las solicitudes POST para crear una nueva empresa.
  */
 export async function POST(request: NextRequest) {

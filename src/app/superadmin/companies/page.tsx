@@ -9,43 +9,38 @@ import { Badge } from "@/components/ui/badge";
 import type { Company } from "@/types";
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-
-// Mock Data for Companies
-const mockCompanies: Company[] = [
-  { id: "com-1", name: "websapMax Restaurant", ruc: "123456789-1", location: "Flavor Town", status: "active", registrationDate: "2023-01-15T00:00:00Z" },
-  { id: "com-2", name: "The Burger Joint", ruc: "987654321-2", location: "Metropolis", status: "active", registrationDate: "2023-03-20T00:00:00Z" },
-  { id: "com-3", name: "Pizza Palace", ruc: "112233445-5", location: "Gotham City", status: "inactive", registrationDate: "2023-05-10T00:00:00Z" },
-  { id: "com-4", name: "Sushi Central", ruc: "556677889-9", location: "Star City", status: "pending", registrationDate: "2024-07-28T00:00:00Z" },
-  { id: "com-5", name: "Taco Tuesday", ruc: "998877665-5", location: "Central City", status: "active", registrationDate: "2023-09-01T00:00:00Z" },
-];
+import { useCompanies } from "@/hooks/use-companies";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function SuperAdminCompaniesPage() {
-  const [isMounted, setIsMounted] = useState(false);
+  const { companies, isLoading, error } = useCompanies();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [companies, setCompanies] = useState<Company[]>(mockCompanies);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [editForm, setEditForm] = useState<{ name: string; location: string; status: string; ruc: string }>({ name: '', location: '', status: 'active', ruc: '' });
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  // Traducciones directas en español para estados
+  useEffect(() => {
+    if (companies.length > 0) {
+      console.log('🟢 Empresas recibidas en el componente:', companies);
+    }
+    if (error) {
+      console.error('🔴 Error al cargar empresas:', error);
+    }
+  }, [companies, error]);
+
   const statusTranslations = {
     all: "Todos",
     active: "Activo",
     inactive: "Inactivo",
     pending: "Pendiente"
   };
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   const getStatusBadge = (status: Company['status']) => {
     const statusText = statusTranslations[status] || status;
@@ -61,7 +56,6 @@ export default function SuperAdminCompaniesPage() {
     }
   };
 
-  // Filtrado combinado por estado y búsqueda
   const filteredCompanies = companies.filter(company => {
     const statusMatch = statusFilter === "all" || company.status === statusFilter;
     const searchMatch =
@@ -72,52 +66,98 @@ export default function SuperAdminCompaniesPage() {
     return statusMatch && searchMatch;
   });
 
-  // Ver empresa
   const handleView = (company: Company) => {
-    console.log('Ver empresa:', company);
     setSelectedCompany(company);
     setViewModalOpen(true);
   };
 
-  // Editar empresa
   const handleEdit = (company: Company) => {
-    console.log('Editar empresa:', company);
     setSelectedCompany(company);
-    setEditForm({ name: company.name, location: company.location, status: company.status, ruc: company.ruc });
+    setEditForm({ name: company.name, location: company.location || '', status: company.status, ruc: company.ruc });
     setEditModalOpen(true);
   };
+
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
   };
+
   const handleEditSave = () => {
-    setLoading(true);
-    setTimeout(() => { // Simula llamada a API
-      setCompanies(prev => prev.map(c => c.id === selectedCompany?.id ? { ...c, ...editForm } : c));
-      setEditModalOpen(false);
-      setLoading(false);
-      setFeedback({ type: 'success', message: 'Empresa actualizada correctamente.' });
-    }, 1000);
+    // Aquí iría la lógica para llamar al servicio de actualización
+    console.log("Guardando cambios para:", selectedCompany?.id, editForm);
+    setEditModalOpen(false);
   };
 
-  // Eliminar empresa
   const handleDelete = (company: Company) => {
-    console.log('Eliminar empresa:', company);
     setSelectedCompany(company);
     setDeleteModalOpen(true);
   };
+  
   const confirmDelete = () => {
-    setLoading(true);
-    setTimeout(() => { // Simula llamada a API
-      setCompanies(prev => prev.filter(c => c.id !== selectedCompany?.id));
-      setDeleteModalOpen(false);
-      setLoading(false);
-      setFeedback({ type: 'success', message: 'Empresa eliminada correctamente.' });
-    }, 1000);
+    // Aquí iría la lógica para llamar al servicio de eliminación
+    console.log("Eliminando empresa:", selectedCompany?.id);
+    setDeleteModalOpen(false);
   };
 
-  if (!isMounted) {
-    return null; // or a loading skeleton
-  }
+  const renderTableContent = () => {
+    if (isLoading) {
+      return Array.from({ length: 5 }).map((_, index) => (
+        <TableRow key={index}>
+          <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+          <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-32" /></TableCell>
+          <TableCell className="text-center"><Skeleton className="h-6 w-20 mx-auto rounded-full" /></TableCell>
+          <TableCell className="hidden md:table-cell text-center"><Skeleton className="h-4 w-24" /></TableCell>
+          <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
+        </TableRow>
+      ));
+    }
+
+    if (error) {
+      return (
+        <TableRow>
+          <TableCell colSpan={6} className="text-center text-red-500">
+            Error al cargar las empresas. Por favor, intente de nuevo más tarde.
+          </TableCell>
+        </TableRow>
+      );
+    }
+
+    if (filteredCompanies.length === 0) {
+      return (
+        <TableRow>
+          <TableCell colSpan={6} className="text-center text-muted-foreground">
+            No se encontraron empresas que coincidan con los filtros.
+          </TableCell>
+        </TableRow>
+      );
+    }
+
+    return filteredCompanies.map((company) => (
+      <TableRow key={company.id}>
+        <TableCell className="font-medium">{company.name}</TableCell>
+        <TableCell>{company.ruc}</TableCell>
+        <TableCell className="hidden sm:table-cell">{company.location}</TableCell>
+        <TableCell className="text-center">{getStatusBadge(company.status)}</TableCell>
+        <TableCell className="hidden md:table-cell text-center text-xs text-muted-foreground">
+          {company.registrationDate ? format(new Date(company.registrationDate), "P") : 'N/A'}
+        </TableCell>
+        <TableCell className="text-right">
+          <div className="flex justify-end gap-1">
+            <Button variant="ghost" size="icon" className="hover:text-blue-500" title="Ver detalles" onClick={() => handleView(company)}>
+              <Eye className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="hover:text-primary" title="Editar" onClick={() => handleEdit(company)}>
+              <Edit3 className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="hover:text-destructive" title="Eliminar" onClick={() => handleDelete(company)}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </TableCell>
+      </TableRow>
+    ));
+  };
+
 
   return (
     <div className="space-y-8">
@@ -169,30 +209,7 @@ export default function SuperAdminCompaniesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredCompanies.map((company) => (
-                <TableRow key={company.id}>
-                  <TableCell className="font-medium">{company.name}</TableCell>
-                  <TableCell>{company.ruc}</TableCell>
-                  <TableCell className="hidden sm:table-cell">{company.location}</TableCell>
-                  <TableCell className="text-center">{getStatusBadge(company.status)}</TableCell>
-                  <TableCell className="hidden md:table-cell text-center text-xs text-muted-foreground">
-                    {format(new Date(company.registrationDate), "P")}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="hover:text-blue-500" title="Ver detalles" onClick={() => handleView(company)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="hover:text-primary" title="Editar" onClick={() => handleEdit(company)}>
-                        <Edit3 className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="hover:text-destructive" title="Eliminar" onClick={() => handleDelete(company)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {renderTableContent()}
             </TableBody>
           </Table>
         </CardContent>
@@ -210,8 +227,7 @@ export default function SuperAdminCompaniesPage() {
                   <div><b>RUC:</b> {selectedCompany.ruc}</div>
                   <div><b>Ubicación:</b> {selectedCompany.location}</div>
                   <div><b>Estado:</b> {statusTranslations[selectedCompany.status]}</div>
-                  <div><b>Registrado:</b> {format(new Date(selectedCompany.registrationDate), "P")}</div>
-                  {/* Aquí puedes agregar más campos relevantes */}
+                  <div><b>Registrado:</b> {selectedCompany.registrationDate ? format(new Date(selectedCompany.registrationDate), "P") : 'N/A'}</div>
                 </div>
               )}
             </DialogDescription>
@@ -251,8 +267,8 @@ export default function SuperAdminCompaniesPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditModalOpen(false)} disabled={loading}>Cancelar</Button>
-            <Button onClick={handleEditSave} disabled={loading}>{loading ? 'Guardando...' : 'Guardar'}</Button>
+            <Button variant="outline" onClick={() => setEditModalOpen(false)} disabled={isSubmitting}>Cancelar</Button>
+            <Button onClick={handleEditSave} disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -265,8 +281,8 @@ export default function SuperAdminCompaniesPage() {
             <DialogDescription>¿Estás seguro de que deseas eliminar esta empresa?</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteModalOpen(false)} disabled={loading}>Cancelar</Button>
-            <Button onClick={confirmDelete} variant="destructive" disabled={loading}>{loading ? 'Eliminando...' : 'Eliminar'}</Button>
+            <Button variant="outline" onClick={() => setDeleteModalOpen(false)} disabled={isSubmitting}>Cancelar</Button>
+            <Button onClick={confirmDelete} variant="destructive" disabled={isSubmitting}>{isSubmitting ? 'Eliminando...' : 'Eliminar'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

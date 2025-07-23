@@ -24,7 +24,6 @@ class CompanyService {
    * @param data - Datos de la empresa a validar.
    */
   private validateCompanyData(data: CreateCompanyInput): void {
-    console.log("🚀 ~ file: company-service.ts:31 ~ CompanyService ~ validateCompanyData ~ data:", data)
     if (!data.name || data.name.trim() === '') {
       throw new Error("El campo 'name' es obligatorio.");
     }
@@ -66,7 +65,43 @@ class CompanyService {
     }
   }
 
-  // Aquí se podrían agregar más métodos como getCompany, updateCompany, deleteCompany, etc.
+  /**
+   * Obtiene todas las empresas activas de Firestore.
+   * @returns Un array de objetos Company.
+   */
+  async getCompanies(): Promise<Company[]> {
+    try {
+      const q = query(this.companiesCollection, where("status", "in", ["active", "pending", "inactive"]));
+      const querySnapshot = await getDocs(q);
+      const companies: Company[] = [];
+      
+      querySnapshot.forEach(doc => {
+        const data = doc.data();
+        // Validación en tiempo de lectura
+        if (!data.name || !data.ruc) {
+          console.warn(`[WARN] Documento de empresa ${doc.id} omitido por datos incompletos.`);
+          return;
+        }
+
+        companies.push({
+          id: doc.id,
+          name: data.name,
+          ruc: data.ruc,
+          location: data.location,
+          status: data.status,
+          registrationDate: data.registrationDate,
+          createdAt: data.createdAt?.toDate(),
+          updatedAt: data.updatedAt?.toDate(),
+        } as Company);
+      });
+      
+      console.log(`✅ Se obtuvieron ${companies.length} empresas de Firestore.`);
+      return companies;
+    } catch (error) {
+      console.error('❌ Error al obtener las empresas de Firestore:', error);
+      throw new Error('No se pudieron obtener las empresas.');
+    }
+  }
 }
 
 export const companyService = new CompanyService();
