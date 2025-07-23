@@ -24,13 +24,25 @@ export const mockRestaurantProfile: RestaurantProfile = {
     pinterest: "https://pinterest.com/websapmax"
   },
   paymentMethods: {
-    codEnabled: true,
+    codEnabled: true, // Cash on Delivery
     nequi: {
       enabled: true,
       qrCodeUrl: 'https://placehold.co/300x300.png?text=Nequi+QR',
       accountHolder: 'websapMax S.A.S',
       accountNumber: '3001234567'
     },
+     daviplata: {
+      enabled: true,
+      qrCodeUrl: 'https://placehold.co/300x300.png?text=Daviplata+QR',
+      accountHolder: 'websapMax S.A.S',
+      accountNumber: '3109876543'
+    },
+    bancolombia: {
+      enabled: true,
+      qrCodeUrl: 'https://placehold.co/300x300.png?text=Bancolombia+QR',
+      accountHolder: 'websapMax S.A.S',
+      accountNumber: '123-456789-01'
+    }
   }
 };
 
