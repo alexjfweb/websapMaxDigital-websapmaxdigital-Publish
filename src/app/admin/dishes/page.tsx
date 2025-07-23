@@ -35,6 +35,11 @@ export default function AdminDishesPage() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [filteredDishes, setFilteredDishes] = useState<Dish[]>([]);
   const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     if (dishes) {
@@ -355,6 +360,33 @@ export default function AdminDishesPage() {
       </TableRow>
     ));
   };
+
+  if (!isClient) {
+    return (
+      <div className="space-y-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-80 mt-2" />
+          </div>
+          <Skeleton className="h-10 w-44" />
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-64 mt-2" />
+            <div className="flex flex-col md:flex-row gap-2 pt-4">
+              <Skeleton className="h-10 flex-1" />
+              <Skeleton className="h-10 w-32" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            {renderTableBody()}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
 
   return (

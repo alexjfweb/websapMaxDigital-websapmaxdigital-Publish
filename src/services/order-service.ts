@@ -51,7 +51,7 @@ class OrderService {
           return;
         }
 
-        const date = data.fecha instanceof Timestamp ? data.fecha.toDate().toISOString() : new Date().toISOString();
+        const date = data.fecha instanceof Timestamp ? data.fecha.toDate().toISOString() : new Date(data.fecha).toISOString();
 
         orders.push({
           id: doc.id,
