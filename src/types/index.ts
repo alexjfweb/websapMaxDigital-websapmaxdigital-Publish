@@ -121,7 +121,6 @@ export interface Company {
   phone?: string; // Teléfono móvil (WhatsApp)
   phoneFixed?: string; // Teléfono fijo
   email?: string;
-  category?: 'Company' | 'Restaurant';
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }

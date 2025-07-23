@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, Search, Filter, Printer } from "lucide-react"; 
+import { Eye, Search, Filter, Printer, Loader2, AlertCircle } from "lucide-react"; 
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -15,20 +15,16 @@ import { useToast } from '@/hooks/use-toast';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { useOrderContext, type Order } from '@/contexts/order-context';
 import { tableService } from '@/services/table-service';
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function EmployeeOrdersPage() {
-  const { orders, updateOrder, loading } = useOrderContext();
-  const [isMounted, setIsMounted] = useState(false);
+  const { orders, updateOrder, loading, error } = useOrderContext();
   const [openKOT, setOpenKOT] = useState(false);
   const { toast } = useToast();
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [activeTab, setActiveTab] = useState<string>("active");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [openDetail, setOpenDetail] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   const activeOrders = orders.filter(o => !['completed', 'cancelled'].includes(o.status));
   const pastOrders = orders.filter(o => ['completed', 'cancelled'].includes(o.status));
@@ -72,70 +68,82 @@ export default function EmployeeOrdersPage() {
     { value: 'cancelled', label: 'Cancelado' },
   ];
 
-  if (!isMounted || loading) {
-    return <div className="flex justify-center items-center min-h-[40vh] text-lg text-muted-foreground">Cargando pedidos...</div>;
-  }
-
-  const renderOrderTable = (currentOrders: Order[]) => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>ID</TableHead>
-          <TableHead>Cliente</TableHead>
-          <TableHead className="hidden sm:table-cell">Fecha</TableHead>
-          <TableHead className="text-center">Items</TableHead>
-          <TableHead className="text-center">Mesa</TableHead>
-          <TableHead className="text-right">Total</TableHead>
-          <TableHead className="text-center">Estado</TableHead>
-          <TableHead className="text-right">Acciones</TableHead>
+  const renderOrderTable = (currentOrders: Order[]) => {
+    if (loading) {
+      return Array.from({ length: 5 }).map((_, i) => (
+        <TableRow key={i}>
+          <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+          <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
+          <TableCell className="text-center"><Skeleton className="h-4 w-12 mx-auto" /></TableCell>
+          <TableCell className="text-center"><Skeleton className="h-4 w-20 mx-auto" /></TableCell>
+          <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+          <TableCell className="text-center"><Skeleton className="h-8 w-32 mx-auto" /></TableCell>
+          <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto rounded-full" /></TableCell>
         </TableRow>
-      </TableHeader>
-      <TableBody>
-        {currentOrders.map((order) => (
-          <TableRow key={order.id}>
-            <TableCell className="font-mono text-xs">{order.id.substring(0, 8)}...</TableCell>
-            <TableCell className="font-medium">{order.customerName}</TableCell>
-            <TableCell className="hidden sm:table-cell">{format(new Date(order.date), "MMM d, h:mm a")}</TableCell>
-            <TableCell className="text-center">{order.items}</TableCell>
-            <TableCell className="text-center">{order.mesa?.tableNumber ? `Mesa ${order.mesa.tableNumber}` : 'Para llevar'}</TableCell>
-            <TableCell className="text-right">${order.total.toFixed(2)}</TableCell>
-            <TableCell className="text-center">
-              <Select
-                value={order.status}
-                onValueChange={async (newStatus: Order['status']) => {
-                  if ((newStatus === 'completed' || newStatus === 'cancelled') && order.mesa?.tableId) {
-                    await tableService.changeTableStatus(order.mesa.tableId, 'available');
-                  }
-                  await updateOrder(order.id, { status: newStatus });
-                }}
-              >
-                <SelectTrigger className="w-[150px] text-xs h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {orderStatuses.map(opt => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </TableCell>
-            <TableCell>
-              <div className="flex justify-end gap-1">
-                <Button variant="ghost" size="icon" className="hover:text-primary" title="Ver detalles" onClick={() => handleOpenDetail(order)}>
-                  <Eye className="h-4 w-4" />
-                </Button>
-              </div>
-            </TableCell>
-          </TableRow>
-        ))}
-        {currentOrders.length === 0 && (
-          <TableRow>
-            <TableCell colSpan={8} className="text-center text-muted-foreground py-8">No hay pedidos</TableCell>
-          </TableRow>
-        )}
-      </TableBody>
-    </Table>
-  );
+      ));
+    }
+    
+    if (error) {
+      return (
+        <TableRow>
+          <TableCell colSpan={8} className="text-center text-red-500 py-8">
+            <div className="flex flex-col items-center gap-2">
+              <AlertCircle className="h-8 w-8" />
+              <span className="font-semibold">Error al cargar los pedidos.</span>
+              <span>Por favor, intente de nuevo más tarde.</span>
+            </div>
+          </TableCell>
+        </TableRow>
+      );
+    }
+    
+    if (currentOrders.length === 0) {
+      return (
+        <TableRow>
+          <TableCell colSpan={8} className="text-center text-muted-foreground py-8">No hay pedidos para mostrar.</TableCell>
+        </TableRow>
+      );
+    }
+
+    return currentOrders.map((order) => (
+      <TableRow key={order.id}>
+        <TableCell className="font-mono text-xs">{order.id.substring(0, 8)}...</TableCell>
+        <TableCell className="font-medium">{order.customerName}</TableCell>
+        <TableCell className="hidden sm:table-cell">{format(new Date(order.date), "MMM d, h:mm a")}</TableCell>
+        <TableCell className="text-center">{order.items}</TableCell>
+        <TableCell className="text-center">{order.mesa?.tableNumber ? `Mesa ${order.mesa.tableNumber}` : 'Para llevar'}</TableCell>
+        <TableCell className="text-right">${order.total.toFixed(2)}</TableCell>
+        <TableCell className="text-center">
+          <Select
+            value={order.status}
+            onValueChange={async (newStatus: Order['status']) => {
+              if ((newStatus === 'completed' || newStatus === 'cancelled') && order.mesa?.tableId) {
+                await tableService.changeTableStatus(order.mesa.tableId, 'available');
+              }
+              await updateOrder(order.id, { status: newStatus });
+            }}
+          >
+            <SelectTrigger className="w-[150px] text-xs h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {orderStatuses.map(opt => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </TableCell>
+        <TableCell>
+          <div className="flex justify-end gap-1">
+            <Button variant="ghost" size="icon" className="hover:text-primary" title="Ver detalles" onClick={() => handleOpenDetail(order)}>
+              <Eye className="h-4 w-4" />
+            </Button>
+          </div>
+        </TableCell>
+      </TableRow>
+    ));
+  };
 
   const handlePrintKOT = () => {
     // Implementación de impresión
@@ -175,11 +183,43 @@ export default function EmployeeOrdersPage() {
         <CardContent>
           <Tabs defaultValue="active" onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="active">Pedidos activos ({activeOrders.length})</TabsTrigger>
-              <TabsTrigger value="past">Pedidos finalizados ({pastOrders.length})</TabsTrigger>
+              <TabsTrigger value="active">Pedidos activos ({loading ? '...' : activeOrders.length})</TabsTrigger>
+              <TabsTrigger value="past">Pedidos finalizados ({loading ? '...' : pastOrders.length})</TabsTrigger>
             </TabsList>
-            <TabsContent value="active">{renderOrderTable(filteredActiveOrders)}</TabsContent>
-            <TabsContent value="past">{renderOrderTable(filteredPastOrders)}</TabsContent>
+            <TabsContent value="active">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead className="hidden sm:table-cell">Fecha</TableHead>
+                    <TableHead className="text-center">Items</TableHead>
+                    <TableHead className="text-center">Mesa</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="text-center">Estado</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>{renderOrderTable(filteredActiveOrders)}</TableBody>
+              </Table>
+            </TabsContent>
+            <TabsContent value="past">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead className="hidden sm:table-cell">Fecha</TableHead>
+                    <TableHead className="text-center">Items</TableHead>
+                    <TableHead className="text-center">Mesa</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="text-center">Estado</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>{renderOrderTable(filteredPastOrders)}</TableBody>
+              </Table>
+            </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
