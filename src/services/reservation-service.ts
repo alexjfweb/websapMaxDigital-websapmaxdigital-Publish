@@ -45,7 +45,9 @@ class ReservationService {
   }
   
   async getReservationsByCompany(companyId: string): Promise<Reservation[]> {
-    if (!companyId) throw new Error("companyId es requerido.");
+    if (!companyId) {
+      throw new Error("companyId es requerido.");
+    }
 
     try {
       const q = query(
@@ -59,6 +61,13 @@ class ReservationService {
 
       querySnapshot.forEach(doc => {
         const data = doc.data();
+        
+        // Validación de datos en el servidor
+        if (!data.customerName || !data.dateTime || !data.status) {
+            console.warn(`[WARN] Reserva ${doc.id} omitida por datos incompletos.`);
+            return;
+        }
+        
         const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : new Date().toISOString();
         const updatedAt = data.updatedAt instanceof Timestamp ? data.updatedAt.toDate().toISOString() : new Date().toISOString();
         const dateTime = data.dateTime instanceof Timestamp ? data.dateTime.toDate().toISOString() : data.dateTime;

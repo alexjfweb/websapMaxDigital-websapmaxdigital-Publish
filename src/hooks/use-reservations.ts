@@ -15,7 +15,7 @@ const fetcher = async (url: string): Promise<Reservation[]> => {
 
 export function useReservations(companyId: string) {
   const { data, error, isLoading, mutate } = useSWR<Reservation[]>(
-    companyId ? `/api/reservations?companyId=${companyId}` : null,
+    companyId ? `/api/companies/${companyId}/reservations` : null,
     fetcher,
     {
       revalidateOnFocus: false,
