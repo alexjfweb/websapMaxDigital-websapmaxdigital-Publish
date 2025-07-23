@@ -8,53 +8,19 @@ import { Table as UITable, TableBody, TableCell, TableHead, TableHeader, TableRo
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { onSnapshot, query, where, orderBy, collection } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { Search } from "lucide-react";
+import { Search, RefreshCw, AlertCircle } from "lucide-react";
+import { useTables } from "@/hooks/use-tables";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function EmployeeTablesPage() {
-  const [tables, setTables] = useState<Table[]>([]);
+  const companyId = "websapmax"; // Hardcoded for now
+  const { tables, isLoading, isError, error, refreshTables } = useTables(companyId);
   const [filteredTables, setFilteredTables] = useState<Table[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    // Listener en tiempo real para las mesas activas del restaurante
-    const q = query(
-      collection(db, "tables"),
-      where("isActive", "==", true),
-      where("restaurantId", "==", "websapmax"),
-      orderBy("number", "asc")
-    );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const mesas = snapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          number: data.number,
-          capacity: data.capacity,
-          status: data.status,
-          isActive: data.isActive,
-          location: data.location,
-          description: data.description,
-          restaurantId: data.restaurantId,
-          createdAt: data.createdAt,
-          updatedAt: data.updatedAt,
-        } as Table;
-      });
-      console.log("DEBUG MESAS EMPLEADO:", mesas);
-      setTables(mesas);
-      setLoading(false);
-    }, (error) => {
-      setLoading(false);
-      console.error("ERROR MESAS EMPLEADO:", error);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // Filtrar mesas cuando cambien los filtros
+  // Filtrar mesas cuando cambien los filtros o los datos
   useEffect(() => {
     let filtered = tables;
     
@@ -84,7 +50,8 @@ export default function EmployeeTablesPage() {
         title: "Éxito",
         description: `Mesa ${table.number} marcada como ${newStatus === "available" ? "Disponible" : "Ocupada"}`,
       });
-    } catch (error) {
+      await refreshTables(); // Refrescar los datos
+    } catch (err) {
       toast({
         title: "Error",
         description: "No se pudo cambiar el estado de la mesa",
@@ -92,14 +59,69 @@ export default function EmployeeTablesPage() {
       });
     }
   };
+  
+  const renderTableContent = () => {
+    if (isLoading) {
+      return Array.from({ length: 5 }).map((_, index) => (
+        <TableRow key={`skeleton-${index}`}>
+          <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+          <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+          <TableCell className="text-right"><Skeleton className="h-10 w-32 ml-auto" /></TableCell>
+        </TableRow>
+      ));
+    }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Cargando mesas...</div>
-      </div>
-    );
-  }
+    if (isError) {
+      return (
+        <TableRow>
+          <TableCell colSpan={6} className="text-center text-red-500 py-8">
+             <div className="flex flex-col items-center gap-2">
+                <AlertCircle className="h-8 w-8" />
+                <span className="font-semibold">Error al cargar las mesas.</span>
+                <span>{error?.message || "Por favor, intente de nuevo más tarde."}</span>
+            </div>
+          </TableCell>
+        </TableRow>
+      );
+    }
+
+    if (filteredTables.length === 0) {
+      return (
+        <TableRow>
+          <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+            No se encontraron mesas.
+          </TableCell>
+        </TableRow>
+      );
+    }
+
+    return filteredTables.map((table) => (
+      <TableRow key={table.id}>
+        <TableCell className="font-medium">Mesa {table.number}</TableCell>
+        <TableCell>{table.capacity} personas</TableCell>
+        <TableCell>{table.location || "-"}</TableCell>
+        <TableCell>
+          <Badge className={tableService.getStatusColor(table.status)}>
+            {tableService.getStatusText(table.status)}
+          </Badge>
+        </TableCell>
+        <TableCell>{table.description || "-"}</TableCell>
+        <TableCell className="text-right">
+          <Button
+            variant={table.status === "available" ? "default" : "secondary"}
+            onClick={() => handleStatusChange(table)}
+            disabled={table.status === "reserved" || table.status === "out_of_service"}
+          >
+            {table.status === "available" ? "Marcar Ocupada" : table.status === "occupied" ? "Marcar Disponible" : "-"}
+          </Button>
+        </TableCell>
+      </TableRow>
+    ));
+  };
+
 
   return (
     <div className="space-y-6">
@@ -132,6 +154,10 @@ export default function EmployeeTablesPage() {
               <option value="reserved">Reservada</option>
               <option value="out_of_service">Fuera de servicio</option>
             </select>
+             <Button onClick={() => refreshTables()} variant="outline" size="icon">
+                <RefreshCw className="h-4 w-4" />
+                <span className="sr-only">Refrescar</span>
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -153,28 +179,7 @@ export default function EmployeeTablesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTables.map((table) => (
-                <TableRow key={table.id}>
-                  <TableCell className="font-medium">Mesa {table.number}</TableCell>
-                  <TableCell>{table.capacity} personas</TableCell>
-                  <TableCell>{table.location || "-"}</TableCell>
-                  <TableCell>
-                    <Badge className={tableService.getStatusColor(table.status)}>
-                      {tableService.getStatusText(table.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{table.description || "-"}</TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant={table.status === "available" ? "default" : "secondary"}
-                      onClick={() => handleStatusChange(table)}
-                      disabled={table.status === "reserved" || table.status === "out_of_service"}
-                    >
-                      {table.status === "available" ? "Marcar Ocupada" : table.status === "occupied" ? "Marcar Disponible" : "-"}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {renderTableContent()}
             </TableBody>
           </UITable>
         </CardContent>

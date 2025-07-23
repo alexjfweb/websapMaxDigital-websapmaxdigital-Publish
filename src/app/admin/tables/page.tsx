@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Search, MoreHorizontal, Edit, Trash2, Eye, Clock, Users } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Edit, Trash2, Eye, Clock, Users, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,47 +13,21 @@ import { useToast } from "@/hooks/use-toast";
 import { tableService, type Table } from "@/services/table-service";
 import { TableForm } from "./table-form";
 import { TableLogsDialog } from "./table-logs-dialog";
+import { useTables } from "@/hooks/use-tables";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function TablesPage() {
-  const [tables, setTables] = useState<Table[]>([]);
+  const companyId = "websapmax"; // Hardcoded for now
+  const { tables, isLoading, isError, error, refreshTables } = useTables(companyId);
   const [filteredTables, setFilteredTables] = useState<Table[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTable, setEditingTable] = useState<Table | null>(null);
   const [selectedTableForLogs, setSelectedTableForLogs] = useState<Table | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    loadTables();
-    // eslint-disable-next-line
-  }, []);
-
-  useEffect(() => {
-    filterTables();
-    // eslint-disable-next-line
-  }, [tables, searchTerm, statusFilter]);
-
-  const loadTables = async () => {
-    try {
-      setLoading(true);
-      const data = await tableService.getAllTables('websapmax');
-      console.log('DEBUG MESAS DESDE FIRESTORE:', data);
-      setTables(data);
-    } catch (error) {
-      console.error('ERROR AL CARGAR MESAS:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar las mesas",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filterTables = () => {
     let filtered = tables;
     if (searchTerm) {
       filtered = filtered.filter(
@@ -67,12 +41,13 @@ export default function TablesPage() {
       filtered = filtered.filter((table) => table.status === statusFilter);
     }
     setFilteredTables(filtered);
-  };
+  }, [tables, searchTerm, statusFilter]);
+
 
   const handleStatusChange = async (tableId: string, newStatus: Table["status"]) => {
     try {
       await tableService.changeTableStatus(tableId, newStatus);
-      await loadTables();
+      await refreshTables();
       toast({
         title: "Éxito",
         description: "Estado de mesa actualizado correctamente",
@@ -90,7 +65,7 @@ export default function TablesPage() {
     if (!confirm("¿Estás seguro de que quieres eliminar esta mesa?")) return;
     try {
       await tableService.deleteTable(tableId);
-      await loadTables();
+      await refreshTables();
       toast({
         title: "Éxito",
         description: "Mesa eliminada correctamente",
@@ -105,7 +80,7 @@ export default function TablesPage() {
   };
 
   const handleFormSubmit = async () => {
-    await loadTables();
+    await refreshTables();
     setIsFormOpen(false);
     setEditingTable(null);
   };
@@ -118,12 +93,95 @@ export default function TablesPage() {
     return tableService.getStatusText(status);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Cargando mesas...</div>
-      </div>
-    );
+  const renderTableContent = () => {
+    if (isLoading) {
+      return Array.from({ length: 5 }).map((_, index) => (
+        <TableRow key={`skeleton-${index}`}>
+          <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+          <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+          <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+        </TableRow>
+      ));
+    }
+
+    if (isError) {
+      return (
+        <TableRow>
+          <TableCell colSpan={6} className="text-center text-red-500 py-8">
+            <div className="flex flex-col items-center gap-2">
+                <AlertCircle className="h-8 w-8" />
+                <span className="font-semibold">Error al cargar las mesas.</span>
+                <span>{error?.message || "Por favor, intente de nuevo más tarde."}</span>
+            </div>
+          </TableCell>
+        </TableRow>
+      );
+    }
+
+    if (filteredTables.length === 0) {
+      return (
+        <TableRow>
+          <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+            No se encontraron mesas.
+          </TableCell>
+        </TableRow>
+      );
+    }
+    
+    return filteredTables.map((table) => (
+      <TableRow key={table.id}>
+        <TableCell className="font-medium">Mesa {table.number}</TableCell>
+        <TableCell>{table.capacity} personas</TableCell>
+        <TableCell>{table.location || "-"}</TableCell>
+        <TableCell>
+          <Badge className={getStatusColor(table.status)}>
+            {getStatusText(table.status)}
+          </Badge>
+        </TableCell>
+        <TableCell>{table.description || "-"}</TableCell>
+        <TableCell className="text-right">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => {
+                setEditingTable(table);
+                setIsFormOpen(true);
+              }}>
+                <Edit className="w-4 h-4 mr-2" />Editar
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSelectedTableForLogs(table)}>
+                <Eye className="w-4 h-4 mr-2" />Ver Logs
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleStatusChange(table.id!, "available")}
+                disabled={table.status === "available"}
+              >
+                <Clock className="w-4 h-4 mr-2" />Marcar Disponible
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleStatusChange(table.id!, "occupied")}
+                disabled={table.status === "occupied"}
+              >
+                <Users className="w-4 h-4 mr-2" />Marcar Ocupada
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleDelete(table.id!)}
+                className="text-red-600"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />Eliminar
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TableCell>
+      </TableRow>
+    ));
   }
 
   return (
@@ -200,57 +258,7 @@ export default function TablesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTables.map((table) => (
-                  <TableRow key={table.id}>
-                    <TableCell className="font-medium">Mesa {table.number}</TableCell>
-                    <TableCell>{table.capacity} personas</TableCell>
-                    <TableCell>{table.location || "-"}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(table.status)}>
-                        {getStatusText(table.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{table.description || "-"}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => {
-                            setEditingTable(table);
-                            setIsFormOpen(true);
-                          }}>
-                            <Edit className="w-4 h-4 mr-2" />Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setSelectedTableForLogs(table)}>
-                            <Eye className="w-4 h-4 mr-2" />Ver Logs
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleStatusChange(table.id!, "available")}
-                            disabled={table.status === "available"}
-                          >
-                            <Clock className="w-4 h-4 mr-2" />Marcar Disponible
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleStatusChange(table.id!, "occupied")}
-                            disabled={table.status === "occupied"}
-                          >
-                            <Users className="w-4 h-4 mr-2" />Marcar Ocupada
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(table.id!)}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />Eliminar
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {renderTableContent()}
               </TableBody>
             </UITable>
           </CardContent>

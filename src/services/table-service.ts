@@ -134,16 +134,27 @@ class TableService {
     return { id: tableDoc.id, ...tableDoc.data() } as Table;
   }
 
-  async getAllTables(restaurantId?: string): Promise<Table[]> {
-    let q;
-    if (restaurantId) {
-      q = query(this.tablesCollection, where('isActive', '==', true), where('restaurantId', '==', restaurantId), orderBy('number', 'asc'));
-    } else {
-      q = query(this.tablesCollection, where('isActive', '==', true), orderBy('number', 'asc'));
+  async getAllTables(restaurantId: string): Promise<Table[]> {
+    if (!restaurantId) {
+      throw new Error("El ID del restaurante es obligatorio.");
     }
+    const q = query(this.tablesCollection, where('isActive', '==', true), where('restaurantId', '==', restaurantId), orderBy('number', 'asc'));
+    
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Table[];
-  }
+    
+    const tables: Table[] = [];
+    querySnapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.number && data.status && data.capacity) {
+            tables.push({ id: doc.id, ...data } as Table);
+        } else {
+            console.warn(`[WARN] La mesa con ID ${doc.id} tiene datos incompletos y será omitida.`);
+        }
+    });
+    
+    return tables;
+}
+
 
   // Reservas
   async reserveTable(reservationData: Omit<TableReservation, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
