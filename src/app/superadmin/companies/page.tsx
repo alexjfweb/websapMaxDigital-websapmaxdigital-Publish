@@ -10,18 +10,24 @@ import type { Company } from "@/types";
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { useCompanies } from "@/hooks/use-companies";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function SuperAdminCompaniesPage() {
-  const { companies, isLoading, error } = useCompanies();
+  const { companies, isLoading, error, refreshCompanies } = useCompanies();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+
+  // States for modals
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  
+  // States for forms and feedback
+  const [newCompanyForm, setNewCompanyForm] = useState({ name: '', ruc: '', location: '' });
   const [editForm, setEditForm] = useState<{ name: string; location: string; status: string; ruc: string }>({ name: '', location: '', status: 'active', ruc: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -35,7 +41,7 @@ export default function SuperAdminCompaniesPage() {
     }
   }, [companies, error]);
 
-  const statusTranslations = {
+  const statusTranslations: { [key in Company['status'] | 'all']: string } = {
     all: "Todos",
     active: "Activo",
     inactive: "Inactivo",
@@ -65,6 +71,34 @@ export default function SuperAdminCompaniesPage() {
       (company.location && company.location.toLowerCase().includes(searchTerm.toLowerCase()));
     return statusMatch && searchMatch;
   });
+
+  const handleCreateNew = async () => {
+    if (!newCompanyForm.name || !newCompanyForm.ruc) {
+      setFeedback({ type: 'error', message: 'El nombre y el RUC son obligatorios.' });
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('/api/companies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCompanyForm),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Error al crear la empresa');
+      }
+      setFeedback({ type: 'success', message: 'Empresa creada exitosamente.' });
+      setIsCreateModalOpen(false);
+      setNewCompanyForm({ name: '', ruc: '', location: '' }); // Reset form
+      await refreshCompanies(); // Refresh the list
+    } catch (err: any) {
+      setFeedback({ type: 'error', message: err.message });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
 
   const handleView = (company: Company) => {
     setSelectedCompany(company);
@@ -166,9 +200,39 @@ export default function SuperAdminCompaniesPage() {
           <h1 className="text-3xl font-bold text-primary">Empresas</h1>
           <p className="text-lg text-muted-foreground">Descripción de la página de empresas</p>
         </div>
-        <Button>
-          <PlusCircle className="mr-2 h-5 w-5" /> Registrar nueva empresa
-        </Button>
+        <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle className="mr-2 h-5 w-5" /> Registrar nueva empresa
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Registrar Nueva Empresa</DialogTitle>
+              <DialogDescription>
+                Complete los siguientes campos para registrar una nueva empresa.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div>
+                <label className="block text-sm font-medium">Nombre</label>
+                <Input value={newCompanyForm.name} onChange={e => setNewCompanyForm({...newCompanyForm, name: e.target.value})} placeholder="Ej. Restaurante S.A." />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">RUC</label>
+                <Input value={newCompanyForm.ruc} onChange={e => setNewCompanyForm({...newCompanyForm, ruc: e.target.value})} placeholder="Ej. 123456789" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Ubicación</label>
+                <Input value={newCompanyForm.location} onChange={e => setNewCompanyForm({...newCompanyForm, location: e.target.value})} placeholder="Ej. Ciudad, País" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsCreateModalOpen(false)} disabled={isSubmitting}>Cancelar</Button>
+              <Button onClick={handleCreateNew} disabled={isSubmitting}>{isSubmitting ? 'Registrando...' : 'Registrar'}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card>

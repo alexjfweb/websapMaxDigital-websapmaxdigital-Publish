@@ -15,7 +15,9 @@ const fetcher = async (url: string): Promise<Company[]> => {
 };
 
 export function useCompanies() {
-  const { data, error, isLoading, mutate } = useSWR<Company[]>('/api/companies', fetcher);
+  const { data, error, isLoading, mutate } = useSWR<Company[]>('/api/companies', fetcher, {
+    revalidateOnFocus: false, // Opcional: para evitar re-fetches constantes
+  });
 
   return {
     companies: data || [],
