@@ -45,6 +45,52 @@ export default function AdminProfilePage() {
     setIsClient(true);
   }, []);
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    setProfileData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleSocialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setProfileData(prev => ({
+        ...prev,
+        socialLinks: {
+            ...prev.socialLinks,
+            [id]: value
+        }
+    }));
+  };
+
+  const handlePaymentMethodChange = (method: 'nequi' | 'daviplata' | 'bancolombia', field: string, value: string | boolean) => {
+    setProfileData(prev => ({
+        ...prev,
+        paymentMethods: {
+            ...prev.paymentMethods,
+            [method]: {
+                ...prev.paymentMethods[method],
+                [field]: value
+            }
+        }
+    }));
+  };
+
+  const handleCodChange = (checked: boolean) => {
+    setProfileData(prev => ({
+      ...prev,
+      paymentMethods: { ...prev.paymentMethods, codEnabled: checked }
+    }));
+  };
+
+  const handleColorChange = (colorType: 'primary' | 'secondary' | 'accent', value: string) => {
+    setProfileData(prev => ({
+        ...prev,
+        corporateColors: {
+            ...prev.corporateColors,
+            [colorType]: value
+        }
+    }));
+  };
+
   const handleImageChange = (
     event: ChangeEvent<HTMLInputElement>,
     setFile: React.Dispatch<React.SetStateAction<File | null>>,
@@ -69,35 +115,76 @@ export default function AdminProfilePage() {
     try {
       let updatedData = { ...profileData };
 
+      // 1. Upload all new images concurrently
+      const uploadPromises: Promise<void>[] = [];
+      
       if (logoFile) {
-        updatedData.logoUrl = await storageService.uploadFile(logoFile, `logos/${profileData.id}`);
+        uploadPromises.push(
+          storageService.uploadFile(logoFile, `logos/${profileData.id}`).then(url => {
+            updatedData.logoUrl = url;
+          })
+        );
       }
       if (nequiQrFile && updatedData.paymentMethods.nequi) {
-        updatedData.paymentMethods.nequi.qrCodeUrl = await storageService.uploadFile(nequiQrFile, `qrs/${profileData.id}`);
+        uploadPromises.push(
+          storageService.uploadFile(nequiQrFile, `qrs/${profileData.id}`).then(url => {
+            if (updatedData.paymentMethods.nequi) updatedData.paymentMethods.nequi.qrCodeUrl = url;
+          })
+        );
       }
       if (daviplataQrFile && updatedData.paymentMethods.daviplata) {
-        updatedData.paymentMethods.daviplata.qrCodeUrl = await storageService.uploadFile(daviplataQrFile, `qrs/${profileData.id}`);
+        uploadPromises.push(
+          storageService.uploadFile(daviplataQrFile, `qrs/${profileData.id}`).then(url => {
+            if (updatedData.paymentMethods.daviplata) updatedData.paymentMethods.daviplata.qrCodeUrl = url;
+          })
+        );
       }
       if (bancolombiaQrFile && updatedData.paymentMethods.bancolombia) {
-        updatedData.paymentMethods.bancolombia.qrCodeUrl = await storageService.uploadFile(bancolombiaQrFile, `qrs/${profileData.id}`);
+        uploadPromises.push(
+          storageService.uploadFile(bancolombiaQrFile, `qrs/${profileData.id}`).then(url => {
+            if (updatedData.paymentMethods.bancolombia) updatedData.paymentMethods.bancolombia.qrCodeUrl = url;
+          })
+        );
       }
       
-      // Aquí llamarías a tu API para guardar `updatedData`
-      // Por ejemplo: await fetch(`/api/companies/${profileData.id}`, { method: 'PUT', body: JSON.stringify(updatedData) });
-      console.log("Saving data:", updatedData);
+      // 2. Wait for all uploads to complete
+      await Promise.all(uploadPromises);
       
-      setProfileData(updatedData);
+      // 3. Save the updated profile data to Firestore via API
+      const response = await fetch(`/api/companies/${profileData.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update profile.');
+      }
+      
+      const savedProfile = await response.json();
+
+      // 4. Update local state and UI
+      setProfileData(savedProfile.data);
       setIsEditing(false);
+      // Clear file states after successful upload
+      setLogoFile(null);
+      setNequiQrFile(null);
+      setDaviplataQrFile(null);
+      setBancolombiaQrFile(null);
+
       toast({
           title: "¡Perfil Guardado!",
           description: "Tus cambios en el perfil del restaurante han sido guardados exitosamente.",
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving profile:", error);
       toast({
           title: "Error al guardar",
-          description: "No se pudieron guardar los cambios. Inténtalo de nuevo.",
+          description: error.message || "No se pudieron guardar los cambios. Inténtalo de nuevo.",
           variant: "destructive"
       });
     } finally {
@@ -106,17 +193,22 @@ export default function AdminProfilePage() {
   };
 
   const handleCancel = () => {
-    // Reset any changed state if necessary
+    // This function can be expanded to refetch data from the server if needed
+    // For now, it just resets the editing state and local file previews.
     setIsEditing(false);
-    // Reset image previews
+    
+    // Reset image previews to match the last saved state
     setLogoPreview(profileData.logoUrl);
     setNequiQrPreview(profileData.paymentMethods.nequi?.qrCodeUrl || null);
     setDaviplataQrPreview(profileData.paymentMethods.daviplata?.qrCodeUrl || null);
     setBancolombiaQrPreview(profileData.paymentMethods.bancolombia?.qrCodeUrl || null);
+    
+    // Clear any selected files that weren't saved
     setLogoFile(null);
     setNequiQrFile(null);
     setDaviplataQrFile(null);
     setBancolombiaQrFile(null);
+    
     toast({
         title: "Edición cancelada",
         description: "Tus cambios han sido descartados.",
@@ -218,25 +310,25 @@ export default function AdminProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="restaurantName">Nombre del restaurante</Label>
-              <Input id="restaurantName" defaultValue={profileData.name} disabled={!isEditing} />
+              <Input id="name" value={profileData.name} disabled={!isEditing} onChange={handleInputChange} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="restaurantPhone">Teléfono</Label>
-              <Input id="restaurantPhone" type="tel" defaultValue={profileData.phone} disabled={!isEditing} />
+              <Input id="phone" type="tel" value={profileData.phone} disabled={!isEditing} onChange={handleInputChange} />
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="restaurantAddress">Dirección</Label>
-            <Input id="restaurantAddress" defaultValue={profileData.address} disabled={!isEditing} />
+            <Input id="address" value={profileData.address} disabled={!isEditing} onChange={handleInputChange} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="restaurantEmail">Correo electrónico</Label>
-            <Input id="restaurantEmail" type="email" defaultValue={profileData.email} disabled={!isEditing} />
+            <Input id="email" type="email" value={profileData.email} disabled={!isEditing} onChange={handleInputChange} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="restaurantDescription">Descripción</Label>
-            <Textarea id="restaurantDescription" defaultValue={profileData.description} rows={4} disabled={!isEditing} />
+            <Textarea id="description" value={profileData.description} rows={4} disabled={!isEditing} onChange={handleInputChange} />
           </div>
           
           <div className="space-y-4">
@@ -272,11 +364,11 @@ export default function AdminProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="relative">
               <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="website" placeholder="Sitio web" defaultValue={profileData.socialLinks?.website} className="pl-10" disabled={!isEditing}/>
+              <Input id="website" placeholder="Sitio web" value={profileData.socialLinks?.website || ''} className="pl-10" disabled={!isEditing} onChange={handleSocialChange} />
             </div>
             <div className="relative">
               <Share2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="menuShareLink" placeholder="Enlace del menú" defaultValue={profileData.socialLinks?.menuShareLink} className="pl-10 pr-12" disabled={!isEditing}/>
+              <Input id="menuShareLink" placeholder="Enlace del menú" value={profileData.socialLinks?.menuShareLink || ''} className="pl-10 pr-12" disabled={!isEditing} onChange={handleSocialChange} />
               <Button
                 type="button"
                 size="icon"
@@ -290,27 +382,27 @@ export default function AdminProfilePage() {
             </div>
             <div className="relative">
               <Facebook className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="facebook" placeholder="Facebook" defaultValue={profileData.socialLinks?.facebook} className="pl-10" disabled={!isEditing}/>
+              <Input id="facebook" placeholder="Facebook" value={profileData.socialLinks?.facebook || ''} className="pl-10" disabled={!isEditing} onChange={handleSocialChange} />
             </div>
             <div className="relative">
               <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="instagram" placeholder="Instagram" defaultValue={profileData.socialLinks?.instagram} className="pl-10" disabled={!isEditing}/>
+              <Input id="instagram" placeholder="Instagram" value={profileData.socialLinks?.instagram || ''} className="pl-10" disabled={!isEditing} onChange={handleSocialChange} />
             </div>
             <div className="relative">
               <Twitter className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="x" placeholder="Twitter" defaultValue={profileData.socialLinks?.x} className="pl-10" disabled={!isEditing}/>
+              <Input id="x" placeholder="Twitter" value={profileData.socialLinks?.x || ''} className="pl-10" disabled={!isEditing} onChange={handleSocialChange} />
             </div>
             <div className="relative">
               <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="whatsapp" placeholder="WhatsApp" defaultValue={profileData.socialLinks?.whatsapp} className="pl-10" disabled={!isEditing}/>
+              <Input id="whatsapp" placeholder="WhatsApp" value={profileData.socialLinks?.whatsapp || ''} className="pl-10" disabled={!isEditing} onChange={handleSocialChange} />
             </div>
             <div className="relative">
               <TikTokIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="tiktok" placeholder="TikTok" defaultValue={profileData.socialLinks?.tiktok} className="pl-10" disabled={!isEditing}/>
+              <Input id="tiktok" placeholder="TikTok" value={profileData.socialLinks?.tiktok || ''} className="pl-10" disabled={!isEditing} onChange={handleSocialChange} />
             </div>
             <div className="relative">
               <PinterestIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input id="pinterest" placeholder="Pinterest" defaultValue={profileData.socialLinks?.pinterest} className="pl-10" disabled={!isEditing}/>
+              <Input id="pinterest" placeholder="Pinterest" value={profileData.socialLinks?.pinterest || ''} className="pl-10" disabled={!isEditing} onChange={handleSocialChange} />
             </div>
           </div>
         </CardContent>
@@ -325,7 +417,7 @@ export default function AdminProfilePage() {
             {/* Contra Entrega */}
             <div className="space-y-4 p-4 border rounded-lg">
                 <div className="flex items-center space-x-2">
-                    <Checkbox id="codEnabled" defaultChecked={profileData.paymentMethods.codEnabled} disabled={!isEditing} />
+                    <Checkbox id="codEnabled" checked={profileData.paymentMethods.codEnabled} onCheckedChange={handleCodChange} disabled={!isEditing} />
                     <Label htmlFor="codEnabled" className={`text-lg font-semibold leading-none ${!isEditing && 'text-muted-foreground'}`}>
                         Pago Contra Entrega
                     </Label>
@@ -340,15 +432,15 @@ export default function AdminProfilePage() {
                         <NequiIcon className="h-6 w-6" />
                         <Label htmlFor="nequiEnabled" className={`text-lg font-semibold ${!isEditing && 'text-muted-foreground'}`}>Nequi</Label>
                     </div>
-                    <Switch id="nequiEnabled" defaultChecked={profileData.paymentMethods.nequi?.enabled} disabled={!isEditing} />
+                    <Switch id="nequiEnabled" checked={profileData.paymentMethods.nequi?.enabled} onCheckedChange={(checked) => handlePaymentMethodChange('nequi', 'enabled', checked)} disabled={!isEditing} />
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="nequiAccountHolder">Titular de la cuenta</Label>
-                    <Input id="nequiAccountHolder" defaultValue={profileData.paymentMethods.nequi?.accountHolder} placeholder="Nombre del titular" disabled={!isEditing} />
+                    <Input id="nequiAccountHolder" value={profileData.paymentMethods.nequi?.accountHolder} placeholder="Nombre del titular" disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('nequi', 'accountHolder', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="nequiAccountNumber">Número de cuenta</Label>
-                    <Input id="nequiAccountNumber" type="text" defaultValue={profileData.paymentMethods.nequi?.accountNumber} placeholder="Número de celular" disabled={!isEditing} />
+                    <Input id="nequiAccountNumber" type="text" value={profileData.paymentMethods.nequi?.accountNumber} placeholder="Número de celular" disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('nequi', 'accountNumber', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                     <Label>Código QR Nequi</Label>
@@ -378,15 +470,15 @@ export default function AdminProfilePage() {
                         <DaviplataIcon className="h-6 w-6" />
                         <Label htmlFor="daviplataEnabled" className={`text-lg font-semibold ${!isEditing && 'text-muted-foreground'}`}>Daviplata</Label>
                     </div>
-                    <Switch id="daviplataEnabled" defaultChecked={profileData.paymentMethods.daviplata?.enabled} disabled={!isEditing} />
+                    <Switch id="daviplataEnabled" checked={profileData.paymentMethods.daviplata?.enabled} onCheckedChange={(checked) => handlePaymentMethodChange('daviplata', 'enabled', checked)} disabled={!isEditing} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="daviplataAccountHolder">Titular de la cuenta</Label>
-                    <Input id="daviplataAccountHolder" placeholder="Nombre del titular" defaultValue={profileData.paymentMethods.daviplata?.accountHolder} disabled={!isEditing} />
+                    <Input id="daviplataAccountHolder" placeholder="Nombre del titular" value={profileData.paymentMethods.daviplata?.accountHolder} disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('daviplata', 'accountHolder', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="daviplataAccountNumber">Número de cuenta</Label>
-                    <Input id="daviplataAccountNumber" type="tel" placeholder="Número de celular" defaultValue={profileData.paymentMethods.daviplata?.accountNumber} disabled={!isEditing}/>
+                    <Input id="daviplataAccountNumber" type="tel" placeholder="Número de celular" value={profileData.paymentMethods.daviplata?.accountNumber} disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('daviplata', 'accountNumber', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                     <Label>Código QR Daviplata</Label>
@@ -416,15 +508,15 @@ export default function AdminProfilePage() {
                         <BancolombiaIcon className="h-6 w-6" />
                         <Label htmlFor="bancolombiaEnabled" className={`text-lg font-semibold ${!isEditing && 'text-muted-foreground'}`}>QR Bancolombia</Label>
                     </div>
-                    <Switch id="bancolombiaEnabled" defaultChecked={profileData.paymentMethods.bancolombia?.enabled} disabled={!isEditing} />
+                    <Switch id="bancolombiaEnabled" checked={profileData.paymentMethods.bancolombia?.enabled} onCheckedChange={(checked) => handlePaymentMethodChange('bancolombia', 'enabled', checked)} disabled={!isEditing} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="bancolombiaAccountHolder">Titular de la cuenta</Label>
-                    <Input id="bancolombiaAccountHolder" defaultValue={profileData.paymentMethods.bancolombia?.accountHolder} placeholder="Nombre del titular" disabled={!isEditing} />
+                    <Input id="bancolombiaAccountHolder" value={profileData.paymentMethods.bancolombia?.accountHolder} placeholder="Nombre del titular" disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('bancolombia', 'accountHolder', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="bancolombiaAccountNumber">Número de cuenta</Label>
-                    <Input id="bancolombiaAccountNumber" type="text" defaultValue={profileData.paymentMethods.bancolombia?.accountNumber} placeholder="Número de cuenta" disabled={!isEditing} />
+                    <Input id="bancolombiaAccountNumber" type="text" value={profileData.paymentMethods.bancolombia?.accountNumber} placeholder="Número de cuenta" disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('bancolombia', 'accountNumber', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                     <Label>Código QR Bancolombia</Label>
@@ -460,22 +552,22 @@ export default function AdminProfilePage() {
                 <div className="space-y-2">
                     <Label htmlFor="primaryColor">Color primario</Label>
                     <div className="flex items-center gap-2">
-                        <Input id="primaryColor" type="color" defaultValue={profileData.corporateColors.primary} className="w-16 h-10 p-1" disabled={!isEditing} />
-                        <Input type="text" defaultValue={profileData.corporateColors.primary} readOnly className="flex-1" disabled={!isEditing} />
+                        <Input id="primary" type="color" value={profileData.corporateColors.primary} className="w-16 h-10 p-1" disabled={!isEditing} onChange={(e) => handleColorChange('primary', e.target.value)} />
+                        <Input type="text" value={profileData.corporateColors.primary} readOnly className="flex-1" disabled />
                     </div>
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="secondaryColor">Color secundario</Label>
                      <div className="flex items-center gap-2">
-                        <Input id="secondaryColor" type="color" defaultValue={profileData.corporateColors.secondary} className="w-16 h-10 p-1" disabled={!isEditing} />
-                        <Input type="text" defaultValue={profileData.corporateColors.secondary} readOnly className="flex-1" disabled={!isEditing} />
+                        <Input id="secondary" type="color" value={profileData.corporateColors.secondary} className="w-16 h-10 p-1" disabled={!isEditing} onChange={(e) => handleColorChange('secondary', e.target.value)} />
+                        <Input type="text" value={profileData.corporateColors.secondary} readOnly className="flex-1" disabled />
                     </div>
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="accentColor">Color de acento</Label>
                     <div className="flex items-center gap-2">
-                        <Input id="accentColor" type="color" defaultValue={profileData.corporateColors.accent} className="w-16 h-10 p-1" disabled={!isEditing} />
-                        <Input type="text" defaultValue={profileData.corporateColors.accent} readOnly className="flex-1" disabled={!isEditing} />
+                        <Input id="accent" type="color" value={profileData.corporateColors.accent} className="w-16 h-10 p-1" disabled={!isEditing} onChange={(e) => handleColorChange('accent', e.target.value)} />
+                        <Input type="text" value={profileData.corporateColors.accent} readOnly className="flex-1" disabled />
                     </div>
                 </div>
             </div>
