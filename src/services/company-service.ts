@@ -8,7 +8,8 @@ import {
   getDoc,
   query,
   where,
-  serverTimestamp
+  serverTimestamp,
+  Timestamp
 } from 'firebase/firestore';
 import type { Company } from '@/types';
 
@@ -86,6 +87,9 @@ class CompanyService {
           return;
         }
 
+        const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date();
+        const updatedAt = data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date();
+
         companies.push({
           id: doc.id,
           name: data.name,
@@ -101,8 +105,8 @@ class CompanyService {
           phone: data.phone,
           phoneFixed: data.phoneFixed,
           email: data.email,
-          createdAt: data.createdAt?.toDate(),
-          updatedAt: data.updatedAt?.toDate(),
+          createdAt: createdAt,
+          updatedAt: updatedAt,
         } as Company);
       });
       
