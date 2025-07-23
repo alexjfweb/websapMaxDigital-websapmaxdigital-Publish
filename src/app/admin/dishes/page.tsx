@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, type ChangeEvent, useEffect } from "react";
@@ -13,7 +14,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
-import { mockDishes } from "@/lib/mock-data"; 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
@@ -21,7 +21,7 @@ import type { Dish, DishFormData } from "@/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, query, where, Timestamp, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, Timestamp, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 
 
 export default function AdminDishesPage() {
@@ -33,18 +33,19 @@ export default function AdminDishesPage() {
   const [dishToDelete, setDishToDelete] = useState<Dish | null>(null);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [filteredDishes, setFilteredDishes] = useState<Dish[]>([]);
+  const companyId = 'websapmax'; // Hardcoded for now
 
   useEffect(() => {
     setIsMounted(true);
     // Leer platos de Firestore filtrando por companyId
-    const q = query(collection(db, 'dishes'), where('companyId', '==', 'websapmax'));
+    const q = query(collection(db, 'dishes'), where('companyId', '==', companyId));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const dishesFS = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Dish));
       setDishes(dishesFS);
       setFilteredDishes(dishesFS); // Inicializar platos filtrados
     });
     return () => unsubscribe();
-  }, []);
+  }, [companyId]);
 
   const { toast } = useToast();
 
@@ -121,52 +122,75 @@ export default function AdminDishesPage() {
   };
   
   const onSubmit = async (values: DishFormData) => {
-    if (editingDish) {
-      // TODO: Actualización en Firestore (no implementado en este paso)
-      toast({
-        title: 'Plato actualizado exitosamente',
-        description: 'El plato "' + values.name + '" se ha actualizado correctamente.',
-      });
-    } else {
-      // Validar duplicados por nombre, categoría y companyId
-      const q = query(
-        collection(db, 'dishes'),
-        where('companyId', '==', 'websapmax'),
-        where('name', '==', values.name),
-        where('category', '==', values.category)
-      );
-      const snapshot = await getDocs(q);
-      if (!snapshot.empty) {
+    const isUpdating = !!editingDish;
+
+    try {
+        // Validar duplicados por nombre y categoría para el mismo companyId
+        const q = query(
+            collection(db, 'dishes'),
+            where('companyId', '==', companyId),
+            where('name', '==', values.name),
+            where('category', '==', values.category)
+        );
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+            // Si estamos actualizando, permitimos guardar si el plato encontrado es el mismo que estamos editando.
+            const isSameDish = isUpdating && snapshot.docs[0].id === editingDish.id;
+            if (!isSameDish) {
+                toast({
+                    title: 'Plato duplicado',
+                    description: 'Ya existe un plato con ese nombre y categoría.',
+                    variant: 'destructive',
+                });
+                return;
+            }
+        }
+        
+        const dishData = {
+            name: values.name,
+            description: values.description,
+            price: Number(values.price),
+            category: values.category,
+            stock: Number(values.stock),
+            imageUrl: imagePreview || "https://placehold.co/600x400.png",
+            updatedAt: Timestamp.now(),
+        };
+
+        if (isUpdating) {
+            const dishRef = doc(db, 'dishes', editingDish.id);
+            await updateDoc(dishRef, dishData);
+            toast({
+                title: 'Plato actualizado',
+                description: `El plato "${values.name}" se ha actualizado correctamente.`,
+            });
+        } else {
+            const newDish = {
+                ...dishData,
+                likes: 0,
+                available: true,
+                companyId: companyId,
+                createdAt: Timestamp.now(),
+            };
+            await addDoc(collection(db, 'dishes'), newDish);
+            toast({
+                title: 'Plato creado',
+                description: `El plato "${values.name}" se ha creado correctamente.`,
+            });
+        }
+        
+        setEditingDish(null);
+        setIsDialogOpen(false);
+
+    } catch (error) {
+        console.error("Error guardando el plato: ", error);
         toast({
-          title: 'Ya existe un plato con ese nombre y categoría',
-          description: 'No se puede crear un plato duplicado.',
-          variant: 'destructive',
+            title: 'Error',
+            description: 'No se pudo guardar el plato. Inténtelo de nuevo.',
+            variant: 'destructive',
         });
-        return;
-      }
-      // Crear plato en Firestore
-      const newDish = {
-        name: values.name,
-        description: values.description,
-        price: Number(values.price),
-        category: values.category,
-        stock: Number(values.stock),
-        likes: 0,
-        imageUrl: imagePreview || "https://placehold.co/600x400.png",
-        available: true,
-        companyId: 'websapmax',
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now(),
-      };
-      await addDoc(collection(db, 'dishes'), newDish);
-      toast({
-        title: 'Plato creado exitosamente',
-        description: 'El plato "' + values.name + '" se ha creado correctamente.',
-      });
     }
-    setEditingDish(null);
-    setIsDialogOpen(false);
-  };
+};
 
   const openEditDialog = (dish: Dish) => {
     setEditingDish(dish);
@@ -180,7 +204,6 @@ export default function AdminDishesPage() {
 
   const handleDeleteDish = (dish: Dish) => {
     setDishToDelete(dish);
-    setIsModalOpen(true);
   };
 
   const confirmDelete = async () => {
@@ -189,8 +212,8 @@ export default function AdminDishesPage() {
     try {
       await deleteDoc(doc(db, 'dishes', dishToDelete.id));
       toast({
-        title: 'Plato eliminado exitosamente',
-        description: 'El plato "' + dishToDelete.name + '" se ha eliminado correctamente.',
+        title: 'Plato eliminado',
+        description: `El plato "${dishToDelete.name}" se ha eliminado correctamente.`,
         variant: "destructive"
       });
     } catch (error) {
@@ -200,14 +223,8 @@ export default function AdminDishesPage() {
         variant: "destructive"
       });
     } finally {
-      setIsModalOpen(false);
       setDishToDelete(null);
     }
-  };
-
-  const cancelDelete = () => {
-    setIsModalOpen(false);
-    setDishToDelete(null);
   };
   
   const renderStars = (likes: number) => {
@@ -240,6 +257,7 @@ export default function AdminDishesPage() {
   // Aplicar filtros cuando cambien los criterios
   useEffect(() => {
     filterDishes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dishes, searchTerm, selectedCategory]);
 
   // Obtener categorías únicas
@@ -270,7 +288,7 @@ export default function AdminDishesPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-primary">Gestión de platos</h1>
-          <p className="text-lg text-muted-foreground">Descripción de la sección de platos</p>
+          <p className="text-lg text-muted-foreground">Crea, edita y gestiona los platos de tu menú.</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
@@ -282,7 +300,7 @@ export default function AdminDishesPage() {
                 <DialogHeader>
                     <DialogTitle>{editingDish ? 'Editar plato' : 'Crear nuevo plato'}</DialogTitle>
                     <DialogDescription>
-                        {editingDish ? 'Descripción de la edición' : 'Descripción de la creación'}
+                        {editingDish ? 'Modifica los detalles del plato existente.' : 'Añade un nuevo plato a tu menú.'}
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -369,7 +387,7 @@ export default function AdminDishesPage() {
                                 name="stock"
                                 render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Stock</FormLabel>
+                                    <FormLabel>Stock (-1 para ilimitado)</FormLabel>
                                     <FormControl>
                                     <Input type="number" placeholder="Stock del plato" {...field} />
                                     </FormControl>
@@ -391,7 +409,7 @@ export default function AdminDishesPage() {
       <Card>
         <CardHeader>
           <CardTitle>Todos los platos</CardTitle>
-          <CardDescription>Descripción de la sección de platos</CardDescription>
+          <CardDescription>Visualiza y administra todos los platos de tu menú.</CardDescription>
           <div className="flex flex-col md:flex-row gap-2 pt-4">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
@@ -451,9 +469,9 @@ export default function AdminDishesPage() {
                       <Button variant="ghost" size="icon" className="hover:text-primary" onClick={() => openEditDialog(dish)}>
                         <Edit3 className="h-4 w-4" />
                       </Button>
-                      <AlertDialog>
+                      <AlertDialog onOpenChange={(open) => !open && setDishToDelete(null)}>
                         <AlertDialogTrigger asChild>
-                           <Button variant="ghost" size="icon" className="hover:text-destructive">
+                           <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeleteDish(dish)}>
                              <Trash2 className="h-4 w-4" />
                            </Button>
                         </AlertDialogTrigger>
@@ -466,11 +484,11 @@ export default function AdminDishesPage() {
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                                <AlertDialogCancel onClick={cancelDelete}>
+                                <AlertDialogCancel>
                                     Cancelar
                                 </AlertDialogCancel>
                                 <AlertDialogAction 
-                                  onClick={() => handleDeleteDish(dish)} 
+                                  onClick={confirmDelete}
                                   className={cn(buttonVariants({ variant: "destructive" }))}
                                 >
                                     Sí, eliminar
@@ -535,32 +553,8 @@ export default function AdminDishesPage() {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Modal de confirmación de eliminación */}
-      <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-destructive">
-              ¿Eliminar plato?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              ¿Estás seguro de que quieres eliminar el plato <strong>"{dishToDelete?.name}"</strong>? 
-              Esta acción no se puede deshacer y el plato desaparecerá del menú público.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelDelete}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDelete} 
-              className={cn(buttonVariants({ variant: "destructive" }))}
-            >
-              Sí, eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
+
+    
