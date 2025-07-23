@@ -17,7 +17,9 @@ class StorageService {
       throw new Error("No se proporcionó ningún archivo para subir.");
     }
 
-    const fileRef = ref(storage, `${path}${Date.now()}-${file.name}`);
+    const fileExtension = file.name.split('.').pop();
+    const fileName = `${Date.now()}.${fileExtension}`;
+    const fileRef = ref(storage, `${path}${fileName}`);
     
     try {
       const snapshot = await uploadBytes(fileRef, file);

@@ -97,7 +97,29 @@ export default function AdminProfilePage() {
     setPreview: React.Dispatch<React.SetStateAction<string | null>>
   ) => {
     const file = event.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
+    if (file) {
+      // Validación de tipo de archivo
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: "Archivo no válido",
+          description: "Por favor, sube una imagen en formato JPG, PNG o WebP.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Validación de tamaño (2MB)
+      const maxSizeInBytes = 2 * 1024 * 1024;
+      if (file.size > maxSizeInBytes) {
+        toast({
+          title: "Archivo demasiado grande",
+          description: "La imagen no debe exceder los 2MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       setFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -115,8 +137,7 @@ export default function AdminProfilePage() {
     try {
       let updatedData = { ...profileData };
 
-      // 1. Upload all new images concurrently
-      const uploadPromises: Promise<void>[] = [];
+      const uploadPromises: Promise<any>[] = [];
       
       if (logoFile) {
         uploadPromises.push(
@@ -147,10 +168,8 @@ export default function AdminProfilePage() {
         );
       }
       
-      // 2. Wait for all uploads to complete
       await Promise.all(uploadPromises);
       
-      // 3. Save the updated profile data to Firestore via API
       const response = await fetch(`/api/companies/${profileData.id}`, {
         method: 'PUT',
         headers: {
@@ -166,10 +185,8 @@ export default function AdminProfilePage() {
       
       const savedProfile = await response.json();
 
-      // 4. Update local state and UI
       setProfileData(savedProfile.data);
       setIsEditing(false);
-      // Clear file states after successful upload
       setLogoFile(null);
       setNequiQrFile(null);
       setDaviplataQrFile(null);
@@ -193,17 +210,13 @@ export default function AdminProfilePage() {
   };
 
   const handleCancel = () => {
-    // This function can be expanded to refetch data from the server if needed
-    // For now, it just resets the editing state and local file previews.
     setIsEditing(false);
     
-    // Reset image previews to match the last saved state
     setLogoPreview(profileData.logoUrl);
     setNequiQrPreview(profileData.paymentMethods.nequi?.qrCodeUrl || null);
     setDaviplataQrPreview(profileData.paymentMethods.daviplata?.qrCodeUrl || null);
     setBancolombiaQrPreview(profileData.paymentMethods.bancolombia?.qrCodeUrl || null);
     
-    // Clear any selected files that weren't saved
     setLogoFile(null);
     setNequiQrFile(null);
     setDaviplataQrFile(null);
@@ -217,23 +230,19 @@ export default function AdminProfilePage() {
   };
 
   const handleDelete = () => {
-    // In a real app, this would trigger a backend call to delete the profile
      toast({
         title: "Profile Deleted",
         description: "The restaurant profile has been permanently deleted.",
         variant: "destructive"
     });
-    // You might want to redirect the user after deletion, e.g., router.push('/dashboard');
   }
 
-  // Copiar enlace de menú al portapapeles de forma segura
   const handleCopyMenuLink = async () => {
     const link = profileData.socialLinks?.menuShareLink || "";
     try {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(link);
       } else {
-        // Fallback para contextos inseguros
         const textArea = document.createElement("textarea");
         textArea.value = link;
         document.body.appendChild(textArea);
@@ -256,7 +265,7 @@ export default function AdminProfilePage() {
   };
   
   if (!isClient) {
-    return null; // O un esqueleto de carga
+    return null;
   }
 
   return (
@@ -345,11 +354,11 @@ export default function AdminProfilePage() {
                 <Button variant="outline" asChild disabled={!isEditing}>
                   <Label htmlFor="logo-upload" className={`cursor-pointer ${!isEditing && 'cursor-not-allowed opacity-50'}`}>
                     <UploadCloud className="mr-2 h-4 w-4" /> Subir logo
-                    <Input id="logo-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, setLogoFile, setLogoPreview)} disabled={!isEditing}/>
+                    <Input id="logo-upload" type="file" className="hidden" accept="image/jpeg,image/png,image/webp" onChange={(e) => handleImageChange(e, setLogoFile, setLogoPreview)} disabled={!isEditing}/>
                   </Label>
                 </Button>
             </div>
-            <p className="text-xs text-muted-foreground">Sugerencia: el logo debe ser cuadrado</p>
+            <p className="text-xs text-muted-foreground">Sugerencia: el logo debe ser cuadrado y menor a 2MB.</p>
           </div>
         </CardContent>
       </Card>
@@ -456,7 +465,7 @@ export default function AdminProfilePage() {
                         <Button variant="outline" asChild disabled={!isEditing}>
                             <Label htmlFor="nequiQrUpload" className={`cursor-pointer ${!isEditing && 'cursor-not-allowed opacity-50'}`}>
                                 <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
-                                <Input id="nequiQrUpload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, setNequiQrFile, setNequiQrPreview)} disabled={!isEditing} />
+                                <Input id="nequiQrUpload" type="file" className="hidden" accept="image/jpeg,image/png,image/webp" onChange={(e) => handleImageChange(e, setNequiQrFile, setNequiQrPreview)} disabled={!isEditing} />
                             </Label>
                         </Button>
                     </div>
@@ -494,7 +503,7 @@ export default function AdminProfilePage() {
                         <Button variant="outline" asChild disabled={!isEditing}>
                             <Label htmlFor="daviplataQrUpload" className={`cursor-pointer ${!isEditing && 'cursor-not-allowed opacity-50'}`}>
                                 <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
-                                <Input id="daviplataQrUpload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, setDaviplataQrFile, setDaviplataQrPreview)} disabled={!isEditing} />
+                                <Input id="daviplataQrUpload" type="file" className="hidden" accept="image/jpeg,image/png,image/webp" onChange={(e) => handleImageChange(e, setDaviplataQrFile, setDaviplataQrPreview)} disabled={!isEditing} />
                             </Label>
                         </Button>
                     </div>
@@ -532,7 +541,7 @@ export default function AdminProfilePage() {
                         <Button variant="outline" asChild disabled={!isEditing}>
                             <Label htmlFor="bancolombiaQrUpload" className={`cursor-pointer ${!isEditing && 'cursor-not-allowed opacity-50'}`}>
                                 <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
-                                <Input id="bancolombiaQrUpload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, setBancolombiaQrFile, setBancolombiaQrPreview)} disabled={!isEditing} />
+                                <Input id="bancolombiaQrUpload" type="file" className="hidden" accept="image/jpeg,image/png,image/webp" onChange={(e) => handleImageChange(e, setBancolombiaQrFile, setBancolombiaQrPreview)} disabled={!isEditing} />
                             </Label>
                         </Button>
                     </div>
