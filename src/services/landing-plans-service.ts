@@ -68,7 +68,7 @@ export interface UpdatePlanRequest extends Partial<CreatePlanRequest> {
 export interface PlanAuditLog {
   id: string;
   planId: string;
-  action: 'created' | 'updated' | 'deleted' | 'reordered';
+  action: 'created' | 'updated' | 'deleted' | 'reordered' | 'rollback';
   userId: string;
   userEmail: string;
   timestamp: Date;
@@ -168,7 +168,7 @@ class LandingPlansService {
   /**
    * Registra una entrada de auditoría
    */
-  private async logAudit(
+  public async logAudit(
     planId: string,
     action: PlanAuditLog['action'],
     userId: string,
@@ -215,29 +215,33 @@ class LandingPlansService {
 
       snapshot.forEach(doc => {
         const data = doc.data();
-        plans.push({
-            id: doc.id,
-            slug: data.slug,
-            name: data.name,
-            description: data.description,
-            price: data.price || 0,
-            currency: data.currency || 'USD',
-            period: data.period,
-            features: data.features || [],
-            isActive: data.isActive,
-            isPublic: data.isPublic,
-            isPopular: data.isPopular || false,
-            order: data.order || 0,
-            icon: data.icon,
-            color: data.color,
-            maxUsers: data.maxUsers,
-            maxProjects: data.maxProjects,
-            ctaText: data.ctaText || 'Comenzar Prueba Gratuita',
-            createdAt: this.parseTimestamp(data.createdAt),
-            updatedAt: this.parseTimestamp(data.updatedAt),
-            createdBy: data.createdBy,
-            updatedBy: data.updatedBy
-          });
+        if (data.name && data.price !== undefined && data.features?.length > 0) {
+            plans.push({
+                id: doc.id,
+                slug: data.slug,
+                name: data.name,
+                description: data.description,
+                price: data.price || 0,
+                currency: data.currency || 'USD',
+                period: data.period,
+                features: data.features || [],
+                isActive: data.isActive,
+                isPublic: data.isPublic,
+                isPopular: data.isPopular || false,
+                order: data.order || 0,
+                icon: data.icon,
+                color: data.color,
+                maxUsers: data.maxUsers,
+                maxProjects: data.maxProjects,
+                ctaText: data.ctaText || 'Comenzar Prueba Gratuita',
+                createdAt: this.parseTimestamp(data.createdAt),
+                updatedAt: this.parseTimestamp(data.updatedAt),
+                createdBy: data.createdBy,
+                updatedBy: data.updatedBy
+            });
+        } else {
+            console.warn(`[WARN] Documento de plan ${doc.id} omitido por datos incompletos.`);
+        }
       });
       
       plans.sort((a, b) => a.order - b.order);
@@ -643,7 +647,7 @@ class LandingPlansService {
       // Log de auditoría del rollback
       await this.logAudit(
         planId,
-        'updated',
+        'rollback',
         userId,
         userEmail,
         { 
