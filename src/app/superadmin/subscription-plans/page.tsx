@@ -26,12 +26,14 @@ import {
   Calendar,
   Palette,
   Check,
-  X
+  X,
+  AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLandingPlans, useLandingPlansCRUD, usePlanState, usePlanAuditLogs } from '@/hooks/use-landing-plans';
 import { LandingPlan, CreatePlanRequest, UpdatePlanRequest } from '@/services/landing-plans-service';
 import { toast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Opciones para íconos y colores
 const PLAN_ICONS = [
@@ -645,7 +647,7 @@ export default function SubscriptionPlansPage() {
 
 // Componente para mostrar el historial de cambios
 function PlanHistoryDialog({ planId }: { planId: string }) {
-  const { logs, isLoading, rollbackPlan } = usePlanAuditLogs(planId);
+  const { logs, isLoading, error, rollbackPlan } = usePlanAuditLogs(planId);
   
   // Simular datos del usuario
   const currentUser = {
@@ -669,51 +671,73 @@ function PlanHistoryDialog({ planId }: { planId: string }) {
     }
   };
 
-  if (isLoading) {
-    return <div className="text-center py-4">Cargando historial...</div>;
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-20 w-full" />
+          ))}
+        </div>
+      );
+    }
+
+    if (error) {
+       return (
+        <div className="flex flex-col items-center justify-center text-center text-destructive py-8">
+            <AlertCircle className="h-8 w-8 mb-2" />
+            <p className="font-semibold">Error al cargar el historial</p>
+            <p className="text-sm">{error}</p>
+        </div>
+      );
+    }
+    
+    if (logs.length === 0) {
+      return (
+        <p className="text-gray-500 text-center py-4">No hay historial de cambios para este plan.</p>
+      );
+    }
+    
+    return logs.map((log) => (
+      <Card key={log.id} className="p-4">
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <div className="flex items-center space-x-2 mb-2">
+              <Badge variant={log.action === 'created' ? 'default' : log.action === 'updated' ? 'secondary' : 'destructive'}>
+                {log.action === 'created' ? 'Creado' : log.action === 'updated' ? 'Actualizado' : 'Eliminado'}
+              </Badge>
+              <span className="text-sm text-gray-500">
+                {new Date(log.timestamp).toLocaleString()}
+              </span>
+            </div>
+            <p className="text-sm text-gray-600 mb-2">
+              Por: {log.userEmail}
+            </p>
+            {log.details && Object.keys(log.details).length > 0 && (
+              <div className="text-xs text-gray-500 bg-muted p-2 rounded-md">
+                <pre className="whitespace-pre-wrap font-mono">
+                  {JSON.stringify(log.details, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+          {log.previousData && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleRollback(log.id)}
+            >
+              Restaurar
+            </Button>
+          )}
+        </div>
+      </Card>
+    ));
   }
 
   return (
-    <div className="space-y-4">
-      {logs.length === 0 ? (
-        <p className="text-gray-500 text-center py-4">No hay historial de cambios</p>
-      ) : (
-        logs.map((log) => (
-          <Card key={log.id} className="p-4">
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Badge variant={log.action === 'created' ? 'default' : log.action === 'updated' ? 'secondary' : 'destructive'}>
-                    {log.action === 'created' ? 'Creado' : log.action === 'updated' ? 'Actualizado' : 'Eliminado'}
-                  </Badge>
-                  <span className="text-sm text-gray-500">
-                    {new Date(log.timestamp).toLocaleString()}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600 mb-2">
-                  Por: {log.userEmail}
-                </p>
-                {log.details && Object.keys(log.details).length > 0 && (
-                  <div className="text-xs text-gray-500">
-                    <pre className="whitespace-pre-wrap">
-                      {JSON.stringify(log.details, null, 2)}
-                    </pre>
-                  </div>
-                )}
-              </div>
-              {log.previousData && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleRollback(log.id)}
-                >
-                  Restaurar
-                </Button>
-              )}
-            </div>
-          </Card>
-        ))
-      )}
+    <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-4">
+      {renderContent()}
     </div>
   );
 }

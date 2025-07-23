@@ -10,7 +10,8 @@ import {
   where,
   orderBy,
   serverTimestamp,
-  writeBatch
+  writeBatch,
+  Timestamp
 } from 'firebase/firestore';
 
 export type TableStatus = 'available' | 'occupied' | 'reserved' | 'out_of_service';
@@ -43,7 +44,7 @@ export interface TableReservation {
 }
 
 export interface TableLog {
-  id?: string;
+  id: string;
   tableId: string;
   tableNumber: number;
   action: 'created' | 'updated' | 'deleted' | 'reserved' | 'released' | 'status_changed';
@@ -51,7 +52,7 @@ export interface TableLog {
   newStatus?: TableStatus;
   details: string;
   performedBy: string;
-  createdAt?: any;
+  createdAt: Timestamp;
 }
 
 class TableService {
@@ -243,13 +244,20 @@ class TableService {
     await addDoc(this.logsCollection, logWithRestaurant);
   }
 
-  async getTableLogs(tableId?: string): Promise<TableLog[]> {
-    let q = query(this.logsCollection, orderBy('createdAt', 'desc'));
-    if (tableId) {
-      q = query(this.logsCollection, where('tableId', '==', tableId), orderBy('createdAt', 'desc'));
+  async getTableLogs(tableId: string): Promise<TableLog[]> {
+    if (!tableId) {
+      throw new Error("El ID de la mesa es obligatorio.");
     }
+    const q = query(
+      this.logsCollection,
+      where('tableId', '==', tableId),
+      orderBy('createdAt', 'desc')
+    );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as TableLog[];
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as TableLog[];
   }
 
   // Utilidades visuales

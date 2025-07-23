@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { tableService, type Table, type TableLog } from "@/services/table-service";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AlertCircle } from "lucide-react";
 
 interface TableLogsDialogProps {
   table: Table;
@@ -14,60 +16,86 @@ interface TableLogsDialogProps {
 export function TableLogsDialog({ table, open, onOpenChange }: TableLogsDialogProps) {
   const [logs, setLogs] = useState<TableLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (open) {
-      loadLogs();
+    if (open && table.id) {
+      setLoading(true);
+      setError(null);
+      fetch(`/api/tables/${table.id}/logs`)
+        .then(res => {
+          if (!res.ok) throw new Error('Error al cargar el historial');
+          return res.json();
+        })
+        .then(data => {
+          setLogs(data);
+        })
+        .catch(err => {
+          setError(err.message);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     }
-    // eslint-disable-next-line
   }, [open, table.id]);
 
-  const loadLogs = async () => {
-    setLoading(true);
-    try {
-      const data = await tableService.getTableLogs(table.id);
-      setLogs(data);
-    } catch {
-      setLogs([]);
-    } finally {
-      setLoading(false);
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
+        </div>
+      );
     }
+    
+    if (error) {
+       return (
+        <div className="flex flex-col items-center justify-center text-center text-destructive py-8">
+            <AlertCircle className="h-8 w-8 mb-2" />
+            <p className="font-semibold">Error</p>
+            <p className="text-sm">{error}</p>
+        </div>
+      );
+    }
+
+    if (logs.length === 0) {
+      return (
+        <div className="text-center py-8 text-muted-foreground">
+          No hay registros de auditoría para esta mesa.
+        </div>
+      );
+    }
+
+    return (
+      <ul className="space-y-3">
+        {logs.map((log) => (
+          <li key={log.id} className="border rounded-md p-3 text-sm">
+            <div className="flex items-center gap-2 mb-1">
+              <Badge>{tableService.getActionText(log.action)}</Badge>
+              <span className="text-xs text-muted-foreground">
+                {log.createdAt?.toDate ? log.createdAt.toDate().toLocaleString() : 'Fecha no disponible'}
+              </span>
+            </div>
+            <p className="text-muted-foreground">{log.details}</p>
+            {log.performedBy && (
+              <p className="text-xs text-muted-foreground mt-1">Por: {log.performedBy}</p>
+            )}
+          </li>
+        ))}
+      </ul>
+    );
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle>Historial de Mesa {table.number}</DialogTitle>
+          <DialogTitle>Historial de Cambios - Mesa {table.number}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-          {loading ? (
-            <div className="text-center py-8">Cargando historial...</div>
-          ) : logs.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">No hay registros para esta mesa.</div>
-          ) : (
-            <ul className="space-y-2">
-              {logs.map((log) => (
-                <li key={log.id} className="border rounded-md p-3 flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <Badge>{tableService.getActionText(log.action)}</Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {log.createdAt?.toDate ? log.createdAt.toDate().toLocaleString() : ''}
-                    </span>
-                  </div>
-                  <div className="text-sm">{log.details}</div>
-                  {log.performedBy && (
-                    <div className="text-xs text-muted-foreground">Por: {log.performedBy}</div>
-                  )}
-                  {log.previousStatus && log.newStatus && (
-                    <div className="text-xs">
-                      Estado: <b>{tableService.getStatusText(log.previousStatus)}</b> → <b>{tableService.getStatusText(log.newStatus)}</b>
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
+        <div className="max-h-[60vh] overflow-y-auto pr-4">
+          {renderContent()}
         </div>
       </DialogContent>
     </Dialog>
