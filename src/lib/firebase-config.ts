@@ -1,53 +1,34 @@
+
 // src/lib/firebase-config.ts
-// Configuración de Firebase para desarrollo y producción
+// Configuración de Firebase para obtener las credenciales desde las variables de entorno.
 
-export const firebaseConfig = {
-  // Configuración de producción (reemplaza con tus credenciales reales)
-  production: {
-    apiKey: "AIzaSyC3UzUVh_OPavejyo-kviYVX_Zy9494yjg",
-    authDomain: "websapmax.firebaseapp.com",
-    projectId: "websapmax",
-    storageBucket: "websapmax.appspot.com",
-    messagingSenderId: "560613070255",
-    appId: "1:560613070255:web:7ce75870dbe6b19a084b5a",
-    measurementId: "G-DD5JWPV701"
-  },
-  
-  // Configuración de desarrollo (fallback)
-  development: {
-    apiKey: "AIzaSyC3UzUVh_OPavejyo-kviYVX_Zy9494yjg",
-    authDomain: "websapmax.firebaseapp.com",
-    projectId: "websapmax",
-    storageBucket: "websapmax.appspot.com",
-    messagingSenderId: "560613070255",
-    appId: "1:560613070255:web:7ce75870dbe6b19a084b5a",
-    measurementId: "G-DD5JWPV701"
-  }
-};
-
-// Función para obtener la configuración correcta
+/**
+ * Obtiene la configuración de Firebase a partir de las variables de entorno.
+ * Es crucial que el archivo .env.local esté correctamente configurado.
+ * @returns El objeto de configuración de Firebase, o null si faltan variables.
+ */
 export const getFirebaseConfig = () => {
-  const isProduction = process.env.NODE_ENV === 'production';
-  const config = isProduction ? firebaseConfig.production : firebaseConfig.development;
-  
-  // Verificar si las variables de entorno están configuradas
-  const hasEnvVars = process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
-                    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-  
-  if (hasEnvVars) {
-    console.log('✅ Firebase: Usando configuración de variables de entorno');
-    // Si usas .env.local, asegúrate que las variables coincidan
-    return {
-        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-        messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-        appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-        measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
-    };
-  } else {
-    console.log('⚠️ Firebase: Usando configuración de desarrollo desde firebase-config.ts');
-    return firebaseConfig.development;
+  const firebaseConfig = {
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+  };
+
+  // Validar que todas las variables necesarias estén presentes
+  const missingKeys = Object.entries(firebaseConfig)
+    .filter(([key, value]) => !value)
+    .map(([key]) => key);
+
+  if (missingKeys.length > 0) {
+    console.warn(`🟡 Firebase: Faltan las siguientes variables de entorno en tu archivo .env.local: ${missingKeys.join(', ')}.`);
+    console.warn('   - La aplicación continuará, pero las funciones de Firebase no estarán disponibles.');
+    console.warn('   - Por favor, copia .env.example a .env.local y rellena las credenciales.');
+    return null; // Devolver null para indicar que la configuración está incompleta
   }
+  
+  return firebaseConfig;
 };

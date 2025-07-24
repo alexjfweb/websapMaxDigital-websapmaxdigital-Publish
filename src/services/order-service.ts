@@ -32,10 +32,12 @@ class OrderService {
 
   async getOrdersByCompany(companyId: string): Promise<Order[]> {
     if (!companyId) {
+      console.error('[OrderService] El ID de la compañía es requerido.');
       throw new Error('El ID de la compañía es requerido.');
     }
     
     try {
+      console.log(`[OrderService] Buscando pedidos para la compañía: ${companyId}`);
       const q = query(
         this.ordersCollection,
         where('restaurantId', '==', companyId),
@@ -43,6 +45,8 @@ class OrderService {
       );
 
       const querySnapshot = await getDocs(q);
+      console.log(`[OrderService] Se encontraron ${querySnapshot.size} documentos para la compañía ${companyId}.`);
+      
       const orders: Order[] = [];
 
       querySnapshot.forEach(doc => {

@@ -1,49 +1,38 @@
+
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
-import { getFirebaseConfig } from './firebase-config'; // ✅ Conservamos esta línea
+import { getFirebaseConfig } from './firebase-config';
 
-// Inicialización de Firebase con configuración centralizada
-let app: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+let db: Firestore | null = null;
 
 try {
-  const config = getFirebaseConfig(); // ✅ Sigue leyendo desde firebase-config
+  const firebaseConfig = getFirebaseConfig();
+
+  // Solo inicializar si la configuración es válida
+  if (firebaseConfig) {
+    if (!getApps().length) {
+      app = initializeApp(firebaseConfig);
+    } else {
+      app = getApp();
+    }
   
-  if (!getApps().length) {
-    app = initializeApp(config);
-  } else {
-    app = getApp();
-  }
-
-  auth = getAuth(app);
-  db = getFirestore(app);
-
-  console.log('✅ Firebase: Inicializado correctamente');
-} catch (error) {
-  console.error('❌ Firebase: Error durante la inicialización:', error);
-  
-  // Fallback extremo
-  const fallbackConfig = {
-    apiKey: 'fallback-key',
-    authDomain: 'fallback.firebaseapp.com',
-    projectId: 'fallback-project',
-    storageBucket: 'fallback.appspot.com',
-    messagingSenderId: '000000000000',
-    appId: '1:000000000000:web:fallback',
-  };
-
-  try {
-    app = initializeApp(fallbackConfig, 'fallback');
     auth = getAuth(app);
     db = getFirestore(app);
-    console.warn('⚠️ Firebase: Usando configuración de fallback');
-  } catch (fallbackError) {
-    console.error('❌ Firebase: Error fatal - no se pudo inicializar Firebase');
-    throw new Error('Firebase no pudo inicializarse');
+  
+    console.log('✅ Firebase: Inicializado correctamente.');
+  } else {
+    // No hacer nada si la configuración no está completa.
+    // El mensaje de advertencia ya se mostró en getFirebaseConfig.
   }
+
+} catch (error) {
+  console.error('❌ Firebase: Error fatal durante la inicialización.', error);
+  // No volver a lanzar el error para no detener la aplicación
 }
 
+// Exporta las instancias, que pueden ser null si la inicialización falló
 export { app, auth, db };
