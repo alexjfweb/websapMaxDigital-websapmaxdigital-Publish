@@ -13,7 +13,8 @@ class OrderService {
   private get ordersCollection() {
     if (!db) {
       console.error("Firebase no está inicializado. No se puede acceder a la colección 'orders'.");
-      return null;
+      // Devolver un error claro en lugar de null para fallar rápido
+      throw new Error("La conexión a la base de datos no está disponible.");
     }
     return collection(db, 'orders');
   }
@@ -30,21 +31,19 @@ class OrderService {
             return date.toISOString();
         }
     }
-    // Si no se puede parsear, devolver la fecha actual como fallback seguro
     console.warn(`[WARN] No se pudo parsear el timestamp, se usará la fecha actual:`, timestamp);
     return new Date().toISOString();
   }
 
   async getOrdersByCompany(companyId: string): Promise<Order[]> {
-    const coll = this.ordersCollection;
-    if (!coll) return [];
-
     if (!companyId) {
       console.error('[OrderService] El ID de la compañía es requerido.');
       throw new Error('El ID de la compañía es requerido.');
     }
     
     try {
+      // Llama al getter, que lanzará un error si db no está inicializado
+      const coll = this.ordersCollection; 
       console.log(`[OrderService] Buscando pedidos para la compañía: ${companyId}`);
       const q = query(
         coll,
@@ -60,11 +59,10 @@ class OrderService {
       querySnapshot.forEach(doc => {
         const data = doc.data();
         
-        // Validación más robusta de los datos del pedido
         if (
           !data.cliente?.nombre ||
           !data.fecha ||
-          data.total === undefined || // Permitir total 0
+          data.total === undefined ||
           typeof data.total !== 'number' ||
           !data.estado
         ) {
@@ -73,8 +71,6 @@ class OrderService {
         }
 
         const date = this.parseTimestamp(data.fecha);
-
-        // Los productos son opcionales, si no existen se usa un array vacío
         const productos = Array.isArray(data.productos) ? data.productos : [];
 
         orders.push({

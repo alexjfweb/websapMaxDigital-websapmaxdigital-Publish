@@ -5,38 +5,35 @@ import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getStorage, type FirebaseStorage } from "firebase/storage";
 import { getFirebaseConfig } from './firebase-config';
 
-let app: FirebaseApp | null = null;
-let auth: Auth | null = null;
-let db: Firestore | null = null;
-let storage: FirebaseStorage | null = null;
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
+let storage: FirebaseStorage;
 
-// Ejecutar la inicialización solo en el lado del cliente
-if (typeof window !== 'undefined') {
-  try {
-    const firebaseConfig = getFirebaseConfig();
+const firebaseConfig = getFirebaseConfig();
 
-    if (firebaseConfig) {
-      if (!getApps().length) {
-        app = initializeApp(firebaseConfig);
-        console.log('✅ Firebase: Inicializado por primera vez en el cliente.');
-      } else {
-        app = getApp();
-        console.log('✅ Firebase: Usando instancia existente en el cliente.');
-      }
+if (!firebaseConfig) {
+  // Si la configuración no está disponible, no podemos continuar.
+  // Esto es preferible a dejar las variables sin inicializar.
+  throw new Error("Firebase no pudo inicializarse. Verifica la consola para más detalles.");
+}
 
-      auth = getAuth(app);
-      db = getFirestore(app);
-      storage = getStorage(app);
-
-    } else {
-      console.warn("⚠️ Firebase: La configuración no está completa. Los servicios de Firebase no estarán disponibles. Revisa tu archivo .env.local.");
-    }
-
-  } catch (error) {
-    console.error('❌ Firebase: Error fatal durante la inicialización en el cliente.', error);
+try {
+  if (!getApps().length) {
+    app = initializeApp(firebaseConfig);
+    console.log('✅ Firebase: Inicializado por primera vez.');
+  } else {
+    app = getApp();
+    console.log('✅ Firebase: Usando instancia existente.');
   }
-} else {
-  console.info("ℹ️ Firebase: La inicialización se omite en el servidor. Se inicializará en el cliente.");
+
+  auth = getAuth(app);
+  db = getFirestore(app);
+  storage = getStorage(app);
+
+} catch (error) {
+  console.error('❌ Firebase: Error fatal durante la inicialización.', error);
+  throw new Error("Firebase no pudo inicializarse. Verifica la consola para más detalles.");
 }
 
 export { app, auth, db, storage };

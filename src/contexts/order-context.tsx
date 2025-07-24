@@ -3,8 +3,8 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback } from "react";
 import { db } from '@/lib/firebase';
 import { collection, addDoc, updateDoc, doc, Timestamp } from 'firebase/firestore';
-import type { Order } from '@/types'; // Importar Order desde types
-import { useOrders } from "@/hooks/use-orders"; // Importar el nuevo hook
+import type { Order } from '@/types'; 
+import { useOrders } from "@/hooks/use-orders";
 
 interface OrderContextType {
   orders: Order[];
@@ -24,31 +24,36 @@ export const useOrderContext = () => {
 };
 
 export const OrderProvider = ({ children }: { children: ReactNode }) => {
-  // Por ahora, asumimos un ID de restaurante fijo. En una app real, esto sería dinámico.
+  // Asumimos un ID de restaurante fijo. En una app real, esto sería dinámico.
   const restaurantId = 'websapmax'; 
   const { orders, isLoading, error, refreshOrders } = useOrders(restaurantId);
 
   const addOrder = useCallback(async (orderData: Omit<Order, 'id' | 'date'>) => {
+    if (!db) {
+      throw new Error("La base de datos no está disponible.");
+    }
     const orderWithTimestamp = {
       ...orderData,
-      fecha: Timestamp.now(), // Firestore espera 'fecha', no 'date'
-      estado: orderData.status, // Firestore espera 'estado', no 'status'
+      fecha: Timestamp.now(), 
+      estado: orderData.status,
     };
     const docRef = await addDoc(collection(db, 'orders'), orderWithTimestamp);
-    refreshOrders(); // Refrescar la lista de pedidos después de añadir uno nuevo
+    await refreshOrders(); 
     return docRef.id;
   }, [refreshOrders]);
 
   const updateOrder = useCallback(async (id: string, updates: Partial<Order>) => {
+     if (!db) {
+      throw new Error("La base de datos no está disponible.");
+    }
     const orderRef = doc(db, 'orders', id);
     const updatePayload: any = {};
     if (updates.status) {
-      updatePayload.estado = updates.status; // Mapear 'status' a 'estado'
+      updatePayload.estado = updates.status; 
     }
-    // Añadir otros posibles campos a actualizar aquí
     
     await updateDoc(orderRef, updatePayload);
-    refreshOrders(); // Refrescar la lista de pedidos después de actualizar
+    await refreshOrders();
   }, [refreshOrders]);
 
   return (
