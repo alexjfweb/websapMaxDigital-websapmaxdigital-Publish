@@ -1,11 +1,9 @@
 
 "use client";
 import React from 'react';
-import { usePublicLandingPlans } from '@/hooks/use-plans';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Check, 
   Star, 
@@ -13,10 +11,10 @@ import {
   Zap,
   DollarSign,
   Calendar,
-  Palette,
-  AlertTriangle // Ícono para errores
+  Palette
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import type { LandingPlan } from '@/services/landing-plans-service';
 
 // Opciones para íconos y colores (debe coincidir con el panel admin)
 const PLAN_ICONS = [
@@ -51,85 +49,14 @@ const getPlanColorClass = (colorValue: string, type: 'bg' | 'border' | 'text') =
   return `text-${colorValue}-500`; // Asumiendo que los colores de texto existen
 };
 
-const PlanSkeleton = () => (
-  <Card className="relative overflow-hidden transition-all duration-300 flex flex-col">
-    <CardHeader className="text-center pb-4">
-      <div className="flex items-center justify-center mb-4">
-        <Skeleton className="w-12 h-12 rounded-full mr-3" />
-        <Skeleton className="h-8 w-32" />
-      </div>
-      <Skeleton className="h-4 w-full" />
-      <Skeleton className="h-4 w-3/4 mx-auto mt-2" />
-    </CardHeader>
-    <CardContent className="text-center pb-6 flex-grow">
-      <div className="mb-6">
-        <Skeleton className="h-10 w-24 mx-auto mb-2" />
-      </div>
-      <div className="space-y-3 mb-8">
-        <div className="flex items-center text-left">
-          <Skeleton className="h-5 w-5 rounded-full mr-3" />
-          <Skeleton className="h-4 w-full" />
-        </div>
-        <div className="flex items-center text-left">
-          <Skeleton className="h-5 w-5 rounded-full mr-3" />
-          <Skeleton className="h-4 w-4/5" />
-        </div>
-        <div className="flex items-center text-left">
-          <Skeleton className="h-5 w-5 rounded-full mr-3" />
-          <Skeleton className="h-4 w-full" />
-        </div>
-      </div>
-    </CardContent>
-    <div className="px-6 pb-6 mt-auto">
-      <Skeleton className="h-12 w-full rounded-lg" />
-    </div>
-  </Card>
-);
+interface SubscriptionPlansSectionProps {
+  plans: LandingPlan[];
+}
 
-export default function SubscriptionPlansSection() {
-  const { plans, isLoading, isError, error } = usePublicLandingPlans();
-  
-  // Render de error si la carga falla
-  if (isError) {
-    return (
-      <motion.section
-        key="planes-error"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-6xl py-16 flex justify-center"
-      >
-        <div className="col-span-full text-red-600 text-center bg-red-50 p-8 rounded-lg shadow-md border border-red-200 flex flex-col items-center">
-          <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
-          <h3 className="text-xl font-semibold mb-2">No se pudieron cargar los planes</h3>
-          <p className="text-sm">Por favor, intenta de nuevo más tarde.</p>
-          <p className="text-xs mt-4 text-red-400">Detalle: {error?.message || 'Error desconocido'}</p>
-        </div>
-      </motion.section>
-    );
-  }
-
-  // Render de esqueletos mientras carga
-  if (isLoading) {
-    return (
-      <motion.section
-        key="planes-loading"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="w-full max-w-6xl py-16 flex flex-col items-center"
-      >
-        <h2 className="text-3xl font-bold mb-4 text-center">Planes Flexibles para tu Negocio</h2>
-        <p className="text-lg text-gray-600 mb-12 text-center max-w-3xl">
-          Elige el plan que mejor se adapte a tus necesidades. Todos nuestros planes están diseñados para escalar contigo.
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
-          {Array(3).fill(0).map((_, idx) => <PlanSkeleton key={`skeleton-${idx}`} />)}
-        </div>
-      </motion.section>
-    );
-  }
+export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSectionProps) {
 
   // Render cuando no hay planes
-  if (!isLoading && plans.length === 0) {
+  if (plans.length === 0) {
     return (
       <motion.section
         key="planes-empty"
