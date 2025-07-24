@@ -13,27 +13,36 @@ class OrderService {
   private get ordersCollection() {
     if (!db) {
       console.error("Firebase no está inicializado. No se puede acceder a la colección 'orders'.");
-      // Devolver un error claro en lugar de null para fallar rápido
       throw new Error("La conexión a la base de datos no está disponible.");
     }
     return collection(db, 'orders');
   }
 
-  private parseTimestamp(timestamp: any): string {
-    if (!timestamp) return new Date().toISOString();
-    if (timestamp instanceof Timestamp) return timestamp.toDate().toISOString();
-    if (typeof timestamp === 'object' && timestamp.seconds) {
-      return new Date(timestamp.seconds * 1000).toISOString();
+  private parseTimestamp(timestamp: any): Date {
+    // Si es un Timestamp de Firestore, es la forma preferida
+    if (timestamp instanceof Timestamp) {
+      return timestamp.toDate();
     }
+    // Si ya es un objeto Date
+    if (timestamp instanceof Date) {
+      return timestamp;
+    }
+    // Si es un objeto con seconds y nanoseconds (formato común de Firestore sin ser instancia)
+    if (timestamp && typeof timestamp.seconds === 'number') {
+        return new Date(timestamp.seconds * 1000);
+    }
+    // Si es un string de fecha ISO
     if (typeof timestamp === 'string') {
         const date = new Date(timestamp);
         if (!isNaN(date.getTime())) {
-            return date.toISOString();
+            return date;
         }
     }
-    console.warn(`[WARN] No se pudo parsear el timestamp, se usará la fecha actual:`, timestamp);
-    return new Date().toISOString();
+    // Fallback: si nada funciona, loguea una advertencia y devuelve la fecha actual
+    console.warn(`[WARN] Formato de fecha no reconocido, se usará la fecha actual:`, timestamp);
+    return new Date();
   }
+
 
   async getOrdersByCompany(companyId: string): Promise<Order[]> {
     if (!companyId) {
@@ -42,7 +51,6 @@ class OrderService {
     }
     
     try {
-      // Llama al getter, que lanzará un error si db no está inicializado
       const coll = this.ordersCollection; 
       console.log(`[OrderService] Buscando pedidos para la compañía: ${companyId}`);
       const q = query(
@@ -76,7 +84,7 @@ class OrderService {
         orders.push({
           id: doc.id,
           customerName: data.cliente.nombre,
-          date: date,
+          date: date.toISOString(), // Mantenemos string para la API, el hook se encargará de convertir
           items: productos.reduce((sum: number, item: any) => sum + (item.cantidad || 0), 0),
           total: data.total,
           status: data.estado,

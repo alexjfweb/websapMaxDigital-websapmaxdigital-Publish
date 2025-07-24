@@ -11,7 +11,7 @@ interface OrderContextType {
   addOrder: (order: Omit<Order, 'id' | 'date'>) => Promise<string>;
   updateOrder: (id: string, updates: Partial<Order>) => Promise<void>;
   loading: boolean;
-  error: any;
+  error: Error | null;
   refreshOrders: () => void;
 }
 
@@ -24,7 +24,6 @@ export const useOrderContext = () => {
 };
 
 export const OrderProvider = ({ children }: { children: ReactNode }) => {
-  // Asumimos un ID de restaurante fijo. En una app real, esto sería dinámico.
   const restaurantId = 'websapmax'; 
   const { orders, isLoading, error, refreshOrders } = useOrders(restaurantId);
 
