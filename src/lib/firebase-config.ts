@@ -1,4 +1,3 @@
-
 // src/lib/firebase-config.ts
 // Configuración de Firebase para obtener las credenciales desde las variables de entorno.
 

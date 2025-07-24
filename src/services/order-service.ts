@@ -1,4 +1,3 @@
-
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -11,7 +10,12 @@ import {
 import type { Order } from '@/types';
 
 class OrderService {
-  private ordersCollection = collection(db, 'orders');
+  private get ordersCollection() {
+    if (!db) {
+      throw new Error("Firebase no está inicializado. Revisa tu configuración en .env.local");
+    }
+    return collection(db, 'orders');
+  }
 
   private parseTimestamp(timestamp: any): string {
     if (!timestamp) return new Date().toISOString();

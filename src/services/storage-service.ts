@@ -1,9 +1,8 @@
-
 // src/services/storage-service.ts
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { app } from '@/lib/firebase';
 
-const storage = getStorage(app);
+const storage = app ? getStorage(app) : null;
 
 class StorageService {
   /**
@@ -13,6 +12,9 @@ class StorageService {
    * @returns La URL de descarga pública del archivo.
    */
   async uploadFile(file: File, path: string): Promise<string> {
+    if (!storage) {
+      throw new Error("Firebase Storage no está inicializado. Revisa tu configuración en .env.local");
+    }
     if (!file) {
       throw new Error("No se proporcionó ningún archivo para subir.");
     }
@@ -41,6 +43,9 @@ class StorageService {
    * @param fileUrl La URL del archivo a eliminar.
    */
   async deleteFile(fileUrl: string): Promise<void> {
+    if (!storage) {
+      throw new Error("Firebase Storage no está inicializado. Revisa tu configuración en .env.local");
+    }
     if (!fileUrl) {
       console.warn("No se proporcionó URL para eliminar archivo. No se hizo nada.");
       return;
@@ -69,5 +74,3 @@ class StorageService {
 }
 
 export const storageService = new StorageService();
-
-    

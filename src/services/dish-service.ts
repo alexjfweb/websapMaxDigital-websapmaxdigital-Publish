@@ -1,4 +1,3 @@
-
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -10,7 +9,12 @@ import {
 import type { Dish } from '@/types';
 
 class DishService {
-  private dishesCollection = collection(db, 'dishes');
+  private get dishesCollection() {
+    if (!db) {
+      throw new Error("Firebase no está inicializado. Revisa tu configuración en .env.local");
+    }
+    return collection(db, 'dishes');
+  }
 
   /**
    * Obtiene todos los platos activos de una compañía específica.

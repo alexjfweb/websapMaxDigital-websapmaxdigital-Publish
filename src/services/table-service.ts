@@ -56,9 +56,24 @@ export interface TableLog {
 }
 
 class TableService {
-  private tablesCollection = collection(db, 'tables');
-  private reservationsCollection = collection(db, 'table_reservations');
-  private logsCollection = collection(db, 'table_logs');
+  private get tablesCollection() {
+    if (!db) {
+      throw new Error("Firebase no está inicializado. Revisa tu configuración en .env.local");
+    }
+    return collection(db, 'tables');
+  }
+  private get reservationsCollection() {
+    if (!db) {
+      throw new Error("Firebase no está inicializado. Revisa tu configuración en .env.local");
+    }
+    return collection(db, 'table_reservations');
+  }
+  private get logsCollection() {
+    if (!db) {
+      throw new Error("Firebase no está inicializado. Revisa tu configuración en .env.local");
+    }
+    return collection(db, 'table_logs');
+  }
 
   // CRUD
   async createTable(tableData: Omit<Table, 'id' | 'createdAt' | 'updatedAt'> & { restaurantId?: string }): Promise<string> {

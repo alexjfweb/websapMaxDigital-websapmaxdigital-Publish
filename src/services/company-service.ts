@@ -17,7 +17,12 @@ import type { Company } from '@/types';
 export type CreateCompanyInput = Omit<Company, 'id' | 'createdAt' | 'updatedAt' | 'registrationDate' | 'status'>;
 
 class CompanyService {
-  private companiesCollection = collection(db, 'companies');
+  private get companiesCollection() {
+    if (!db) {
+      throw new Error("Firebase no está inicializado. Revisa tu configuración en .env.local");
+    }
+    return collection(db, 'companies');
+  }
 
   /**
    * Valida los datos de entrada de la empresa.
@@ -122,7 +127,7 @@ class CompanyService {
    * Obtiene una empresa por su ID.
    */
   async getCompanyById(id: string): Promise<Company | null> {
-    const docRef = doc(db, 'companies', id);
+    const docRef = doc(this.companiesCollection, id);
     const docSnap = await getDoc(docRef);
     if (!docSnap.exists()) {
       return null;
@@ -137,7 +142,7 @@ class CompanyService {
    * @returns La empresa actualizada.
    */
   async updateCompany(companyId: string, companyData: Partial<Company>): Promise<Company> {
-    const docRef = doc(db, 'companies', companyId);
+    const docRef = doc(this.companiesCollection, companyId);
 
     // Opcional: validar que la empresa exista antes de actualizar
     const docSnap = await getDoc(docRef);

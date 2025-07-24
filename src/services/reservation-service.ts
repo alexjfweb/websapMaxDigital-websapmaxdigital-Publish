@@ -1,4 +1,3 @@
-
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -16,7 +15,12 @@ import {
 import type { Reservation } from '@/types';
 
 class ReservationService {
-  private reservationsCollection = collection(db, 'reservations');
+  private get reservationsCollection() {
+    if (!db) {
+      throw new Error("Firebase no está inicializado. Revisa tu configuración en .env.local");
+    }
+    return collection(db, 'reservations');
+  }
 
   private validateReservationData(data: Partial<Omit<Reservation, 'id'>>): void {
     if (!data.companyId) throw new Error("companyId es obligatorio.");
