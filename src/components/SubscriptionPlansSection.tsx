@@ -55,24 +55,7 @@ interface SubscriptionPlansSectionProps {
 
 export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSectionProps) {
 
-  // Render cuando no hay planes
-  if (plans.length === 0) {
-    return (
-      <motion.section
-        key="planes-empty"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-6xl py-16 flex justify-center"
-      >
-        <div className="col-span-full text-gray-600 text-center bg-gray-50 p-8 rounded-lg shadow-sm border">
-          <h3 className="text-xl font-semibold">No hay planes disponibles</h3>
-          <p>Actualmente no hay planes de suscripción para mostrar. Por favor, vuelve más tarde.</p>
-        </div>
-      </motion.section>
-    );
-  }
-
-  // Render normal con los planes
+  // El componente ahora asume que siempre recibirá planes si se renderiza
   return (
     <motion.section
       key="planes-loaded"

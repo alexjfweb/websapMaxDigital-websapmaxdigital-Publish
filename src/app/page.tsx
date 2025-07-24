@@ -7,9 +7,16 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import { usePublicLandingPlans } from '@/hooks/use-plans';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle } from 'lucide-react';
+import { Card, CardHeader, CardContent } from '@/components/ui/card'; 
 
 const PlanSkeleton = () => (
-  <div className="w-full max-w-6xl py-16 flex flex-col items-center">
+  <motion.section
+    key="planes-skeleton"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="w-full max-w-6xl py-16 flex flex-col items-center"
+  >
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
       {Array(3).fill(0).map((_, idx) => (
         <Card key={`skeleton-${idx}`} className="relative overflow-hidden transition-all duration-300 flex flex-col">
@@ -46,10 +53,8 @@ const PlanSkeleton = () => (
         </Card>
       ))}
     </div>
-  </div>
+  </motion.section>
 );
-
-import { Card, CardHeader, CardContent } from '@/components/ui/card'; // Importar explícitamente
 
 const ErrorDisplay = ({ error }: { error: Error | null }) => (
   <motion.section
@@ -70,6 +75,33 @@ const ErrorDisplay = ({ error }: { error: Error | null }) => (
 
 export default function LandingPage() {
   const { plans, isLoading, isError, error } = usePublicLandingPlans();
+
+  // Componente para renderizar la sección de planes
+  const renderPlansSection = () => {
+    if (isLoading) {
+      return <PlanSkeleton />;
+    }
+    if (isError) {
+      return <ErrorDisplay error={error} />;
+    }
+    // Asegurarse de no mostrar la sección si no hay planes, incluso después de cargar
+    if (!isLoading && plans.length === 0) {
+        return (
+          <motion.section
+            key="planes-empty"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full max-w-6xl py-16 flex justify-center"
+          >
+            <div className="col-span-full text-gray-600 text-center bg-gray-50 p-8 rounded-lg shadow-sm border">
+              <h3 className="text-xl font-semibold">No hay planes disponibles</h3>
+              <p>Actualmente no hay planes de suscripción para mostrar. Por favor, vuelve más tarde.</p>
+            </div>
+          </motion.section>
+        );
+    }
+    return <SubscriptionPlansSection plans={plans} />;
+  };
 
   return (
     <>
@@ -102,9 +134,7 @@ export default function LandingPage() {
 
         {/* Renderizado seguro del lado del cliente para la sección de planes */}
         <ErrorBoundary fallback={<ErrorDisplay error={new Error('Error en el componente de planes')} />}>
-            {isLoading && <PlanSkeleton />}
-            {isError && <ErrorDisplay error={error} />}
-            {!isLoading && !isError && <SubscriptionPlansSection plans={plans} />}
+          {renderPlansSection()}
         </ErrorBoundary>
       </main>
     </>
