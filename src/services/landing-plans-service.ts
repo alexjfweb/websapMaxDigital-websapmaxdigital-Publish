@@ -211,42 +211,42 @@ class LandingPlansService {
 
       snapshot.forEach(doc => {
         const data = doc.data();
-        // Solo incluir planes que son públicos y activos
-        if (data.isPublic && data.isActive) {
-            if (data.name && data.price !== undefined && data.features?.length > 0) {
-                plans.push({
-                    id: doc.id,
-                    slug: data.slug,
-                    name: data.name,
-                    description: data.description,
-                    price: data.price || 0,
-                    currency: data.currency || 'USD',
-                    period: data.period,
-                    features: data.features || [],
-                    isActive: data.isActive,
-                    isPublic: data.isPublic,
-                    isPopular: data.isPopular || false,
-                    order: data.order || 0,
-                    icon: data.icon,
-                    color: data.color,
-                    maxUsers: data.maxUsers,
-                    maxProjects: data.maxProjects,
-                    ctaText: data.ctaText || 'Comenzar Prueba Gratuita',
-                    createdAt: this.parseTimestamp(data.createdAt),
-                    updatedAt: this.parseTimestamp(data.updatedAt),
-                    createdBy: data.createdBy,
-                    updatedBy: data.updatedBy
-                });
-            } else {
-                console.warn(`[WARN] Documento de plan ${doc.id} omitido por datos incompletos.`);
-            }
+        
+        if (data.name && data.price !== undefined && data.features?.length > 0) {
+            plans.push({
+                id: doc.id,
+                slug: data.slug,
+                name: data.name,
+                description: data.description,
+                price: data.price || 0,
+                currency: data.currency || 'USD',
+                period: data.period,
+                features: data.features || [],
+                isActive: data.isActive,
+                isPublic: data.isPublic,
+                isPopular: data.isPopular || false,
+                order: data.order || 0,
+                icon: data.icon,
+                color: data.color,
+                maxUsers: data.maxUsers,
+                maxProjects: data.maxProjects,
+                ctaText: data.ctaText || 'Comenzar Prueba Gratuita',
+                createdAt: this.parseTimestamp(data.createdAt),
+                updatedAt: this.parseTimestamp(data.updatedAt),
+                createdBy: data.createdBy,
+                updatedBy: data.updatedBy
+            });
+        } else {
+            console.warn(`[WARN] Documento de plan ${doc.id} omitido por datos incompletos.`);
         }
       });
       
-      // Ordenar los planes después de obtenerlos
-      plans.sort((a, b) => a.order - b.order);
+      // Ordenar los planes después de obtenerlos y filtrar solo los activos
+      const finalPlans = plans
+        .filter(p => p.isActive)
+        .sort((a, b) => a.order - b.order);
 
-      return plans;
+      return finalPlans;
     } catch (error) {
       console.error('Error getting plans:', error);
       throw new Error('Error al obtener los planes');
