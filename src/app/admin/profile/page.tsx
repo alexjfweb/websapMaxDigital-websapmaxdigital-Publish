@@ -135,77 +135,71 @@ export default function AdminProfilePage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      let updatedData = { ...profileData };
+        let updatedData = { ...profileData };
 
-      const uploadPromises: Promise<any>[] = [];
-      
-      if (logoFile) {
-        uploadPromises.push(
-          storageService.uploadFile(logoFile, `logos/${profileData.id}`).then(url => {
-            updatedData.logoUrl = url;
-          })
-        );
-      }
-      if (nequiQrFile && updatedData.paymentMethods.nequi) {
-        uploadPromises.push(
-          storageService.uploadFile(nequiQrFile, `qrs/${profileData.id}`).then(url => {
-            if (updatedData.paymentMethods.nequi) updatedData.paymentMethods.nequi.qrCodeUrl = url;
-          })
-        );
-      }
-      if (daviplataQrFile && updatedData.paymentMethods.daviplata) {
-        uploadPromises.push(
-          storageService.uploadFile(daviplataQrFile, `qrs/${profileData.id}`).then(url => {
-            if (updatedData.paymentMethods.daviplata) updatedData.paymentMethods.daviplata.qrCodeUrl = url;
-          })
-        );
-      }
-      if (bancolombiaQrFile && updatedData.paymentMethods.bancolombia) {
-        uploadPromises.push(
-          storageService.uploadFile(bancolombiaQrFile, `qrs/${profileData.id}`).then(url => {
-            if (updatedData.paymentMethods.bancolombia) updatedData.paymentMethods.bancolombia.qrCodeUrl = url;
-          })
-        );
-      }
-      
-      await Promise.all(uploadPromises);
-      
-      const response = await fetch(`/api/companies/${profileData.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updatedData),
-      });
+        // Helper function to upload if file exists
+        const uploadImage = async (file: File | null, path: string, currentUrl?: string): Promise<string | undefined> => {
+            if (file) {
+                // If there's an old URL and it's not a placeholder, try to delete it.
+                if (currentUrl && !currentUrl.includes('placehold.co')) {
+                    try {
+                        await storageService.deleteFile(currentUrl);
+                    } catch (deleteError) {
+                        console.warn("Could not delete old file, continuing...", deleteError);
+                    }
+                }
+                return await storageService.uploadFile(file, path);
+            }
+            return currentUrl; // Keep the old URL if no new file
+        };
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update profile.');
-      }
-      
-      const savedProfile = await response.json();
+        const [logoUrl, nequiQrUrl, daviplataQrUrl, bancolombiaQrUrl] = await Promise.all([
+            uploadImage(logoFile, `logos/${profileData.id}`),
+            uploadImage(nequiQrFile, `qrs/${profileData.id}`, profileData.paymentMethods.nequi?.qrCodeUrl),
+            uploadImage(daviplataQrFile, `qrs/${profileData.id}`, profileData.paymentMethods.daviplata?.qrCodeUrl),
+            uploadImage(bancolombiaQrFile, `qrs/${profileData.id}`, profileData.paymentMethods.bancolombia?.qrCodeUrl),
+        ]);
 
-      setProfileData(savedProfile.data);
-      setIsEditing(false);
-      setLogoFile(null);
-      setNequiQrFile(null);
-      setDaviplataQrFile(null);
-      setBancolombiaQrFile(null);
+        updatedData.logoUrl = logoUrl || updatedData.logoUrl;
+        if (updatedData.paymentMethods.nequi) updatedData.paymentMethods.nequi.qrCodeUrl = nequiQrUrl;
+        if (updatedData.paymentMethods.daviplata) updatedData.paymentMethods.daviplata.qrCodeUrl = daviplataQrUrl;
+        if (updatedData.paymentMethods.bancolombia) updatedData.paymentMethods.bancolombia.qrCodeUrl = bancolombiaQrUrl;
 
-      toast({
-          title: "¡Perfil Guardado!",
-          description: "Tus cambios en el perfil del restaurante han sido guardados exitosamente.",
-      });
+        const response = await fetch(`/api/companies/${profileData.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedData),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to update profile.');
+        }
+
+        const savedProfile = await response.json();
+        setProfileData(savedProfile.data);
+        setIsEditing(false);
+
+        // Clear file inputs after successful save
+        setLogoFile(null);
+        setNequiQrFile(null);
+        setDaviplataQrFile(null);
+        setBancolombiaQrFile(null);
+
+        toast({
+            title: "¡Perfil Guardado!",
+            description: "Tus cambios en el perfil del restaurante han sido guardados exitosamente.",
+        });
 
     } catch (error: any) {
-      console.error("Error saving profile:", error);
-      toast({
-          title: "Error al guardar",
-          description: error.message || "No se pudieron guardar los cambios. Inténtalo de nuevo.",
-          variant: "destructive"
-      });
+        console.error("Error saving profile:", error);
+        toast({
+            title: "Error al guardar",
+            description: error.message || "No se pudieron guardar los cambios. Inténtalo de nuevo.",
+            variant: "destructive",
+        });
     } finally {
-      setIsSaving(false);
+        setIsSaving(false);
     }
   };
 
@@ -585,3 +579,5 @@ export default function AdminProfilePage() {
     </div>
   );
 }
+
+    
