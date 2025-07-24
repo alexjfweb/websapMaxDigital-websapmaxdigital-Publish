@@ -25,6 +25,8 @@ class OrderService {
             return date.toISOString();
         }
     }
+    // Si no se puede parsear, devolver la fecha actual como fallback seguro
+    console.warn(`[WARN] No se pudo parsear el timestamp, se usará la fecha actual:`, timestamp);
     return new Date().toISOString();
   }
 
@@ -50,7 +52,7 @@ class OrderService {
         if (
           !data.cliente?.nombre ||
           !data.fecha ||
-          !data.total ||
+          data.total === undefined || // Permitir total 0
           typeof data.total !== 'number' ||
           !data.estado
         ) {

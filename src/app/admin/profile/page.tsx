@@ -29,11 +29,7 @@ export default function AdminProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   
   const [profileData, setProfileData] = useState<RestaurantProfile>(mockRestaurantProfile);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [nequiQrFile, setNequiQrFile] = useState<File | null>(null);
-  const [daviplataQrFile, setDaviplataQrFile] = useState<File | null>(null);
-  const [bancolombiaQrFile, setBancolombiaQrFile] = useState<File | null>(null);
-
+  
   const [logoPreview, setLogoPreview] = useState<string | null>(profileData.logoUrl);
   const [nequiQrPreview, setNequiQrPreview] = useState<string | null>(profileData.paymentMethods.nequi?.qrCodeUrl || null);
   const [daviplataQrPreview, setDaviplataQrPreview] = useState<string | null>(profileData.paymentMethods.daviplata?.qrCodeUrl || null);
@@ -92,97 +88,62 @@ export default function AdminProfilePage() {
     }));
   };
 
-  const handleImageChange = (
+  const handleImageChange = async (
     event: ChangeEvent<HTMLInputElement>,
-    setFile: React.Dispatch<React.SetStateAction<File | null>>,
-    setPreview: React.Dispatch<React.SetStateAction<string | null>>
+    setImagePreview: React.Dispatch<React.SetStateAction<string | null>>,
+    updateProfileData: (url: string) => void
   ) => {
     const file = event.target.files?.[0];
-    if (file) {
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-      if (!allowedTypes.includes(file.type)) {
-        toast({
-          title: "Archivo no válido",
-          description: "Por favor, sube una imagen en formato JPG, PNG o WebP.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      const maxSizeInBytes = 2 * 1024 * 1024;
-      if (file.size > maxSizeInBytes) {
-        toast({
-          title: "Archivo demasiado grande",
-          description: "La imagen no debe exceder los 2MB.",
-          variant: "destructive",
-        });
-        return;
+    if (!file) return;
+
+    setImagePreview(URL.createObjectURL(file)); // Show local preview immediately
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setIsSaving(true);
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Error al subir el archivo.');
       }
 
-      setFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      updateProfileData(result.url); // Update profile data with the new URL
+      toast({
+        title: "Imagen subida",
+        description: "La nueva imagen se ha cargado correctamente. Guarda los cambios para aplicarla.",
+      });
+
+    } catch (error: any) {
+      console.error("Error subiendo imagen:", error);
+      toast({
+        title: "Error de Subida",
+        description: error.message || "No se pudo subir la imagen. Revisa la consola para más detalles.",
+        variant: "destructive",
+      });
+      // Optionally, revert preview if upload fails
+      // setImagePreview(initialPreviewUrl); 
+    } finally {
+      setIsSaving(false);
     }
   };
 
+
   const handleSave = async () => {
     setIsSaving(true);
-    const updatedData = { ...profileData };
-    const companyIdForPath = updatedData.id || "websapmax-1";
-
     try {
-        const uploadPromises: Promise<void>[] = [];
-
-        if (logoFile) {
-            uploadPromises.push(
-                storageService.uploadFile(logoFile, `logos/${companyIdForPath}-${Date.now()}`)
-                .then(url => { updatedData.logoUrl = url; })
-            );
-        }
-        if (nequiQrFile) {
-            uploadPromises.push(
-                storageService.uploadFile(nequiQrFile, `qrs/${companyIdForPath}-nequi-${Date.now()}`)
-                .then(url => { 
-                    if (!updatedData.paymentMethods.nequi) updatedData.paymentMethods.nequi = { enabled: true };
-                    updatedData.paymentMethods.nequi.qrCodeUrl = url; 
-                })
-            );
-        }
-        if (daviplataQrFile) {
-            uploadPromises.push(
-                storageService.uploadFile(daviplataQrFile, `qrs/${companyIdForPath}-daviplata-${Date.now()}`)
-                .then(url => { 
-                    if (!updatedData.paymentMethods.daviplata) updatedData.paymentMethods.daviplata = { enabled: true };
-                    updatedData.paymentMethods.daviplata.qrCodeUrl = url; 
-                })
-            );
-        }
-        if (bancolombiaQrFile) {
-            uploadPromises.push(
-                storageService.uploadFile(bancolombiaQrFile, `qrs/${companyIdForPath}-bancolombia-${Date.now()}`)
-                .then(url => { 
-                    if (!updatedData.paymentMethods.bancolombia) updatedData.paymentMethods.bancolombia = { enabled: true };
-                    updatedData.paymentMethods.bancolombia.qrCodeUrl = url; 
-                })
-            );
-        }
-
-        await Promise.all(uploadPromises);
+        // Here you would normally call your service to update the profile data in the database
+        // For this example, we'll just log it and show a toast
+        console.log("Datos del perfil guardados (simulado):", profileData);
         
-        // Simulación de guardado en Firestore
-        console.log("Datos a guardar en Firestore:", updatedData);
-        // await api.updateCompany(updatedData.id, updatedData);
-
-        setProfileData(updatedData);
-
-        // Limpiar archivos temporales
-        setLogoFile(null);
-        setNequiQrFile(null);
-        setDaviplataQrFile(null);
-        setBancolombiaQrFile(null);
+        // Simulating an API call
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         setIsEditing(false);
         toast({
@@ -194,32 +155,17 @@ export default function AdminProfilePage() {
         console.error("Error al guardar el perfil:", error);
         toast({
             title: "Error al Guardar",
-            description: "No se pudo subir un archivo. Por favor, revisa la configuración de CORS de Firebase Storage y tu conexión a internet.",
+            description: "No se pudieron guardar los cambios. Por favor, inténtalo de nuevo.",
             variant: "destructive",
         });
     } finally {
         setIsSaving(false);
     }
-};
+  };
 
   const handleCancel = () => {
     setIsEditing(false);
-    
-    setLogoPreview(profileData.logoUrl);
-    setNequiQrPreview(profileData.paymentMethods.nequi?.qrCodeUrl || null);
-    setDaviplataQrPreview(profileData.paymentMethods.daviplata?.qrCodeUrl || null);
-    setBancolombiaQrPreview(profileData.paymentMethods.bancolombia?.qrCodeUrl || null);
-    
-    setLogoFile(null);
-    setNequiQrFile(null);
-    setDaviplataQrFile(null);
-    setBancolombiaQrFile(null);
-    
-    toast({
-        title: "Edición cancelada",
-        description: "Tus cambios han sido descartados.",
-        variant: "destructive"
-    });
+    // Reset any state changes if necessary
   };
 
   const handleDelete = () => {
@@ -363,7 +309,14 @@ export default function AdminProfilePage() {
                 <Button variant="outline" asChild disabled={!isEditing}>
                   <Label htmlFor="logo-upload" className={`cursor-pointer ${!isEditing && 'cursor-not-allowed opacity-50'}`}>
                     <UploadCloud className="mr-2 h-4 w-4" /> Subir logo
-                    <Input id="logo-upload" type="file" className="hidden" accept="image/jpeg,image/png,image/webp" onChange={(e) => handleImageChange(e, setLogoFile, setLogoPreview)} disabled={!isEditing}/>
+                    <Input 
+                        id="logo-upload" 
+                        type="file" 
+                        className="hidden" 
+                        accept="image/jpeg,image/png,image/webp" 
+                        onChange={(e) => handleImageChange(e, setLogoPreview, (url) => setProfileData(p => ({...p, logoUrl: url})))}
+                        disabled={!isEditing}
+                    />
                   </Label>
                 </Button>
             </div>
@@ -474,7 +427,9 @@ export default function AdminProfilePage() {
                         <Button variant="outline" asChild disabled={!isEditing}>
                             <Label htmlFor="nequiQrUpload" className={`cursor-pointer ${!isEditing && 'cursor-not-allowed opacity-50'}`}>
                                 <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
-                                <Input id="nequiQrUpload" type="file" className="hidden" accept="image/jpeg,image/png,image/webp" onChange={(e) => handleImageChange(e, setNequiQrFile, setNequiQrPreview)} disabled={!isEditing} />
+                                <Input id="nequiQrUpload" type="file" className="hidden" accept="image/jpeg,image/png,image/webp" 
+                                       onChange={(e) => handleImageChange(e, setNequiQrPreview, (url) => handlePaymentMethodChange('nequi', 'qrCodeUrl', url))}
+                                       disabled={!isEditing} />
                             </Label>
                         </Button>
                     </div>
@@ -512,7 +467,9 @@ export default function AdminProfilePage() {
                         <Button variant="outline" asChild disabled={!isEditing}>
                             <Label htmlFor="daviplataQrUpload" className={`cursor-pointer ${!isEditing && 'cursor-not-allowed opacity-50'}`}>
                                 <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
-                                <Input id="daviplataQrUpload" type="file" className="hidden" accept="image/jpeg,image/png,image/webp" onChange={(e) => handleImageChange(e, setDaviplataQrFile, setDaviplataQrPreview)} disabled={!isEditing} />
+                                <Input id="daviplataQrUpload" type="file" className="hidden" accept="image/jpeg,image/png,image/webp" 
+                                       onChange={(e) => handleImageChange(e, setDaviplataQrPreview, (url) => handlePaymentMethodChange('daviplata', 'qrCodeUrl', url))} 
+                                       disabled={!isEditing} />
                             </Label>
                         </Button>
                     </div>
@@ -550,7 +507,9 @@ export default function AdminProfilePage() {
                         <Button variant="outline" asChild disabled={!isEditing}>
                             <Label htmlFor="bancolombiaQrUpload" className={`cursor-pointer ${!isEditing && 'cursor-not-allowed opacity-50'}`}>
                                 <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
-                                <Input id="bancolombiaQrUpload" type="file" className="hidden" accept="image/jpeg,image/png,image/webp" onChange={(e) => handleImageChange(e, setBancolombiaQrFile, setBancolombiaQrPreview)} disabled={!isEditing} />
+                                <Input id="bancolombiaQrUpload" type="file" className="hidden" accept="image/jpeg,image/png,image/webp" 
+                                       onChange={(e) => handleImageChange(e, setBancolombiaQrPreview, (url) => handlePaymentMethodChange('bancolombia', 'qrCodeUrl', url))}
+                                       disabled={!isEditing} />
                             </Label>
                         </Button>
                     </div>
@@ -594,5 +553,3 @@ export default function AdminProfilePage() {
     </div>
   );
 }
-
-    
