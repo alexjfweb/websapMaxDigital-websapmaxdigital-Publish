@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   SidebarProvider,
@@ -31,7 +31,7 @@ const guestUser: User = {
   avatarUrl: 'https://placehold.co/100x100.png?text=G',
   role: 'guest',
   status: 'active',
-  registrationDate: new Date(0).toISOString(),
+  registrationDate: '2022-01-01T00:00:00Z',
 };
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -40,12 +40,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   
   const [currentUser, setCurrentUser] = useState<User>(guestUser);
-  const [isMounted, setIsMounted] = useState(false);
+  const [isClient, setIsClient] = React.useState(false);
 
-  useEffect(() => {
-    setIsMounted(true);
-    // Correct way to read from localStorage to avoid hydration mismatch.
-    // This code runs only on the client, after the initial render.
+  React.useEffect(() => {
+    setIsClient(true);
     try {
       const storedUser = localStorage.getItem('currentUser');
       if (storedUser) {
@@ -70,7 +68,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   
   const isSpecialPage = ['/login', '/register', '/'].includes(pathname);
 
-  if (!isMounted) {
+  if (!isClient) {
     return (
         <div className="flex min-h-svh w-full items-center justify-center bg-background">
             <LoaderCircle className="h-8 w-8 animate-spin text-primary" />

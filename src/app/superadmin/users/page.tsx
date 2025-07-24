@@ -10,11 +10,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { User, UserRole } from "@/types"; 
 import Link from "next/link"; // Importado Link
 import { format } from "date-fns";
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useRouter } from 'next/navigation';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Mock Data for Users
 const mockUsers: User[] = [
@@ -26,7 +27,7 @@ const mockUsers: User[] = [
 ];
 
 export default function SuperAdminUsersPage() {
-  const [isMounted, setIsMounted] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const users = mockUsers;
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [openDetail, setOpenDetail] = useState(false);
@@ -36,6 +37,10 @@ export default function SuperAdminUsersPage() {
   const router = useRouter();
   const [selectedRole, setSelectedRole] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Opciones de roles y estados traducidas
   const roleOptions = [
@@ -57,16 +62,13 @@ export default function SuperAdminUsersPage() {
     (selectedStatus === "all" || user.status === selectedStatus)
   );
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
   const getRoleBadge = (role: UserRole) => {
     // Traducciones directas en español
-    const roleTranslations = {
+    const roleTranslations: { [key in UserRole]: string } = {
       superadmin: "Superadmin",
       admin: "Admin", 
-      employee: "Empleado"
+      employee: "Empleado",
+      guest: "Invitado"
     };
     
     const roleText = roleTranslations[role] || role;
@@ -85,7 +87,7 @@ export default function SuperAdminUsersPage() {
 
   const getStatusBadge = (status: User["status"]) => {
     // Traducciones directas en español
-    const statusTranslations = {
+    const statusTranslations: { [key in User['status']]: string } = {
       active: "Activo",
       inactive: "Inactivo", 
       pending: "Pendiente"
@@ -110,10 +112,46 @@ export default function SuperAdminUsersPage() {
   const handleOpenDelete = (user: User) => { setSelectedUser(user); setOpenDelete(true); };
   const handleCloseModals = () => { setOpenDetail(false); setOpenStatus(false); setOpenDelete(false); setSelectedUser(null); };
 
-  if (!isMounted) {
-    return null; // or a loading skeleton
+  if (!isClient) {
+    return (
+      <div className="space-y-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-72 mt-2" />
+          </div>
+          <Skeleton className="h-10 w-44" />
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-64 mt-2" />
+            <div className="flex flex-col md:flex-row gap-2 pt-4">
+              <Skeleton className="h-10 flex-1" />
+              <Skeleton className="h-10 w-36" />
+              <Skeleton className="h-10 w-36" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {Array.from({ length: 6 }).map((_, i) => <TableHead key={i}><Skeleton className="h-4 w-full" /></TableHead>)}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    {Array.from({ length: 6 }).map((_, j) => <TableCell key={j}><Skeleton className="h-6 w-full" /></TableCell>)}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
-
 
   return (
     <div className="space-y-8">

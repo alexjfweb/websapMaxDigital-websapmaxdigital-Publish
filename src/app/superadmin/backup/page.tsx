@@ -6,7 +6,7 @@ import { DownloadCloud, PlayCircle, RotateCcw, Settings2, History, Trash2 } from
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from "@/hooks/use-toast";
@@ -20,11 +20,11 @@ const mockBackupHistory = [
 ];
 
 // Traducciones directas para tipos y estados de respaldo
-const backupTypeTranslations = {
+const backupTypeTranslations: { [key: string]: string } = {
   "superAdminBackup.type.full": "Completo",
   "superAdminBackup.type.incremental": "Incremental"
 };
-const backupStatusTranslations = {
+const backupStatusTranslations: { [key: string]: string } = {
   "superAdminBackup.status.completed": "Completado",
   "superAdminBackup.status.failed": "Fallido"
 };
