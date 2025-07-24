@@ -12,7 +12,8 @@ import type { Order } from '@/types';
 class OrderService {
   private get ordersCollection() {
     if (!db) {
-      throw new Error("Firebase no está inicializado. Revisa tu configuración en .env.local");
+      console.error("Firebase no está inicializado. No se puede acceder a la colección 'orders'.");
+      return null;
     }
     return collection(db, 'orders');
   }
@@ -35,6 +36,9 @@ class OrderService {
   }
 
   async getOrdersByCompany(companyId: string): Promise<Order[]> {
+    const coll = this.ordersCollection;
+    if (!coll) return [];
+
     if (!companyId) {
       console.error('[OrderService] El ID de la compañía es requerido.');
       throw new Error('El ID de la compañía es requerido.');
@@ -43,7 +47,7 @@ class OrderService {
     try {
       console.log(`[OrderService] Buscando pedidos para la compañía: ${companyId}`);
       const q = query(
-        this.ordersCollection,
+        coll,
         where('restaurantId', '==', companyId),
         orderBy('fecha', 'desc') 
       );

@@ -11,7 +11,8 @@ import type { Dish } from '@/types';
 class DishService {
   private get dishesCollection() {
     if (!db) {
-      throw new Error("Firebase no está inicializado. Revisa tu configuración en .env.local");
+      console.error("Firebase no está inicializado. No se puede acceder a la colección 'dishes'.");
+      return null;
     }
     return collection(db, 'dishes');
   }
@@ -23,9 +24,12 @@ class DishService {
    * @returns Un array de objetos Dish.
    */
   async getDishesByCompany(companyId: string): Promise<Dish[]> {
+    const coll = this.dishesCollection;
+    if (!coll) return [];
+    
     try {
       const q = query(
-        this.dishesCollection,
+        coll,
         where('companyId', '==', companyId),
         where('available', '==', true) // Asumiendo 'available' en lugar de 'isActive' para platos
       );

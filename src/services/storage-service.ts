@@ -2,9 +2,14 @@
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { app } from '@/lib/firebase';
 
-const storage = app ? getStorage(app) : null;
+const storage = getStorage(app);
 
 class StorageService {
+  constructor() {
+    if (!storage) {
+        throw new Error("Firebase Storage no está inicializado. Revisa tu configuración en .env.local");
+    }
+  }
   /**
    * Sube un archivo a Firebase Storage.
    * @param file El archivo a subir.
@@ -12,9 +17,6 @@ class StorageService {
    * @returns La URL de descarga pública del archivo.
    */
   async uploadFile(file: File, path: string): Promise<string> {
-    if (!storage) {
-      throw new Error("Firebase Storage no está inicializado. Revisa tu configuración en .env.local");
-    }
     if (!file) {
       throw new Error("No se proporcionó ningún archivo para subir.");
     }
@@ -43,15 +45,11 @@ class StorageService {
    * @param fileUrl La URL del archivo a eliminar.
    */
   async deleteFile(fileUrl: string): Promise<void> {
-    if (!storage) {
-      throw new Error("Firebase Storage no está inicializado. Revisa tu configuración en .env.local");
-    }
     if (!fileUrl) {
       console.warn("No se proporcionó URL para eliminar archivo. No se hizo nada.");
       return;
     }
     
-    // No intentes eliminar las URLs de placeholder
     if (fileUrl.includes('placehold.co')) {
         console.log("No se elimina la imagen de placeholder.");
         return;
@@ -62,7 +60,6 @@ class StorageService {
       await deleteObject(fileRef);
       console.log(`✅ Archivo eliminado exitosamente de: ${fileUrl}`);
     } catch (error: any) {
-      // Es común que el archivo no exista si el perfil anterior no tenía una imagen personalizada.
       if (error.code === 'storage/object-not-found') {
         console.warn(`⚠️ No se encontró el archivo para eliminar en: ${fileUrl}. Puede que ya haya sido eliminado o nunca existió.`);
       } else {

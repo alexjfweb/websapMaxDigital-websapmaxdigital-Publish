@@ -19,7 +19,8 @@ export type CreateCompanyInput = Omit<Company, 'id' | 'createdAt' | 'updatedAt' 
 class CompanyService {
   private get companiesCollection() {
     if (!db) {
-      throw new Error("Firebase no está inicializado. Revisa tu configuración en .env.local");
+      console.error("Firebase no está inicializado. No se puede acceder a la colección 'companies'.");
+      return null;
     }
     return collection(db, 'companies');
   }
@@ -48,6 +49,9 @@ class CompanyService {
    * @returns El ID de la empresa recién creada.
    */
   async createCompany(companyData: CreateCompanyInput): Promise<string> {
+    const coll = this.companiesCollection;
+    if (!coll) throw new Error("La base de datos no está disponible.");
+
     // 1. Validar los datos antes de la escritura
     this.validateCompanyData(companyData);
     console.log('✅ Validación de datos de la empresa superada.');
@@ -63,7 +67,7 @@ class CompanyService {
       };
 
       // 3. Agregar el documento a Firestore
-      const docRef = await addDoc(this.companiesCollection, newCompanyDoc);
+      const docRef = await addDoc(coll, newCompanyDoc);
       console.log(`✅ Empresa creada con éxito en Firestore. ID: ${docRef.id}`);
       
       return docRef.id;
@@ -79,8 +83,11 @@ class CompanyService {
    * @returns Un array de objetos Company.
    */
   async getCompanies(): Promise<Company[]> {
+    const coll = this.companiesCollection;
+    if (!coll) return [];
+
     try {
-      const q = query(this.companiesCollection, where("status", "in", ["active", "pending", "inactive"]));
+      const q = query(coll, where("status", "in", ["active", "pending", "inactive"]));
       const querySnapshot = await getDocs(q);
       const companies: Company[] = [];
       
@@ -127,7 +134,10 @@ class CompanyService {
    * Obtiene una empresa por su ID.
    */
   async getCompanyById(id: string): Promise<Company | null> {
-    const docRef = doc(this.companiesCollection, id);
+    const coll = this.companiesCollection;
+    if (!coll) return null;
+    
+    const docRef = doc(coll, id);
     const docSnap = await getDoc(docRef);
     if (!docSnap.exists()) {
       return null;
@@ -142,7 +152,10 @@ class CompanyService {
    * @returns La empresa actualizada.
    */
   async updateCompany(companyId: string, companyData: Partial<Company>): Promise<Company> {
-    const docRef = doc(this.companiesCollection, companyId);
+    const coll = this.companiesCollection;
+    if (!coll) throw new Error("La base de datos no está disponible.");
+
+    const docRef = doc(coll, companyId);
 
     // Opcional: validar que la empresa exista antes de actualizar
     const docSnap = await getDoc(docRef);

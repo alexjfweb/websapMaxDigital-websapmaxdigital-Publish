@@ -17,7 +17,8 @@ import type { Reservation } from '@/types';
 class ReservationService {
   private get reservationsCollection() {
     if (!db) {
-      throw new Error("Firebase no está inicializado. Revisa tu configuración en .env.local");
+      console.error("Firebase no está inicializado. No se puede acceder a la colección 'reservations'.");
+      return null;
     }
     return collection(db, 'reservations');
   }
@@ -32,6 +33,9 @@ class ReservationService {
   }
 
   async createReservation(data: Omit<Reservation, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    const coll = this.reservationsCollection;
+    if (!coll) throw new Error("La base de datos no está disponible.");
+
     this.validateReservationData(data);
 
     try {
@@ -40,7 +44,7 @@ class ReservationService {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
-      const docRef = await addDoc(this.reservationsCollection, reservationDoc);
+      const docRef = await addDoc(coll, reservationDoc);
       return docRef.id;
     } catch (error) {
       console.error("Error al crear la reserva en Firestore:", error);
@@ -49,13 +53,16 @@ class ReservationService {
   }
   
   async getReservationsByCompany(companyId: string): Promise<Reservation[]> {
+    const coll = this.reservationsCollection;
+    if (!coll) return [];
+
     if (!companyId) {
       throw new Error("companyId es requerido.");
     }
 
     try {
       const q = query(
-        this.reservationsCollection,
+        coll,
         where('companyId', '==', companyId),
         orderBy('dateTime', 'desc')
       );
@@ -97,12 +104,15 @@ class ReservationService {
   }
   
   async updateReservationStatus(reservationId: string, status: Reservation['status']): Promise<void> {
+    const coll = this.reservationsCollection;
+    if (!coll) throw new Error("La base de datos no está disponible.");
+
     if (!reservationId || !status) {
       throw new Error("ID de reserva y nuevo estado son requeridos.");
     }
     
     try {
-      const reservationRef = doc(this.reservationsCollection, reservationId);
+      const reservationRef = doc(coll, reservationId);
       await updateDoc(reservationRef, {
         status,
         updatedAt: serverTimestamp(),
