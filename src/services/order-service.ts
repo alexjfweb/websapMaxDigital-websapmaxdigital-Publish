@@ -16,18 +16,16 @@ class OrderService {
   private parseTimestamp(timestamp: any): string {
     if (!timestamp) return new Date().toISOString();
     if (timestamp instanceof Timestamp) return timestamp.toDate().toISOString();
-    // Handle cases where timestamp might be a plain object from Firestore serialization
     if (typeof timestamp === 'object' && timestamp.seconds) {
       return new Date(timestamp.seconds * 1000).toISOString();
     }
     if (typeof timestamp === 'string') {
-        // Attempt to parse if it's a string, otherwise return as is if valid, or fallback
         const date = new Date(timestamp);
         if (!isNaN(date.getTime())) {
             return date.toISOString();
         }
     }
-    return new Date().toISOString(); // Fallback for any other unexpected format
+    return new Date().toISOString();
   }
 
   async getOrdersByCompany(companyId: string): Promise<Order[]> {
@@ -48,31 +46,33 @@ class OrderService {
       querySnapshot.forEach(doc => {
         const data = doc.data();
         
+        // Validación más robusta de los datos del pedido
         if (
           !data.cliente?.nombre ||
           !data.fecha ||
-          !Array.isArray(data.productos) ||
-          data.productos.length === 0 ||
+          !data.total ||
           typeof data.total !== 'number' ||
-          data.total <= 0 ||
           !data.estado
         ) {
-          console.warn(`[WARN] Documento de pedido ${doc.id} omitido por datos incompletos o inválidos.`);
+          console.warn(`[WARN] Documento de pedido ${doc.id} omitido por datos incompletos o inválidos (cliente, fecha, total o estado).`);
           return;
         }
 
         const date = this.parseTimestamp(data.fecha);
 
+        // Los productos son opcionales, si no existen se usa un array vacío
+        const productos = Array.isArray(data.productos) ? data.productos : [];
+
         orders.push({
           id: doc.id,
           customerName: data.cliente.nombre,
           date: date,
-          items: data.productos.reduce((sum: number, item: any) => sum + item.cantidad, 0),
+          items: productos.reduce((sum: number, item: any) => sum + (item.cantidad || 0), 0),
           total: data.total,
           status: data.estado,
           type: data.mesa ? 'dine-in' : 'delivery',
           restaurantId: data.restaurantId,
-          productos: data.productos,
+          productos: productos,
           cliente: data.cliente,
           mesa: data.mesa,
         });
