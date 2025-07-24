@@ -259,13 +259,15 @@ class LandingPlansService {
   subscribeToPlans(callback: (plans: LandingPlan[]) => void, onError: (error: Error) => void): () => void {
     const q = query(
       collection(db, this.COLLECTION_NAME),
-      where('isActive', '==', true)
+      where('isActive', '==', true),
+      where('isPublic', '==', true)
     );
   
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const plans: LandingPlan[] = [];
       snapshot.forEach(doc => {
         const data = doc.data();
+        // El filtro de isPublic ya se hace en la query, pero una doble verificación no hace daño
         if (data.isPublic) {
           plans.push({
             id: doc.id,
