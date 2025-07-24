@@ -3,12 +3,12 @@ import { collection, getDocs, writeBatch, doc, serverTimestamp } from 'firebase/
 import { db } from '@/lib/firebase';
 import { landingPlansService } from './landing-plans-service';
 
-// Datos de ejemplo movidos aquí para resolver el problema de importación
+// Datos de ejemplo para los planes de la landing page
 const examplePlans = [
   {
     slug: 'basico',
     name: 'Básico',
-    description: 'Perfecto para pequeñas empresas que están comenzando',
+    description: 'Perfecto para pequeñas empresas que están comenzando.',
     price: 29.99,
     currency: 'USD',
     period: 'monthly',
@@ -28,13 +28,11 @@ const examplePlans = [
     maxUsers: 5,
     maxProjects: 10,
     ctaText: 'Comenzar Prueba Gratuita',
-    createdBy: 'system',
-    updatedBy: 'system'
   },
   {
     slug: 'profesional',
     name: 'Profesional',
-    description: 'Ideal para equipos en crecimiento que necesitan más funcionalidades',
+    description: 'Ideal para equipos en crecimiento que necesitan más funcionalidades.',
     price: 79.99,
     currency: 'USD',
     period: 'monthly',
@@ -44,9 +42,7 @@ const examplePlans = [
       'Soporte prioritario',
       'Integraciones avanzadas',
       'Reportes detallados',
-      'Personalización avanzada',
-      'API de acceso',
-      'Backup automático'
+      'API de acceso'
     ],
     isActive: true,
     isPublic: true,
@@ -57,13 +53,11 @@ const examplePlans = [
     maxUsers: 25,
     maxProjects: 50,
     ctaText: 'Comenzar Prueba Gratuita',
-    createdBy: 'system',
-    updatedBy: 'system'
   },
   {
     slug: 'empresarial',
     name: 'Empresarial',
-    description: 'Para grandes organizaciones que requieren máxima funcionalidad y soporte',
+    description: 'Para grandes organizaciones que requieren máxima funcionalidad y soporte.',
     price: 199.99,
     currency: 'USD',
     period: 'monthly',
@@ -71,13 +65,8 @@ const examplePlans = [
       'Usuarios ilimitados',
       'Todas las funciones del plan profesional',
       'Soporte 24/7 con chat en vivo',
-      'API personalizada',
-      'SLA garantizado del 99.9%',
       'Onboarding dedicado',
-      'Capacitación personalizada',
-      'Integraciones personalizadas',
-      'Análisis avanzado',
-      'Compliance y seguridad empresarial'
+      'SLA garantizado'
     ],
     isActive: true,
     isPublic: true,
@@ -88,19 +77,23 @@ const examplePlans = [
     maxUsers: -1,
     maxProjects: -1,
     ctaText: 'Contactar Ventas',
-    createdBy: 'system',
-    updatedBy: 'system'
   }
 ];
 
 class DatabaseSyncService {
   /**
    * Sincroniza los planes de la landing page, creando los de ejemplo si no existen.
-   * @param userId El ID del usuario que ejecuta la acción.
+   * @param userId El ID del usuario que ejecuta la acción (puede ser 'system').
    * @param userEmail El email del usuario.
    * @returns Un mensaje indicando el resultado de la operación.
    */
   async syncLandingPlans(userId: string, userEmail: string): Promise<string> {
+    if (!db) {
+        const errorMsg = "La base de datos no está disponible. La sincronización falló.";
+        console.error(`❌ ${errorMsg}`);
+        throw new Error(errorMsg);
+    }
+      
     try {
       console.log('🔄 Iniciando verificación de sincronización de planes...');
 
@@ -130,6 +123,7 @@ class DatabaseSyncService {
       
       await batch.commit();
 
+      // Log de auditoría para la operación masiva
       await landingPlansService.logAudit(
         'system-sync',
         'created',
