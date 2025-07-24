@@ -10,27 +10,33 @@ let auth: Auth | null = null;
 let db: Firestore | null = null;
 let storage: FirebaseStorage | null = null;
 
-try {
-  const firebaseConfig = getFirebaseConfig();
+// Ejecutar la inicialización solo en el lado del cliente
+if (typeof window !== 'undefined') {
+  try {
+    const firebaseConfig = getFirebaseConfig();
 
-  if (firebaseConfig) {
-    if (!getApps().length) {
-      app = initializeApp(firebaseConfig);
+    if (firebaseConfig) {
+      if (!getApps().length) {
+        app = initializeApp(firebaseConfig);
+        console.log('✅ Firebase: Inicializado por primera vez en el cliente.');
+      } else {
+        app = getApp();
+        console.log('✅ Firebase: Usando instancia existente en el cliente.');
+      }
+
+      auth = getAuth(app);
+      db = getFirestore(app);
+      storage = getStorage(app);
+
     } else {
-      app = getApp();
+      console.warn("⚠️ Firebase: La configuración no está completa. Los servicios de Firebase no estarán disponibles. Revisa tu archivo .env.local.");
     }
 
-    auth = getAuth(app);
-    db = getFirestore(app);
-    storage = getStorage(app);
-
-    console.log('✅ Firebase: Inicializado correctamente.');
-  } else {
-    console.warn("⚠️ Firebase: La configuración no está completa. Los servicios de Firebase no estarán disponibles. Revisa tu archivo .env.local.");
+  } catch (error) {
+    console.error('❌ Firebase: Error fatal durante la inicialización en el cliente.', error);
   }
-
-} catch (error) {
-  console.error('❌ Firebase: Error fatal durante la inicialización.', error);
+} else {
+  console.info("ℹ️ Firebase: La inicialización se omite en el servidor. Se inicializará en el cliente.");
 }
 
 export { app, auth, db, storage };
