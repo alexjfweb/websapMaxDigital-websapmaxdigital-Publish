@@ -5,35 +5,40 @@ import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getStorage, type FirebaseStorage } from "firebase/storage";
 import { getFirebaseConfig } from './firebase-config';
 
-let app: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
-let storage: FirebaseStorage;
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+let db: Firestore | null = null;
+let storage: FirebaseStorage | null = null;
 
-const firebaseConfig = getFirebaseConfig();
-
-if (!firebaseConfig) {
-  // Si la configuración no está disponible, no podemos continuar.
-  // Esto es preferible a dejar las variables sin inicializar.
-  throw new Error("Firebase no pudo inicializarse. Verifica la consola para más detalles.");
-}
-
-try {
-  if (!getApps().length) {
-    app = initializeApp(firebaseConfig);
-    console.log('✅ Firebase: Inicializado por primera vez.');
-  } else {
-    app = getApp();
+// Esta función se asegura de que Firebase se inicialice solo una vez.
+const initializeFirebase = () => {
+  if (getApps().length) {
     console.log('✅ Firebase: Usando instancia existente.');
+    app = getApp();
+  } else {
+    const firebaseConfig = getFirebaseConfig();
+    if (firebaseConfig) {
+      try {
+        app = initializeApp(firebaseConfig);
+        console.log('✅ Firebase: Inicializado por primera vez.');
+      } catch (error) {
+        console.error('❌ Firebase: Error fatal durante la inicialización.', error);
+        app = null; // Asegurarse de que app es null si falla
+      }
+    } else {
+       console.warn("⚠️ Firebase: La configuración no está disponible, la inicialización se omite.");
+    }
   }
 
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
+  // Solo inicializar los servicios si la app se inicializó correctamente
+  if (app) {
+    auth = getAuth(app);
+    db = getFirestore(app);
+    storage = getStorage(app);
+  }
+};
 
-} catch (error) {
-  console.error('❌ Firebase: Error fatal durante la inicialización.', error);
-  throw new Error("Firebase no pudo inicializarse. Verifica la consola para más detalles.");
-}
+// Llamar a la función de inicialización para que se ejecute cuando se importe el módulo
+initializeFirebase();
 
 export { app, auth, db, storage };
