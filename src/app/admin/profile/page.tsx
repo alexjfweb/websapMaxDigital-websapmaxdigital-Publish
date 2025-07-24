@@ -135,35 +135,38 @@ export default function AdminProfilePage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-        let updatedData = { ...profileData };
+        let logoUrl = profileData.logoUrl;
+        let nequiQrUrl = profileData.paymentMethods.nequi?.qrCodeUrl;
+        let daviplataQrUrl = profileData.paymentMethods.daviplata?.qrCodeUrl;
+        let bancolombiaQrUrl = profileData.paymentMethods.bancolombia?.qrCodeUrl;
 
-        // Helper function to upload if file exists
-        const uploadImage = async (file: File | null, path: string, currentUrl?: string): Promise<string | undefined> => {
-            if (file) {
-                // If there's an old URL and it's not a placeholder, try to delete it.
-                if (currentUrl && !currentUrl.includes('placehold.co')) {
-                    try {
-                        await storageService.deleteFile(currentUrl);
-                    } catch (deleteError) {
-                        console.warn("Could not delete old file, continuing...", deleteError);
-                    }
-                }
-                return await storageService.uploadFile(file, path);
+        // Subir logo si ha cambiado
+        if (logoFile) {
+            logoUrl = await storageService.uploadFile(logoFile, `logos/${profileData.id}-${Date.now()}`);
+        }
+        // Subir QR de Nequi si ha cambiado
+        if (nequiQrFile) {
+            nequiQrUrl = await storageService.uploadFile(nequiQrFile, `qrs/${profileData.id}-${Date.now()}`);
+        }
+        // Subir QR de Daviplata si ha cambiado
+        if (daviplataQrFile) {
+            daviplataQrUrl = await storageService.uploadFile(daviplataQrFile, `qrs/${profileData.id}-${Date.now()}`);
+        }
+        // Subir QR de Bancolombia si ha cambiado
+        if (bancolombiaQrFile) {
+            bancolombiaQrUrl = await storageService.uploadFile(bancolombiaQrFile, `qrs/${profileData.id}-${Date.now()}`);
+        }
+        
+        const updatedData = {
+            ...profileData,
+            logoUrl,
+            paymentMethods: {
+                ...profileData.paymentMethods,
+                nequi: { ...profileData.paymentMethods.nequi, qrCodeUrl: nequiQrUrl },
+                daviplata: { ...profileData.paymentMethods.daviplata, qrCodeUrl: daviplataQrUrl },
+                bancolombia: { ...profileData.paymentMethods.bancolombia, qrCodeUrl: bancolombiaQrUrl },
             }
-            return currentUrl; // Keep the old URL if no new file
         };
-
-        const [logoUrl, nequiQrUrl, daviplataQrUrl, bancolombiaQrUrl] = await Promise.all([
-            uploadImage(logoFile, `logos/${profileData.id}`),
-            uploadImage(nequiQrFile, `qrs/${profileData.id}`, profileData.paymentMethods.nequi?.qrCodeUrl),
-            uploadImage(daviplataQrFile, `qrs/${profileData.id}`, profileData.paymentMethods.daviplata?.qrCodeUrl),
-            uploadImage(bancolombiaQrFile, `qrs/${profileData.id}`, profileData.paymentMethods.bancolombia?.qrCodeUrl),
-        ]);
-
-        updatedData.logoUrl = logoUrl || updatedData.logoUrl;
-        if (updatedData.paymentMethods.nequi) updatedData.paymentMethods.nequi.qrCodeUrl = nequiQrUrl;
-        if (updatedData.paymentMethods.daviplata) updatedData.paymentMethods.daviplata.qrCodeUrl = daviplataQrUrl;
-        if (updatedData.paymentMethods.bancolombia) updatedData.paymentMethods.bancolombia.qrCodeUrl = bancolombiaQrUrl;
 
         const response = await fetch(`/api/companies/${profileData.id}`, {
             method: 'PUT',
@@ -173,14 +176,14 @@ export default function AdminProfilePage() {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to update profile.');
+            throw new Error(errorData.error || 'Falló la actualización del perfil.');
         }
 
         const savedProfile = await response.json();
         setProfileData(savedProfile.data);
         setIsEditing(false);
 
-        // Clear file inputs after successful save
+        // Limpiar archivos después de guardar
         setLogoFile(null);
         setNequiQrFile(null);
         setDaviplataQrFile(null);
@@ -192,16 +195,17 @@ export default function AdminProfilePage() {
         });
 
     } catch (error: any) {
-        console.error("Error saving profile:", error);
+        console.error("Error al guardar el perfil:", error);
         toast({
-            title: "Error al guardar",
-            description: error.message || "No se pudieron guardar los cambios. Inténtalo de nuevo.",
+            title: "Error al Guardar",
+            description: error.message || "No se pudieron guardar los cambios. Revisa tu conexión y la consola para más detalles. (Puede ser un error de CORS)",
             variant: "destructive",
         });
     } finally {
         setIsSaving(false);
     }
   };
+
 
   const handleCancel = () => {
     setIsEditing(false);
@@ -579,5 +583,3 @@ export default function AdminProfilePage() {
     </div>
   );
 }
-
-    
