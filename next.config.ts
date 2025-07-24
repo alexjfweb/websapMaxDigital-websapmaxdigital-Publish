@@ -22,6 +22,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  experimental: {
+    // Required for stability in some Next.js versions and environments
+    serverComponentsExternalPackages: ['@genkit-ai/googleai'],
+    typedRoutes: true,
+  },
 };
 
 export default nextConfig;
