@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { UploadCloud, Save, Edit, Trash2, XCircle, Clipboard, Globe, Share2, Facebook, Instagram, Twitter, MessageCircle } from "lucide-react";
-import { useState, type ChangeEvent, useEffect } from "react";
+import React, { useState, type ChangeEvent, useEffect } from "react";
 import Image from "next/image";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
@@ -21,6 +21,7 @@ import BancolombiaIcon from "@/components/icons/bancolombia-icon";
 import type { RestaurantProfile } from "@/types";
 import { mockRestaurantProfile } from "@/lib/mock-data";
 import { storageService } from "@/services/storage-service";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 export default function AdminProfilePage() {
@@ -42,7 +43,6 @@ export default function AdminProfilePage() {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    // This effect runs only on the client, after hydration
     setIsClient(true);
   }, []);
 
@@ -68,7 +68,7 @@ export default function AdminProfilePage() {
         paymentMethods: {
             ...prev.paymentMethods,
             [method]: {
-                ...(prev.paymentMethods[method] || { enabled: false }), // Ensure object exists
+                ...(prev.paymentMethods[method] || { enabled: false }),
                 [field]: value
             }
         }
@@ -99,7 +99,6 @@ export default function AdminProfilePage() {
   ) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Validate file type
       const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
       if (!allowedTypes.includes(file.type)) {
         toast({
@@ -110,7 +109,6 @@ export default function AdminProfilePage() {
         return;
       }
       
-      // Validate file size (2MB)
       const maxSizeInBytes = 2 * 1024 * 1024;
       if (file.size > maxSizeInBytes) {
         toast({
@@ -127,66 +125,60 @@ export default function AdminProfilePage() {
         setPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
-    } else {
-      setFile(null);
-      setPreview(null);
     }
   };
 
   const handleSave = async () => {
     setIsSaving(true);
-    let updatedData = { ...profileData };
+    const updatedData = { ...profileData };
+    const companyIdForPath = updatedData.id || "websapmax-1";
 
     try {
-        const uploadTasks: Promise<{ url: string; type: string }>[] = [];
-        
-        const companyIdForPath = profileData.id || "websapmax-1";
+        const uploadPromises: Promise<void>[] = [];
 
         if (logoFile) {
-            uploadTasks.push(
+            uploadPromises.push(
                 storageService.uploadFile(logoFile, `logos/${companyIdForPath}-${Date.now()}`)
-                .then(url => ({ url, type: 'logoUrl' }))
+                .then(url => { updatedData.logoUrl = url; })
             );
         }
         if (nequiQrFile) {
-            uploadTasks.push(
+            uploadPromises.push(
                 storageService.uploadFile(nequiQrFile, `qrs/${companyIdForPath}-nequi-${Date.now()}`)
-                .then(url => ({ url, type: 'nequiQrUrl' }))
+                .then(url => { 
+                    if (!updatedData.paymentMethods.nequi) updatedData.paymentMethods.nequi = { enabled: true };
+                    updatedData.paymentMethods.nequi.qrCodeUrl = url; 
+                })
             );
         }
         if (daviplataQrFile) {
-            uploadTasks.push(
+            uploadPromises.push(
                 storageService.uploadFile(daviplataQrFile, `qrs/${companyIdForPath}-daviplata-${Date.now()}`)
-                .then(url => ({ url, type: 'daviplataQrUrl' }))
+                .then(url => { 
+                    if (!updatedData.paymentMethods.daviplata) updatedData.paymentMethods.daviplata = { enabled: true };
+                    updatedData.paymentMethods.daviplata.qrCodeUrl = url; 
+                })
             );
         }
         if (bancolombiaQrFile) {
-            uploadTasks.push(
+            uploadPromises.push(
                 storageService.uploadFile(bancolombiaQrFile, `qrs/${companyIdForPath}-bancolombia-${Date.now()}`)
-                .then(url => ({ url, type: 'bancolombiaQrUrl' }))
+                .then(url => { 
+                    if (!updatedData.paymentMethods.bancolombia) updatedData.paymentMethods.bancolombia = { enabled: true };
+                    updatedData.paymentMethods.bancolombia.qrCodeUrl = url; 
+                })
             );
         }
+
+        await Promise.all(uploadPromises);
         
-        // Wait for all uploads to complete
-        const uploadedResults = await Promise.all(uploadTasks);
-
-        // Update profile data with new URLs
-        uploadedResults.forEach(({ url, type }) => {
-            if (type === 'logoUrl') updatedData.logoUrl = url;
-            if (type === 'nequiQrUrl') updatedData.paymentMethods.nequi = { ...updatedData.paymentMethods.nequi, qrCodeUrl: url, enabled: true };
-            if (type === 'daviplataQrUrl') updatedData.paymentMethods.daviplata = { ...updatedData.paymentMethods.daviplata, qrCodeUrl: url, enabled: true };
-            if (type === 'bancolombiaQrUrl') updatedData.paymentMethods.bancolombia = { ...updatedData.paymentMethods.bancolombia, qrCodeUrl: url, enabled: true };
-        });
-
-        // Save the final, updated data to Firestore
-        // This part would typically be a fetch call to your backend API
+        // Simulación de guardado en Firestore
         console.log("Datos a guardar en Firestore:", updatedData);
-        // await fetch(`/api/companies/${profileData.id}`, { ... }); // Your API call
-        
-        // For demonstration, we'll just update the local state
+        // await api.updateCompany(updatedData.id, updatedData);
+
         setProfileData(updatedData);
 
-        // Clean up file states
+        // Limpiar archivos temporales
         setLogoFile(null);
         setNequiQrFile(null);
         setDaviplataQrFile(null);
@@ -202,19 +194,17 @@ export default function AdminProfilePage() {
         console.error("Error al guardar el perfil:", error);
         toast({
             title: "Error al Guardar",
-            description: error.message || "No se pudieron guardar los cambios. Revisa la consola para más detalles.",
+            description: "No se pudo subir un archivo. Por favor, revisa la configuración de CORS de Firebase Storage y tu conexión a internet.",
             variant: "destructive",
         });
     } finally {
         setIsSaving(false);
     }
-  };
-
+};
 
   const handleCancel = () => {
     setIsEditing(false);
     
-    // Reset previews and files to their original state
     setLogoPreview(profileData.logoUrl);
     setNequiQrPreview(profileData.paymentMethods.nequi?.qrCodeUrl || null);
     setDaviplataQrPreview(profileData.paymentMethods.daviplata?.qrCodeUrl || null);
@@ -234,8 +224,8 @@ export default function AdminProfilePage() {
 
   const handleDelete = () => {
      toast({
-        title: "Profile Deleted",
-        description: "The restaurant profile has been permanently deleted.",
+        title: "Perfil Eliminado",
+        description: "El perfil del restaurante ha sido eliminado permanentemente.",
         variant: "destructive"
     });
   }
@@ -268,7 +258,23 @@ export default function AdminProfilePage() {
   };
   
   if (!isClient) {
-    return null; // or a loading skeleton
+    return (
+        <div className="space-y-8">
+            <div className="flex justify-between items-start">
+                <div>
+                    <Skeleton className="h-9 w-64 mb-2" />
+                    <Skeleton className="h-5 w-80" />
+                </div>
+                <div className="flex gap-2">
+                    <Skeleton className="h-10 w-24" />
+                    <Skeleton className="h-10 w-24" />
+                </div>
+            </div>
+            <Skeleton className="h-96 w-full" />
+            <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-80 w-full" />
+        </div>
+    );
   }
 
   return (
@@ -429,7 +435,7 @@ export default function AdminProfilePage() {
             {/* Contra Entrega */}
             <div className="space-y-4 p-4 border rounded-lg">
                 <div className="flex items-center space-x-2">
-                    <Checkbox id="codEnabled" checked={profileData.paymentMethods.codEnabled} onCheckedChange={handleCodChange} disabled={!isEditing} />
+                    <Checkbox id="codEnabled" checked={profileData.paymentMethods.codEnabled} onCheckedChange={(checked) => handleCodChange(Boolean(checked))} disabled={!isEditing} />
                     <Label htmlFor="codEnabled" className={`text-lg font-semibold leading-none ${!isEditing && 'text-muted-foreground'}`}>
                         Pago Contra Entrega
                     </Label>
@@ -588,3 +594,5 @@ export default function AdminProfilePage() {
     </div>
   );
 }
+
+    
