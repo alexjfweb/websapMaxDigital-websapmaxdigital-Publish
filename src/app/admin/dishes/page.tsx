@@ -26,7 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { storageService } from "@/services/storage-service";
 
 export default function AdminDishesPage() {
-  const companyId = 'websapmax'; // Hardcoded for now
+  const companyId = 'websapmax-1'; // Hardcoded for now
   const { dishes, isLoading, error, refreshDishes } = useDishes(companyId);
 
   const [searchTerm, setSearchTerm] = useState('');

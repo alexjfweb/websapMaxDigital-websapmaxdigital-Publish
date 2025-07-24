@@ -16,9 +16,18 @@ class OrderService {
   private parseTimestamp(timestamp: any): string {
     if (!timestamp) return new Date().toISOString();
     if (timestamp instanceof Timestamp) return timestamp.toDate().toISOString();
-    if (typeof timestamp === 'string') return new Date(timestamp).toISOString();
-    if (typeof timestamp.seconds === 'number') return new Date(timestamp.seconds * 1000).toISOString();
-    return new Date().toISOString();
+    // Handle cases where timestamp might be a plain object from Firestore serialization
+    if (typeof timestamp === 'object' && timestamp.seconds) {
+      return new Date(timestamp.seconds * 1000).toISOString();
+    }
+    if (typeof timestamp === 'string') {
+        // Attempt to parse if it's a string, otherwise return as is if valid, or fallback
+        const date = new Date(timestamp);
+        if (!isNaN(date.getTime())) {
+            return date.toISOString();
+        }
+    }
+    return new Date().toISOString(); // Fallback for any other unexpected format
   }
 
   async getOrdersByCompany(companyId: string): Promise<Order[]> {

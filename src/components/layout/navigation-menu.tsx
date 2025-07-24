@@ -120,10 +120,16 @@ export default function NavigationMenu({ role }: NavigationMenuProps) {
         const translatedLabel = item.labelKey;
         const translatedTooltip = item.tooltipKey ? item.tooltipKey : translatedLabel;
         
+        const content = item.subItems && item.subItems.length > 0 ? (
+          <SidebarMenuSub>
+            {renderNavItems(item.subItems, true)}
+          </SidebarMenuSub>
+        ) : null;
+
         if (isSubMenu) {
           return (
             <SidebarMenuSubItem key={item.href}>
-              <Link href={item.href} passHref>
+              <Link href={item.href}>
                 <SidebarMenuSubButton isActive={isActive}>
                   <span>{translatedLabel}</span>
                 </SidebarMenuSubButton>
@@ -134,17 +140,13 @@ export default function NavigationMenu({ role }: NavigationMenuProps) {
 
         return (
           <SidebarMenuItem key={item.href}>
-            <Link href={item.href} passHref>
+            <Link href={item.href}>
               <SidebarMenuButton isActive={isActive} tooltip={translatedTooltip}>
                 <Icon />
                 <span>{translatedLabel}</span>
               </SidebarMenuButton>
             </Link>
-            {item.subItems && item.subItems.length > 0 && (
-              <SidebarMenuSub>
-                {renderNavItems(item.subItems, true)}
-              </SidebarMenuSub>
-            )}
+            {content}
           </SidebarMenuItem>
         );
       });
