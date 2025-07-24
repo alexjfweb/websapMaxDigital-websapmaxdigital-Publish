@@ -67,7 +67,7 @@ export default function AdminProfilePage() {
         paymentMethods: {
             ...prev.paymentMethods,
             [method]: {
-                ...prev.paymentMethods[method],
+                ...(prev.paymentMethods[method] || { enabled: false }), // Ensure object exists
                 [field]: value
             }
         }
@@ -133,41 +133,44 @@ export default function AdminProfilePage() {
   };
 
   const handleSave = async () => {
-    setIsSaving(true);
-    try {
-        let logoUrl = profileData.logoUrl;
-        let nequiQrUrl = profileData.paymentMethods.nequi?.qrCodeUrl;
-        let daviplataQrUrl = profileData.paymentMethods.daviplata?.qrCodeUrl;
-        let bancolombiaQrUrl = profileData.paymentMethods.bancolombia?.qrCodeUrl;
+      setIsSaving(true);
+      try {
+        const uploadPromises: Promise<{ url: string; type: string }>[] = [];
 
-        // Subir logo si ha cambiado
+        // Add file uploads to the promise array
         if (logoFile) {
-            logoUrl = await storageService.uploadFile(logoFile, `logos/${profileData.id}-${Date.now()}`);
+            uploadPromises.push(storageService.uploadFile(logoFile, `logos/${profileData.id}-${Date.now()}`).then(url => ({ url, type: 'logoUrl' })));
         }
-        // Subir QR de Nequi si ha cambiado
         if (nequiQrFile) {
-            nequiQrUrl = await storageService.uploadFile(nequiQrFile, `qrs/${profileData.id}-${Date.now()}`);
+            uploadPromises.push(storageService.uploadFile(nequiQrFile, `qrs/${profileData.id}-${Date.now()}`).then(url => ({ url, type: 'nequiQrUrl' })));
         }
-        // Subir QR de Daviplata si ha cambiado
         if (daviplataQrFile) {
-            daviplataQrUrl = await storageService.uploadFile(daviplataQrFile, `qrs/${profileData.id}-${Date.now()}`);
+            uploadPromises.push(storageService.uploadFile(daviplataQrFile, `qrs/${profileData.id}-${Date.now()}`).then(url => ({ url, type: 'daviplataQrUrl' })));
         }
-        // Subir QR de Bancolombia si ha cambiado
         if (bancolombiaQrFile) {
-            bancolombiaQrUrl = await storageService.uploadFile(bancolombiaQrFile, `qrs/${profileData.id}-${Date.now()}`);
+            uploadPromises.push(storageService.uploadFile(bancolombiaQrFile, `qrs/${profileData.id}-${Date.now()}`).then(url => ({ url, type: 'bancolombiaQrUrl' })));
         }
-        
-        const updatedData = {
-            ...profileData,
-            logoUrl,
-            paymentMethods: {
-                ...profileData.paymentMethods,
-                nequi: { ...profileData.paymentMethods.nequi, qrCodeUrl: nequiQrUrl },
-                daviplata: { ...profileData.paymentMethods.daviplata, qrCodeUrl: daviplataQrUrl },
-                bancolombia: { ...profileData.paymentMethods.bancolombia, qrCodeUrl: bancolombiaQrUrl },
-            }
-        };
 
+        // Await all uploads to complete
+        const uploadedUrls = await Promise.all(uploadPromises);
+
+        // Create a mutable copy of profile data to update
+        let updatedData = { ...profileData };
+
+        // Update the data with the new URLs
+        uploadedUrls.forEach(({ url, type }) => {
+            if (type === 'logoUrl') {
+                updatedData.logoUrl = url;
+            } else if (type === 'nequiQrUrl') {
+                updatedData.paymentMethods.nequi = { ...updatedData.paymentMethods.nequi, qrCodeUrl: url, enabled: true };
+            } else if (type === 'daviplataQrUrl') {
+                updatedData.paymentMethods.daviplata = { ...updatedData.paymentMethods.daviplata, qrCodeUrl: url, enabled: true };
+            } else if (type === 'bancolombiaQrUrl') {
+                updatedData.paymentMethods.bancolombia = { ...updatedData.paymentMethods.bancolombia, qrCodeUrl: url, enabled: true };
+            }
+        });
+
+        // Now, save the updated data to the backend
         const response = await fetch(`/api/companies/${profileData.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -183,7 +186,7 @@ export default function AdminProfilePage() {
         setProfileData(savedProfile.data);
         setIsEditing(false);
 
-        // Limpiar archivos después de guardar
+        // Clean up file states after successful save
         setLogoFile(null);
         setNequiQrFile(null);
         setDaviplataQrFile(null);
@@ -191,14 +194,16 @@ export default function AdminProfilePage() {
 
         toast({
             title: "¡Perfil Guardado!",
-            description: "Tus cambios en el perfil del restaurante han sido guardados exitosamente.",
+            description: "Tus cambios han sido guardados exitosamente.",
         });
 
     } catch (error: any) {
         console.error("Error al guardar el perfil:", error);
         toast({
             title: "Error al Guardar",
-            description: error.message || "No se pudieron guardar los cambios. Revisa tu conexión y la consola para más detalles. (Puede ser un error de CORS)",
+            description: error.message.includes('CORS')
+                ? "Error de permisos: Revisa la configuración CORS de tu bucket en Firebase."
+                : error.message || "No se pudieron guardar los cambios. Inténtalo de nuevo.",
             variant: "destructive",
         });
     } finally {
@@ -206,10 +211,10 @@ export default function AdminProfilePage() {
     }
   };
 
-
   const handleCancel = () => {
     setIsEditing(false);
     
+    // Reset previews and files to their original state
     setLogoPreview(profileData.logoUrl);
     setNequiQrPreview(profileData.paymentMethods.nequi?.qrCodeUrl || null);
     setDaviplataQrPreview(profileData.paymentMethods.daviplata?.qrCodeUrl || null);
@@ -263,7 +268,7 @@ export default function AdminProfilePage() {
   };
   
   if (!isClient) {
-    return null;
+    return null; // Or a loading skeleton
   }
 
   return (
@@ -443,11 +448,11 @@ export default function AdminProfilePage() {
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="nequiAccountHolder">Titular de la cuenta</Label>
-                    <Input id="nequiAccountHolder" value={profileData.paymentMethods.nequi?.accountHolder} placeholder="Nombre del titular" disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('nequi', 'accountHolder', e.target.value)} />
+                    <Input id="nequiAccountHolder" value={profileData.paymentMethods.nequi?.accountHolder || ''} placeholder="Nombre del titular" disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('nequi', 'accountHolder', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="nequiAccountNumber">Número de cuenta</Label>
-                    <Input id="nequiAccountNumber" type="text" value={profileData.paymentMethods.nequi?.accountNumber} placeholder="Número de celular" disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('nequi', 'accountNumber', e.target.value)} />
+                    <Input id="nequiAccountNumber" type="text" value={profileData.paymentMethods.nequi?.accountNumber || ''} placeholder="Número de celular" disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('nequi', 'accountNumber', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                     <Label>Código QR Nequi</Label>
@@ -481,11 +486,11 @@ export default function AdminProfilePage() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="daviplataAccountHolder">Titular de la cuenta</Label>
-                    <Input id="daviplataAccountHolder" placeholder="Nombre del titular" value={profileData.paymentMethods.daviplata?.accountHolder} disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('daviplata', 'accountHolder', e.target.value)} />
+                    <Input id="daviplataAccountHolder" placeholder="Nombre del titular" value={profileData.paymentMethods.daviplata?.accountHolder || ''} disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('daviplata', 'accountHolder', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="daviplataAccountNumber">Número de cuenta</Label>
-                    <Input id="daviplataAccountNumber" type="tel" placeholder="Número de celular" value={profileData.paymentMethods.daviplata?.accountNumber} disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('daviplata', 'accountNumber', e.target.value)} />
+                    <Input id="daviplataAccountNumber" type="tel" placeholder="Número de celular" value={profileData.paymentMethods.daviplata?.accountNumber || ''} disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('daviplata', 'accountNumber', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                     <Label>Código QR Daviplata</Label>
@@ -519,11 +524,11 @@ export default function AdminProfilePage() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="bancolombiaAccountHolder">Titular de la cuenta</Label>
-                    <Input id="bancolombiaAccountHolder" value={profileData.paymentMethods.bancolombia?.accountHolder} placeholder="Nombre del titular" disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('bancolombia', 'accountHolder', e.target.value)} />
+                    <Input id="bancolombiaAccountHolder" value={profileData.paymentMethods.bancolombia?.accountHolder || ''} placeholder="Nombre del titular" disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('bancolombia', 'accountHolder', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="bancolombiaAccountNumber">Número de cuenta</Label>
-                    <Input id="bancolombiaAccountNumber" type="text" value={profileData.paymentMethods.bancolombia?.accountNumber} placeholder="Número de cuenta" disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('bancolombia', 'accountNumber', e.target.value)} />
+                    <Input id="bancolombiaAccountNumber" type="text" value={profileData.paymentMethods.bancolombia?.accountNumber || ''} placeholder="Número de cuenta" disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('bancolombia', 'accountNumber', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                     <Label>Código QR Bancolombia</Label>
@@ -583,3 +588,5 @@ export default function AdminProfilePage() {
     </div>
   );
 }
+
+    
