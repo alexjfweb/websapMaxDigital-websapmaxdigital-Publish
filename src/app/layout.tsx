@@ -22,7 +22,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body className={inter.className}>
+      <body className={inter.className} suppressHydrationWarning={true}>
         <ClientProviders>{children}</ClientProviders>
         <Toaster />
       </body>
