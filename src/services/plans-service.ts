@@ -1,3 +1,4 @@
+
 import { 
   collection, 
   doc, 
@@ -168,54 +169,29 @@ class PlansService {
    */
   async getPlans(): Promise<Plan[]> {
     try {
-      // Consulta simple sin orderBy para evitar problemas de índice
       const q = query(
-        collection(db, this.COLLECTION_NAME)
+        collection(db, this.COLLECTION_NAME),
+        where('isActive', '==', true),
+        orderBy('order', 'asc')
       );
 
       const snapshot = await getDocs(q);
-      const plans: Plan[] = [];
-
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        // Solo incluir planes activos
-        if (data.isActive !== false) {
-          plans.push({
-            id: doc.id,
-            slug: data.slug,
-            name: data.name,
-            description: data.description,
-            price: data.price || 0,
-            currency: data.currency || 'USD',
-            period: data.period,
-            features: data.features || [],
-            isActive: data.isActive !== false,
-            isPopular: data.isPopular || false,
-            order: data.order || 0,
-            icon: data.icon,
-            color: data.color,
-            maxUsers: data.maxUsers,
-            maxProjects: data.maxProjects,
-            createdAt: data.createdAt?.toDate() || new Date(),
-            updatedAt: data.updatedAt?.toDate() || new Date(),
-            createdBy: data.createdBy,
-            updatedBy: data.updatedBy
-          });
-        }
-      });
-
-      // Ordenar por orden después de obtener los datos
-      plans.sort((a, b) => a.order - b.order);
+      const plans: Plan[] = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() || new Date(),
+        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+      } as Plan));
 
       await this.logAudit('all', 'get_plans', 'system', 'system@websapmax.com', {
         count: plans.length,
-        action: 'retrieved_all_plans'
+        action: 'retrieved_all_active_plans'
       });
 
       return plans;
     } catch (error) {
       console.error('Error getting plans:', error);
-      throw new Error('Error al obtener los planes');
+      throw new Error('Error al obtener los planes. Es posible que necesite un índice compuesto en Firestore. Revise los logs de la consola de Firebase.');
     }
   }
 
@@ -557,4 +533,6 @@ class PlansService {
   }
 }
 
-export const plansService = new PlansService(); 
+export const plansService = new PlansService();
+
+    
