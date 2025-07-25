@@ -1,3 +1,4 @@
+
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
@@ -6,6 +7,7 @@ import { getFirestore } from 'firebase/firestore';
 import { firebaseConfig } from './firebase-config';
 
 // Asegura que la inicialización ocurra solo una vez.
+// Se pasa el objeto firebaseConfig completo a initializeApp.
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
