@@ -122,67 +122,67 @@ export default function AdminDishesPage() {
   const onSubmit = async (values: DishFormData) => {
     setIsSubmitting(true);
     const isUpdating = !!editingDish;
-
+  
     try {
-        let imageUrl = editingDish?.imageUrl || "https://placehold.co/600x400.png";
-
-        if (values.image instanceof File) {
-            if (isUpdating && editingDish.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
-                await storageService.deleteFile(editingDish.imageUrl);
-            }
-            imageUrl = await storageService.compressAndUploadFile(values.image, `dishes/${companyId}/`);
-        } else if (imagePreview === null && isUpdating && editingDish.imageUrl) {
-            await storageService.deleteFile(editingDish.imageUrl);
-            imageUrl = "https://placehold.co/600x400.png";
+      let imageUrl = isUpdating ? editingDish.imageUrl : "https://placehold.co/600x400.png";
+  
+      if (values.image instanceof File) {
+        if (isUpdating && editingDish.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
+          await storageService.deleteFile(editingDish.imageUrl);
         }
-        
-        const dishData = {
-            name: values.name,
-            description: values.description,
-            price: Number(values.price),
-            category: values.category,
-            stock: Number(values.stock),
-            imageUrl: imageUrl,
-            updatedAt: Timestamp.now(),
-        };
-
-        if (isUpdating) {
-            const dishRef = doc(db, 'dishes', editingDish.id);
-            await updateDoc(dishRef, dishData);
-            toast({
-                title: 'Plato actualizado',
-                description: `El plato "${values.name}" se ha actualizado correctamente.`,
-            });
-        } else {
-            const newDish = {
-                ...dishData,
-                likes: 0,
-                available: true,
-                companyId: companyId,
-                createdAt: Timestamp.now(),
-            };
-            await addDoc(collection(db, 'dishes'), newDish);
-            toast({
-                title: 'Plato creado',
-                description: `El plato "${values.name}" se ha creado correctamente.`,
-            });
-        }
-        
-        setEditingDish(null);
-        setIsDialogOpen(false);
-        await refreshDishes();
-
-    } catch (error) {
-        console.error("Error guardando el plato: ", error);
+        imageUrl = await storageService.compressAndUploadFile(values.image, `dishes/${companyId}/`);
+      } else if (!imagePreview && isUpdating && editingDish.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
+        await storageService.deleteFile(editingDish.imageUrl);
+        imageUrl = "https://placehold.co/600x400.png";
+      }
+  
+      const dishData = {
+        companyId: companyId,
+        name: values.name,
+        description: values.description,
+        price: Number(values.price),
+        category: values.category,
+        stock: Number(values.stock),
+        imageUrl,
+        updatedAt: Timestamp.now(),
+      };
+  
+      if (isUpdating) {
+        const dishRef = doc(db, 'dishes', editingDish.id);
+        await updateDoc(dishRef, dishData);
         toast({
-            title: 'Error',
-            description: 'No se pudo guardar el plato. Inténtelo de nuevo.',
-            variant: 'destructive',
+          title: 'Plato actualizado',
+          description: `El plato "${values.name}" se ha actualizado correctamente.`,
         });
+      } else {
+        const newDish = {
+          ...dishData,
+          likes: 0,
+          available: true,
+          createdAt: Timestamp.now(),
+        };
+        await addDoc(collection(db, 'dishes'), newDish);
+        toast({
+          title: 'Plato creado',
+          description: `El plato "${values.name}" se ha creado correctamente.`,
+        });
+      }
+  
+      setEditingDish(null);
+      setIsDialogOpen(false);
+      await refreshDishes();
+  
+    } catch (error) {
+      console.error("Error guardando el plato: ", error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo guardar el plato. Inténtelo de nuevo.',
+        variant: 'destructive',
+      });
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
-};
+  };
 
   const openEditDialog = (dish: Dish) => {
     setEditingDish(dish);
