@@ -1,17 +1,23 @@
 // src/lib/firebase-config.ts
+
+// NOTA IMPORTANTE: Esta configuración es segura para ser expuesta en el cliente.
+// La seguridad se gestiona a través de las Reglas de Seguridad de Firebase (Firestore, Storage)
+// y App Check, no por mantener estas claves en secreto.
+
 export const firebaseConfig = {
-  apiKey:            process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain:        process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId:         process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket:     process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId:             process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: "BB7zCrAz2u0wJBGuhAAVuoSk6Hx3lYv8dTGweV8TD_7oHCYhj56iKGxfogwuLiMREVq3PMLRnOIQU8Fma4Gt2YA",
+  authDomain: "websapmaxdigital.firebaseapp.com",
+  projectId: "websapmaxdigital",
+  storageBucket: "websapmaxdigital.appspot.com",
+  messagingSenderId: "17942151833",
+  appId: "1:17942151833:web:715d39c5784013115456fd"
 };
 
-// Validación explícita
+// Validación para asegurar que todos los campos están presentes
 const missing = Object.entries(firebaseConfig)
   .filter(([, v]) => !v)
   .map(([k]) => k);
+
 if (missing.length) {
-  throw new Error(`❌ Firebase config incompleta: ${missing.join(', ')}`);
+  throw new Error(`❌ Configuración de Firebase incompleta. Faltan los siguientes campos: ${missing.join(', ')}`);
 }
