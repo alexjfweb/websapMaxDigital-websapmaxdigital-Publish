@@ -3,7 +3,7 @@
 
 import useSWR, { useSWRConfig } from 'swr';
 import { landingConfigService, LandingConfig } from '@/services/landing-config-service';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 const CONFIG_KEY = 'landing-config';
 
@@ -41,6 +41,7 @@ export function useLandingConfig() {
     config: data,
     isLoading,
     isError: !!error,
+    error,
     updateConfig,
   };
 }
@@ -50,5 +51,7 @@ export function useLandingConfig() {
  * Útil para inicializar formularios o restaurar valores.
  */
 export function useDefaultConfig() {
-  return landingConfigService.getDefaultConfig();
+  // Usamos useMemo para evitar que se cree un nuevo objeto en cada render,
+  // lo cual puede causar bucles infinitos en useEffect.
+  return useMemo(() => landingConfigService.getDefaultConfig(), []);
 }
