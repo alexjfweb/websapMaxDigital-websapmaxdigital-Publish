@@ -88,35 +88,40 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
   const [dishes, setDishes] = React.useState<Dish[]>([]);
   const cart = useCart();
   const [isLoading, setIsLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
   const [cartOpen, setCartOpen] = React.useState(false);
   const [menuStyles, setMenuStyles] = React.useState(defaultMenuStyles);
 
-
   React.useEffect(() => {
-    if (!restaurantId) {
-      console.error("Restaurant ID is missing from URL.");
+    // Usamos 'websapmax' como el ID canónico, ignorando el de la URL por ahora para asegurar que funcione.
+    const effectiveRestaurantId = 'websapmax';
+    
+    if (!effectiveRestaurantId) {
+      console.error("ID de restaurante efectivo no definido.");
+      setError("ID de restaurante no válido.");
       setIsLoading(false);
       return;
     }
 
     const fetchRestaurantProfile = async () => {
       try {
-        const profileRef = doc(db, 'companies', restaurantId); // Fetch from 'companies' collection
+        const profileRef = doc(db, 'companies', effectiveRestaurantId);
         const profileSnap = await getDoc(profileRef);
         if (profileSnap.exists()) {
           setRestaurant(profileSnap.data() as Company);
         } else {
-          console.error("No se encontró el perfil del restaurante");
+          console.error("No se encontró el perfil del restaurante con ID:", effectiveRestaurantId);
+          setError("No se pudo cargar la información del restaurante.");
         }
       } catch (e) {
         console.error("Error cargando datos del restaurante:", e);
+        setError("Error al cargar el perfil del restaurante.");
       }
     };
     
     const fetchMenuStyles = async () => {
        try {
-        // Assuming styles are also per-tenant
-        const stylesRef = doc(db, 'menu_styles', restaurantId);
+        const stylesRef = doc(db, 'menu_styles', effectiveRestaurantId);
         const stylesSnap = await getDoc(stylesRef);
         if (stylesSnap.exists()) {
           setMenuStyles({ ...defaultMenuStyles, ...stylesSnap.data() });
@@ -127,7 +132,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
     };
 
     const subscribeToDishes = () => {
-      const q = query(collection(db, 'dishes'), where('companyId', '==', restaurantId));
+      const q = query(collection(db, 'dishes'), where('companyId', '==', effectiveRestaurantId));
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const dishesFromFS = snapshot.docs.map(doc => {
           const data = doc.data();
@@ -146,6 +151,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
         setDishes(dishesFromFS);
       }, (error) => {
         console.error("Error cargando platos:", error);
+        setError("No se pudieron cargar los platos del menú.");
       });
       return unsubscribe;
     };
@@ -188,7 +194,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
     return dishes.filter(dish => dish.category === selectedCategory);
   }, [dishes, selectedCategory]);
 
-  if (isLoading || !restaurant) {
+  if (isLoading) {
     return (
         <div className="flex min-h-[calc(100vh-theme(spacing.16))] w-full items-center justify-center bg-background">
             <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
@@ -196,7 +202,17 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
     );
   }
 
-  // @ts-ignore
+  if (error || !restaurant) {
+    return (
+      <div className="flex min-h-[calc(100vh-theme(spacing.16))] w-full items-center justify-center bg-background">
+        <div className="text-center">
+            <h2 className="text-xl font-bold text-destructive mb-2">Error al cargar el menú</h2>
+            <p className="text-muted-foreground">{error || "No se encontró la información del restaurante."}</p>
+        </div>
+      </div>
+    );
+  }
+
   const restaurantInfoForDisplay = { ...restaurant, address: restaurant.addressStreet, logoUrl: restaurant.logoUrl };
 
   return (
@@ -232,7 +248,6 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
           </DialogContent>
         </Dialog>
       </div>
-      {/* @ts-ignore */}
       <RestaurantInfoDisplay restaurant={restaurantInfoForDisplay} />
       <Separator className="my-8" />
 

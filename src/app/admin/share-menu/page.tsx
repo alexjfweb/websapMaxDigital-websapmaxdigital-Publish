@@ -18,7 +18,6 @@ export default function AdminShareMenuPage() {
   const [openCopiedModal, setOpenCopiedModal] = useState(false);
   const { currentUser } = useSession();
 
-  // En un entorno real, el ID del restaurante vendría del usuario actual o de un contexto.
   // Usamos un ID fijo y unificado para este ejemplo.
   const restaurantId = 'websapmax'; 
 
@@ -129,7 +128,7 @@ export default function AdminShareMenuPage() {
         <CardContent className="flex flex-col items-center space-y-4">
           <div className="p-4 border rounded-lg bg-white">
             <Image 
-                src={`https://placehold.co/200x200.png?text=QR+Code+for+${encodeURIComponent(menuUrl)}`} 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(menuUrl)}`} 
                 alt="Menu QR Code" 
                 width={200} 
                 height={200}

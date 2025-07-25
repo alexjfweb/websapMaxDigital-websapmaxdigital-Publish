@@ -24,7 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
-const RESTAURANT_ID = 'websapmax'; // Usamos ID fijo para el tenant
+const RESTAURANT_ID = 'websapmax'; // Usamos ID fijo para el tenant principal
 
 export default function AdminProfilePage() {
   const { toast } = useToast();

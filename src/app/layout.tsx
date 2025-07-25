@@ -1,3 +1,4 @@
+
 // src/app/layout.tsx
 "use client";
 
@@ -8,14 +9,12 @@ import { Toaster } from '@/components/ui/toaster';
 import React, { useEffect } from 'react';
 import { databaseSyncService } from '@/services/database-sync-service';
 import { useToast } from '@/hooks/use-toast';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 const inter = Inter({
   subsets: ['latin'],
 });
-
-// Metadata se maneja de manera diferente en el App Router,
-// usualmente en un `page.tsx` o en un `layout.ts` exportando un objeto `metadata`.
-// Por ahora, lo mantenemos simple.
 
 export default function RootLayout({
   children,
@@ -25,6 +24,40 @@ export default function RootLayout({
   const { toast } = useToast();
 
   useEffect(() => {
+    // Función para asegurar que el perfil de la compañía principal exista
+    const ensureCompanyProfileExists = async () => {
+      if (!db) return;
+      const companyId = 'websapmax';
+      const docRef = doc(db, "companies", companyId);
+      try {
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+          console.log(`El perfil para '${companyId}' no existe. Creando uno por defecto...`);
+          const defaultProfileData = {
+            id: companyId,
+            name: "WebSapMax Restaurante",
+            ruc: "123456789",
+            location: "Ciudad Principal",
+            status: 'active',
+            registrationDate: new Date().toISOString(),
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            email: "contacto@websapmax.com",
+            phone: "3001234567",
+            addressStreet: "Calle Falsa 123",
+          };
+          await setDoc(docRef, defaultProfileData);
+          toast({
+            title: "Perfil de Restaurante Creado",
+            description: "El perfil de demostración ha sido creado automáticamente.",
+          });
+        }
+      } catch (error) {
+        console.error("Error al verificar/crear el perfil de la compañía:", error);
+      }
+    };
+    
+    // Función para sincronizar planes
     const runSync = async () => {
       try {
         console.log('Ejecutando sincronización de base de datos...');
@@ -45,6 +78,9 @@ export default function RootLayout({
           });
       }
     };
+    
+    // Ejecutar ambas funciones
+    ensureCompanyProfileExists();
     runSync();
   }, [toast]);
 
