@@ -122,42 +122,42 @@ export default function AdminDishesPage() {
   const onSubmit = async (values: DishFormData) => {
     setIsSubmitting(true);
     const isUpdating = !!editingDish;
-
-    // Validación de nombre duplicado
-    const normalizedNewName = values.name.trim().toLowerCase();
-    const isDuplicate = dishes.some(
-      (dish) =>
-        dish.name.trim().toLowerCase() === normalizedNewName &&
-        dish.id !== (editingDish?.id || '')
-    );
-
-    if (isDuplicate) {
-      toast({
-        title: 'Error: Plato duplicado',
-        description: `Ya existe un plato con el nombre "${values.name}". Por favor, elige un nombre diferente.`,
-        variant: 'destructive',
-      });
-      setIsSubmitting(false);
-      return;
-    }
   
     try {
-      let imageUrl = isUpdating ? editingDish.imageUrl : "https://placehold.co/600x400.png";
-      
-      // La subida de imagen solo ocurre si se ha seleccionado un nuevo archivo.
+      // Validación de nombre duplicado
+      const normalizedNewName = values.name.trim().toLowerCase();
+      const isDuplicate = dishes.some(
+        (dish) =>
+          dish.name.trim().toLowerCase() === normalizedNewName &&
+          dish.id !== editingDish?.id
+      );
+  
+      if (isDuplicate) {
+        toast({
+          title: 'Error: Plato duplicado',
+          description: `Ya existe un plato con el nombre "${values.name}".`,
+          variant: 'destructive',
+        });
+        setIsSubmitting(false);
+        return;
+      }
+  
+      let imageUrl = editingDish?.imageUrl || "https://placehold.co/600x400.png";
+  
       if (values.image instanceof File) {
-        const uploadedUrl = await storageService.compressAndUploadFile(values.image, `dishes/${companyId}/`);
-        if (uploadedUrl) {
-            // Si se subió una nueva imagen y estábamos editando, borramos la antigua si no es un placeholder.
-            if (isUpdating && editingDish.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
-                await storageService.deleteFile(editingDish.imageUrl);
-            }
-            imageUrl = uploadedUrl;
+        // Si hay una imagen antigua que no es de placeholder, bórrala.
+        if (editingDish?.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
+          await storageService.deleteFile(editingDish.imageUrl);
+        }
+        // Sube la nueva imagen.
+        const newUrl = await storageService.compressAndUploadFile(values.image, `dishes/${companyId}/`);
+        if (newUrl) {
+          imageUrl = newUrl;
         }
       } else if (isUpdating && !imagePreview && editingDish.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
-          // El usuario eliminó la imagen existente sin subir una nueva.
-          await storageService.deleteFile(editingDish.imageUrl);
-          imageUrl = "https://placehold.co/600x400.png";
+        // Si el usuario borró la vista previa de una imagen existente.
+        await storageService.deleteFile(editingDish.imageUrl);
+        imageUrl = "https://placehold.co/600x400.png";
       }
   
       const dishData = {
@@ -179,13 +179,13 @@ export default function AdminDishesPage() {
           description: `El plato "${values.name}" se ha actualizado correctamente.`,
         });
       } else {
-        const newDish = {
+        const newDishData = {
           ...dishData,
           likes: 0,
           available: true,
           createdAt: Timestamp.now(),
         };
-        await addDoc(collection(db, 'dishes'), newDish);
+        await addDoc(collection(db, 'dishes'), newDishData);
         toast({
           title: 'Plato creado',
           description: `El plato "${values.name}" se ha creado correctamente.`,
@@ -628,3 +628,5 @@ export default function AdminDishesPage() {
     </div>
   );
 }
+
+    

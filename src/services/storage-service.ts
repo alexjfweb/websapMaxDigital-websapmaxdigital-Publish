@@ -1,3 +1,4 @@
+
 // src/services/storage-service.ts
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { storage } from '@/lib/firebase';
@@ -6,16 +7,14 @@ import imageCompression from 'browser-image-compression';
 class StorageService {
   /**
    * Comprime y sube un archivo a Firebase Storage directamente desde el cliente.
-   * Si el archivo no es una imagen válida, retorna null.
+   * Si el archivo no es una imagen válida o la compresión falla, intenta subir el original.
    * @param file El archivo original a subir. Puede ser File, null, o undefined.
    * @param path La ruta en Storage donde se guardará el archivo.
    * @returns La URL de descarga pública del archivo o null si la entrada no es válida.
    */
   async compressAndUploadFile(file: File | null | undefined, path: string): Promise<string | null> {
-    // --- VALIDACIÓN DE ENTRADA ---
-    // Si no se proporciona un archivo o no es una instancia de File, no se hace nada.
     if (!(file instanceof File)) {
-      console.log("No se proporcionó un archivo de imagen válido para subir. Se omitirá la subida.");
+      console.log("No se proporcionó un archivo de imagen válido. Se omitirá la subida.");
       return null;
     }
 
@@ -26,19 +25,16 @@ class StorageService {
     };
 
     try {
-        console.log(`Comprimiendo imagen: ${file.name}, tamaño original: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
-        const compressedFile = await imageCompression(file, options);
-        console.log(`Imagen comprimida: ${compressedFile.name}, nuevo tamaño: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
-        
-        // Sube el archivo comprimido directamente
-        return await this.uploadFile(compressedFile, path);
+      console.log(`Comprimiendo imagen: ${file.name}, tamaño original: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+      const compressedFile = await imageCompression(file, options);
+      console.log(`Imagen comprimida: ${compressedFile.name}, nuevo tamaño: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
+      return await this.uploadFile(compressedFile, path);
     } catch (error) {
-        console.error("Error durante la compresión, intentando subir original...", error);
-        // Si la compresión falla, intenta subir el archivo original
-        return await this.uploadFile(file, path);
+      console.error("Error durante la compresión, se intentará subir el archivo original.", error);
+      return await this.uploadFile(file, path);
     }
   }
-  
+
   /**
    * Sube un archivo a Firebase Storage.
    * @param file El archivo a subir.
@@ -68,7 +64,6 @@ class StorageService {
       throw new Error(`Error al subir: ${error.code || error.message}`);
     }
   }
-
 
   /**
    * Elimina un archivo de Firebase Storage a partir de su URL.
@@ -101,3 +96,5 @@ class StorageService {
 }
 
 export const storageService = new StorageService();
+
+    
