@@ -130,8 +130,8 @@ class CompanyService {
           phone: data.phone,
           phoneFixed: data.phoneFixed,
           email: data.email,
-          createdAt: createdAt,
-          updatedAt: updatedAt,
+          createdAt: createdAt.toISOString(),
+          updatedAt: updatedAt.toISOString(),
         } as Company);
       });
       
