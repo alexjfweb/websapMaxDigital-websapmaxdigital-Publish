@@ -9,7 +9,7 @@ import type { Order } from '@/types';
 
 interface OrderContextType {
   orders: Order[];
-  addOrder: (order: Omit<Order, 'id' | 'date'>) => Promise<string>;
+  addOrder: (order: Omit<Order, 'id'>) => Promise<string>;
   updateOrder: (id: string, updates: Partial<Order>) => Promise<void>;
   loading: boolean;
   error: Error | null;
@@ -46,14 +46,14 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     }
   );
 
-  const addOrder = useCallback(async (orderData: Omit<Order, 'id' | 'date'>) => {
+  const addOrder = useCallback(async (orderData: Omit<Order, 'id'>) => {
     if (!db) {
       throw new Error("La base de datos no está disponible.");
     }
     const orderWithTimestamp = {
       ...orderData,
-      fecha: Timestamp.now(), 
-      estado: orderData.status,
+      date: Timestamp.now(), 
+      updatedAt: Timestamp.now(),
     };
     const docRef = await addDoc(collection(db, 'orders'), orderWithTimestamp);
     mutate(); // Refrescar los datos de SWR
@@ -65,10 +65,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
       throw new Error("La base de datos no está disponible.");
     }
     const orderRef = doc(db, 'orders', id);
-    const updatePayload: any = {};
-    if (updates.status) {
-      updatePayload.estado = updates.status; 
-    }
+    const updatePayload: any = { ...updates };
     
     await updateDoc(orderRef, { ...updatePayload, updatedAt: Timestamp.now() });
     mutate(); // Refrescar los datos de SWR

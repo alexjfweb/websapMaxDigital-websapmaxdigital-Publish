@@ -12,6 +12,7 @@ import CartCheckout from '@/components/menu/cart-checkout';
 import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog';
 import { db } from '@/lib/firebase';
 import { collection, query, onSnapshot, doc, getDoc, where } from 'firebase/firestore';
+import { useSession } from '@/contexts/session-context';
 
 // Cart Hook (simple version for now)
 interface CartStore {
@@ -87,47 +88,52 @@ export default function MenuPage() {
   const [restaurant, setRestaurant] = React.useState<RestaurantProfile | null>(null);
   const [dishes, setDishes] = React.useState<Dish[]>([]);
   const cart = useCart();
-  const [isMounted, setIsMounted] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(true);
   const [cartOpen, setCartOpen] = React.useState(false);
   const [menuStyles, setMenuStyles] = React.useState(defaultMenuStyles);
+  const { currentUser } = useSession();
+
 
   React.useEffect(() => {
-    setIsMounted(true);
     
-    // Leer perfil del restaurante
     const fetchRestaurantProfile = async () => {
-        const docRef = doc(db, 'companies', RESTAURANT_ID); // Usar el ID correcto
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            setRestaurant(docSnap.data() as RestaurantProfile);
+        try {
+            const docRef = doc(db, 'companies', RESTAURANT_ID);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                setRestaurant(docSnap.data() as RestaurantProfile);
+            } else {
+                 console.error("No se encontró el perfil del restaurante");
+            }
+        } catch(e) {
+             console.error("Error cargando perfil del restaurante:", e);
         }
     };
-    fetchRestaurantProfile();
-    
-    // Leer todos los platos de Firestore del restaurante
-    const q = query(collection(db, 'dishes'), where('companyId', '==', RESTAURANT_ID));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const dishesFS = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          name: data.name || '',
-          description: data.description || '',
-          price: typeof data.price === 'number' ? data.price : 0,
-          imageUrl: data.imageUrl || 'https://placehold.co/600x400.png',
-          stock: typeof data.stock === 'number' ? data.stock : -1,
-          likes: typeof data.likes === 'number' ? data.likes : 0,
-          category: data.category || 'Sin categoría',
-          isFeatured: data.isFeatured || false,
-        };
-      });
-      setDishes(dishesFS);
-    });
-    return () => unsubscribe();
-  }, []);
 
-  React.useEffect(() => {
-    // Leer estilos personalizados
+    const fetchDishes = () => {
+        const q = query(collection(db, 'dishes'), where('companyId', '==', RESTAURANT_ID));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+        const dishesFS = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+            id: doc.id,
+            name: data.name || '',
+            description: data.description || '',
+            price: typeof data.price === 'number' ? data.price : 0,
+            imageUrl: data.imageUrl || 'https://placehold.co/600x400.png',
+            stock: typeof data.stock === 'number' ? data.stock : -1,
+            likes: typeof data.likes === 'number' ? data.likes : 0,
+            category: data.category || 'Sin categoría',
+            isFeatured: data.isFeatured || false,
+            };
+        });
+        setDishes(dishesFS);
+        }, (error) => {
+            console.error("Error cargando platos:", error);
+        });
+        return unsubscribe;
+    }
+
     const fetchMenuStyles = async () => {
       try {
         const ref = doc(db, 'menu_styles', RESTAURANT_ID);
@@ -136,14 +142,28 @@ export default function MenuPage() {
           setMenuStyles({ ...defaultMenuStyles, ...snap.data() });
         }
       } catch (e) {
-        // Si falla, usar estilos por defecto
         setMenuStyles(defaultMenuStyles);
       }
     };
-    fetchMenuStyles();
+    
+    async function loadAllData() {
+        setIsLoading(true);
+        await Promise.all([
+            fetchRestaurantProfile(),
+            fetchMenuStyles(),
+        ]);
+        const unsubscribeDishes = fetchDishes();
+        setIsLoading(false);
+
+        return () => {
+            unsubscribeDishes();
+        }
+    }
+    
+    loadAllData();
+    
   }, []);
 
-  // Categorías dinámicas según los platos en Firestore
   const categories = React.useMemo(() => {
     const uniqueCategories = new Set<string>();
     dishes.forEach(dish => uniqueCategories.add(dish.category));
@@ -164,7 +184,7 @@ export default function MenuPage() {
     return dishes.filter(dish => dish.category === selectedCategory);
   }, [dishes, selectedCategory]);
 
-  if (!isMounted || !restaurant) {
+  if (isLoading || !restaurant) {
     return (
         <div className="flex min-h-[calc(100vh-theme(spacing.16))] w-full items-center justify-center bg-background">
             <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
@@ -182,7 +202,6 @@ export default function MenuPage() {
         minHeight: '100vh',
       }}
     >
-      {/* Ícono de carrito en la parte superior derecha */}
       <div className="absolute right-4 top-4 z-30">
         <Dialog open={cartOpen} onOpenChange={setCartOpen}>
           <DialogTrigger asChild>
@@ -197,7 +216,7 @@ export default function MenuPage() {
             <h2 className="sr-only">Carrito de compras</h2>
             <CartCheckout
               cart={cart.items}
-              onQuantity={(id, delta) => cart.updateQuantity(id, (cart.items.find(i => i.id === id)?.quantity || 1) + delta)}
+              onQuantity={(id, delta) => cart.updateQuantity(id, (cart.items.find(i => i.id === id)?.quantity || 0) + delta)}
               onRemove={cart.removeItem}
               onClear={cart.clearCart}
               restaurantId={restaurant.id}
@@ -210,7 +229,6 @@ export default function MenuPage() {
       <Separator className="my-8" />
 
       <div className="flex flex-col md:flex-row gap-8 mt-8 justify-center items-start">
-        {/* Dishes Section */}
         <div className="w-full md:w-2/3 max-w-3xl mx-auto">
           <h2 className="text-3xl font-bold mb-6 text-primary text-center">Menú</h2>
           <div className="mb-6">
