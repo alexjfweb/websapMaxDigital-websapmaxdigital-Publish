@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -13,7 +12,6 @@ import CartCheckout from '@/components/menu/cart-checkout';
 import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog';
 import { db } from '@/lib/firebase';
 import { collection, query, onSnapshot, doc, getDoc, where } from 'firebase/firestore';
-import { useSession } from '@/contexts/session-context';
 
 // Cart Hook (simple version for now)
 interface CartStore {
@@ -91,7 +89,6 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
   const [isLoading, setIsLoading] = React.useState(true);
   const [cartOpen, setCartOpen] = React.useState(false);
   const [menuStyles, setMenuStyles] = React.useState(defaultMenuStyles);
-  const { currentUser } = useSession();
 
 
   React.useEffect(() => {
@@ -100,26 +97,34 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
       return;
     }
 
-    const fetchRestaurantProfile = async () => {
-        try {
-            const docRef = doc(db, 'restaurant_profiles', restaurantId);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                setRestaurant(docSnap.data() as RestaurantProfile);
-            } else {
-                 console.error("No se encontró el perfil del restaurante");
-            }
-        } catch(e) {
-             console.error("Error cargando perfil del restaurante:", e);
+    const fetchRestaurantAndStyles = async () => {
+      try {
+        // Fetch restaurant profile
+        const profileRef = doc(db, 'restaurant_profiles', restaurantId);
+        const profileSnap = await getDoc(profileRef);
+        if (profileSnap.exists()) {
+          setRestaurant(profileSnap.data() as RestaurantProfile);
+        } else {
+          console.error("No se encontró el perfil del restaurante");
         }
+
+        // Fetch menu styles
+        const stylesRef = doc(db, 'menu_styles', restaurantId);
+        const stylesSnap = await getDoc(stylesRef);
+        if (stylesSnap.exists()) {
+          setMenuStyles({ ...defaultMenuStyles, ...stylesSnap.data() });
+        }
+      } catch(e) {
+        console.error("Error cargando datos del restaurante o estilos:", e);
+      }
     };
 
-    const fetchDishes = () => {
-        const q = query(collection(db, 'dishes'), where('companyId', '==', restaurantId));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-        const dishesFS = snapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
+    const subscribeToDishes = () => {
+      const q = query(collection(db, 'dishes'), where('companyId', '==', restaurantId));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const dishesFromFS = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
             id: doc.id,
             name: data.name || '',
             description: data.description || '',
@@ -129,39 +134,24 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
             likes: typeof data.likes === 'number' ? data.likes : 0,
             category: data.category || 'Sin categoría',
             isFeatured: data.isFeatured || false,
-            };
+          } as Dish;
         });
-        setDishes(dishesFS);
-        }, (error) => {
-            console.error("Error cargando platos:", error);
-        });
-        return unsubscribe;
-    }
-
-    const fetchMenuStyles = async () => {
-      try {
-        const ref = doc(db, 'menu_styles', restaurantId);
-        const snap = await getDoc(ref);
-        if (snap.exists()) {
-          setMenuStyles({ ...defaultMenuStyles, ...snap.data() });
-        }
-      } catch (e) {
-        setMenuStyles(defaultMenuStyles);
-      }
+        setDishes(dishesFromFS);
+      }, (error) => {
+        console.error("Error cargando platos:", error);
+      });
+      return unsubscribe;
     };
     
     async function loadAllData() {
         setIsLoading(true);
-        await Promise.all([
-            fetchRestaurantProfile(),
-            fetchMenuStyles(),
-        ]);
-        const unsubscribeDishes = fetchDishes();
+        await fetchRestaurantAndStyles();
+        const unsubscribeDishes = subscribeToDishes();
         setIsLoading(false);
 
         return () => {
             unsubscribeDishes();
-        }
+        };
     }
     
     loadAllData();
@@ -254,7 +244,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
             {filteredDishes.map((dish) => (
               <DishItem key={dish.id} dish={dish} onAddToCart={() => cart.addItem(dish)} />
             ))}
-            {filteredDishes.length === 0 && <p>No se encontraron platos</p>}
+            {filteredDishes.length === 0 && !isLoading && <p>No se encontraron platos en esta categoría.</p>}
           </div>
         </div>
       </div>
