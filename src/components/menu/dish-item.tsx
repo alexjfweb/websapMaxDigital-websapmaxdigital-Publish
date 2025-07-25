@@ -1,8 +1,9 @@
+
 import * as React from 'react';
 import Image from 'next/image';
 import type { Dish } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { PlusCircle, Star, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
@@ -22,33 +23,37 @@ export default function DishItem({ dish, onAddToCart, styles }: DishItemProps) {
 
   return (
     <Card 
-      className="flex flex-col overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300"
-      style={{ background: styles.secondary_color }}
+      className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 flex flex-row items-center"
+      style={{ background: styles.secondary_color, borderColor: styles.primary_color }}
     >
       {styles.show_images && (
-        <div className="relative w-full h-48">
+        <div className="relative w-40 h-full flex-shrink-0">
           <Image
             src={dish.imageUrl}
             alt={dish.name}
             layout="fill"
             objectFit="cover"
+            className="h-full w-full"
             data-ai-hint={`${dish.category} food`}
           />
-          {dish.stock === 0 && (
-            <Badge variant="destructive" className="absolute top-2 right-2">Agotado</Badge>
-          )}
         </div>
       )}
-      <div className="p-4 flex flex-col flex-grow">
+      <div className="p-4 flex flex-col flex-grow relative w-full">
+         {dish.stock === 0 && (
+            <Badge variant="destructive" className="absolute top-2 right-2">Agotado</Badge>
+          )}
         <h3 className="text-lg font-bold" style={{ color: styles.text_color }}>{dish.name}</h3>
-        {styles.show_ratings && (
+        
+        {styles.show_ratings && dish.likes > 0 && (
             <div className="flex items-center gap-1 mt-1">
                 {renderStars(dish.likes)}
                 <span className="text-xs text-muted-foreground">({dish.likes})</span>
             </div>
         )}
+
         <p className="text-sm text-muted-foreground my-2 flex-grow">{dish.description}</p>
-        <div className="flex justify-between items-center mt-auto">
+        
+        <div className="flex justify-between items-end mt-2">
             <p className="text-xl font-bold" style={{ color: styles.price_color }}>
                 ${dish.price.toFixed(2)}
             </p>
@@ -57,14 +62,12 @@ export default function DishItem({ dish, onAddToCart, styles }: DishItemProps) {
               disabled={dish.stock === 0}
               className="text-white shrink-0"
               style={{ backgroundColor: styles.primary_color }}
+              size="sm"
             >
               {dish.stock === 0 ? <XCircle className="mr-2 h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
               {dish.stock === 0 ? 'No disponible' : 'Agregar'}
             </Button>
         </div>
-         {dish.stock > 0 && dish.stock < 10 && (
-          <p className="text-xs text-destructive mt-2 text-center">¡Solo quedan {dish.stock} unidades!</p>
-        )}
       </div>
     </Card>
   );

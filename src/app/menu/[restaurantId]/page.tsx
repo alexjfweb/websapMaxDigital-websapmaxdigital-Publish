@@ -108,7 +108,8 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
         if (profileSnap.exists()) {
           setRestaurant(profileSnap.data() as Company);
         } else {
-          setError("No se pudo cargar la información del restaurante.");
+           console.error("No se encontró el perfil del restaurante");
+           setError("No se pudo cargar la información del restaurante.");
         }
       } catch (e) {
         console.error("Error cargando perfil del restaurante:", e);
@@ -255,20 +256,9 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
           </div>
         </div>
 
-        <div 
-           className={
-             menuStyles.layout_style === 'grid' 
-             ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6' 
-             : menuStyles.layout_style === 'gallery'
-             ? 'flex gap-4 overflow-x-auto pb-4'
-             : 'space-y-4' // Layout de lista (original)
-           }
-           style={{ gap: `${menuStyles.spacing}px` }}
-        >
+        <div className="space-y-4 max-w-4xl mx-auto">
           {filteredDishes.map((dish) => (
-             <div key={dish.id} className={
-                menuStyles.layout_style === 'gallery' ? 'w-80 flex-shrink-0' : ''
-             }>
+             <div key={dish.id}>
                 <DishItem dish={dish} onAddToCart={() => cart.addItem(dish)} styles={menuStyles} />
             </div>
           ))}
