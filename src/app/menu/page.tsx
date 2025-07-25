@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -136,7 +137,7 @@ export default function MenuPage() {
 
     const fetchMenuStyles = async () => {
       try {
-        const ref = doc(db, 'menu_styles', RESTAURANT_ID);
+        const ref = doc(db, 'menu_styles', 'websapmax');
         const snap = await getDoc(ref);
         if (snap.exists()) {
           setMenuStyles({ ...defaultMenuStyles, ...snap.data() });
