@@ -91,6 +91,30 @@ export default function LandingPublicPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // --- Validación del archivo ---
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    const maxSize = 2 * 1024 * 1024; // 2MB
+
+    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
+      toast({
+        title: "Archivo no válido",
+        description: "Por favor, selecciona una imagen (JPG, PNG, WEBP).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (file.size > maxSize) {
+      toast({
+        title: "Archivo demasiado grande",
+        description: "La imagen no puede pesar más de 2MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+    // --- Fin de la validación ---
+
     const subsectionId = formData.sections[sectionIndex].subsections![subIndex].id;
     setUploading(prev => ({ ...prev, [subsectionId]: true }));
 
