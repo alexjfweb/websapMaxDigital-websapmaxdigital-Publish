@@ -182,9 +182,31 @@ export default function LandingPage() {
               <h2 className="text-3xl font-bold mb-4">{section.title}</h2>
               <p className="text-lg text-muted-foreground mb-8 max-w-3xl mx-auto">{section.subtitle}</p>
               <p className="mb-8">{section.content}</p>
-              <Button asChild style={{ backgroundColor: section.buttonColor, color: '#ffffff' }}>
-                <a href={section.buttonUrl}>{section.buttonText}</a>
-              </Button>
+              
+              {/* Renderizado de Subsecciones */}
+              {section.subsections && section.subsections.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
+                  {section.subsections.map(sub => (
+                    <Card key={sub.id} className="text-left bg-white shadow-lg hover:shadow-xl transition-shadow">
+                      {sub.imageUrl && (
+                        <CardHeader className="p-0">
+                          <img src={sub.imageUrl} alt={sub.title} className="w-full h-40 object-cover rounded-t-lg" />
+                        </CardHeader>
+                      )}
+                      <CardContent className="p-6">
+                        <CardTitle className="text-xl mb-2 text-gray-800">{sub.title}</CardTitle>
+                        <p className="text-gray-600">{sub.content}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {section.buttonText && (
+                <Button asChild style={{ backgroundColor: section.buttonColor, color: '#ffffff' }} className="mt-12">
+                  <a href={section.buttonUrl}>{section.buttonText}</a>
+                </Button>
+              )}
             </div>
           </motion.section>
         ))}
