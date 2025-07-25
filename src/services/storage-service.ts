@@ -1,3 +1,4 @@
+
 // src/services/storage-service.ts
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { app } from '@/lib/firebase';
@@ -8,13 +9,17 @@ const storage = getStorage(app);
 class StorageService {
   /**
    * Comprime y sube un archivo a Firebase Storage directamente desde el cliente.
-   * @param file El archivo original a subir.
+   * Si el archivo no es una imagen válida, retorna null.
+   * @param file El archivo original a subir. Puede ser File, null, o undefined.
    * @param path La ruta en Storage donde se guardará el archivo.
-   * @returns La URL de descarga pública del archivo.
+   * @returns La URL de descarga pública del archivo o null si la entrada no es válida.
    */
-  async compressAndUploadFile(file: File, path: string): Promise<string> {
-    if (!file) {
-      throw new Error("No se proporcionó ningún archivo para subir.");
+  async compressAndUploadFile(file: File | null | undefined, path: string): Promise<string | null> {
+    // --- VALIDACIÓN DE ENTRADA ---
+    // Si no se proporciona un archivo o no es una instancia de File, no se hace nada.
+    if (!(file instanceof File)) {
+      console.log("No se proporcionó un archivo de imagen válido para subir. Se omitirá la subida.");
+      return null;
     }
 
     const options = {
@@ -59,12 +64,10 @@ class StorageService {
     } catch (error: any) {
       console.error("❌ Error al subir el archivo a Firebase Storage:", error);
       
-      // Logueo mejorado para obtener más detalles del error real
       if (error.serverResponse) {
         console.error("Respuesta del servidor de Firebase:", error.serverResponse);
       }
       
-      // Lanzar un error más específico para que el frontend lo pueda manejar
       throw new Error(`Error al subir: ${error.code || error.message}`);
     }
   }
