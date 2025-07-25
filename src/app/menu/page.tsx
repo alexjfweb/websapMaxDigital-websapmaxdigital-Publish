@@ -96,7 +96,7 @@ export default function MenuPage() {
     
     // Leer perfil del restaurante
     const fetchRestaurantProfile = async () => {
-        const docRef = doc(db, 'companies', 'websapmax-1'); // Hardcoded ID for now
+        const docRef = doc(db, 'companies', RESTAURANT_ID); // Usar el ID correcto
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             setRestaurant(docSnap.data() as RestaurantProfile);
@@ -105,7 +105,7 @@ export default function MenuPage() {
     fetchRestaurantProfile();
     
     // Leer todos los platos de Firestore del restaurante
-    const q = query(collection(db, 'dishes'), where('companyId', '==', 'websapmax-1'));
+    const q = query(collection(db, 'dishes'), where('companyId', '==', RESTAURANT_ID));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const dishesFS = snapshot.docs.map(doc => {
         const data = doc.data();
