@@ -5,7 +5,7 @@
 // y App Check, no por mantener estas claves en secreto.
 
 export const firebaseConfig = {
-  apiKey: "BB7zCrAz2u0wJBGuhAAVuoSk6Hx3lYv8dTGweV8TD_7oHCYhj56iKGxfogwuLiMREVq3PMLRnOIQU8Fma4Gt2YA",
+  apiKey: "AIzaSyC3UzUVh_OPavejyo-kviYVX_Zy9494yjg",
   authDomain: "websapmaxdigital.firebaseapp.com",
   projectId: "websapmaxdigital",
   storageBucket: "websapmaxdigital.appspot.com",
