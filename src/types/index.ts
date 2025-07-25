@@ -1,4 +1,5 @@
 
+
 import type { Timestamp } from 'firebase/firestore';
 
 
@@ -195,4 +196,22 @@ export interface Reservation {
   notes?: string;
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
+}
+
+// Audit Log Global
+export interface AuditLog {
+  id?: string;
+  entity: 'landingPlans' | 'companies' | 'users';
+  entityId: string;
+  action: 'created' | 'updated' | 'deleted' | 'reordered' | 'status_changed' | 'role_changed';
+  performedBy: {
+    uid: string;
+    email: string;
+  };
+  timestamp: Timestamp;
+  diff?: Record<string, { from: any; to: any }>;
+  previousData?: any;
+  newData?: any;
+  ipAddress?: string;
+  userAgent?: string;
 }

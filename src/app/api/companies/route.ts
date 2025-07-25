@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { companyService, type CreateCompanyInput } from '@/services/company-service';
 
@@ -33,13 +34,18 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // 1. Obtener los datos del cuerpo de la solicitud
-    const body = await request.json();
-    const companyData: CreateCompanyInput = body;
+    const { companyData, user } = await request.json();
 
     console.log('📝 [API] POST /api/companies - Solicitud recibida para crear empresa:', companyData);
+    
+    // User data is needed for audit trail
+    if (!user || !user.uid || !user.email) {
+      return NextResponse.json({ error: 'Usuario no autenticado para esta acción.' }, { status: 403 });
+    }
+
 
     // 2. Llamar al servicio para crear la empresa (la validación está dentro del servicio)
-    const newCompanyId = await companyService.createCompany(companyData);
+    const newCompanyId = await companyService.createCompany(companyData, user);
 
     console.log(`✅ [API] POST /api/companies - Empresa creada con ID: ${newCompanyId}`);
 

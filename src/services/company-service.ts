@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -12,6 +13,8 @@ import {
   Timestamp
 } from 'firebase/firestore';
 import type { Company } from '@/types';
+import { auditService } from './audit-service';
+
 
 // Define el tipo de entrada para la creación, omitiendo campos generados por el sistema
 export type CreateCompanyInput = Omit<Company, 'id' | 'createdAt' | 'updatedAt' | 'registrationDate' | 'status'>;
@@ -48,7 +51,7 @@ class CompanyService {
    * @param companyData - Datos de la nueva empresa.
    * @returns El ID de la empresa recién creada.
    */
-  async createCompany(companyData: CreateCompanyInput): Promise<string> {
+  async createCompany(companyData: CreateCompanyInput, user?: { uid: string; email: string }): Promise<string> {
     const coll = this.companiesCollection;
     if (!coll) throw new Error("La base de datos no está disponible.");
 
@@ -70,6 +73,16 @@ class CompanyService {
       const docRef = await addDoc(coll, newCompanyDoc);
       console.log(`✅ Empresa creada con éxito en Firestore. ID: ${docRef.id}`);
       
+      if(user) {
+        await auditService.log({
+          entity: 'companies',
+          entityId: docRef.id,
+          action: 'created',
+          performedBy: user,
+          newData: { id: docRef.id, ...newCompanyDoc }
+        });
+      }
+
       return docRef.id;
     } catch (error) {
       console.error('❌ Error al crear la empresa en Firestore:', error);
@@ -151,7 +164,7 @@ class CompanyService {
    * @param companyData - Los campos a actualizar.
    * @returns La empresa actualizada.
    */
-  async updateCompany(companyId: string, companyData: Partial<Company>): Promise<Company> {
+  async updateCompany(companyId: string, companyData: Partial<Company>, user?: { uid: string; email: string }): Promise<Company> {
     const coll = this.companiesCollection;
     if (!coll) throw new Error("La base de datos no está disponible.");
 
@@ -163,6 +176,8 @@ class CompanyService {
       throw new Error("La empresa no existe.");
     }
     
+    const previousData = { id: docSnap.id, ...docSnap.data() } as Company;
+    
     // Validar los datos que se van a actualizar
     this.validateCompanyData(companyData);
 
@@ -173,8 +188,22 @@ class CompanyService {
       };
       await updateDoc(docRef, updatePayload);
       const updatedDoc = await getDoc(docRef);
+
+      const newData = { id: updatedDoc.id, ...updatedDoc.data() } as Company;
+
+      if(user) {
+        await auditService.log({
+          entity: 'companies',
+          entityId: companyId,
+          action: 'updated',
+          performedBy: user,
+          previousData,
+          newData,
+        });
+      }
+
       console.log(`✅ Empresa actualizada con éxito en Firestore. ID: ${companyId}`);
-      return { id: updatedDoc.id, ...updatedDoc.data() } as Company;
+      return newData;
     } catch (error) {
       console.error(`❌ Error al actualizar la empresa ${companyId} en Firestore:`, error);
       throw new Error('No se pudo actualizar la empresa en la base de datos.');

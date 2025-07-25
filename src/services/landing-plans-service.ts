@@ -17,6 +17,7 @@ import {
   Timestamp
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { auditService } from './audit-service';
 
 // Tipos para los planes de suscripción
 export interface LandingPlan {
@@ -401,25 +402,21 @@ class LandingPlansService {
 
       const docRef = await addDoc(collection(db, this.COLLECTION_NAME), planData);
       
+      const newData = { id: docRef.id, ...planData, createdAt: new Date(), updatedAt: new Date() } as LandingPlan;
+
       // Log de auditoría
-      await this.logAudit(
-        docRef.id,
-        'created',
-        userId,
-        userEmail,
-        { planData },
-        undefined,
-        { ...planData, createdAt: new Date(), updatedAt: new Date() } as Partial<LandingPlan>,
+      await auditService.log({
+        entity: 'landingPlans',
+        entityId: docRef.id,
+        action: 'created',
+        performedBy: { uid: userId, email: userEmail },
+        newData: newData,
         ipAddress,
         userAgent
-      );
+      });
 
-      return {
-        id: docRef.id,
-        ...planData,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      } as LandingPlan;
+
+      return newData;
     } catch (error) {
       console.error('Error creating plan:', error);
       throw error;
@@ -469,18 +466,20 @@ class LandingPlansService {
       const docRef = doc(db, this.COLLECTION_NAME, id);
       await updateDoc(docRef, updateData);
 
+      const newData = { ...currentPlan, ...updateData, updatedAt: new Date() };
+
       // Log de auditoría
-      await this.logAudit(
-        id,
-        'updated',
-        userId,
-        userEmail,
-        { updateData },
-        currentPlan,
-        { ...currentPlan, ...data },
+      await auditService.log({
+        entity: 'landingPlans',
+        entityId: id,
+        action: 'updated',
+        performedBy: { uid: userId, email: userEmail },
+        previousData: currentPlan,
+        newData,
         ipAddress,
         userAgent
-      );
+      });
+
 
       return await this.getPlanById(id) as LandingPlan;
     } catch (error) {
@@ -513,17 +512,17 @@ class LandingPlansService {
       });
 
       // Log de auditoría
-      await this.logAudit(
-        id,
-        'deleted',
-        userId,
-        userEmail,
-        { softDelete: true },
-        currentPlan,
-        { ...currentPlan, isActive: false },
+      await auditService.log({
+        entity: 'landingPlans',
+        entityId: id,
+        action: 'deleted',
+        performedBy: { uid: userId, email: userEmail },
+        previousData: currentPlan,
+        newData: { ...currentPlan, isActive: false },
         ipAddress,
         userAgent
-      );
+      });
+
     } catch (error) {
       console.error('Error deleting plan:', error);
       throw error;
@@ -555,17 +554,16 @@ class LandingPlansService {
       await batch.commit();
 
       // Log de auditoría
-      await this.logAudit(
-        'all',
-        'reordered',
-        userId,
-        userEmail,
-        { planIds, newOrder: planIds.map((id, index) => ({ id, order: index + 1 })) },
-        undefined,
-        undefined,
+      await auditService.log({
+        entity: 'landingPlans',
+        entityId: 'multiple',
+        action: 'reordered',
+        performedBy: { uid: userId, email: userEmail },
+        newData: { planIds, newOrder: planIds.map((id, index) => ({ id, order: index + 1 })) },
         ipAddress,
         userAgent
-      );
+      });
+
     } catch (error) {
       console.error('Error reordering plans:', error);
       throw error;
@@ -676,5 +674,3 @@ class LandingPlansService {
 
 // Instancia singleton
 export const landingPlansService = new LandingPlansService();
-
-    

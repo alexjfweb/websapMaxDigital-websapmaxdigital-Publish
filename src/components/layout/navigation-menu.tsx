@@ -36,6 +36,7 @@ import {
   Gem,
   BellRing,
   Palette,
+  Archive,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
@@ -61,6 +62,7 @@ const navItems: NavItem[] = [
   { href: '/superadmin/subscription-plans', labelKey: 'Planes de Suscripción', icon: Gem, allowedRoles: ['superadmin'], tooltipKey: 'Gestionar planes de suscripción' },
   { href: '/superadmin/reminders', labelKey: 'Recordatorios', icon: BellRing, allowedRoles: ['superadmin'], tooltipKey: 'Recordatorios de pago' },
   { href: '/superadmin/users', labelKey: 'Usuarios', icon: Users, allowedRoles: ['superadmin'], tooltipKey: 'Gestión de usuarios' },
+  { href: '/superadmin/audit', labelKey: 'Auditoría', icon: Archive, allowedRoles: ['superadmin'], tooltipKey: 'Registros de auditoría' },
   { href: '/superadmin/maintenance', labelKey: 'Mantenimiento', icon: Wrench, allowedRoles: ['superadmin'], tooltipKey: 'Mantenimiento' },
   { href: '/superadmin/database', labelKey: 'Base de datos', icon: Database, allowedRoles: ['superadmin'], tooltipKey: 'Estado de la base de datos' },
   { href: '/superadmin/backup', labelKey: 'Respaldo', icon: Server, allowedRoles: ['superadmin'], tooltipKey: 'Respaldo' },

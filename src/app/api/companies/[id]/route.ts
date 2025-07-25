@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { companyService } from '@/services/company-service';
 import type { Company } from '@/types';
@@ -25,11 +26,16 @@ export async function PUT(
 ) {
   try {
     const companyId = params.id;
-    const companyData: Partial<Company> = await request.json();
+    const { companyData, user } = await request.json();
 
     // In a real app, you would add user permission checks here
+    // For now, we assume if user object is passed, it's authorized.
+    if (!user || !user.uid || !user.email) {
+      return NextResponse.json({ error: 'Usuario no autenticado para esta acción.' }, { status: 403 });
+    }
 
-    const updatedCompany = await companyService.updateCompany(companyId, companyData);
+
+    const updatedCompany = await companyService.updateCompany(companyId, companyData, user);
 
     return NextResponse.json(
       {
