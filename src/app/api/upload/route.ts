@@ -1,8 +1,6 @@
 // src/app/api/upload/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { storage } from '@/lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { auth } from '@/lib/firebase'; // Import auth to check for user if needed
+import { adminStorage } from '@/lib/firebase-admin'; // Usar Firebase Admin
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,28 +8,45 @@ export async function POST(req: NextRequest) {
     const file = data.get('file') as File | null;
 
     if (!file) {
-      return NextResponse.json({ error: 'Archivo no recibido' }, { status: 400 });
+      return NextResponse.json({ error: 'Archivo no recibido.' }, { status: 400 });
     }
 
-    // Opcional: añadir validación de autenticación si es necesario
-    // if (!auth.currentUser) {
-    //   return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    // }
-    
     // Sanitizar el nombre del archivo para evitar errores
     const sanitizedFileName = file.name.replace(/[^a-z0-9._-]/gi, '_');
+    const filePath = `uploads/${Date.now()}-${sanitizedFileName}`;
 
-    // Usar una ruta más específica para evitar colisiones
-    const storageRef = ref(storage, `uploads/${Date.now()}-${sanitizedFileName}`);
-    const snapshot = await uploadBytes(storageRef, file);
-    const url = await getDownloadURL(snapshot.ref);
+    const bucket = adminStorage.bucket();
+    const fileRef = bucket.file(filePath);
 
+    // Convertir el archivo a un buffer para subirlo
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Subir el buffer al bucket
+    await fileRef.save(buffer, {
+      metadata: {
+        contentType: file.type,
+      },
+    });
+
+    // Obtener la URL pública del archivo subido
+    const [url] = await fileRef.getSignedUrl({
+      action: 'read',
+      expires: '03-09-2491', // Una fecha de expiración muy lejana para simular una URL pública
+    });
+
+    console.log(`✅ Archivo subido exitosamente a ${filePath}. URL: ${url}`);
     return NextResponse.json({ url });
+
   } catch (err: any) {
-    console.error('❌ /api/upload error:', err.code, err.message);
-    return NextResponse.json({ 
-        error: err.message || 'Error en el servidor al subir el archivo.',
+    console.error('❌ Error en el endpoint /api/upload:', err);
+    // Devuelve un mensaje de error más detallado
+    return NextResponse.json(
+      { 
+        error: 'Error interno del servidor al subir el archivo.', 
+        details: err.message,
         code: err.code
-    }, { status: 500 });
+      }, 
+      { status: 500 }
+    );
   }
 }
