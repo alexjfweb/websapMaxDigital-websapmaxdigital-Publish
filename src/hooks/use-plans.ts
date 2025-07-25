@@ -13,18 +13,15 @@ const fetcher = async (url: string): Promise<LandingPlan[]> => {
   if (!response.ok) {
     let errorInfo = 'Error en la solicitud a la API';
     try {
-      // Intenta obtener un mensaje de error más específico del cuerpo de la respuesta
       const errorData = await response.json();
       console.error('[Fetcher] Error en la respuesta de la API:', errorData);
       errorInfo = errorData.error || errorData.message || JSON.stringify(errorData);
     } catch (e) {
       console.error('[Fetcher] No se pudo parsear el error JSON:', response.statusText);
-      // Si el cuerpo no es JSON o está vacío, usa el texto de estado
       errorInfo = response.statusText;
     }
     throw new Error(errorInfo);
   }
-  // La API devuelve el array de planes directamente
   const data = await response.json();
   console.log('[Fetcher] Datos recibidos y parseados:', data);
   return data;
@@ -36,8 +33,9 @@ export function usePublicLandingPlans() {
     '/api/landing-plans',
     fetcher,
     {
-      revalidateOnFocus: false,
-      shouldRetryOnError: false, // Evita reintentos para tener un control más claro del error
+      revalidateOnFocus: true, // Revalidar al enfocar para mantener datos frescos
+      shouldRetryOnError: true,
+      errorRetryCount: 3,
     }
   );
 
@@ -47,7 +45,7 @@ export function usePublicLandingPlans() {
       console.log('⏳ [usePublicLandingPlans] Cargando planes...');
     }
     if (isValidating) {
-        console.log('🔄 [usePublicLandingPlans] Revalidando datos...');
+      console.log('🔄 [usePublicLandingPlans] Revalidando datos...');
     }
     if (data) {
       console.log(`✅ [usePublicLandingPlans] Datos de planes actualizados. Se encontraron ${data.length} planes.`);
@@ -64,5 +62,3 @@ export function usePublicLandingPlans() {
     error: error,
   };
 }
-
-    

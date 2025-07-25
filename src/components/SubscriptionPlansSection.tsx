@@ -44,9 +44,13 @@ const getPlanColorClass = (colorValue: string, type: 'bg' | 'border' | 'text') =
   const colorData = PLAN_COLORS.find(color => color.value === colorValue);
   if (!colorData) return 'bg-blue-500 border-blue-500';
   
-  if (type === 'bg') return colorData.class.split(' ')[0];
-  if (type === 'border') return colorData.class.split(' ')[1];
-  return `text-${colorValue}-500`; // Asumiendo que los colores de texto existen
+  const [bgClass, borderClass] = colorData.class.split(' ');
+  
+  if (type === 'bg') return bgClass;
+  if (type === 'border') return borderClass;
+  // Asumiendo Tailwind JIT puede generar clases como text-blue-500 dinámicamente
+  // si los colores están en la configuración de Tailwind. Si no, esto podría no funcionar.
+  return `text-${colorValue}-500`; 
 };
 
 interface SubscriptionPlansSectionProps {
@@ -54,8 +58,6 @@ interface SubscriptionPlansSectionProps {
 }
 
 export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSectionProps) {
-
-  // El componente ahora asume que siempre recibirá planes si se renderiza
   return (
     <motion.section
       key="planes-loaded"
@@ -109,7 +111,7 @@ export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSec
                 </div>
               </CardContent>
               <div className="px-6 pb-6 mt-auto">
-                <Button className={`w-full ${colorClass} hover:${colorClass}/90 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200`} size="lg">
+                <Button className={`w-full ${colorClass} hover:${colorClass.replace('bg-', 'bg-opacity-90-')} text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200`} size="lg">
                   {plan.ctaText || 'Comenzar Prueba Gratuita'}
                 </Button>
                 <p className="text-xs text-gray-500 mt-2 text-center">Prueba gratuita disponible</p>
@@ -121,3 +123,4 @@ export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSec
     </motion.section>
   );
 }
+

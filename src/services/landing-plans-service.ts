@@ -204,15 +204,23 @@ class LandingPlansService {
    */
   async getPlans(): Promise<LandingPlan[]> {
     try {
-      // Query más simple para evitar problemas de índices compuestos no creados.
-      // El filtrado y ordenamiento se hará en el cliente.
-      const snapshot = await getDocs(collection(db, this.COLLECTION_NAME));
+      // Query que obtiene los planes activos y públicos, ordenados por el campo 'order'.
+      // Esto asume que existe un índice compuesto en Firestore para (isActive, isPublic, order).
+      const q = query(
+        collection(db, this.COLLECTION_NAME), 
+        where('isActive', '==', true),
+        where('isPublic', '==', true),
+        orderBy('order', 'asc')
+      );
+      
+      const snapshot = await getDocs(q);
       const plans: LandingPlan[] = [];
 
       snapshot.forEach(doc => {
         const data = doc.data();
         
-        if (data.name && data.price !== undefined && data.features?.length > 0) {
+        // La consulta ya filtra, pero esta es una validación extra.
+        if (data.name && data.price !== undefined) {
             plans.push({
                 id: doc.id,
                 slug: data.slug,
@@ -236,19 +244,17 @@ class LandingPlansService {
                 createdBy: data.createdBy,
                 updatedBy: data.updatedBy
             });
-        } else {
-            console.warn(`[WARN] Documento de plan ${doc.id} omitido por datos incompletos.`);
         }
       });
       
-      // Ordenar los planes después de obtenerlos y filtrar solo los activos
-      const finalPlans = plans
-        .filter(p => p.isActive)
-        .sort((a, b) => a.order - b.order);
-
-      return finalPlans;
+      return plans;
     } catch (error) {
       console.error('Error getting plans:', error);
+      // Si el error indica que falta un índice, se debe crear en la consola de Firebase.
+      if (error.message.includes('The query requires an index')) {
+          console.error("Firebase Index Required: Ve a tu consola de Firebase y crea un índice compuesto para la colección 'landingPlans' con los campos: isActive (asc), isPublic (asc), order (asc).");
+          throw new Error('La base de datos requiere un índice para esta consulta. Revisa la consola para más detalles.');
+      }
       throw new Error('Error al obtener los planes');
     }
   }
@@ -260,43 +266,43 @@ class LandingPlansService {
     const q = query(
       collection(db, this.COLLECTION_NAME),
       where('isActive', '==', true),
-      where('isPublic', '==', true)
+      where('isPublic', '==', true),
+      orderBy('order', 'asc')
     );
   
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const plans: LandingPlan[] = [];
       snapshot.forEach(doc => {
         const data = doc.data();
-        // El filtro de isPublic ya se hace en la query, pero una doble verificación no hace daño
-        if (data.isPublic) {
-          plans.push({
-            id: doc.id,
-            slug: data.slug,
-            name: data.name,
-            description: data.description,
-            price: data.price || 0,
-            currency: data.currency || 'USD',
-            period: data.period,
-            features: data.features || [],
-            isActive: data.isActive,
-            isPublic: data.isPublic,
-            isPopular: data.isPopular || false,
-            order: data.order || 0,
-            icon: data.icon,
-            color: data.color,
-            maxUsers: data.maxUsers,
-            maxProjects: data.maxProjects,
-            ctaText: data.ctaText || 'Comenzar Prueba Gratuita',
-            createdAt: this.parseTimestamp(data.createdAt),
-            updatedAt: this.parseTimestamp(data.updatedAt),
-            createdBy: data.createdBy,
-            updatedBy: data.updatedBy
-          });
-        }
+        plans.push({
+          id: doc.id,
+          slug: data.slug,
+          name: data.name,
+          description: data.description,
+          price: data.price || 0,
+          currency: data.currency || 'USD',
+          period: data.period,
+          features: data.features || [],
+          isActive: data.isActive,
+          isPublic: data.isPublic,
+          isPopular: data.isPopular || false,
+          order: data.order || 0,
+          icon: data.icon,
+          color: data.color,
+          maxUsers: data.maxUsers,
+          maxProjects: data.maxProjects,
+          ctaText: data.ctaText || 'Comenzar Prueba Gratuita',
+          createdAt: this.parseTimestamp(data.createdAt),
+          updatedAt: this.parseTimestamp(data.updatedAt),
+          createdBy: data.createdBy,
+          updatedBy: data.updatedBy
+        });
       });
-      plans.sort((a, b) => a.order - b.order);
       callback(plans);
-    }, onError);
+    }, (error) => {
+      console.error("Error en la suscripción a los planes:", error);
+      onError(error);
+    });
   
     return unsubscribe;
   }
