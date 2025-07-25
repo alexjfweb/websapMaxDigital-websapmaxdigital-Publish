@@ -7,9 +7,9 @@ const storage = getStorage(app);
 
 class StorageService {
   /**
-   * Comprime y sube un archivo a un endpoint de la API.
+   * Comprime y sube un archivo a Firebase Storage directamente desde el cliente.
    * @param file El archivo original a subir.
-   * @param path La ruta en Storage donde se guardará el archivo (enviada a la API).
+   * @param path La ruta en Storage donde se guardará el archivo.
    * @returns La URL de descarga pública del archivo.
    */
   async compressAndUploadFile(file: File, path: string): Promise<string> {
@@ -23,41 +23,43 @@ class StorageService {
       useWebWorker: true,
     };
 
-    console.log(`Comprimiendo imagen: ${file.name}, tamaño original: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
-    const compressedFile = await imageCompression(file, options);
-    console.log(`Imagen comprimida: ${compressedFile.name}, nuevo tamaño: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
-    
-    // Ahora, en lugar de subir directamente, llamamos a la API
-    return this.uploadFile(compressedFile, path);
+    try {
+        console.log(`Comprimiendo imagen: ${file.name}, tamaño original: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+        const compressedFile = await imageCompression(file, options);
+        console.log(`Imagen comprimida: ${compressedFile.name}, nuevo tamaño: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
+        
+        // Sube el archivo comprimido directamente
+        return await this.uploadFile(compressedFile, path);
+    } catch (error) {
+        console.error("Error durante la compresión, intentando subir original...", error);
+        // Si la compresión falla, intenta subir el archivo original
+        return await this.uploadFile(file, path);
+    }
   }
   
   /**
-   * Sube un archivo a Firebase Storage a través de un endpoint de API.
+   * Sube un archivo a Firebase Storage.
    * @param file El archivo a subir.
-   * @param path La ruta donde se guardará (actualmente no usada por la API, pero podría ser útil).
+   * @param path La ruta donde se guardará el archivo.
    * @returns La URL de descarga pública del archivo.
    */
   async uploadFile(file: File, path: string): Promise<string> {
-    const formData = new FormData();
-    formData.append("file", file);
-
     try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Error al subir el archivo a la API.');
-      }
+      const sanitizedFileName = file.name.replace(/[^a-z0-9._-]/gi, '_');
+      const fullPath = `${path}${Date.now()}-${sanitizedFileName}`;
+      const storageRef = ref(storage, fullPath);
       
-      // Devolver la URL recibida desde la API
-      return result.url;
+      console.log(`Subiendo archivo a: ${fullPath}`);
+      const snapshot = await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      
+      console.log(`✅ Archivo subido exitosamente. URL: ${downloadURL}`);
+      return downloadURL;
 
     } catch (error: any) {
-      console.error("❌ Error al llamar a la API de subida:", error);
+      console.error("❌ Error al subir el archivo a Firebase Storage:", error);
+      console.error("Error Code:", error.code);
+      console.error("Server Response:", error.serverResponse);
       throw new Error(error.message || "No se pudo subir el archivo.");
     }
   }

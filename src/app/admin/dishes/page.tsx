@@ -130,7 +130,7 @@ export default function AdminDishesPage() {
             if (isUpdating && editingDish.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
                 await storageService.deleteFile(editingDish.imageUrl);
             }
-            imageUrl = await storageService.uploadFile(values.image, `dishes/${companyId}/`);
+            imageUrl = await storageService.compressAndUploadFile(values.image, `dishes/${companyId}/`);
         } else if (imagePreview === null && isUpdating && editingDish.imageUrl) {
             await storageService.deleteFile(editingDish.imageUrl);
             imageUrl = "https://placehold.co/600x400.png";

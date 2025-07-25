@@ -88,7 +88,7 @@ export default function AdminProfilePage() {
     }));
   };
 
-  const handleImageChange = async (
+  const handleImageUpload = async (
     event: ChangeEvent<HTMLInputElement>,
     setImagePreview: React.Dispatch<React.SetStateAction<string | null>>,
     updateProfileData: (url: string) => void
@@ -98,23 +98,11 @@ export default function AdminProfilePage() {
 
     setImagePreview(URL.createObjectURL(file)); // Show local preview immediately
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     setIsSaving(true);
     try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Error al subir el archivo.');
-      }
-
-      updateProfileData(result.url); // Update profile data with the new URL
+      // Use the storage service to upload
+      const url = await storageService.compressAndUploadFile(file, 'logos/');
+      updateProfileData(url); // Update profile data with the new URL
       toast({
         title: "Imagen subida",
         description: "La nueva imagen se ha cargado correctamente. Guarda los cambios para aplicarla.",
@@ -314,7 +302,7 @@ export default function AdminProfilePage() {
                         type="file" 
                         className="hidden" 
                         accept="image/jpeg,image/png,image/webp" 
-                        onChange={(e) => handleImageChange(e, setLogoPreview, (url) => setProfileData(p => ({...p, logoUrl: url})))}
+                        onChange={(e) => handleImageUpload(e, setLogoPreview, (url) => setProfileData(p => ({...p, logoUrl: url})))}
                         disabled={!isEditing}
                     />
                   </Label>
@@ -428,7 +416,7 @@ export default function AdminProfilePage() {
                             <Label htmlFor="nequiQrUpload" className={`cursor-pointer ${!isEditing && 'cursor-not-allowed opacity-50'}`}>
                                 <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
                                 <Input id="nequiQrUpload" type="file" className="hidden" accept="image/jpeg,image/png,image/webp" 
-                                       onChange={(e) => handleImageChange(e, setNequiQrPreview, (url) => handlePaymentMethodChange('nequi', 'qrCodeUrl', url))}
+                                       onChange={(e) => handleImageUpload(e, setNequiQrPreview, (url) => handlePaymentMethodChange('nequi', 'qrCodeUrl', url))}
                                        disabled={!isEditing} />
                             </Label>
                         </Button>
@@ -468,7 +456,7 @@ export default function AdminProfilePage() {
                             <Label htmlFor="daviplataQrUpload" className={`cursor-pointer ${!isEditing && 'cursor-not-allowed opacity-50'}`}>
                                 <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
                                 <Input id="daviplataQrUpload" type="file" className="hidden" accept="image/jpeg,image/png,image/webp" 
-                                       onChange={(e) => handleImageChange(e, setDaviplataQrPreview, (url) => handlePaymentMethodChange('daviplata', 'qrCodeUrl', url))} 
+                                       onChange={(e) => handleImageUpload(e, setDaviplataQrPreview, (url) => handlePaymentMethodChange('daviplata', 'qrCodeUrl', url))} 
                                        disabled={!isEditing} />
                             </Label>
                         </Button>
@@ -508,7 +496,7 @@ export default function AdminProfilePage() {
                             <Label htmlFor="bancolombiaQrUpload" className={`cursor-pointer ${!isEditing && 'cursor-not-allowed opacity-50'}`}>
                                 <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
                                 <Input id="bancolombiaQrUpload" type="file" className="hidden" accept="image/jpeg,image/png,image/webp" 
-                                       onChange={(e) => handleImageChange(e, setBancolombiaQrPreview, (url) => handlePaymentMethodChange('bancolombia', 'qrCodeUrl', url))}
+                                       onChange={(e) => handleImageUpload(e, setBancolombiaQrPreview, (url) => handlePaymentMethodChange('bancolombia', 'qrCodeUrl', url))}
                                        disabled={!isEditing} />
                             </Label>
                         </Button>
