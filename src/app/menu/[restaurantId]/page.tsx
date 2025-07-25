@@ -69,7 +69,7 @@ const useCart = (): CartStore => {
 };
 
 const defaultMenuStyles = {
-  primary_color: '#FF6600',
+  primary_color: '#FF4500',
   secondary_color: '#FFF6F0',
   text_color: '#222222',
   price_color: '#FF6600',
@@ -93,11 +93,9 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
   const [menuStyles, setMenuStyles] = React.useState(defaultMenuStyles);
 
   React.useEffect(() => {
-    // Usamos 'websapmax' como el ID canónico, ignorando el de la URL por ahora para asegurar que funcione.
     const effectiveRestaurantId = 'websapmax';
     
     if (!effectiveRestaurantId) {
-      console.error("ID de restaurante efectivo no definido.");
       setError("ID de restaurante no válido.");
       setIsLoading(false);
       return;
@@ -110,11 +108,10 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
         if (profileSnap.exists()) {
           setRestaurant(profileSnap.data() as Company);
         } else {
-          console.error("No se encontró el perfil del restaurante con ID:", effectiveRestaurantId);
           setError("No se pudo cargar la información del restaurante.");
         }
       } catch (e) {
-        console.error("Error cargando datos del restaurante:", e);
+        console.error("Error cargando perfil del restaurante:", e);
         setError("Error al cargar el perfil del restaurante.");
       }
     };
@@ -128,32 +125,19 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
         }
       } catch(e) {
         console.error("Error cargando estilos de menú:", e);
+        // No se establece error general, se usan los estilos por defecto
       }
     };
 
     const subscribeToDishes = () => {
       const q = query(collection(db, 'dishes'), where('companyId', '==', effectiveRestaurantId));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const dishesFromFS = snapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            name: data.name || '',
-            description: data.description || '',
-            price: typeof data.price === 'number' ? data.price : 0,
-            imageUrl: data.imageUrl || 'https://placehold.co/600x400.png',
-            stock: typeof data.stock === 'number' ? data.stock : -1,
-            likes: typeof data.likes === 'number' ? data.likes : 0,
-            category: data.category || 'Sin categoría',
-            isFeatured: data.isFeatured || false,
-          } as Dish;
-        });
+      return onSnapshot(q, (snapshot) => {
+        const dishesFromFS = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Dish));
         setDishes(dishesFromFS);
       }, (error) => {
         console.error("Error cargando platos:", error);
         setError("No se pudieron cargar los platos del menú.");
       });
-      return unsubscribe;
     };
     
     async function loadAllData() {
@@ -221,9 +205,9 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
         background: menuStyles.secondary_color,
         color: menuStyles.text_color,
         fontFamily: menuStyles.font_family,
-        fontSize: menuStyles.font_size,
-        minHeight: '100vh',
+        fontSize: `${menuStyles.font_size}px`,
       }}
+      className="min-h-screen"
     >
       <div className="absolute right-4 top-4 z-30">
         <Dialog open={cartOpen} onOpenChange={setCartOpen}>
@@ -272,11 +256,21 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
         </div>
 
         <div 
-          className={menuStyles.layout_style === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6' : menuStyles.layout_style === 'gallery' ? 'flex gap-4 overflow-x-auto pb-4' : 'flex flex-col gap-4'}
-          style={{ gap: menuStyles.spacing }}
+           className={
+             menuStyles.layout_style === 'grid' 
+             ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6' 
+             : menuStyles.layout_style === 'gallery'
+             ? 'flex gap-4 overflow-x-auto pb-4'
+             : 'space-y-4' // Layout de lista (original)
+           }
+           style={{ gap: `${menuStyles.spacing}px` }}
         >
           {filteredDishes.map((dish) => (
-            <DishItem key={dish.id} dish={dish} onAddToCart={() => cart.addItem(dish)} styles={menuStyles} />
+             <div key={dish.id} className={
+                menuStyles.layout_style === 'gallery' ? 'w-80 flex-shrink-0' : ''
+             }>
+                <DishItem dish={dish} onAddToCart={() => cart.addItem(dish)} styles={menuStyles} />
+            </div>
           ))}
           {filteredDishes.length === 0 && !isLoading && <p>No se encontraron platos en esta categoría.</p>}
         </div>
