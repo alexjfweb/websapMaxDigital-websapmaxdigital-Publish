@@ -124,44 +124,41 @@ export default function AdminDishesPage() {
     const isUpdating = !!editingDish;
   
     try {
-      // Validación de nombre duplicado
+      // Validación de nombre duplicado (mejorada)
       const normalizedNewName = values.name.trim().toLowerCase();
-      const isDuplicate = dishes.some(
-        (dish) =>
-          dish.name.trim().toLowerCase() === normalizedNewName &&
-          dish.id !== (editingDish?.id || '')
-      );
-  
-      if (isDuplicate) {
-        toast({
-          title: 'Error: Plato duplicado',
-          description: `Ya existe un plato con el nombre "${values.name}".`,
-          variant: 'destructive',
-        });
-        setIsSubmitting(false);
-        return;
+      const isNameChanged = !isUpdating || normalizedNewName !== editingDish.name.trim().toLowerCase();
+      
+      if (isNameChanged) {
+        const isDuplicate = dishes.some(
+          (dish) => dish.name.trim().toLowerCase() === normalizedNewName
+        );
+        if (isDuplicate) {
+          toast({
+            title: 'Error: Plato duplicado',
+            description: `Ya existe un plato con el nombre "${values.name}".`,
+            variant: 'destructive',
+          });
+          setIsSubmitting(false);
+          return;
+        }
       }
   
       let imageUrl = editingDish?.imageUrl || "https://placehold.co/600x400.png";
   
       // Lógica de subida de imagen
       if (values.image instanceof File) {
-        // Si es una imagen nueva, subirla y obtener la URL.
         const newUrl = await storageService.compressAndUploadFile(values.image, `dishes/${companyId}/`);
         if (newUrl) {
-          // Si había una imagen antigua que no era de placeholder, borrarla.
           if (editingDish?.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
             await storageService.deleteFile(editingDish.imageUrl);
           }
           imageUrl = newUrl;
         }
       } else if (isUpdating && !imagePreview && editingDish?.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
-        // Si se está editando y el usuario ha borrado la imagen (imagePreview es null)
         await storageService.deleteFile(editingDish.imageUrl);
         imageUrl = "https://placehold.co/600x400.png";
       }
       
-  
       const dishData = {
         companyId: companyId,
         name: values.name,
@@ -630,5 +627,3 @@ export default function AdminDishesPage() {
     </div>
   );
 }
-
-    
