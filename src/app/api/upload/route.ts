@@ -1,40 +1,31 @@
-
+// src/app/api/upload/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/lib/firebase';
-import { auth } from '@/lib/firebase'; // Corregido
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { auth } from '@/lib/firebase'; // Import auth to check for user if needed
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File | null;
+    const data = await req.formData();
+    const file = data.get('file') as File | null;
 
     if (!file) {
-      return NextResponse.json({ error: 'No se ha subido ningún archivo.' }, { status: 400 });
+      return NextResponse.json({ error: 'Archivo no recibido' }, { status: 400 });
     }
 
-    // Aquí podrías añadir una capa de autenticación si el endpoint es protegido
-    // Por ejemplo, verificando un token de sesión.
-    // const userId = "some-user-id"; // Obtener de la sesión
+    // Opcional: añadir validación de autenticación si es necesario
+    // if (!auth.currentUser) {
+    //   return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    // }
 
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `${Date.now()}.${fileExtension}`;
-    const storageRef = ref(storage, `uploads/${fileName}`);
+    // Usar una ruta más específica para evitar colisiones
+    const storageRef = ref(storage, `uploads/${Date.now()}-${file.name}`);
+    const snapshot = await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(snapshot.ref);
 
-    // Convertir el archivo a un ArrayBuffer para subirlo
-    const buffer = await file.arrayBuffer();
-    await uploadBytes(storageRef, buffer, {
-      contentType: file.type,
-    });
-
-    const downloadURL = await getDownloadURL(storageRef);
-
-    return NextResponse.json({ url: downloadURL }, { status: 200 });
-
-  } catch (error: any) {
-    console.error('Error en la subida del archivo:', error);
-    // Devolver un mensaje de error más específico
-    const errorMessage = error.code || error.message || 'Error interno del servidor al subir el archivo.';
-    return NextResponse.json({ error: `Error en el servidor: ${errorMessage}` }, { status: 500 });
+    return NextResponse.json({ url });
+  } catch (err: any) {
+    console.error('❌ /api/upload error:', err);
+    return NextResponse.json({ error: err.message || 'Error en el servidor al subir el archivo.' }, { status: 500 });
   }
 }

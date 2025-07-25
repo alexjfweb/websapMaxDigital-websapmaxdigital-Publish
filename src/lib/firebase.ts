@@ -1,39 +1,13 @@
 // src/lib/firebase.ts
-import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, type Auth } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore';
-import { getStorage, type FirebaseStorage } from "firebase/storage";
-import { getFirebaseConfig } from './firebase-config';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getStorage } from 'firebase/storage';
+import { getFirestore } from 'firebase/firestore';
+import { firebaseConfig } from './firebase-config';
 
-let app: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
-let storage: FirebaseStorage;
+// Asegura que la inicialización ocurra solo una vez.
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-// Esta función se asegura de que Firebase se inicialice solo una vez.
-const firebaseConfig = getFirebaseConfig();
-
-if (firebaseConfig) {
-    if (!getApps().length) {
-      try {
-        app = initializeApp(firebaseConfig);
-        console.log('✅ Firebase: Inicializado por primera vez.');
-      } catch (error) {
-        console.error('❌ Firebase: Error fatal durante la inicialización.', error);
-        // En un caso real, podrías querer manejar este error de una forma más visible.
-      }
-    } else {
-      app = getApp();
-      console.log('✅ Firebase: Usando instancia existente.');
-    }
-
-    auth = getAuth(app);
-    db = getFirestore(app);
-    storage = getStorage(app);
-} else {
-    console.warn("⚠️ Firebase: La configuración no está disponible, la inicialización se omite.");
-    // app, auth, db y storage permanecerán sin inicializar
-}
-
-
-export { app, auth, db, storage };
+export const auth = getAuth(app);
+export const storage = getStorage(app);
+export const db = getFirestore(app);
