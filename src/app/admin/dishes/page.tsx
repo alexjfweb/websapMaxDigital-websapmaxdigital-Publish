@@ -143,16 +143,17 @@ export default function AdminDishesPage() {
   
     try {
       let imageUrl = isUpdating ? editingDish.imageUrl : "https://placehold.co/600x400.png";
-  
-      // La subida de imagen solo ocurre si se ha seleccionado un nuevo archivo.
-      const uploadedUrl = await storageService.compressAndUploadFile(values.image, `dishes/${companyId}/`);
       
-      if (uploadedUrl) {
-          // Si se subió una nueva imagen y estábamos editando, borramos la antigua si no es un placeholder.
-          if (isUpdating && editingDish.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
-              await storageService.deleteFile(editingDish.imageUrl);
-          }
-          imageUrl = uploadedUrl;
+      // La subida de imagen solo ocurre si se ha seleccionado un nuevo archivo.
+      if (values.image instanceof File) {
+        const uploadedUrl = await storageService.compressAndUploadFile(values.image, `dishes/${companyId}/`);
+        if (uploadedUrl) {
+            // Si se subió una nueva imagen y estábamos editando, borramos la antigua si no es un placeholder.
+            if (isUpdating && editingDish.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
+                await storageService.deleteFile(editingDish.imageUrl);
+            }
+            imageUrl = uploadedUrl;
+        }
       } else if (isUpdating && !imagePreview && editingDish.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
           // El usuario eliminó la imagen existente sin subir una nueva.
           await storageService.deleteFile(editingDish.imageUrl);
