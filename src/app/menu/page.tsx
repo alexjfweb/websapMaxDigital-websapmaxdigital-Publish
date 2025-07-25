@@ -82,7 +82,7 @@ const defaultMenuStyles = {
   spacing: 16,
 };
 
-const RESTAURANT_ID = 'websapmax';
+const RESTAURANT_ID = 'websapmax-1';
 
 export default function MenuPage() {
   const [restaurant, setRestaurant] = React.useState<RestaurantProfile | null>(null);
