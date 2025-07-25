@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Dish, DishFormData } from "@/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, Timestamp, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { useDishes } from "@/hooks/use-dishes";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -128,7 +128,7 @@ export default function AdminDishesPage() {
     const isDuplicate = dishes.some(
       (dish) =>
         dish.name.trim().toLowerCase() === normalizedNewName &&
-        dish.id !== editingDish?.id
+        dish.id !== (editingDish?.id || '')
     );
 
     if (isDuplicate) {
@@ -628,4 +628,3 @@ export default function AdminDishesPage() {
     </div>
   );
 }
-
