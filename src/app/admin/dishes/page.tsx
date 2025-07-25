@@ -122,6 +122,24 @@ export default function AdminDishesPage() {
   const onSubmit = async (values: DishFormData) => {
     setIsSubmitting(true);
     const isUpdating = !!editingDish;
+
+    // Validación de nombre duplicado
+    const normalizedNewName = values.name.trim().toLowerCase();
+    const isDuplicate = dishes.some(
+      (dish) =>
+        dish.name.trim().toLowerCase() === normalizedNewName &&
+        dish.id !== editingDish?.id
+    );
+
+    if (isDuplicate) {
+      toast({
+        title: 'Error: Plato duplicado',
+        description: `Ya existe un plato con el nombre "${values.name}". Por favor, elige un nombre diferente.`,
+        variant: 'destructive',
+      });
+      setIsSubmitting(false);
+      return;
+    }
   
     try {
       let imageUrl = isUpdating ? editingDish.imageUrl : "https://placehold.co/600x400.png";
@@ -609,3 +627,4 @@ export default function AdminDishesPage() {
     </div>
   );
 }
+

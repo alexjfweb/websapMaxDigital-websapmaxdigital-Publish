@@ -2,21 +2,16 @@
 
 import * as React from 'react';
 import Image from 'next/image';
-import { mockRestaurantProfile, mockDishes } from '@/lib/mock-data';
-import type { Dish, CartItem } from '@/types';
+import type { RestaurantProfile, Dish, CartItem } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Smartphone, CreditCard, LoaderCircle, ShoppingCart } from 'lucide-react';
+import { LoaderCircle, ShoppingCart } from 'lucide-react';
 import RestaurantInfoDisplay from '@/components/menu/restaurant-info-display';
-import OrderForm from '@/components/forms/order-form';
-import ReservationForm from '@/components/forms/reservation-form';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DishItem from '@/components/menu/dish-item';
 import CartCheckout from '@/components/menu/cart-checkout';
 import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, getDoc, where } from 'firebase/firestore';
 
 // Cart Hook (simple version for now)
 interface CartStore {
@@ -89,7 +84,7 @@ const defaultMenuStyles = {
 const RESTAURANT_ID = 'websapmax';
 
 export default function MenuPage() {
-  const restaurant = mockRestaurantProfile;
+  const [restaurant, setRestaurant] = React.useState<RestaurantProfile | null>(null);
   const [dishes, setDishes] = React.useState<Dish[]>([]);
   const cart = useCart();
   const [isMounted, setIsMounted] = React.useState(false);
@@ -98,15 +93,22 @@ export default function MenuPage() {
 
   React.useEffect(() => {
     setIsMounted(true);
-    // Leer todos los platos de Firestore sin filtrar por companyId
-    const q = query(collection(db, 'dishes'));
+    
+    // Leer perfil del restaurante
+    const fetchRestaurantProfile = async () => {
+        const docRef = doc(db, 'companies', 'websapmax-1'); // Hardcoded ID for now
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            setRestaurant(docSnap.data() as RestaurantProfile);
+        }
+    };
+    fetchRestaurantProfile();
+    
+    // Leer todos los platos de Firestore del restaurante
+    const q = query(collection(db, 'dishes'), where('companyId', '==', 'websapmax-1'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log('📊 Firestore snapshot:', snapshot.docs.length, 'documentos encontrados');
-      
       const dishesFS = snapshot.docs.map(doc => {
         const data = doc.data();
-        console.log('🍽️ Plato encontrado:', doc.id, data);
-        
         return {
           id: doc.id,
           name: data.name || '',
@@ -119,8 +121,6 @@ export default function MenuPage() {
           isFeatured: data.isFeatured || false,
         };
       });
-      
-      console.log('✅ Platos procesados:', dishesFS.length, dishesFS);
       setDishes(dishesFS);
     });
     return () => unsubscribe();
@@ -164,7 +164,7 @@ export default function MenuPage() {
     return dishes.filter(dish => dish.category === selectedCategory);
   }, [dishes, selectedCategory]);
 
-  if (!isMounted) {
+  if (!isMounted || !restaurant) {
     return (
         <div className="flex min-h-[calc(100vh-theme(spacing.16))] w-full items-center justify-center bg-background">
             <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
