@@ -9,17 +9,24 @@ import WhatsAppIcon from "@/components/icons/whatsapp-icon";
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { useSession } from "@/contexts/session-context";
 
 export default function AdminShareMenuPage() {
   const { toast } = useToast();
   const [menuUrl, setMenuUrl] = useState('');
   const [openCopiedModal, setOpenCopiedModal] = useState(false);
+  const { currentUser } = useSession();
+
+  // En un entorno real, el ID del restaurante vendría del usuario actual o de un contexto.
+  // Usamos un ID fijo para este ejemplo.
+  const restaurantId = 'websapmax-1'; 
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setMenuUrl(window.location.origin + "/menu");
+      // Construir la URL dinámica correcta
+      setMenuUrl(`${window.location.origin}/menu/${restaurantId}`);
     }
-  }, []);
+  }, [restaurantId]);
 
 
   const handleCopyToClipboard = () => {
