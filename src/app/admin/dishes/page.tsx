@@ -143,7 +143,7 @@ export default function AdminDishesPage() {
         }
       }
   
-      let imageUrl = editingDish?.imageUrl || "https://placehold.co/600x400.png";
+      let imageUrl = editingDish?.imageUrl || "https://placehold.co/800x450.png";
   
       // Lógica de subida de imagen
       if (values.image instanceof File) {
@@ -156,7 +156,7 @@ export default function AdminDishesPage() {
         }
       } else if (isUpdating && !imagePreview && editingDish?.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
         await storageService.deleteFile(editingDish.imageUrl);
-        imageUrl = "https://placehold.co/600x400.png";
+        imageUrl = "https://placehold.co/800x450.png";
       }
       
       const dishData = {

@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -53,7 +54,7 @@ class DishService {
           name: data.name,
           description: data.description || '',
           price: data.price,
-          imageUrl: data.imageUrl || 'https://placehold.co/600x400.png',
+          imageUrl: data.imageUrl || 'https://placehold.co/800x450.png',
           stock: data.stock ?? -1,
           likes: data.likes ?? 0,
           category: data.category || 'Sin categoría',
