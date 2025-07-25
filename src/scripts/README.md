@@ -9,11 +9,10 @@ Este directorio contiene scripts útiles para poblar la base de datos con datos 
 - **Propósito**: Crea un conjunto de platos de ejemplo (`Entradas`, `Platos Fuertes`, `Postres`, `Bebidas`) para una compañía específica en Firestore.
 - **Utilidad**: Ideal para administradores de nuevos restaurantes que necesitan ver cómo funciona la gestión de platos sin tener que crearlos manualmente desde cero. Ayuda a visualizar rápidamente la interfaz de platos con datos reales.
 - **Uso**:
-    1.  Navega a la página de gestión de platos en el panel de administración.
-    2.  Abre la consola del navegador (F12 o `Cmd+Option+I`).
-    3.  Copia el contenido del archivo y pégalo en la consola.
-    4.  Ejecuta la función `createSampleDishes()`.
-    *Nota: Este script requiere que la instancia de Firestore (`db`) esté expuesta en el objeto `window` para funcionar.*
+    ```bash
+    npm run seed:dishes
+    ```
+    *Nota: Este script se ejecuta con Node.js y cargará las variables de entorno de tu archivo `.env.local` automáticamente.*
 
 ### 2. `create-sample-plans.js`
 

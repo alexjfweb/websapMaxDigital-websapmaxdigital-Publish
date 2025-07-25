@@ -1,11 +1,38 @@
-"use client";
+// src/scripts/create-sample-dishes.js
 
-// Script para crear platos de ejemplo en Firestore.
-// Para usarlo:
-// 1. Ve a la página de gestión de platos en el panel de administración.
-// 2. Abre la consola del navegador (F12 o Cmd+Option+I).
-// 3. Pega el contenido de este archivo en la consola y presiona Enter.
-// 4. Llama a la función `createSampleDishes()` para iniciar la creación.
+// Este script se ejecuta con Node.js para poblar la base de datos con platos de ejemplo.
+// Uso: npm run seed:dishes
+
+// Importar las funciones necesarias de Firebase
+const { initializeApp } = require('firebase/app');
+const { getFirestore, collection, addDoc, serverTimestamp, getDocs, query, where } = require('firebase/firestore');
+const dotenv = require('dotenv');
+const path = require('path');
+
+// Cargar variables de entorno desde .env.local
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+
+// Configuración de Firebase (debe coincidir con la de tu app)
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
+
+// Validar que la configuración esté completa
+if (!firebaseConfig.projectId) {
+    console.error("❌ Error: No se pudo cargar la configuración de Firebase desde las variables de entorno.");
+    console.error("Asegúrate de que el archivo .env.local existe y contiene las variables NEXT_PUBLIC_FIREBASE_*");
+    process.exit(1);
+}
+
+
+// Inicializar Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 const companyId = 'websapmax'; // ID de la compañía para la que se crearán los platos
 
@@ -70,21 +97,23 @@ const sampleDishes = [
 async function createSampleDishes() {
   console.log('🚀 Iniciando creación de platos de ejemplo...');
 
-  // Esto requiere que tengas `db` (la instancia de Firestore) disponible en el contexto de la ventana.
-  // Asegúrate de que tu aplicación exponga `db` a `window` para poder usar este script,
-  // por ejemplo: `window.db = db;` en algún lugar de tu código de inicialización de Firebase.
-  if (typeof window.db === 'undefined') {
-    console.error('❌ Error: La instancia de Firestore `db` no está disponible en `window`.');
-    console.log('Asegúrate de exponerla para poder usar este script de prueba.');
-    return;
-  }
-  const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
-
+  const dishesCollection = collection(db, 'dishes');
   let successCount = 0;
   let errorCount = 0;
+  let skippedCount = 0;
 
   for (const dish of sampleDishes) {
     try {
+      // Verificar si un plato con el mismo nombre ya existe para esta compañía
+      const q = query(dishesCollection, where('name', '==', dish.name), where('companyId', '==', companyId));
+      const existingDishes = await getDocs(q);
+
+      if (!existingDishes.empty) {
+        console.log(`🟡 Plato "${dish.name}" ya existe. Omitiendo.`);
+        skippedCount++;
+        continue;
+      }
+
       const dishData = {
         ...dish,
         companyId: companyId,
@@ -92,25 +121,28 @@ async function createSampleDishes() {
         updatedAt: serverTimestamp(),
       };
       
-      await addDoc(collection(window.db, 'dishes'), dishData);
+      await addDoc(dishesCollection, dishData);
       console.log(`✅ Plato "${dish.name}" creado exitosamente.`);
       successCount++;
     } catch (error) {
       console.error(`❌ Error creando plato "${dish.name}":`, error);
       errorCount++;
     }
-    // Pequeña pausa para no sobrecargar Firestore
-    await new Promise(resolve => setTimeout(resolve, 200));
   }
 
   console.log('🎉 Proceso completado!');
   console.log(`👍 Platos creados: ${successCount}`);
+  console.log(`🟡 Platos omitidos (ya existían): ${skippedCount}`);
   if (errorCount > 0) {
     console.log(`👎 Errores: ${errorCount}`);
   }
 }
 
-// Para facilitar el uso, puedes adjuntar la función a la ventana
-window.createSampleDishes = createSampleDishes;
-
-console.log('💡 Script de platos de ejemplo cargado. Llama a `createSampleDishes()` para ejecutarlo.');
+// Ejecutar la función principal y luego salir del proceso
+createSampleDishes().then(() => {
+    console.log("Script finalizado.");
+    process.exit(0);
+}).catch(error => {
+    console.error("El script falló con un error:", error);
+    process.exit(1);
+});
