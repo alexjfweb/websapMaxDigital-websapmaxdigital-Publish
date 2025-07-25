@@ -58,9 +58,14 @@ class StorageService {
 
     } catch (error: any) {
       console.error("❌ Error al subir el archivo a Firebase Storage:", error);
-      console.error("Error Code:", error.code);
-      console.error("Server Response:", error.serverResponse);
-      throw new Error(error.message || "No se pudo subir el archivo.");
+      
+      // Logueo mejorado para obtener más detalles del error real
+      if (error.serverResponse) {
+        console.error("Respuesta del servidor de Firebase:", error.serverResponse);
+      }
+      
+      // Lanzar un error más específico para que el frontend lo pueda manejar
+      throw new Error(`Error al subir: ${error.code || error.message}`);
     }
   }
 
