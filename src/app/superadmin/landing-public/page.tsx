@@ -1,6 +1,7 @@
+
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ChangeEvent } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,16 +24,19 @@ import {
   MoveDown,
   Palette,
   Type,
-  Image as ImageIcon,
+  ImageIcon,
   Settings,
-  Globe
+  Globe,
+  UploadCloud
 } from 'lucide-react';
+import Image from 'next/image';
 
 export default function LandingPublicPage() {
   const { config, isLoading, updateConfig } = useLandingConfig();
   const defaultConfig = useDefaultConfig();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState<Record<string, boolean>>({});
 
   const [formData, setFormData] = useState(defaultConfig);
   const [activeTab, setActiveTab] = useState('hero');
@@ -53,22 +57,8 @@ export default function LandingPublicPage() {
         heroButtonColor: config.heroButtonColor,
         heroAnimation: config.heroAnimation,
         sections: config.sections.map(s => ({
-          type: s.type,
-          title: s.title,
-          subtitle: s.subtitle || '',
-          content: s.content,
-          backgroundColor: s.backgroundColor,
-          textColor: s.textColor,
-          buttonColor: s.buttonColor,
-          buttonText: s.buttonText,
-          buttonUrl: s.buttonUrl || '',
-          imageUrl: s.imageUrl || '',
-          order: s.order,
-          isActive: s.isActive,
-          animation: s.animation,
-          seoTitle: s.seoTitle || '',
-          seoDescription: s.seoDescription || '',
-          seoKeywords: s.seoKeywords || []
+          ...s,
+          subsections: s.subsections || []
         })),
         seo: config.seo
       });
@@ -97,6 +87,56 @@ export default function LandingPublicPage() {
     }
   };
 
+  const handleSubsectionImageUpload = async (e: ChangeEvent<HTMLInputElement>, sectionIndex: number, subIndex: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const subsectionId = formData.sections[sectionIndex].subsections![subIndex].id;
+    setUploading(prev => ({ ...prev, [subsectionId]: true }));
+
+    try {
+      const formDataApi = new FormData();
+      formDataApi.append('file', file);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formDataApi,
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al subir la imagen.');
+      }
+
+      const { url } = await response.json();
+      
+      updateSubsection(sectionIndex, subIndex, 'imageUrl', url);
+
+      toast({
+        title: "Imagen subida",
+        description: "La imagen se ha subido correctamente.",
+      });
+
+    } catch (error) {
+      toast({
+        title: "Error de subida",
+        description: "No se pudo subir la imagen.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(prev => ({ ...prev, [subsectionId]: false }));
+    }
+  };
+  
+  const updateSubsection = (sectionIndex: number, subIndex: number, field: string, value: any) => {
+     setFormData(prev => {
+      const newSections = [...prev.sections];
+      const newSubsections = [...(newSections[sectionIndex].subsections || [])];
+      newSubsections[subIndex] = { ...newSubsections[subIndex], [field]: value };
+      newSections[sectionIndex] = { ...newSections[sectionIndex], subsections: newSubsections };
+      return { ...prev, sections: newSections };
+    });
+  };
+
   const addSection = () => {
     const newSection: Omit<LandingSection, 'id'> = {
       type: 'features',
@@ -114,12 +154,13 @@ export default function LandingPublicPage() {
       animation: 'fadeIn',
       seoTitle: '',
       seoDescription: '',
-      seoKeywords: []
+      seoKeywords: [],
+      subsections: [],
     };
 
     setFormData(prev => ({
       ...prev,
-      sections: [...prev.sections, newSection]
+      sections: [...prev.sections, { ...newSection, id: `section-${Date.now()}` }]
     }));
   };
 
@@ -576,50 +617,61 @@ export default function LandingPublicPage() {
 
                         {/* SubSecciones (Cards/Columnas) */}
                         <div className="mt-6">
-                          <Label className="mb-2 block">Subsecciones</Label>
-                          <div className="flex flex-wrap gap-4">
+                          <Label className="mb-2 block font-semibold">Subsecciones</Label>
+                          <div className="space-y-4">
                             {section.subsections && section.subsections.length > 0 && section.subsections.map((sub, subIdx) => (
-                              <Card key={sub.id} className="w-64 p-2 relative">
-                                <Button size="xs" variant="ghost" className="absolute top-2 right-2" onClick={() => {
+                              <Card key={sub.id} className="p-3 relative overflow-visible">
+                                <Button size="sm" variant="ghost" className="absolute top-1 right-1 h-6 w-6 p-0" onClick={() => {
                                   const newSubs = section.subsections!.filter((_, i) => i !== subIdx);
                                   updateSection(index, 'subsections', newSubs);
-                                }}>Eliminar</Button>
-                                <Input
-                                  className="mb-1"
-                                  value={sub.title}
-                                  onChange={e => {
-                                    const newSubs = [...section.subsections!];
-                                    newSubs[subIdx] = { ...newSubs[subIdx], title: e.target.value };
-                                    updateSection(index, 'subsections', newSubs);
-                                  }}
-                                  placeholder="Título"
-                                />
-                                <Textarea
-                                  className="mb-1"
-                                  value={sub.content}
-                                  onChange={e => {
-                                    const newSubs = [...section.subsections!];
-                                    newSubs[subIdx] = { ...newSubs[subIdx], content: e.target.value };
-                                    updateSection(index, 'subsections', newSubs);
-                                  }}
-                                  placeholder="Contenido"
-                                />
-                                <Input
-                                  className="mb-1"
-                                  value={sub.imageUrl || ''}
-                                  onChange={e => {
-                                    const newSubs = [...section.subsections!];
-                                    newSubs[subIdx] = { ...newSubs[subIdx], imageUrl: e.target.value };
-                                    updateSection(index, 'subsections', newSubs);
-                                  }}
-                                  placeholder="URL de imagen"
-                                />
+                                }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <Input
+                                      value={sub.title}
+                                      onChange={e => updateSubsection(index, subIdx, 'title', e.target.value)}
+                                      placeholder="Título de la subsección"
+                                    />
+                                    <Textarea
+                                      value={sub.content}
+                                      onChange={e => updateSubsection(index, subIdx, 'content', e.target.value)}
+                                      placeholder="Contenido de la subsección"
+                                      rows={3}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Imagen</Label>
+                                    <div className="flex items-center gap-2">
+                                      <Image 
+                                        src={sub.imageUrl || "https://placehold.co/100x100.png?text=Sub"}
+                                        alt="Vista previa de subsección"
+                                        width={64}
+                                        height={64}
+                                        className="rounded-md border object-cover h-16 w-16"
+                                      />
+                                      <Button variant="outline" asChild size="sm">
+                                        <label htmlFor={`sub-img-${sub.id}`} className="cursor-pointer">
+                                          <UploadCloud className="mr-2 h-4 w-4"/> 
+                                          {uploading[sub.id] ? "Subiendo..." : "Subir"}
+                                          <input 
+                                            id={`sub-img-${sub.id}`}
+                                            type="file"
+                                            className="hidden"
+                                            accept="image/*"
+                                            onChange={(e) => handleSubsectionImageUpload(e, index, subIdx)}
+                                            disabled={uploading[sub.id]}
+                                          />
+                                        </label>
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
                               </Card>
                             ))}
                             <Button size="sm" variant="outline" onClick={() => {
                               const newSub = { id: `sub-${Date.now()}`, title: '', content: '', imageUrl: '' };
                               updateSection(index, 'subsections', [...(section.subsections || []), newSub]);
-                            }}>Agregar subsección</Button>
+                            }}><Plus className="mr-2 h-4 w-4"/>Agregar subsección</Button>
                           </div>
                         </div>
                       </CardContent>
@@ -885,4 +937,4 @@ export default function LandingPublicPage() {
       </div>
     </div>
   );
-} 
+}
