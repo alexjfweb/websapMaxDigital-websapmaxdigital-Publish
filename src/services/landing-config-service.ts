@@ -1,3 +1,4 @@
+
 // src/services/landing-config-service.ts
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -136,13 +137,19 @@ class LandingConfigService {
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-      // Combina los datos de la DB con los por defecto para asegurar que no falten campos
       const dbData = docSnap.data();
+      const defaultConfig = this.getDefaultConfig();
+      
+      // Mapear secciones asegurando que `subsections` exista.
+      const sections = (dbData.sections && Array.isArray(dbData.sections))
+        ? dbData.sections.map((s: any) => ({ ...s, subsections: s.subsections || [] }))
+        : defaultConfig.sections;
+
       return {
-        ...this.getDefaultConfig(),
+        ...defaultConfig,
         ...dbData,
-        seo: { ...this.getDefaultConfig().seo, ...dbData.seo },
-        sections: Array.isArray(dbData.sections) ? dbData.sections : this.getDefaultConfig().sections,
+        seo: { ...defaultConfig.seo, ...dbData.seo },
+        sections,
       };
     } else {
       console.log("No se encontró configuración de landing. Creando una por defecto.");
