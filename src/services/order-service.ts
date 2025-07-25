@@ -56,7 +56,7 @@ class OrderService {
       const q = query(
         coll,
         where('restaurantId', '==', companyId),
-        orderBy('fecha', 'desc') 
+        orderBy('date', 'desc') 
       );
 
       const querySnapshot = await getDocs(q);
@@ -69,16 +69,16 @@ class OrderService {
         
         if (
           !data.cliente?.nombre ||
-          !data.fecha ||
+          !data.date ||
           data.total === undefined ||
           typeof data.total !== 'number' ||
-          !data.estado
+          !data.status
         ) {
           console.warn(`[WARN] Documento de pedido ${doc.id} omitido por datos incompletos o inválidos (cliente, fecha, total o estado).`);
           return;
         }
 
-        const date = this.parseTimestamp(data.fecha);
+        const date = this.parseTimestamp(data.date);
         const productos = Array.isArray(data.productos) ? data.productos : [];
 
         orders.push({
@@ -87,7 +87,7 @@ class OrderService {
           date: date.toISOString(), // Mantenemos string para la API, el hook se encargará de convertir
           items: productos.reduce((sum: number, item: any) => sum + (item.cantidad || 0), 0),
           total: data.total,
-          status: data.estado,
+          status: data.status,
           type: data.mesa ? 'dine-in' : 'delivery',
           restaurantId: data.restaurantId,
           productos: productos,
