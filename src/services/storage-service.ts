@@ -1,43 +1,55 @@
+
 // src/services/storage-service.ts
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { app } from '@/lib/firebase';
+import imageCompression from 'browser-image-compression';
 
 const storage = getStorage(app);
 
 class StorageService {
-  constructor() {
-    if (!storage) {
-        throw new Error("Firebase Storage no está inicializado. Revisa tu configuración en .env.local");
-    }
-  }
   /**
-   * Sube un archivo a Firebase Storage.
-   * @param file El archivo a subir.
+   * Comprime y sube un archivo a Firebase Storage directamente desde el cliente.
+   * @param file El archivo original a subir.
    * @param path La ruta en Storage donde se guardará el archivo (ej. 'dishes/').
    * @returns La URL de descarga pública del archivo.
    */
-  async uploadFile(file: File, path: string): Promise<string> {
+  async compressAndUploadFile(file: File, path: string): Promise<string> {
     if (!file) {
       throw new Error("No se proporcionó ningún archivo para subir.");
     }
 
-    const fileExtension = file.name.split('.').pop();
+    // Opciones de compresión
+    const options = {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1080,
+      useWebWorker: true,
+    };
+
+    console.log(`Comprimiendo imagen: ${file.name}, tamaño original: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+    const compressedFile = await imageCompression(file, options);
+    console.log(`Imagen comprimida: ${compressedFile.name}, nuevo tamaño: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
+
+    const fileExtension = compressedFile.name.split('.').pop();
     const fileName = `${Date.now()}.${fileExtension}`;
-    const fileRef = ref(storage, `${path}${fileName}`);
+    const finalPath = `${path}${fileName}`;
+    const fileRef = ref(storage, finalPath);
     
     try {
-      const snapshot = await uploadBytes(fileRef, file);
+      const snapshot = await uploadBytes(fileRef, compressedFile);
       const downloadURL = await getDownloadURL(snapshot.ref);
       console.log(`✅ Archivo subido exitosamente a: ${downloadURL}`);
       return downloadURL;
     } catch (error: any) {
       console.error("❌ Error al subir el archivo a Firebase Storage:", error);
-      if (error.code === 'storage/unauthorized' || (error.message && error.message.includes('CORS'))) {
-        console.error("   - Causa probable: Problema de CORS. Revisa la configuración del bucket en Google Cloud.");
-        throw new Error("Error de permisos al subir archivo. Revisa la configuración CORS de tu bucket de Firebase Storage y asegúrate de que tu dominio esté permitido.");
+      if (error.code === 'storage/unauthorized') {
+        throw new Error("Permiso denegado. Revisa las reglas de seguridad de Firebase Storage.");
       }
       throw new Error("No se pudo subir el archivo.");
     }
+  }
+  
+  async uploadFile(file: File, path: string): Promise<string> {
+    return this.compressAndUploadFile(file, path);
   }
 
   /**

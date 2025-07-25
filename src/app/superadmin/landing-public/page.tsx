@@ -14,7 +14,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { useLandingConfig, useDefaultConfig } from '@/hooks/use-landing-config';
-import { LandingSection, landingConfigService } from '@/services/landing-config-service';
+import { LandingSection, LandingConfig } from '@/services/landing-config-service';
+import { storageService } from '@/services/storage-service';
 import { 
   Save, 
   Eye, 
@@ -27,7 +28,8 @@ import {
   ImageIcon,
   Settings,
   Globe,
-  UploadCloud
+  UploadCloud,
+  Loader2
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -38,7 +40,7 @@ export default function LandingPublicPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
 
-  const [formData, setFormData] = useState(defaultConfig);
+  const [formData, setFormData] = useState<LandingConfig>(defaultConfig);
   const [activeTab, setActiveTab] = useState('hero');
   const [previewMode, setPreviewMode] = useState(false);
 
@@ -46,28 +48,21 @@ export default function LandingPublicPage() {
   useEffect(() => {
     if (config) {
       setFormData({
-        title: config.title,
-        description: config.description,
-        heroTitle: config.heroTitle,
-        heroSubtitle: config.heroSubtitle,
-        heroButtonText: config.heroButtonText,
-        heroButtonUrl: config.heroButtonUrl,
-        heroBackgroundColor: config.heroBackgroundColor,
-        heroTextColor: config.heroTextColor,
-        heroButtonColor: config.heroButtonColor,
-        heroAnimation: config.heroAnimation,
+        ...defaultConfig, // Asegura que todos los campos por defecto estén presentes
+        ...config,
         sections: config.sections.map(s => ({
           ...s,
           subsections: s.subsections || []
         })),
-        seo: config.seo
+        seo: { ...defaultConfig.seo, ...config.seo }
       });
     }
-  }, [config]);
+  }, [config, defaultConfig]);
 
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Directamente usamos la función de SWR que ya maneja la lógica de actualización
       await updateConfig({
         ...formData
       });
@@ -94,7 +89,7 @@ export default function LandingPublicPage() {
     // --- Validación del archivo ---
     const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    const maxSize = 2 * 1024 * 1024; // 2MB
+    const maxSize = 5 * 1024 * 1024; // 5MB
 
     if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
       toast({
@@ -108,7 +103,7 @@ export default function LandingPublicPage() {
     if (file.size > maxSize) {
       toast({
         title: "Archivo demasiado grande",
-        description: "La imagen no puede pesar más de 2MB.",
+        description: "La imagen no puede pesar más de 5MB antes de la compresión.",
         variant: "destructive",
       });
       return;
@@ -119,31 +114,20 @@ export default function LandingPublicPage() {
     setUploading(prev => ({ ...prev, [subsectionId]: true }));
 
     try {
-      const formDataApi = new FormData();
-      formDataApi.append('file', file);
-
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formDataApi,
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al subir la imagen.');
-      }
-
-      const { url } = await response.json();
+      toast({ title: "Comprimiendo imagen...", description: "Este proceso puede tardar unos segundos." });
+      const imageUrl = await storageService.compressAndUploadFile(file, `subsections/`);
       
-      updateSubsection(sectionIndex, subIndex, 'imageUrl', url);
+      updateSubsection(sectionIndex, subIndex, 'imageUrl', imageUrl);
 
       toast({
         title: "Imagen subida",
-        description: "La imagen se ha subido correctamente.",
+        description: "La imagen se ha subido y comprimido correctamente.",
       });
 
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error de subida",
-        description: "No se pudo subir la imagen.",
+        description: error.message || "No se pudo subir la imagen.",
         variant: "destructive",
       });
     } finally {
@@ -246,7 +230,7 @@ export default function LandingPublicPage() {
           <Button
             variant="outline"
             onClick={() => {
-              const defaultConfig = landingConfigService.getDefaultConfig();
+              const defaultConfig = useDefaultConfig();
               setFormData(prev => ({
                 ...prev,
                 sections: defaultConfig.sections
@@ -675,13 +659,13 @@ export default function LandingPublicPage() {
                                       />
                                       <Button variant="outline" asChild size="sm">
                                         <label htmlFor={`sub-img-${sub.id}`} className="cursor-pointer">
-                                          <UploadCloud className="mr-2 h-4 w-4"/> 
+                                          {uploading[sub.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}
                                           {uploading[sub.id] ? "Subiendo..." : "Subir"}
                                           <input 
                                             id={`sub-img-${sub.id}`}
                                             type="file"
                                             className="hidden"
-                                            accept="image/*"
+                                            accept="image/png, image/jpeg, image/jpg, image/webp"
                                             onChange={(e) => handleSubsectionImageUpload(e, index, subIdx)}
                                             disabled={uploading[sub.id]}
                                           />
