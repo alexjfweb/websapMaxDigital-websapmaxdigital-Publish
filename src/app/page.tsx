@@ -187,7 +187,7 @@ export default function LandingPage() {
               {section.subsections && section.subsections.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
                   {section.subsections.map(sub => (
-                    <Card key={sub.id} className="text-left bg-white shadow-lg hover:shadow-xl transition-shadow">
+                    <Card key={sub.id} className="text-left bg-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out hover:scale-105">
                       {sub.imageUrl && (
                         <CardHeader className="p-0">
                           <img src={sub.imageUrl} alt={sub.title} className="w-full h-40 object-cover rounded-t-lg" />
