@@ -1,10 +1,8 @@
 
 // src/services/storage-service.ts
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { app } from '@/lib/firebase';
+import { storage } from '@/lib/firebase';
 import imageCompression from 'browser-image-compression';
-
-const storage = getStorage(app);
 
 class StorageService {
   /**
