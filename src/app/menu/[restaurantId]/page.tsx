@@ -102,7 +102,8 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
 
     const fetchRestaurantProfile = async () => {
         try {
-            const docRef = doc(db, 'companies', restaurantId);
+            // Corrected collection from 'companies' to 'restaurant_profiles'
+            const docRef = doc(db, 'restaurant_profiles', restaurantId);
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
                 setRestaurant(docSnap.data() as RestaurantProfile);
