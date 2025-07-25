@@ -1,5 +1,5 @@
 // src/services/storage-service.ts
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { storage } from '@/lib/firebase';
 import imageCompression from 'browser-image-compression';
 
