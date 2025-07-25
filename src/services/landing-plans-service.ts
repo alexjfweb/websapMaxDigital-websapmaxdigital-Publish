@@ -673,3 +673,5 @@ class LandingPlansService {
 
 // Instancia singleton
 export const landingPlansService = new LandingPlansService();
+
+    
