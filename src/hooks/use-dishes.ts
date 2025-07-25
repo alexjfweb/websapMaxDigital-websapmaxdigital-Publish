@@ -18,7 +18,7 @@ export function useDishes(companyId: string) {
     companyId ? `/api/companies/${companyId}/dishes` : null,
     fetcher,
     {
-      revalidateOnFocus: false,
+      revalidateOnFocus: true, // Revalidar para mantener los datos frescos
     }
   );
 

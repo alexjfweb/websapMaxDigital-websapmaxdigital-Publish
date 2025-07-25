@@ -19,14 +19,14 @@ import { useToast } from "@/hooks/use-toast";
 import type { Dish, DishFormData } from "@/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { db, storage } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, Timestamp, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { useDishes } from "@/hooks/use-dishes";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storageService } from "@/services/storage-service";
 
 export default function AdminDishesPage() {
-  const companyId = 'websapmax-1'; // Hardcoded for now
+  const companyId = 'websapmax'; // Hardcoded for now
   const { dishes, isLoading, error, refreshDishes } = useDishes(companyId);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -129,7 +129,7 @@ export default function AdminDishesPage() {
       const isDuplicate = dishes.some(
         (dish) =>
           dish.name.trim().toLowerCase() === normalizedNewName &&
-          dish.id !== editingDish?.id
+          dish.id !== (editingDish?.id || '')
       );
   
       if (isDuplicate) {
@@ -144,21 +144,23 @@ export default function AdminDishesPage() {
   
       let imageUrl = editingDish?.imageUrl || "https://placehold.co/600x400.png";
   
+      // Lógica de subida de imagen
       if (values.image instanceof File) {
-        // Si hay una imagen antigua que no es de placeholder, bórrala.
-        if (editingDish?.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
-          await storageService.deleteFile(editingDish.imageUrl);
-        }
-        // Sube la nueva imagen.
+        // Si es una imagen nueva, subirla y obtener la URL.
         const newUrl = await storageService.compressAndUploadFile(values.image, `dishes/${companyId}/`);
         if (newUrl) {
+          // Si había una imagen antigua que no era de placeholder, borrarla.
+          if (editingDish?.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
+            await storageService.deleteFile(editingDish.imageUrl);
+          }
           imageUrl = newUrl;
         }
-      } else if (isUpdating && !imagePreview && editingDish.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
-        // Si el usuario borró la vista previa de una imagen existente.
+      } else if (isUpdating && !imagePreview && editingDish?.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
+        // Si se está editando y el usuario ha borrado la imagen (imagePreview es null)
         await storageService.deleteFile(editingDish.imageUrl);
         imageUrl = "https://placehold.co/600x400.png";
       }
+      
   
       const dishData = {
         companyId: companyId,
