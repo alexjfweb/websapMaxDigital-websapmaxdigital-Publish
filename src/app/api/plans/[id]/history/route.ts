@@ -1,17 +1,18 @@
+
 import { NextRequest, NextResponse } from 'next/server';
-import { plansService } from '@/services/plans-service';
+import { landingPlansService } from '@/services/landing-plans-service';
 
 // GET /api/plans/[id]/history - Obtener historial de un plan
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
     console.log(`📝 [API] GET /api/plans/${id}/history - Iniciando solicitud de historial`);
     
     // Verificar que el plan existe
-    const plan = await plansService.getPlanById(id);
+    const plan = await landingPlansService.getPlanById(id);
     if (!plan) {
       console.warn(`⚠️ [API] GET /api/plans/${id}/history - Plan no encontrado`);
       return NextResponse.json({
@@ -21,7 +22,7 @@ export async function GET(
       }, { status: 404 });
     }
     
-    const history = await plansService.getPlanHistory(id);
+    const history = await landingPlansService.getPlanAuditLogs(id);
     
     console.log(`✅ [API] GET /api/plans/${id}/history - ${history.length} entradas de historial obtenidas`);
     
@@ -40,4 +41,4 @@ export async function GET(
       timestamp: new Date()
     }, { status: 500 });
   }
-} 
+}

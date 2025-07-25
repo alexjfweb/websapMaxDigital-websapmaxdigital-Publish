@@ -1,17 +1,17 @@
+
 import { NextRequest, NextResponse } from 'next/server';
-import { plansService } from '@/services/plans-service';
-import { UpdatePlanRequest } from '@/types/plans';
+import { landingPlansService } from '@/services/landing-plans-service';
 
 // GET /api/plans/[id] - Obtener plan específico
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
     console.log(`📝 [API] GET /api/plans/${id} - Iniciando solicitud`);
     
-    const plan = await plansService.getPlanById(id);
+    const plan = await landingPlansService.getPlanById(id);
     
     if (!plan) {
       console.warn(`⚠️ [API] GET /api/plans/${id} - Plan no encontrado`);
@@ -44,15 +44,15 @@ export async function GET(
 // PUT /api/plans/[id] - Actualizar plan específico
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
     console.log(`📝 [API] PUT /api/plans/${id} - Iniciando actualización`);
     
     // Obtener datos del request
     const body = await request.json();
-    const planData: UpdatePlanRequest = body.plan;
+    const planData = body.plan;
     const userData = body.user;
     
     // Validar que el usuario sea superadmin
@@ -72,7 +72,7 @@ export async function PUT(
     
     console.log(`📝 [API] PUT /api/plans/${id} - Actualizando plan por ${userData.email}`);
     
-    const updatedPlan = await plansService.updatePlan(
+    const updatedPlan = await landingPlansService.updatePlan(
       id,
       planData,
       userData.id,
@@ -102,32 +102,23 @@ export async function PUT(
 // DELETE /api/plans/[id] - Eliminar plan específico
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
     console.log(`📝 [API] DELETE /api/plans/${id} - Iniciando eliminación`);
     
-    // Obtener datos del usuario desde headers o body
-    const userData = request.headers.get('x-user-data');
-    let user;
-    
-    try {
-      user = userData ? JSON.parse(userData) : null;
-    } catch {
-      // Intentar obtener del body si no está en headers
-      const body = await request.json().catch(() => ({}));
-      user = body.user;
-    }
+    const body = await request.json();
+    const { userId, userEmail } = body;
     
     // Validar que el usuario sea superadmin
-    if (!user || user.role !== 'superadmin') {
-      console.warn(`⚠️ [API] DELETE /api/plans/${id} - Usuario no autorizado:`, user?.email);
+    if (!userId || !userEmail) {
+      console.warn(`⚠️ [API] DELETE /api/plans/${id} - Faltan credenciales de usuario`);
       return NextResponse.json({
         success: false,
-        error: 'No tienes permisos para eliminar planes',
+        error: 'Se requieren credenciales de usuario para esta acción',
         timestamp: new Date()
-      }, { status: 403 });
+      }, { status: 400 });
     }
     
     // Obtener IP del cliente
@@ -135,12 +126,12 @@ export async function DELETE(
                      request.headers.get('x-real-ip') || 
                      'unknown';
     
-    console.log(`📝 [API] DELETE /api/plans/${id} - Eliminando plan por ${user.email}`);
+    console.log(`📝 [API] DELETE /api/plans/${id} - Eliminando plan por ${userEmail}`);
     
-    await plansService.deletePlan(
+    await landingPlansService.deletePlan(
       id,
-      user.id,
-      user.email,
+      userId,
+      userEmail,
       ipAddress
     );
     
@@ -160,4 +151,4 @@ export async function DELETE(
       timestamp: new Date()
     }, { status: 400 });
   }
-} 
+}

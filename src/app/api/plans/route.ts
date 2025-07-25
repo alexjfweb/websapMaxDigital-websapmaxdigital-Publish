@@ -1,13 +1,13 @@
+
 import { NextRequest, NextResponse } from 'next/server';
-import { plansService } from '@/services/plans-service';
-import { CreatePlanRequest } from '@/types/plans';
+import { landingPlansService } from '@/services/landing-plans-service';
 
 // GET /api/plans - Obtener todos los planes
 export async function GET(request: NextRequest) {
   try {
     console.log('📝 [API] GET /api/plans - Iniciando solicitud');
     
-    const plans = await plansService.getPlans();
+    const plans = await landingPlansService.getPlans();
     
     console.log(`✅ [API] GET /api/plans - ${plans.length} planes obtenidos`);
     
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     
     // Obtener datos del request
     const body = await request.json();
-    const planData: CreatePlanRequest = body.plan;
+    const planData = body.plan;
     const userData = body.user;
     
     // Validar que el usuario sea superadmin
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     
     console.log(`📝 [API] POST /api/plans - Creando plan "${planData.name}" por ${userData.email}`);
     
-    const newPlan = await plansService.createPlan(
+    const newPlan = await landingPlansService.createPlan(
       planData,
       userData.id,
       userData.email,
@@ -79,4 +79,4 @@ export async function POST(request: NextRequest) {
       timestamp: new Date()
     }, { status: 400 });
   }
-} 
+}

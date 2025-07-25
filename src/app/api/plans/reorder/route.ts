@@ -1,5 +1,6 @@
+
 import { NextRequest, NextResponse } from 'next/server';
-import { plansService } from '@/services/plans-service';
+import { landingPlansService } from '@/services/landing-plans-service';
 
 // POST /api/plans/reorder - Reordenar planes
 export async function POST(request: NextRequest) {
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
     
     console.log(`📝 [API] POST /api/plans/reorder - Reordenando ${planIds.length} planes por ${user.email}`);
     
-    await plansService.reorderPlans(planIds, user.id, user.email, ipAddress);
+    await landingPlansService.reorderPlans(planIds, user.id, user.email, ipAddress);
     
     console.log(`✅ [API] POST /api/plans/reorder - ${planIds.length} planes reordenados exitosamente`);
     
@@ -53,4 +54,4 @@ export async function POST(request: NextRequest) {
       timestamp: new Date()
     }, { status: 400 });
   }
-} 
+}

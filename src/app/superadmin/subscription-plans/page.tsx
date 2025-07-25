@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLandingPlans, useLandingPlansCRUD, usePlanState, usePlanAuditLogs } from '@/hooks/use-landing-plans';
-import { LandingPlan, CreatePlanRequest, UpdatePlanRequest } from '@/services/landing-plans-service';
+import { LandingPlan, CreatePlanRequest } from '@/services/landing-plans-service';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -61,7 +61,7 @@ const PERIODS = [
 ];
 
 export default function SubscriptionPlansPage() {
-  const { plans, isLoading } = useLandingPlans();
+  const { plans, isLoading, refetch } = useLandingPlans();
   const { createPlan, updatePlan, deletePlan, reorderPlans, isLoading: isCRUDLoading } = useLandingPlansCRUD();
   const { selectedPlan, isEditing, isCreating, startEditing, startCreating, cancelEdit } = usePlanState();
   const [selectedPlanForHistory, setSelectedPlanForHistory] = useState<string | null>(null);
@@ -150,7 +150,8 @@ export default function SubscriptionPlansPage() {
           description: "Plan creado correctamente"
         });
       }
-
+      
+      refetch();
       cancelEdit();
       resetForm();
     } catch (error: any) {
@@ -165,6 +166,7 @@ export default function SubscriptionPlansPage() {
   const handleDelete = async (plan: LandingPlan) => {
     try {
       await deletePlan(plan.id, currentUser.id, currentUser.email);
+      refetch();
       toast({
         title: "Éxito",
         description: "Plan eliminado correctamente"
@@ -191,6 +193,7 @@ export default function SubscriptionPlansPage() {
 
     try {
       await reorderPlans(newPlans.map(p => p.id), currentUser.id, currentUser.email);
+      refetch();
       toast({
         title: "Éxito",
         description: "Orden actualizado correctamente"
