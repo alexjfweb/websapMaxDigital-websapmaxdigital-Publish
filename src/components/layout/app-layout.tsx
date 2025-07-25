@@ -2,7 +2,6 @@
 "use client";
 
 import * as React from 'react';
-import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   SidebarProvider,
@@ -20,55 +19,21 @@ import { LogOut, Settings, UserCircle, LoaderCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import type { User } from '@/types';
-import { useToast } from '@/hooks/use-toast';
-
-const guestUser: User = {
-  id: 'guest',
-  username: 'guest',
-  email: 'guest@example.com',
-  name: 'Guest User',
-  avatarUrl: 'https://placehold.co/100x100.png?text=G',
-  role: 'guest',
-  status: 'active',
-  registrationDate: '2022-01-01T00:00:00Z',
-};
+import { useSession } from '@/contexts/session-context';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const pathname = usePathname(); 
-  const { toast } = useToast();
-  
-  const [currentUser, setCurrentUser] = useState<User>(guestUser);
-  const [isClient, setIsClient] = React.useState(false);
-
-  React.useEffect(() => {
-    setIsClient(true);
-    try {
-      const storedUser = localStorage.getItem('currentUser');
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        if (parsedUser && parsedUser.email && parsedUser.role) {
-          setCurrentUser(parsedUser);
-        }
-      }
-    } catch (error) {
-      console.error("Failed to parse user from localStorage", error);
-      localStorage.removeItem('currentUser');
-      setCurrentUser(guestUser);
-    }
-  }, []);
+  const pathname = usePathname();
+  const { currentUser, logout, isLoading } = useSession();
 
   const handleLogout = () => {
-    localStorage.removeItem('currentUser');
-    setCurrentUser(guestUser);
-    toast({ title: 'Cerrar sesión', description: 'Sesión cerrada correctamente' }); 
+    logout();
     router.push('/login');
   };
   
   const isSpecialPage = ['/login', '/register', '/'].includes(pathname);
 
-  if (!isClient) {
+  if (isLoading) {
     return (
         <div className="flex min-h-svh w-full items-center justify-center bg-background">
             <LoaderCircle className="h-8 w-8 animate-spin text-primary" />

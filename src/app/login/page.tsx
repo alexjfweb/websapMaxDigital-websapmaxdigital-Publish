@@ -19,6 +19,7 @@ import { toast } from "@/hooks/use-toast";
 import { LogIn } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import type { User, UserRole } from "@/types";
+import { useSession } from "@/contexts/session-context";
 
 const loginFormSchema = z.object({
   email: z.string().email({
@@ -37,6 +38,7 @@ const mockUsersCredentials: Record<string, { password: string; role: UserRole; n
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useSession();
   const form = useForm<z.infer<typeof loginFormSchema>>({
     resolver: zodResolver(loginFormSchema),
     defaultValues: {
@@ -60,7 +62,7 @@ export default function LoginPage() {
         registrationDate: new Date().toISOString(), // This is safe as it runs after a user action
       };
       
-      localStorage.setItem('currentUser', JSON.stringify(loggedInUser));
+      login(loggedInUser);
       
       toast({
         title: 'Iniciar sesión',
