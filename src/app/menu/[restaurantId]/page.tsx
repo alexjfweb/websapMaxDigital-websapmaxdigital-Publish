@@ -251,30 +251,34 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
       <RestaurantInfoDisplay restaurant={restaurantInfoForDisplay} />
       <Separator className="my-8" />
 
-      <div className="flex flex-col md:flex-row gap-8 mt-8 justify-center items-start">
-        <div className="w-full md:w-2/3 max-w-3xl mx-auto">
-          <h2 className="text-3xl font-bold mb-6 text-primary text-center">Menú</h2>
-          <div className="mb-6">
-            <h3 className="text-xl font-semibold mb-2 text-center">Categorías</h3>
-            <div className="flex flex-wrap gap-2 justify-center">
-              {categories.map(category => (
-                <Button
-                  key={category}
-                  variant={selectedCategory === category ? 'default' : 'outline'}
-                  onClick={() => setSelectedCategory(category)}
-                  className="rounded-full"
-                >
-                  {getCategoryLabel(category)}
-                </Button>
-              ))}
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
-            {filteredDishes.map((dish) => (
-              <DishItem key={dish.id} dish={dish} onAddToCart={() => cart.addItem(dish)} />
+      <div className="container mx-auto px-4 md:px-6 lg:px-8">
+        <h2 className="text-3xl font-bold mb-6 text-center" style={{ color: menuStyles.primary_color }}>Menú</h2>
+        
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold mb-3 text-center" style={{ color: menuStyles.primary_color }}>Categorías</h3>
+          <div className="flex flex-wrap gap-2 justify-center">
+            {categories.map(category => (
+              <Button
+                key={category}
+                style={selectedCategory === category ? { backgroundColor: menuStyles.primary_color, color: '#fff' } : {}}
+                variant={selectedCategory === category ? 'default' : 'outline'}
+                onClick={() => setSelectedCategory(category)}
+                className="rounded-full"
+              >
+                {getCategoryLabel(category)}
+              </Button>
             ))}
-            {filteredDishes.length === 0 && !isLoading && <p>No se encontraron platos en esta categoría.</p>}
           </div>
+        </div>
+
+        <div 
+          className={menuStyles.layout_style === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6' : menuStyles.layout_style === 'gallery' ? 'flex gap-4 overflow-x-auto pb-4' : 'flex flex-col gap-4'}
+          style={{ gap: menuStyles.spacing }}
+        >
+          {filteredDishes.map((dish) => (
+            <DishItem key={dish.id} dish={dish} onAddToCart={() => cart.addItem(dish)} styles={menuStyles} />
+          ))}
+          {filteredDishes.length === 0 && !isLoading && <p>No se encontraron platos en esta categoría.</p>}
         </div>
       </div>
     </div>
