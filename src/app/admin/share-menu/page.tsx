@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,8 +19,8 @@ export default function AdminShareMenuPage() {
   const { currentUser } = useSession();
 
   // En un entorno real, el ID del restaurante vendría del usuario actual o de un contexto.
-  // Usamos un ID fijo para este ejemplo.
-  const restaurantId = 'websapmax-1'; 
+  // Usamos un ID fijo y unificado para este ejemplo.
+  const restaurantId = 'websapmax'; 
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

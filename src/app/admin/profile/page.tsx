@@ -21,7 +21,7 @@ import BancolombiaIcon from "@/components/icons/bancolombia-icon";
 import type { Company } from "@/types";
 import { storageService } from "@/services/storage-service";
 import { Skeleton } from "@/components/ui/skeleton";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 const RESTAURANT_ID = 'websapmax'; // Usamos ID fijo para el tenant
@@ -37,7 +37,7 @@ export default function AdminProfilePage() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   
   // En un Saas real, el ID del restaurante vendría del usuario/sesión
-  const companyId = "websapmax";
+  const companyId = RESTAURANT_ID;
 
   useEffect(() => {
     async function fetchProfile() {
@@ -148,7 +148,7 @@ export default function AdminProfilePage() {
     setIsSaving(true);
     try {
         const docRef = doc(db, "companies", companyId);
-        await setDoc(docRef, { ...profileData, id: companyId }, { merge: true });
+        await setDoc(docRef, { ...profileData, id: companyId, updatedAt: serverTimestamp() }, { merge: true });
         
         setIsEditing(false);
         toast({ title: "¡Perfil Guardado!", description: "Tus cambios han sido guardados exitosamente." });
