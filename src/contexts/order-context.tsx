@@ -1,10 +1,11 @@
 
 "use client";
 import React, { createContext, useContext, useState, ReactNode, useCallback } from "react";
+import useSWR from 'swr';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, updateDoc, doc, Timestamp } from 'firebase/firestore';
 import type { Order } from '@/types'; 
-import { useOrders } from "@/hooks/use-orders";
+// Eliminamos la importación de useOrders para desacoplar el hook defectuoso.
 
 interface OrderContextType {
   orders: Order[];
@@ -23,9 +24,27 @@ export const useOrderContext = () => {
   return ctx;
 };
 
+// Fetcher seguro para SWR
+const fetcher = async (url: string): Promise<Order[]> => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Error al obtener los pedidos.');
+  }
+  return response.json();
+};
+
+
 export const OrderProvider = ({ children }: { children: ReactNode }) => {
-  const restaurantId = 'websapmax'; 
-  const { orders, isLoading, error, refreshOrders } = useOrders(restaurantId);
+  const restaurantId = 'websapmax'; // Hardcoded, podría venir de un contexto de sesión.
+  const { data: orders = [], error, isLoading, mutate } = useSWR<Order[], Error>(
+    restaurantId ? `/api/companies/${restaurantId}/orders` : null,
+    fetcher,
+    {
+      revalidateOnFocus: false, // Evita re-fetch innecesarios
+      shouldRetryOnError: false,
+    }
+  );
 
   const addOrder = useCallback(async (orderData: Omit<Order, 'id' | 'date'>) => {
     if (!db) {
@@ -37,9 +56,9 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
       estado: orderData.status,
     };
     const docRef = await addDoc(collection(db, 'orders'), orderWithTimestamp);
-    await refreshOrders(); 
+    mutate(); // Refrescar los datos de SWR
     return docRef.id;
-  }, [refreshOrders]);
+  }, [mutate]);
 
   const updateOrder = useCallback(async (id: string, updates: Partial<Order>) => {
      if (!db) {
@@ -51,12 +70,12 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
       updatePayload.estado = updates.status; 
     }
     
-    await updateDoc(orderRef, updatePayload);
-    await refreshOrders();
-  }, [refreshOrders]);
+    await updateDoc(orderRef, { ...updatePayload, updatedAt: Timestamp.now() });
+    mutate(); // Refrescar los datos de SWR
+  }, [mutate]);
 
   return (
-    <OrderContext.Provider value={{ orders, addOrder, updateOrder, loading: isLoading, error, refreshOrders }}>
+    <OrderContext.Provider value={{ orders, addOrder, updateOrder, loading: isLoading, error, refreshOrders: mutate }}>
       {children}
     </OrderContext.Provider>
   );
