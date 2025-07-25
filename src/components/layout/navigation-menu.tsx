@@ -96,23 +96,8 @@ export default function NavigationMenu({ role }: NavigationMenuProps) {
   const renderNavItems = (items: NavItem[], isSubMenu = false) => {
     return items
       .filter(item => {
-        // Superadmin sees only superadmin items
-        if (role === 'superadmin') {
-            return item.allowedRoles.includes('superadmin');
-        }
-        // Admin sees only admin items
-        if (role === 'admin') {
-            return item.allowedRoles.includes('admin');
-        }
-        // Employee sees only employee items
-        if (role === 'employee') {
-            return item.allowedRoles.includes('employee');
-        }
-        // Guest sees only guest items and not logged-in items
-        if (role === 'guest') {
-            return item.allowedRoles.includes('guest');
-        }
-        return false;
+        const userRole = role ? role.toLowerCase() : 'guest';
+        return item.allowedRoles.includes(userRole);
       })
       .map((item) => {
         const Icon = item.icon;

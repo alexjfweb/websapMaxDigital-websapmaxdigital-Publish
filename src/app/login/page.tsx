@@ -53,7 +53,7 @@ export default function LoginPage() {
         id: values.email, // Using email as ID for mock
         username: userCredential.name.toLowerCase().replace(' ', '.'),
         email: values.email,
-        role: userCredential.role,
+        role: userCredential.role.toLowerCase() as UserRole, // Normalizar a minúsculas
         name: userCredential.name,
         avatarUrl: userCredential.avatarUrl,
         status: 'active', // Mock status
@@ -67,7 +67,7 @@ export default function LoginPage() {
         description: 'Bienvenido, ' + userCredential.name,
       });
 
-      switch (userCredential.role) {
+      switch (loggedInUser.role) {
         case "superadmin":
           router.push("/superadmin/dashboard");
           break;

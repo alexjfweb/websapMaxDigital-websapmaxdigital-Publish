@@ -101,7 +101,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     {currentUser.name || currentUser.username}
                   </p>
                   <p className="text-xs text-sidebar-foreground/80 capitalize">
-                    Rol: {currentUser.role === 'Employee' ? 'Empleado' : currentUser.role === 'Admin' ? 'Administrador' : currentUser.role === 'SuperAdmin' ? 'Superadministrador' : currentUser.role}
+                    Rol: {currentUser.role}
                   </p>
                 </div>
               )}
