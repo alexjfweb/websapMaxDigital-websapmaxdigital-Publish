@@ -7,6 +7,7 @@ export interface RestaurantProfile {
   id: string;
   name: string;
   logoUrl: string;
+  bannerUrl?: string; // Add bannerUrl here
   address: string;
   phone: string;
   email: string;
@@ -110,6 +111,9 @@ export type ProjectInput = {
 export interface Company {
   id: string;
   name: string;
+  description?: string;
+  logoUrl?: string;
+  bannerUrl?: string;
   ruc: string; // Registro Único de Contribuyentes o ID fiscal
   location: string; // Ciudad/País
   addressStreet?: string;
@@ -124,6 +128,16 @@ export interface Company {
   email?: string;
   createdAt: string; // ISO Date String
   updatedAt: string; // ISO Date String
+  socialLinks?: {
+    website?: string;
+    menuShareLink?: string;
+  };
+  paymentMethods?: any; // Define properly if needed
+  corporateColors?: {
+      primary?: string;
+      secondary?: string;
+      accent?: string;
+  }
 }
 // Sistema de Gestión de Mesas
 export interface Table {

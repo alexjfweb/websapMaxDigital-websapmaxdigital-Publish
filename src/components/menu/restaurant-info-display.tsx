@@ -6,17 +6,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Phone, MapPin, Info } from 'lucide-react';
 
 interface RestaurantInfoDisplayProps {
-  restaurant: Partial<Company> & { logoUrl?: string; description?: string };
+  restaurant: Partial<Company> & { logoUrl?: string; description?: string; bannerUrl?: string };
 }
 
 export default function RestaurantInfoDisplay({ restaurant }: RestaurantInfoDisplayProps) {
   return (
     <Card className="w-full overflow-hidden shadow-xl bg-card/80 backdrop-blur-sm">
       <div className="relative h-48 md:h-64 w-full">
-        {/* @ts-ignore */}
         <Image
-          // @ts-ignore
-          src={restaurant.socialLinks?.website || "https://placehold.co/1200x400.png"} // Banner
+          src={restaurant.bannerUrl || "https://placehold.co/1200x400.png?text=Bienvenido"}
           alt={`${restaurant.name} Banner`}
           fill
           style={{ objectFit: 'cover' }}

@@ -35,6 +35,7 @@ export default function AdminProfilePage() {
 
   // Estados para previsualización de imágenes
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   
   // En un Saas real, el ID del restaurante vendría del usuario/sesión
   const companyId = RESTAURANT_ID;
@@ -48,8 +49,8 @@ export default function AdminProfilePage() {
         if (docSnap.exists()) {
           const data = docSnap.data() as Company;
           setProfileData(data);
-          // @ts-ignore
           if(data.logoUrl) setLogoPreview(data.logoUrl);
+          if(data.bannerUrl) setBannerPreview(data.bannerUrl);
         } else {
           console.log("No such document! Creating a default profile structure.");
           setProfileData({ id: companyId, name: "Mi Restaurante" }); // Estado inicial mínimo
@@ -72,10 +73,8 @@ export default function AdminProfilePage() {
     const { id, value } = e.target;
     setProfileData(prev => ({
         ...prev,
-        // @ts-ignore
         socialLinks: {
-            // @ts-ignore
-            ...prev.socialLinks,
+            ...(prev.socialLinks || {}),
             [id]: value
         }
     }));
@@ -84,12 +83,9 @@ export default function AdminProfilePage() {
   const handlePaymentMethodChange = (method: 'nequi' | 'daviplata' | 'bancolombia', field: string, value: string | boolean) => {
     setProfileData(prev => ({
         ...prev,
-        // @ts-ignore
         paymentMethods: {
-            // @ts-ignore
-            ...prev.paymentMethods,
+            ...(prev.paymentMethods || {}),
             [method]: {
-                // @ts-ignore
                 ...(prev.paymentMethods?.[method] || { enabled: false }),
                 [field]: value
             }
@@ -100,7 +96,6 @@ export default function AdminProfilePage() {
   const handleCodChange = (checked: boolean) => {
     setProfileData(prev => ({
       ...prev,
-      // @ts-ignore
       paymentMethods: { ...prev.paymentMethods, codEnabled: checked } as any
     }));
   };
@@ -108,10 +103,8 @@ export default function AdminProfilePage() {
   const handleColorChange = (colorType: 'primary' | 'secondary' | 'accent', value: string) => {
     setProfileData(prev => ({
         ...prev,
-        // @ts-ignore
         corporateColors: {
-            // @ts-ignore
-            ...prev.corporateColors,
+            ...(prev.corporateColors || {}),
             [colorType]: value
         } as any
     }));
@@ -224,21 +217,32 @@ export default function AdminProfilePage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">Descripción</Label>
-            {/* @ts-ignore */}
             <Textarea id="description" value={profileData.description || ''} rows={4} disabled={!isEditing} onChange={handleInputChange} />
           </div>
-          <div className="space-y-4">
-            <Label>Logo</Label>
-            <div className="flex items-center gap-4">
-                {/* @ts-ignore */}
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <Label>Logo</Label>
+              <div className="flex items-center gap-4">
                 <Image src={logoPreview || "https://placehold.co/100x100.png?text=Logo"} alt="Logo" width={96} height={96} className="h-24 w-24 rounded-md border object-cover" data-ai-hint="logo placeholder" />
                 <Button variant="outline" asChild disabled={!isEditing}>
                   <Label htmlFor="logo-upload" className="cursor-pointer">
                     <UploadCloud className="mr-2 h-4 w-4" /> Subir logo
-                    {/* @ts-ignore */}
                     <Input id="logo-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setLogoPreview, (url) => setProfileData(p => ({...p, logoUrl: url})))} disabled={!isEditing} />
                   </Label>
                 </Button>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <Label>Banner de Cabecera (1200x400 recomendado)</Label>
+              <div className="flex items-center gap-4">
+                <Image src={bannerPreview || "https://placehold.co/200x100.png?text=Banner"} alt="Banner" width={192} height={96} className="h-24 w-48 rounded-md border object-cover" data-ai-hint="restaurant banner" />
+                <Button variant="outline" asChild disabled={!isEditing}>
+                  <Label htmlFor="banner-upload" className="cursor-pointer">
+                    <UploadCloud className="mr-2 h-4 w-4" /> Subir banner
+                    <Input id="banner-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setBannerPreview, (url) => setProfileData(p => ({...p, bannerUrl: url})))} disabled={!isEditing} />
+                  </Label>
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -251,14 +255,11 @@ export default function AdminProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="relative">
               <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              {/* @ts-ignore */}
               <Input id="website" placeholder="Sitio web" value={profileData.socialLinks?.website || ''} className="pl-10" disabled={!isEditing} onChange={handleSocialChange} />
             </div>
             <div className="relative">
               <Share2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              {/* @ts-ignore */}
               <Input id="menuShareLink" placeholder="Enlace del menú" value={profileData.socialLinks?.menuShareLink || ''} className="pl-10 pr-12" disabled={!isEditing} onChange={handleSocialChange} />
-              {/* @ts-ignore */}
               <Button type="button" size="icon" variant="ghost" className="absolute right-1 top-1/2 -translate-y-1/2" onClick={() => navigator.clipboard.writeText(profileData.socialLinks?.menuShareLink || '')}><Clipboard className="h-4 w-4" /></Button>
             </div>
           </div>
