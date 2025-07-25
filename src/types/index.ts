@@ -122,8 +122,8 @@ export interface Company {
   phone?: string; // Teléfono móvil (WhatsApp)
   phoneFixed?: string; // Teléfono fijo
   email?: string;
-  createdAt?: Timestamp;
-  updatedAt?: Timestamp;
+  createdAt: string; // ISO Date String
+  updatedAt: string; // ISO Date String
 }
 // Sistema de Gestión de Mesas
 export interface Table {

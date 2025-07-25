@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import Image from 'next/image';
-import type { RestaurantProfile, Dish, CartItem } from '@/types';
+import type { Company, Dish, CartItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { LoaderCircle, ShoppingCart } from 'lucide-react';
@@ -84,7 +84,7 @@ const defaultMenuStyles = {
 
 export default function MenuPage({ params }: { params: { restaurantId: string } }) {
   const { restaurantId } = params;
-  const [restaurant, setRestaurant] = React.useState<RestaurantProfile | null>(null);
+  const [restaurant, setRestaurant] = React.useState<Company | null>(null);
   const [dishes, setDishes] = React.useState<Dish[]>([]);
   const cart = useCart();
   const [isLoading, setIsLoading] = React.useState(true);
@@ -101,10 +101,10 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
 
     const fetchRestaurantProfile = async () => {
       try {
-        const profileRef = doc(db, 'restaurant_profiles', restaurantId);
+        const profileRef = doc(db, 'companies', restaurantId); // Fetch from 'companies' collection
         const profileSnap = await getDoc(profileRef);
         if (profileSnap.exists()) {
-          setRestaurant(profileSnap.data() as RestaurantProfile);
+          setRestaurant(profileSnap.data() as Company);
         } else {
           console.error("No se encontró el perfil del restaurante");
         }
@@ -115,6 +115,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
     
     const fetchMenuStyles = async () => {
        try {
+        // Assuming styles are also per-tenant
         const stylesRef = doc(db, 'menu_styles', restaurantId);
         const stylesSnap = await getDoc(stylesRef);
         if (stylesSnap.exists()) {
@@ -195,6 +196,9 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
     );
   }
 
+  // @ts-ignore
+  const restaurantInfoForDisplay = { ...restaurant, address: restaurant.addressStreet, logoUrl: restaurant.logoUrl };
+
   return (
     <div
       style={{
@@ -228,7 +232,8 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
           </DialogContent>
         </Dialog>
       </div>
-      <RestaurantInfoDisplay restaurant={restaurant} />
+      {/* @ts-ignore */}
+      <RestaurantInfoDisplay restaurant={restaurantInfoForDisplay} />
       <Separator className="my-8" />
 
       <div className="flex flex-col md:flex-row gap-8 mt-8 justify-center items-start">

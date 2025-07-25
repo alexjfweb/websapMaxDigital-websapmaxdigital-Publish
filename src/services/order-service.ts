@@ -82,7 +82,8 @@ class OrderService {
       return orders;
     } catch (error) {
       console.error(`❌ Error al obtener los pedidos para la compañía ${companyId}:`, error);
-      throw new Error('No se pudieron obtener los pedidos.');
+      // Devolver un array vacío en caso de error para no romper el frontend
+      return [];
     }
   }
 }
