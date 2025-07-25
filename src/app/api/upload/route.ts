@@ -17,15 +17,21 @@ export async function POST(req: NextRequest) {
     // if (!auth.currentUser) {
     //   return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     // }
+    
+    // Sanitizar el nombre del archivo para evitar errores
+    const sanitizedFileName = file.name.replace(/[^a-z0-9._-]/gi, '_');
 
     // Usar una ruta más específica para evitar colisiones
-    const storageRef = ref(storage, `uploads/${Date.now()}-${file.name}`);
+    const storageRef = ref(storage, `uploads/${Date.now()}-${sanitizedFileName}`);
     const snapshot = await uploadBytes(storageRef, file);
     const url = await getDownloadURL(snapshot.ref);
 
     return NextResponse.json({ url });
   } catch (err: any) {
-    console.error('❌ /api/upload error:', err);
-    return NextResponse.json({ error: err.message || 'Error en el servidor al subir el archivo.' }, { status: 500 });
+    console.error('❌ /api/upload error:', err.code, err.message);
+    return NextResponse.json({ 
+        error: err.message || 'Error en el servidor al subir el archivo.',
+        code: err.code
+    }, { status: 500 });
   }
 }
