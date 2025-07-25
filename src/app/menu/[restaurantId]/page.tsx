@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -93,13 +94,13 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
 
   React.useEffect(() => {
     if (!restaurantId) {
+      console.error("Restaurant ID is missing from URL.");
       setIsLoading(false);
       return;
     }
 
-    const fetchRestaurantAndStyles = async () => {
+    const fetchRestaurantProfile = async () => {
       try {
-        // Fetch restaurant profile
         const profileRef = doc(db, 'restaurant_profiles', restaurantId);
         const profileSnap = await getDoc(profileRef);
         if (profileSnap.exists()) {
@@ -107,15 +108,20 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
         } else {
           console.error("No se encontró el perfil del restaurante");
         }
-
-        // Fetch menu styles
+      } catch (e) {
+        console.error("Error cargando datos del restaurante:", e);
+      }
+    };
+    
+    const fetchMenuStyles = async () => {
+       try {
         const stylesRef = doc(db, 'menu_styles', restaurantId);
         const stylesSnap = await getDoc(stylesRef);
         if (stylesSnap.exists()) {
           setMenuStyles({ ...defaultMenuStyles, ...stylesSnap.data() });
         }
       } catch(e) {
-        console.error("Error cargando datos del restaurante o estilos:", e);
+        console.error("Error cargando estilos de menú:", e);
       }
     };
 
@@ -145,7 +151,10 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
     
     async function loadAllData() {
         setIsLoading(true);
-        await fetchRestaurantAndStyles();
+        await Promise.all([
+          fetchRestaurantProfile(),
+          fetchMenuStyles()
+        ]);
         const unsubscribeDishes = subscribeToDishes();
         setIsLoading(false);
 

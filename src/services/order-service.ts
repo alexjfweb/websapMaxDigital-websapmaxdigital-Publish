@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -13,36 +14,19 @@ class OrderService {
   private get ordersCollection() {
     if (!db) {
       console.error("Firebase no está inicializado. No se puede acceder a la colección 'orders'.");
-      throw new Error("La conexión a la base de datos no está disponible.");
+      return null;
     }
     return collection(db, 'orders');
   }
 
   private parseTimestamp(timestamp: any): Date {
-    // Si es un Timestamp de Firestore, es la forma preferida
-    if (timestamp instanceof Timestamp) {
-      return timestamp.toDate();
-    }
-    // Si ya es un objeto Date
-    if (timestamp instanceof Date) {
-      return timestamp;
-    }
-    // Si es un objeto con seconds y nanoseconds (formato común de Firestore sin ser instancia)
-    if (timestamp && typeof timestamp.seconds === 'number') {
-        return new Date(timestamp.seconds * 1000);
-    }
-    // Si es un string de fecha ISO
-    if (typeof timestamp === 'string') {
-        const date = new Date(timestamp);
-        if (!isNaN(date.getTime())) {
-            return date;
-        }
-    }
-    // Fallback: si nada funciona, loguea una advertencia y devuelve la fecha actual
-    console.warn(`[WARN] Formato de fecha no reconocido, se usará la fecha actual:`, timestamp);
+    if (!timestamp) return new Date();
+    if (timestamp instanceof Timestamp) return timestamp.toDate();
+    if (timestamp.seconds) return new Date(timestamp.seconds * 1000);
+    if (typeof timestamp === 'string') return new Date(timestamp);
+    if (timestamp instanceof Date) return timestamp;
     return new Date();
   }
-
 
   async getOrdersByCompany(companyId: string): Promise<Order[]> {
     if (!companyId) {
@@ -50,8 +34,12 @@ class OrderService {
       throw new Error('El ID de la compañía es requerido.');
     }
     
+    const coll = this.ordersCollection;
+    if (!coll) {
+        throw new Error("La conexión a la base de datos no está disponible.");
+    }
+    
     try {
-      const coll = this.ordersCollection; 
       console.log(`[OrderService] Buscando pedidos para la compañía: ${companyId}`);
       const q = query(
         coll,
@@ -67,14 +55,8 @@ class OrderService {
       querySnapshot.forEach(doc => {
         const data = doc.data();
         
-        if (
-          !data.cliente?.nombre ||
-          !data.date ||
-          data.total === undefined ||
-          typeof data.total !== 'number' ||
-          !data.status
-        ) {
-          console.warn(`[WARN] Documento de pedido ${doc.id} omitido por datos incompletos o inválidos (cliente, fecha, total o estado).`);
+        if (!data.cliente?.nombre || !data.date || typeof data.total !== 'number' || !data.status) {
+          console.warn(`[WARN] Documento de pedido ${doc.id} omitido por datos incompletos.`);
           return;
         }
 
@@ -84,7 +66,7 @@ class OrderService {
         orders.push({
           id: doc.id,
           customerName: data.cliente.nombre,
-          date: date.toISOString(), // Mantenemos string para la API, el hook se encargará de convertir
+          date: date.toISOString(),
           items: productos.reduce((sum: number, item: any) => sum + (item.cantidad || 0), 0),
           total: data.total,
           status: data.status,
