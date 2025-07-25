@@ -51,7 +51,6 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   // Rutas públicas/invitado
-  { href: '/menu', labelKey: 'Menú', icon: Newspaper, allowedRoles: ['guest'], tooltipKey: 'Ver menú' },
   { href: '/login', labelKey: 'Iniciar sesión', icon: LogIn, allowedRoles: ['guest'], tooltipKey: 'Iniciar sesión' },
   { href: '/register', labelKey: 'Registrarse', icon: UserPlus, allowedRoles: ['guest'], tooltipKey: 'Crear cuenta' },
 
