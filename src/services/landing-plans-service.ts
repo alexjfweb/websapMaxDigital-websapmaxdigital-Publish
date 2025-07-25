@@ -204,12 +204,8 @@ class LandingPlansService {
    */
   async getPlans(): Promise<LandingPlan[]> {
     try {
-      // Query que obtiene los planes activos y públicos, ordenados por el campo 'order'.
-      // Esto asume que existe un índice compuesto en Firestore para (isActive, isPublic, order).
       const q = query(
         collection(db, this.COLLECTION_NAME), 
-        where('isActive', '==', true),
-        where('isPublic', '==', true),
         orderBy('order', 'asc')
       );
       
@@ -219,8 +215,11 @@ class LandingPlansService {
       snapshot.forEach(doc => {
         const data = doc.data();
         
-        // La consulta ya filtra, pero esta es una validación extra.
-        if (data.name && data.price !== undefined) {
+        // Lógica de filtrado resiliente: si isPublic o isActive no están definidos, se asumen como true.
+        const isActive = data.isActive !== false; // Activo a menos que sea explícitamente false
+        const isPublic = data.isPublic !== false; // Público a menos que sea explícitamente false
+
+        if (isActive && isPublic && data.name && data.price !== undefined) {
             plans.push({
                 id: doc.id,
                 slug: data.slug,
@@ -250,11 +249,6 @@ class LandingPlansService {
       return plans;
     } catch (error) {
       console.error('Error getting plans:', error);
-      // Si el error indica que falta un índice, se debe crear en la consola de Firebase.
-      if (error.message.includes('The query requires an index')) {
-          console.error("Firebase Index Required: Ve a tu consola de Firebase y crea un índice compuesto para la colección 'landingPlans' con los campos: isActive (asc), isPublic (asc), order (asc).");
-          throw new Error('La base de datos requiere un índice para esta consulta. Revisa la consola para más detalles.');
-      }
       throw new Error('Error al obtener los planes');
     }
   }
@@ -265,8 +259,6 @@ class LandingPlansService {
   subscribeToPlans(callback: (plans: LandingPlan[]) => void, onError: (error: Error) => void): () => void {
     const q = query(
       collection(db, this.COLLECTION_NAME),
-      where('isActive', '==', true),
-      where('isPublic', '==', true),
       orderBy('order', 'asc')
     );
   
@@ -274,29 +266,34 @@ class LandingPlansService {
       const plans: LandingPlan[] = [];
       snapshot.forEach(doc => {
         const data = doc.data();
-        plans.push({
-          id: doc.id,
-          slug: data.slug,
-          name: data.name,
-          description: data.description,
-          price: data.price || 0,
-          currency: data.currency || 'USD',
-          period: data.period,
-          features: data.features || [],
-          isActive: data.isActive,
-          isPublic: data.isPublic,
-          isPopular: data.isPopular || false,
-          order: data.order || 0,
-          icon: data.icon,
-          color: data.color,
-          maxUsers: data.maxUsers,
-          maxProjects: data.maxProjects,
-          ctaText: data.ctaText || 'Comenzar Prueba Gratuita',
-          createdAt: this.parseTimestamp(data.createdAt),
-          updatedAt: this.parseTimestamp(data.updatedAt),
-          createdBy: data.createdBy,
-          updatedBy: data.updatedBy
-        });
+        const isActive = data.isActive !== false;
+        const isPublic = data.isPublic !== false;
+
+        if (isActive && isPublic) {
+            plans.push({
+              id: doc.id,
+              slug: data.slug,
+              name: data.name,
+              description: data.description,
+              price: data.price || 0,
+              currency: data.currency || 'USD',
+              period: data.period,
+              features: data.features || [],
+              isActive: data.isActive,
+              isPublic: data.isPublic,
+              isPopular: data.isPopular || false,
+              order: data.order || 0,
+              icon: data.icon,
+              color: data.color,
+              maxUsers: data.maxUsers,
+              maxProjects: data.maxProjects,
+              ctaText: data.ctaText || 'Comenzar Prueba Gratuita',
+              createdAt: this.parseTimestamp(data.createdAt),
+              updatedAt: this.parseTimestamp(data.updatedAt),
+              createdBy: data.createdBy,
+              updatedBy: data.updatedBy
+            });
+        }
       });
       callback(plans);
     }, (error) => {
