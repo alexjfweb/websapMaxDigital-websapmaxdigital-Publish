@@ -223,7 +223,14 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
               <ul className="space-y-3">
                 {cart.map((item) => (
                   <li key={item.id} className="flex items-center gap-3 p-3 rounded-lg border bg-white shadow-sm">
-                    <Image src={item.imageUrl} alt={item.name} width={56} height={56} className="rounded-md object-cover" />
+                    <Image 
+                      src={item.imageUrl} 
+                      alt={item.name} 
+                      width={56} 
+                      height={56} 
+                      className="rounded-md object-cover" 
+                      style={{ width: '56px', height: '56px', objectFit: 'cover' }}
+                    />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-base truncate">{item.name}</p>
                       <p className="text-xs text-muted-foreground">${item.price.toFixed(2)} c/u</p>
