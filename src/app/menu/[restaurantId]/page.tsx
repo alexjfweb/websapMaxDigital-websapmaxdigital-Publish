@@ -75,7 +75,7 @@ const defaultMenuStyles = {
   price_color: '#FF6600',
   font_family: 'sans-serif',
   font_size: 16,
-  layout_style: 'grid', // Default to grid layout
+  layout_style: 'list', 
   show_images: true,
   show_ratings: true,
   show_whatsapp_button: true,
@@ -199,13 +199,6 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
 
   const restaurantInfoForDisplay = { ...restaurant, address: restaurant.addressStreet, logoUrl: restaurant.logoUrl, bannerUrl: restaurant.bannerUrl };
 
-  const layoutClasses = {
-    list: "space-y-4 max-w-4xl mx-auto",
-    grid: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",
-    gallery: "flex gap-6 overflow-x-auto pb-4",
-  };
-  const layoutContainerClass = layoutClasses[menuStyles.layout_style as keyof typeof layoutClasses] || layoutClasses.grid;
-
   return (
     <div
       style={{
@@ -262,11 +255,9 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
           </div>
         </div>
 
-        <div className={layoutContainerClass} style={{gap: `${menuStyles.spacing}px`}}>
+        <div className="space-y-4 max-w-2xl mx-auto">
           {filteredDishes.map((dish) => (
-             <div key={dish.id}>
-                <DishItem dish={dish} onAddToCart={() => cart.addItem(dish)} styles={menuStyles} />
-            </div>
+             <DishItem key={dish.id} dish={dish} onAddToCart={() => cart.addItem(dish)} styles={menuStyles} />
           ))}
           {filteredDishes.length === 0 && !isLoading && <p>No se encontraron platos en esta categoría.</p>}
         </div>
@@ -274,4 +265,3 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
     </div>
   );
 }
-

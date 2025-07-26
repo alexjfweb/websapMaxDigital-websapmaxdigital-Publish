@@ -28,7 +28,7 @@ export default function DishItem({ dish, onAddToCart, styles }: DishItemProps) {
     >
       <CardHeader className="p-0 relative">
         {styles.show_images && (
-            <div className="relative aspect-[16/9] w-full">
+            <div className="relative aspect-[4/3] w-full">
             <Image
                 src={dish.imageUrl}
                 alt={dish.name}
