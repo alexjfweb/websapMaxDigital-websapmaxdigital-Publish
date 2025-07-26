@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -36,7 +37,7 @@ const useCart = (): CartStore => {
           item.id === dish.id ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
-      return [...prevItems, { ...dish, quantity: 1 }];
+      return [...prevItems, { ...dish, quantity: 1, imageUrl: dish.imageUrl }];
     });
   };
 
