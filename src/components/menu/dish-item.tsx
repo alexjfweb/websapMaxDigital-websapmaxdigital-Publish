@@ -28,26 +28,27 @@ export default function DishItem({ dish, onAddToCart, styles }: DishItemProps) {
     >
       <CardHeader className="p-0 relative">
         {styles.show_images && (
-            <div className="relative aspect-[4/3] w-full">
+            <div className="relative aspect-[4/3] w-full max-w-[250px] mx-auto mt-4">
             <Image
                 src={dish.imageUrl}
                 alt={dish.name}
                 layout="fill"
                 objectFit="cover"
+                className="rounded-lg"
                 data-ai-hint={`${dish.category} food`}
             />
             </div>
         )}
       </CardHeader>
       
-      <CardContent className="p-4 flex flex-col flex-grow">
+      <CardContent className="p-4 flex flex-col flex-grow text-center">
          {dish.stock === 0 && (
             <Badge variant="destructive" className="absolute top-2 right-2">Agotado</Badge>
           )}
         <CardTitle className="text-lg font-bold" style={{ color: styles.text_color }}>{dish.name}</CardTitle>
         
         {styles.show_ratings && dish.likes > 0 && (
-            <div className="flex items-center gap-1 mt-1">
+            <div className="flex items-center justify-center gap-1 mt-1">
                 {renderStars(dish.likes)}
                 <span className="text-xs text-muted-foreground">({dish.likes})</span>
             </div>
