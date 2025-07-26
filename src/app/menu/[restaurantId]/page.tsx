@@ -75,7 +75,7 @@ const defaultMenuStyles = {
   price_color: '#FF6600',
   font_family: 'sans-serif',
   font_size: 16,
-  layout_style: 'list', 
+  layout_style: 'grid', 
   show_images: true,
   show_ratings: true,
   show_whatsapp_button: true,
@@ -255,7 +255,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
           </div>
         </div>
 
-        <div className="space-y-4 max-w-2xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {filteredDishes.map((dish) => (
              <DishItem key={dish.id} dish={dish} onAddToCart={() => cart.addItem(dish)} styles={menuStyles} />
           ))}

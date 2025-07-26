@@ -28,13 +28,13 @@ export default function DishItem({ dish, onAddToCart, styles }: DishItemProps) {
     >
       <CardHeader className="p-0 relative">
         {styles.show_images && (
-            <div className="relative aspect-[4/3] w-full max-w-[250px] mx-auto mt-4">
+            <div className="relative aspect-[4/3] w-full">
             <Image
                 src={dish.imageUrl}
                 alt={dish.name}
                 layout="fill"
                 objectFit="cover"
-                className="rounded-lg"
+                className="rounded-t-lg"
                 data-ai-hint={`${dish.category} food`}
             />
             </div>
