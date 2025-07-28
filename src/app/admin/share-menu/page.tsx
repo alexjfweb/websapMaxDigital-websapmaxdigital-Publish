@@ -4,7 +4,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Copy, CheckCircle } from "lucide-react";
+import { Copy, CheckCircle, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import WhatsAppIcon from "@/components/icons/whatsapp-icon";
 import React, { useEffect, useState } from 'react';
@@ -72,6 +72,36 @@ export default function AdminShareMenuPage() {
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
+  
+  const handleDownloadQR = async () => {
+    if (!menuUrl) return;
+    try {
+      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(menuUrl)}`;
+      const response = await fetch(qrApiUrl);
+      const blob = await response.blob();
+      
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'menu-qr.png';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Descarga iniciada",
+        description: "El código QR se está descargando."
+      });
+      
+    } catch (error) {
+       toast({
+        title: "Error de descarga",
+        description: "No se pudo descargar el código QR.",
+        variant: "destructive"
+      });
+      console.error("Error al descargar QR:", error);
+    }
+  };
+
 
   if (!menuUrl) {
     return (
@@ -135,7 +165,10 @@ export default function AdminShareMenuPage() {
                 data-ai-hint="QR code"
             />
           </div>
-          <Button variant="outline">Descargar código QR</Button>
+          <Button variant="outline" onClick={handleDownloadQR}>
+            <Download className="mr-2 h-4 w-4"/>
+            Descargar código QR
+          </Button>
         </CardContent>
       </Card>
 
