@@ -31,19 +31,31 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     router.push('/login');
   };
   
-  const isSpecialPage = ['/login', '/register', '/'].includes(pathname);
+  const isPublicPage = ['/login', '/register', '/'].includes(pathname) || pathname.startsWith('/menu/');
 
   if (isLoading) {
     return (
         <div className="flex min-h-svh w-full items-center justify-center bg-background">
             <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2">Verificando sesión...</span>
+        </div>
+    );
+  }
+
+  // Si no está autenticado y no es una página pública, el SessionProvider ya lo redirige.
+  // Aquí podemos simplemente mostrar un loader o null para evitar flashes de contenido.
+  if (currentUser.role === 'guest' && !isPublicPage) {
+    return (
+        <div className="flex min-h-svh w-full items-center justify-center bg-background">
+            <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2">Redirigiendo...</span>
         </div>
     );
   }
 
   return (
     <>
-      {isSpecialPage ? (
+      {isPublicPage ? (
         <div className="flex flex-col min-h-svh">
           <AppHeader currentUser={currentUser} handleLogout={handleLogout} showSidebarRelatedUI={false} />
           <main className="flex-1 bg-background">

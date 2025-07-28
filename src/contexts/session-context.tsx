@@ -4,9 +4,10 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import type { User, UserRole } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
-import { auth } from '@/lib/firebase'; // Importar auth directamente
-import { onAuthStateChanged } from 'firebase/auth'; // Importar onAuthStateChanged
+import { useRouter, usePathname } from 'next/navigation';
+import { auth, db } from '@/lib/firebase';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface SessionContextType {
   currentUser: User;
@@ -19,7 +20,7 @@ const guestUser: User = {
   id: 'guest',
   username: 'guest',
   email: 'guest@example.com',
-  name: 'Guest User',
+  name: 'Invitado',
   avatarUrl: 'https://placehold.co/100x100.png?text=G',
   role: 'guest',
   status: 'active',
@@ -41,23 +42,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!auth) {
-      console.error("Firebase Auth no está inicializado.");
-      setIsLoading(false);
-      return;
-    }
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
-        // En un caso real, aquí buscarías los detalles del usuario en tu DB (Firestore)
-        // Por ahora, usamos el localStorage como fallback para la demo.
-        const storedUser = localStorage.getItem('currentUser');
-        if (storedUser) {
-          const parsedUser: User = JSON.parse(storedUser);
-          if (parsedUser.id === firebaseUser.uid) {
-            setCurrentUser(parsedUser);
-          }
+        // Usuario autenticado en Firebase, ahora busca sus datos en Firestore
+        const userDocRef = doc(db, "users", firebaseUser.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data() as Omit<User, 'id'>;
+          setCurrentUser({ id: firebaseUser.uid, ...userData });
+          localStorage.setItem('currentUser', JSON.stringify({ id: firebaseUser.uid, ...userData }));
+        } else {
+          // El usuario existe en Auth pero no en Firestore, situación anómala.
+          // Podrías crear un perfil aquí o simplemente cerrar sesión.
+          console.warn(`Usuario ${firebaseUser.uid} existe en Auth pero no en Firestore. Cerrando sesión.`);
+          await auth.signOut();
+          setCurrentUser(guestUser);
+          localStorage.removeItem('currentUser');
         }
       } else {
         setCurrentUser(guestUser);
@@ -75,14 +79,31 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    if (auth) {
+    setIsLoading(true);
+    try {
       await auth.signOut();
+      localStorage.removeItem('currentUser');
+      setCurrentUser(guestUser);
+      toast({ title: 'Cierre de sesión', description: 'Has cerrado sesión correctamente.' });
+      router.push('/login');
+    } catch (error) {
+      toast({ title: 'Error', description: 'No se pudo cerrar la sesión.', variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
     }
-    localStorage.removeItem('currentUser');
-    setCurrentUser(guestUser);
-    toast({ title: 'Cierre de sesión', description: 'Has cerrado sesión correctamente.' });
-    router.push('/login');
   }, [toast, router]);
+
+  // Protección de rutas
+  useEffect(() => {
+    if (!isLoading && currentUser.role === 'guest') {
+      const protectedRoutes = ['/admin', '/superadmin', '/employee'];
+      const isProtected = protectedRoutes.some(route => pathname.startsWith(route));
+      if (isProtected) {
+        router.push('/login');
+      }
+    }
+  }, [isLoading, currentUser.role, pathname, router]);
+
 
   const value: SessionContextType = {
     currentUser,
