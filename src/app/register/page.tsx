@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,7 +20,7 @@ import { toast } from "@/hooks/use-toast";
 import { UserPlus } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
-import { app, db } from "@/lib/firebase"; 
+import { getFirebaseApp, db } from "@/lib/firebase"; 
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import type { User, Company } from "@/types";
 
@@ -46,13 +47,17 @@ export default function RegisterPage() {
 
   async function onSubmit(values: z.infer<typeof registerFormSchema>) {
     try {
+      // 1. Asegurar que Firebase esté inicializado y obtener los servicios
+      const app = getFirebaseApp();
       const auth = getAuth(app);
+
+      // 2. Crear el usuario en Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
       const username = values.email.split('@')[0];
       const fullName = `${values.name} ${values.lastName}`;
 
-      // 1. Crear el documento del usuario en Firestore
+      // 3. Crear el documento del usuario en Firestore
       const newUserForFirestore: User = {
         id: firebaseUser.uid,
         username: username,
@@ -65,7 +70,7 @@ export default function RegisterPage() {
       };
       await setDoc(doc(db, "users", firebaseUser.uid), newUserForFirestore);
 
-      // 2. Crear el documento de la compañía en Firestore
+      // 4. Crear el documento de la compañía en Firestore
       const newCompanyForFirestore: Omit<Company, 'id'> = {
           name: values.businessName,
           ruc: `${Date.now()}`, // RUC/ID temporal
@@ -76,7 +81,6 @@ export default function RegisterPage() {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
       };
-      // La colección de compañías usará el UID del usuario como ID del documento para una fácil vinculación
       await setDoc(doc(db, "companies", firebaseUser.uid), {
         ...newCompanyForFirestore,
         createdAt: serverTimestamp(),
@@ -213,5 +217,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-
-    
