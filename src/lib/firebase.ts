@@ -5,8 +5,12 @@ import { getStorage } from 'firebase/storage';
 import { getFirestore } from 'firebase/firestore';
 import { firebaseConfig } from './firebase-config';
 
-// Aseguramos que la inicialización ocurra solo una vez.
-const app: FirebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+let app: FirebaseApp;
+if (getApps().length === 0) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApp();
+}
 
 const auth = getAuth(app);
 const db = getFirestore(app);
