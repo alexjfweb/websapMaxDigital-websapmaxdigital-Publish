@@ -20,8 +20,8 @@ import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
 import { UserPlus } from "lucide-react";
 import { useRouter } from 'next/navigation';
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth, db } from "@/lib/firebase"; // Importar db
+import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
+import { app, db } from "@/lib/firebase"; // Importar app y db
 import { doc, setDoc } from "firebase/firestore"; // Importar doc y setDoc
 import type { User, UserRole } from "@/types";
 
@@ -52,6 +52,9 @@ export default function RegisterPage() {
 
   async function onSubmit(values: z.infer<typeof registerFormSchema>) {
     try {
+      // Obtener una instancia de auth a partir de la app ya inicializada
+      const auth = getAuth(app);
+
       // 1. Create user in Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
@@ -75,8 +78,8 @@ export default function RegisterPage() {
       localStorage.setItem('currentUser', JSON.stringify(newUserForFirestore));
       
       toast({
-        title: 'Registro',
-        description: 'User details saved to database.',
+        title: 'Registro Exitoso',
+        description: 'Usuario creado y guardado en la base de datos.',
       });
 
       // 5. Redirect based on role
@@ -91,24 +94,25 @@ export default function RegisterPage() {
     } catch (error) {
       const err = error as { code?: string; message?: string };
       console.error("Registration or Firestore save error:", err);
-      let errorMessage = 'Failed to save user details to database. Please try again or contact support.';
+      let errorMessage = 'Hubo un error al crear el usuario. Por favor, inténtelo más tarde.';
       if (err.code) { // Firebase Auth errors have a 'code' property
         switch (err.code) {
           case 'auth/email-already-in-use':
-            errorMessage = 'Email already in use';
+            errorMessage = 'El correo electrónico ya está en uso.';
             break;
           case 'auth/weak-password':
-            errorMessage = 'Weak password';
+            errorMessage = 'La contraseña es demasiado débil (debe tener al menos 6 caracteres).';
             break;
+          case 'auth/configuration-not-found':
+             errorMessage = 'Error de configuración de Firebase. Por favor, contacta al soporte.';
+             break;
           default:
-            errorMessage = err.message || 'Failed to save user details to database. Please try again or contact support.';
+            errorMessage = err.message || 'Ocurrió un error inesperado.';
         }
-      } else if (err.message && err.message.includes("Firestore")) { // Check if it's a Firestore related error
-        errorMessage = 'Failed to save user details to database. Please try again or contact support.';
       }
       
       toast({
-        title: 'Error',
+        title: 'Error de Registro',
         description: errorMessage,
         variant: "destructive",
       });
