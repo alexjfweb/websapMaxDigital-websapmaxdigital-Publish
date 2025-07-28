@@ -18,12 +18,12 @@
     "targets": {
       "production": {
         "hosting": {
-          "websapmaxdigital": {}
+          "websapmax": {}
         }
       },
       "staging": {
         "hosting": {
-          "websapmaxdigital-staging": {}
+          "websapmax-staging": {}
         }
       }
     }

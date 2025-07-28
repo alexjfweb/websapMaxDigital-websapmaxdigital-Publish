@@ -7,10 +7,11 @@
 // src/lib/firebase-config.ts
 
 export const firebaseConfig = {
-    apiKey: "BB7zCrAz2u0wJBGuhAAVuoSk6Hx3lYv8dTGweV8TD_7oHCYhj56iKGxfogwuLiMREVq3PMLRnOIQU8Fma4Gt2YA",
-    authDomain: "websapmaxdigital.firebaseapp.com",
-    projectId: "websapmaxdigital",
-    storageBucket: "websapmaxdigital.appspot.com",
-    messagingSenderId: "172464639457",
-    appId: "1:172464639457:web:06e00185012b79414e2144"
+    apiKey: "AIzaSyC3UzUVh_OPavejyo-kviYVX_Zy9494yjg",
+    authDomain: "websapmax.firebaseapp.com",
+    projectId: "websapmax",
+    storageBucket: "websapmax.appspot.com",
+    messagingSenderId: "560613070255",
+    appId: "1:560613070255:web:7ce75870dbe6b19a084b5a",
+    measurementId: "G-DD5JWPV701"
 };
