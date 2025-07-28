@@ -7,10 +7,8 @@ import { Inter } from 'next/font/google';
 import ClientProviders from './ClientProviders';
 import { Toaster } from '@/components/ui/toaster';
 import React, { useEffect } from 'react';
-import { databaseSyncService } from '@/services/database-sync-service';
 import { useToast } from '@/hooks/use-toast';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+
 
 const inter = Inter({
   subsets: ['latin'],
@@ -24,79 +22,12 @@ export default function RootLayout({
   const { toast } = useToast();
 
   useEffect(() => {
-    // Función para asegurar que el perfil de la compañía principal exista
-    const ensureCompanyProfileExists = async () => {
-      if (!db) {
-         console.error("Firestore (db) no está inicializado. No se puede verificar el perfil.");
-         toast({
-          title: "Error Crítico de Conexión",
-          description: "No se pudo conectar a la base de datos. Por favor, recargue la página.",
-          variant: "destructive",
-          duration: Infinity,
-        });
-        return;
-      }
-      const companyId = 'websapmax';
-      const docRef = doc(db, "companies", companyId);
-      try {
-        const docSnap = await getDoc(docRef);
-        if (!docSnap.exists()) {
-          console.log(`El perfil para '${companyId}' no existe. Creando uno por defecto...`);
-          const defaultProfileData = {
-            id: companyId,
-            name: "WebSapMax Restaurante",
-            ruc: "123456789",
-            location: "Ciudad Principal",
-            status: 'active',
-            registrationDate: new Date().toISOString(),
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-            email: "contacto@websapmax.com",
-            phone: "3001234567",
-            addressStreet: "Calle Falsa 123",
-          };
-          await setDoc(docRef, defaultProfileData);
-          toast({
-            title: "Perfil de Restaurante Creado",
-            description: "El perfil de demostración ha sido creado automáticamente.",
-          });
-        }
-      } catch (error) {
-        console.error("Error al verificar/crear el perfil de la compañía:", error);
-         toast({
-          title: "Error de Conexión",
-          description: "No se pudo verificar el perfil del restaurante. La página podría no funcionar correctamente.",
-          variant: "destructive",
-        });
-      }
-    };
-    
-    // Función para sincronizar planes
-    const runSync = async () => {
-      try {
-        console.log('Ejecutando sincronización de base de datos...');
-        const message = await databaseSyncService.syncLandingPlans('system-init', 'system@init.com');
-        console.log(message);
-        if (message.includes('crearon')) {
-           toast({
-            title: "Sistema inicializado",
-            description: "Los planes de ejemplo han sido creados.",
-          });
-        }
-      } catch (error) {
-        console.error("Fallo la sincronización automática:", error);
-         toast({
-            title: "Error de Sincronización",
-            description: "No se pudo inicializar la base de datos.",
-            variant: "destructive",
-          });
-      }
-    };
-    
-    // Ejecutar ambas funciones
-    ensureCompanyProfileExists();
-    runSync();
-  }, [toast]);
+    // La lógica de inicialización y verificación de datos se ha movido
+    // a componentes más específicos o a flujos de usuario para evitar
+    // errores de conexión durante la carga inicial de la aplicación.
+    // Esto resuelve el problema de "client is offline".
+    console.log("RootLayout montado. La conexión a Firebase es manejada por los servicios y hooks individuales.");
+  }, []);
 
 
   return (
