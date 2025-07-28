@@ -1,6 +1,5 @@
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 import { getFirestore } from 'firebase/firestore';
 import { firebaseConfig } from './firebase-config';
@@ -16,5 +15,5 @@ if (getApps().length === 0) {
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-// Exportamos la app para poder obtener instancias frescas de los servicios
+// Exportamos la app inicializada y los servicios. `auth` se obtendrá a demanda.
 export { app, db, storage };

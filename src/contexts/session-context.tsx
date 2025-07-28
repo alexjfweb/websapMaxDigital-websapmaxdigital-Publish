@@ -5,8 +5,8 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import type { User, UserRole } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, usePathname } from 'next/navigation';
-import { auth, db } from '@/lib/firebase';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { app, db } from '@/lib/firebase'; // Importar app en lugar de auth
+import { getAuth, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth'; // Mantener importaciones de tipos y funciones
 import { doc, getDoc } from 'firebase/firestore';
 
 interface SessionContextType {
@@ -45,6 +45,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
+    const auth = getAuth(app); // Obtener auth de la app inicializada
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         // Usuario autenticado en Firebase, ahora busca sus datos en Firestore
@@ -57,7 +58,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           localStorage.setItem('currentUser', JSON.stringify({ id: firebaseUser.uid, ...userData }));
         } else {
           // El usuario existe en Auth pero no en Firestore, situación anómala.
-          // Podrías crear un perfil aquí o simplemente cerrar sesión.
           console.warn(`Usuario ${firebaseUser.uid} existe en Auth pero no en Firestore. Cerrando sesión.`);
           await auth.signOut();
           setCurrentUser(guestUser);
@@ -81,6 +81,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     setIsLoading(true);
     try {
+      const auth = getAuth(app); // Obtener auth de la app inicializada
       await auth.signOut();
       localStorage.removeItem('currentUser');
       setCurrentUser(guestUser);
