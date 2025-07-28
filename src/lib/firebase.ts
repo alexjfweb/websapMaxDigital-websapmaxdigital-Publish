@@ -5,6 +5,7 @@ import { getStorage } from 'firebase/storage';
 import { getFirestore } from 'firebase/firestore';
 import { firebaseConfig } from './firebase-config';
 
+// Inicialización robusta de Firebase para evitar errores en Next.js
 let app: FirebaseApp;
 if (getApps().length === 0) {
   app = initializeApp(firebaseConfig);
@@ -12,8 +13,8 @@ if (getApps().length === 0) {
   app = getApp();
 }
 
-const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-export { app, auth, db, storage };
+// Exportamos la app para poder obtener instancias frescas de los servicios
+export { app, db, storage };
