@@ -20,15 +20,15 @@ import { UserPlus } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
 import { app, db } from "@/lib/firebase"; 
-import { doc, setDoc } from "firebase/firestore";
-import type { User, UserRole } from "@/types";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import type { User, Company } from "@/types";
 
 const registerFormSchema = z.object({
+  name: z.string().min(2, { message: "El nombre es obligatorio." }),
+  lastName: z.string().min(2, { message: "El apellido es obligatorio." }),
+  businessName: z.string().min(3, { message: "El nombre del negocio es obligatorio." }),
   email: z.string().email({ message: "Por favor, ingrese un correo electrónico válido." }),
   password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
-}).refine(data => data.password, {
-  message: "La contraseña es obligatoria",
-  path: ["password"],
 });
 
 export default function RegisterPage() {
@@ -36,6 +36,9 @@ export default function RegisterPage() {
   const form = useForm<z.infer<typeof registerFormSchema>>({
     resolver: zodResolver(registerFormSchema),
     defaultValues: {
+      name: "",
+      lastName: "",
+      businessName: "",
       email: "",
       password: "",
     },
@@ -43,41 +46,54 @@ export default function RegisterPage() {
 
   async function onSubmit(values: z.infer<typeof registerFormSchema>) {
     try {
-      // 1. Asegurar la inicialización correcta obteniendo auth de la app
       const auth = getAuth(app);
-
-      // 2. Crear usuario en Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
       const username = values.email.split('@')[0];
+      const fullName = `${values.name} ${values.lastName}`;
 
-      // 3. Preparar datos del usuario para Firestore (rol 'admin' por defecto)
+      // 1. Crear el documento del usuario en Firestore
       const newUserForFirestore: User = {
         id: firebaseUser.uid,
         username: username,
         email: firebaseUser.email || values.email,
-        role: "admin", // Rol de administrador por defecto
-        name: username,
-        avatarUrl: `https://placehold.co/100x100.png?text=${username.substring(0,1).toUpperCase()}`,
+        role: "admin",
+        name: fullName,
+        avatarUrl: `https://placehold.co/100x100.png?text=${values.name.substring(0,1)}${values.lastName.substring(0,1)}`,
         status: 'active',
         registrationDate: new Date().toISOString(),
       };
-
-      // 4. Guardar datos en Firestore
       await setDoc(doc(db, "users", firebaseUser.uid), newUserForFirestore);
+
+      // 2. Crear el documento de la compañía en Firestore
+      const newCompanyForFirestore: Omit<Company, 'id'> = {
+          name: values.businessName,
+          ruc: `${Date.now()}`, // RUC/ID temporal
+          location: 'No especificado',
+          status: 'active',
+          registrationDate: new Date().toISOString(),
+          email: values.email,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+      };
+      // La colección de compañías usará el UID del usuario como ID del documento para una fácil vinculación
+      await setDoc(doc(db, "companies", firebaseUser.uid), {
+        ...newCompanyForFirestore,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
       
       toast({
         title: 'Registro de Administrador Exitoso',
-        description: `El usuario ${values.email} ha sido creado como administrador.`,
+        description: `El usuario ${fullName} y la empresa "${values.businessName}" han sido creados.`,
       });
 
-      // 5. Redirigir al dashboard de admin
       router.push("/admin/dashboard");
 
     } catch (error) {
       const err = error as { code?: string; message?: string };
       console.error("Error en el registro:", err);
-      let errorMessage = 'Hubo un error al crear el usuario. Por favor, inténtelo más tarde.';
+      let errorMessage = 'Hubo un error al crear la cuenta. Por favor, inténtelo más tarde.';
       
       if (err.code === 'auth/email-already-in-use') {
         errorMessage = 'El correo electrónico ya está en uso.';
@@ -97,7 +113,7 @@ export default function RegisterPage() {
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-theme(spacing.16))] bg-gradient-to-br from-background to-accent/10 p-4">
-      <Card className="w-full max-w-md shadow-2xl">
+      <Card className="w-full max-w-lg shadow-2xl">
          <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-16 w-16 text-primary">
@@ -105,11 +121,54 @@ export default function RegisterPage() {
               </svg>
             </div>
           <CardTitle className="text-3xl font-bold text-primary">Crear Cuenta de Administrador</CardTitle>
-          <CardDescription>Registre una nueva cuenta con permisos de administrador.</CardDescription>
+          <CardDescription>Registre una nueva cuenta para gestionar su negocio.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nombre</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ej. Juan" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Apellido</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ej. Pérez" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+              </div>
+
+               <FormField
+                  control={form.control}
+                  name="businessName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre del Negocio</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ej. Restaurante Sabor Único" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
               <FormField
                 control={form.control}
                 name="email"
@@ -137,7 +196,7 @@ export default function RegisterPage() {
                 )}
               />
               <Button type="submit" className="w-full text-lg py-3">
-                <UserPlus className="mr-2 h-5 w-5" /> Registrar Administrador
+                <UserPlus className="mr-2 h-5 w-5" /> Registrar Cuenta
               </Button>
             </form>
           </Form>
@@ -154,3 +213,5 @@ export default function RegisterPage() {
     </div>
   );
 }
+
+    
