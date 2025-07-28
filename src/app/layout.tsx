@@ -26,7 +26,16 @@ export default function RootLayout({
   useEffect(() => {
     // Función para asegurar que el perfil de la compañía principal exista
     const ensureCompanyProfileExists = async () => {
-      if (!db) return;
+      if (!db) {
+         console.error("Firestore (db) no está inicializado. No se puede verificar el perfil.");
+         toast({
+          title: "Error Crítico de Conexión",
+          description: "No se pudo conectar a la base de datos. Por favor, recargue la página.",
+          variant: "destructive",
+          duration: Infinity,
+        });
+        return;
+      }
       const companyId = 'websapmax';
       const docRef = doc(db, "companies", companyId);
       try {
@@ -54,6 +63,11 @@ export default function RootLayout({
         }
       } catch (error) {
         console.error("Error al verificar/crear el perfil de la compañía:", error);
+         toast({
+          title: "Error de Conexión",
+          description: "No se pudo verificar el perfil del restaurante. La página podría no funcionar correctamente.",
+          variant: "destructive",
+        });
       }
     };
     

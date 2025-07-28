@@ -8,6 +8,6 @@ import { firebaseConfig } from './firebase-config'; // Importar la configuració
 // Asegura que la inicialización ocurra solo una vez.
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-export const auth = getAuth(app);
-export const storage = getStorage(app);
-export const db = getFirestore(app);
+export const auth = getApp() ? getAuth(app) : undefined;
+export const storage = getApp() ? getStorage(app) : undefined;
+export const db = getApp() ? getFirestore(app) : undefined;

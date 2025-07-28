@@ -24,6 +24,9 @@ export function useOrders(companyId: string | null) {
     {
       revalidateOnFocus: false, // Puedes ajustar esto según tus necesidades
       shouldRetryOnError: false, // Evita reintentos continuos si la API falla
+      onError: (err) => {
+        console.error("❌ [useOrders] Error capturado por SWR:", err);
+      }
     }
   );
 

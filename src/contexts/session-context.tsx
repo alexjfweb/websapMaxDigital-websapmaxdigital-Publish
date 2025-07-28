@@ -5,6 +5,8 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import type { User, UserRole } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { auth } from '@/lib/firebase'; // Importar auth directamente
+import { onAuthStateChanged } from 'firebase/auth'; // Importar onAuthStateChanged
 
 interface SessionContextType {
   currentUser: User;
@@ -41,20 +43,30 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem('currentUser');
-      if (storedUser) {
-        const parsedUser: User = JSON.parse(storedUser);
-        if (parsedUser && parsedUser.id && parsedUser.role) {
-          setCurrentUser(parsedUser);
-        }
-      }
-    } catch (error) {
-      console.error("Failed to parse user from localStorage on initial load", error);
-      localStorage.removeItem('currentUser');
-    } finally {
+    if (!auth) {
+      console.error("Firebase Auth no está inicializado.");
       setIsLoading(false);
+      return;
     }
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        // En un caso real, aquí buscarías los detalles del usuario en tu DB (Firestore)
+        // Por ahora, usamos el localStorage como fallback para la demo.
+        const storedUser = localStorage.getItem('currentUser');
+        if (storedUser) {
+          const parsedUser: User = JSON.parse(storedUser);
+          if (parsedUser.id === firebaseUser.uid) {
+            setCurrentUser(parsedUser);
+          }
+        }
+      } else {
+        setCurrentUser(guestUser);
+        localStorage.removeItem('currentUser');
+      }
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const login = useCallback((user: User) => {
@@ -62,11 +74,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setCurrentUser(user);
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    if (auth) {
+      await auth.signOut();
+    }
     localStorage.removeItem('currentUser');
     setCurrentUser(guestUser);
     toast({ title: 'Cierre de sesión', description: 'Has cerrado sesión correctamente.' });
-  }, [toast]);
+    router.push('/login');
+  }, [toast, router]);
 
   const value: SessionContextType = {
     currentUser,
