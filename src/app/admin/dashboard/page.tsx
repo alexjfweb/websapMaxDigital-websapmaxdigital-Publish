@@ -19,9 +19,9 @@ import { useEmployees } from "@/hooks/use-employees";
 import { isToday, subDays, format } from "date-fns";
 import { motion } from "framer-motion";
 import { BarChart as RechartsBarChart, LineChart, PieChart, AreaChart, Bar, Line, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area } from "recharts";
-import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
+import { ChartContainer, ChartTooltipContent, ChartConfig } from "@/components/ui/chart";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-
+import { Badge } from "@/components/ui/badge";
 
 const StatCard = ({ title, value, icon, subtext, isLoading }: { title: string, value: string | number, icon: React.ReactNode, subtext?: string, isLoading: boolean }) => (
   <motion.div
@@ -46,6 +46,13 @@ const StatCard = ({ title, value, icon, subtext, isLoading }: { title: string, v
   </motion.div>
 );
 
+const chartConfig = {
+  total: {
+    label: "Total",
+    color: "hsl(var(--primary))",
+  },
+} satisfies ChartConfig;
+
 const OverviewChart = ({ orders }: { orders: Order[] }) => {
   const salesData = useMemo(() => {
     const data: { name: string; total: number }[] = [];
@@ -61,23 +68,43 @@ const OverviewChart = ({ orders }: { orders: Order[] }) => {
   }, [orders]);
 
   return (
-    <ResponsiveContainer width="100%" height={350}>
-      <AreaChart data={salesData}>
-        <defs>
-          <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
-            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-          </linearGradient>
-        </defs>
-        <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-        <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
-        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-        <Tooltip content={<ChartTooltipContent />} />
-        <Area type="monotone" dataKey="total" stroke="hsl(var(--primary))" fillOpacity={1} fill="url(#colorTotal)" />
+    <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+      <AreaChart
+        accessibilityLayer
+        data={salesData}
+        margin={{
+          left: 12,
+          right: 12,
+        }}
+      >
+        <CartesianGrid vertical={false} />
+        <XAxis
+          dataKey="name"
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          tickFormatter={(value) => value.slice(0, 3)}
+        />
+        <ChartTooltipContent
+            indicator="dot"
+            labelFormatter={(value, payload) => {
+                const item = payload[0]?.payload;
+                return item ? format(new Date(2024, (new Date()).getMonth(), parseInt(item.name.split(' ')[1])), 'MMMM d') : value;
+            }}
+        />
+        <Area
+          dataKey="total"
+          type="natural"
+          fill="hsl(var(--primary))"
+          fillOpacity={0.4}
+          stroke="hsl(var(--primary))"
+          stackId="a"
+        />
       </AreaChart>
-    </ResponsiveContainer>
+    </ChartContainer>
   );
 };
+
 
 const OrdersByTypeChart = ({ orders }: { orders: Order[] }) => {
   const data = useMemo(() => {
@@ -86,27 +113,34 @@ const OrdersByTypeChart = ({ orders }: { orders: Order[] }) => {
       return acc;
     }, {} as Record<string, number>);
 
-    return Object.entries(typeCounts).map(([name, value]) => ({ name, value }));
+    return Object.entries(typeCounts).map(([name, value]) => ({ name, value, fill: `hsl(var(--chart-${Object.keys(typeCounts).indexOf(name) + 1}))`}));
   }, [orders]);
   
-  const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--secondary))'];
+  const chartConfig = useMemo(() => {
+    const config: ChartConfig = {};
+    data.forEach((item, index) => {
+      config[item.name] = {
+        label: item.name.charAt(0).toUpperCase() + item.name.slice(1),
+        color: `hsl(var(--chart-${index + 1}))`,
+      };
+    });
+    return config;
+  }, [data]);
 
   return (
-    <ResponsiveContainer width="100%" height={250}>
-      <PieChart>
-        <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-            {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-        </Pie>
-        <Tooltip content={<ChartTooltipContent />} />
-        <Legend />
-      </PieChart>
-    </ResponsiveContainer>
+    <ChartContainer config={chartConfig} className="mx-auto aspect-square h-full w-full">
+        <PieChart>
+          <ChartTooltipContent
+            nameKey="value"
+            hideIndicator
+          />
+          <Pie data={data} dataKey="value" nameKey="name" />
+        </PieChart>
+    </ChartContainer>
   );
 };
 
-const RecentActivity = ({ orders, reservations }: { orders: Order[], reservations: Reservation[] }) => {
+const RecentActivity = ({ orders, reservations }: { orders: Order[], reservations: any[] }) => {
   const combinedActivity = useMemo(() => {
     const orderActivity = orders.slice(0, 3).map(o => ({
       id: o.id,
