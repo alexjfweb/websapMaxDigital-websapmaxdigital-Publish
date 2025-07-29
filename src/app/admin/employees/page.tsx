@@ -47,7 +47,7 @@ export default function AdminEmployeesPage() {
     if (!companyId) return;
     setIsLoading(true);
     try {
-      const q = query(collection(db, "users"), where("companyId", "==", companyId));
+      const q = query(collection(db, "users"), where("companyId", "==", companyId), where("role", "==", "employee"));
       const querySnapshot = await getDocs(q);
       const fetchedEmployees: User[] = [];
       querySnapshot.forEach((doc) => {
@@ -449,3 +449,4 @@ export default function AdminEmployeesPage() {
     </div>
   );
 }
+
