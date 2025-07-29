@@ -16,10 +16,12 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
-import { LogIn } from "lucide-react";
+import { LogIn, Loader2 } from "lucide-react";
 import { useRouter } from 'next/navigation';
-import type { User, UserRole } from "@/types";
+import type { User } from "@/types";
 import { useSession } from "@/contexts/session-context";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { getFirebaseApp } from "@/lib/firebase";
 
 const loginFormSchema = z.object({
   email: z.string().email({
@@ -30,16 +32,11 @@ const loginFormSchema = z.object({
   }),
 });
 
-const mockUsersCredentials: Record<string, { password: string; role: UserRole; name: string; avatarUrl?: string }> = {
-  "superadmin@example.com": { password: "SuperAdmin2023", role: "superadmin", name: "Super Admin", avatarUrl: "https://placehold.co/100x100.png?text=SA" },
-  "admin@example.com": { password: "Admin2023", role: "admin", name: "Admin User", avatarUrl: "https://placehold.co/100x100.png?text=AU" },
-  "empleado@example.com": { password: "Empleado2023", role: "employee", name: "Employee User", avatarUrl: "https://placehold.co/100x100.png?text=EU" },
-  "victor01@gmail.com": { password: "Password123", role: "employee", name: "Victor", avatarUrl: "https://placehold.co/100x100.png?text=V" },
-};
-
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useSession();
+  const { login } = useSession(); // Aunque la sesión se manejará por onAuthStateChanged, lo mantenemos por si hay usos futuros.
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
   const form = useForm<z.infer<typeof loginFormSchema>>({
     resolver: zodResolver(loginFormSchema),
     defaultValues: {
@@ -48,47 +45,44 @@ export default function LoginPage() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof loginFormSchema>) {
-    const userCredential = mockUsersCredentials[values.email];
-
-    if (userCredential && userCredential.password === values.password) {
-      const loggedInUser: User = {
-        id: values.email, // Using email as ID for mock
-        username: userCredential.name.toLowerCase().replace(' ', '.'),
-        email: values.email,
-        role: userCredential.role.toLowerCase() as UserRole, // Normalizar a minúsculas
-        name: userCredential.name,
-        avatarUrl: userCredential.avatarUrl,
-        status: 'active', // Mock status
-        registrationDate: new Date().toISOString(), // This is safe as it runs after a user action
-      };
+  async function onSubmit(values: z.infer<typeof loginFormSchema>) {
+    setIsSubmitting(true);
+    try {
+      const app = getFirebaseApp();
+      const auth = getAuth(app);
       
-      login(loggedInUser);
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      const user = userCredential.user;
+
+      // El onAuthStateChanged en SessionProvider se encargará de
+      // obtener los datos de Firestore y actualizar el estado global.
+      // Aquí solo notificamos y redirigimos.
       
       toast({
-        title: 'Iniciar sesión',
-        description: 'Bienvenido, ' + userCredential.name,
+        title: 'Inicio de sesión exitoso',
+        description: '¡Bienvenido de nuevo!',
       });
+      
+      // La redirección se manejará en SessionProvider basado en el rol.
+      // Pero como puede tardar un instante, iniciamos una redirección genérica.
+      // El SessionProvider lo corregirá si es necesario.
+      router.push("/admin/dashboard");
 
-      switch (loggedInUser.role) {
-        case "superadmin":
-          router.push("/superadmin/dashboard");
-          break;
-        case "admin":
-          router.push("/admin/dashboard");
-          break;
-        case "employee":
-          router.push("/employee/dashboard");
-          break;
-        default:
-          router.push("/"); // Fallback to home
+    } catch (error: any) {
+      let errorMessage = 'Por favor, verifica tu correo electrónico y contraseña.';
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        errorMessage = 'Credenciales inválidas. Por favor, verifica tu correo y contraseña.';
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = 'Demasiados intentos fallidos. Por favor, intenta de nuevo más tarde.';
       }
-    } else {
+      console.error("Login Error:", error.code);
       toast({
         title: 'Inicio de sesión fallido',
-        description: 'Por favor, verifica tu correo electrónico y contraseña.',
+        description: errorMessage,
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -133,8 +127,9 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full text-lg py-3">
-                <LogIn className="mr-2 h-5 w-5" /> Iniciar sesión
+              <Button type="submit" className="w-full text-lg py-3" disabled={isSubmitting}>
+                {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LogIn className="mr-2 h-5 w-5" />}
+                {isSubmitting ? 'Iniciando sesión...' : 'Iniciar sesión'}
               </Button>
             </form>
           </Form>

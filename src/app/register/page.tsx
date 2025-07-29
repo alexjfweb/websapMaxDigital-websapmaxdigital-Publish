@@ -17,12 +17,13 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Loader2 } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
 import { getFirebaseApp, db } from "@/lib/firebase"; 
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import type { User, Company } from "@/types";
+import React from "react";
 
 const registerFormSchema = z.object({
   name: z.string().min(2, { message: "El nombre es obligatorio." }),
@@ -38,6 +39,8 @@ const registerFormSchema = z.object({
 
 export default function RegisterPage() {
   const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
   const form = useForm<z.infer<typeof registerFormSchema>>({
     resolver: zodResolver(registerFormSchema),
     defaultValues: {
@@ -51,16 +54,20 @@ export default function RegisterPage() {
   });
 
   async function onSubmit(values: z.infer<typeof registerFormSchema>) {
+    setIsSubmitting(true);
     try {
       const app = getFirebaseApp();
       const auth = getAuth(app);
 
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
+      
+      // El ID de la compañía será el UID del usuario administrador que la crea.
+      const companyId = firebaseUser.uid; 
       const username = values.email.split('@')[0];
       const fullName = `${values.name} ${values.lastName}`;
-      const companyId = firebaseUser.uid; // Usamos el UID del admin como ID de la compañía
 
+      // Crear el documento del usuario con su companyId
       const newUserForFirestore: User = {
         id: firebaseUser.uid,
         username: username,
@@ -70,10 +77,10 @@ export default function RegisterPage() {
         avatarUrl: `https://placehold.co/100x100.png?text=${values.name.substring(0,1)}${values.lastName.substring(0,1)}`,
         status: 'active',
         registrationDate: new Date().toISOString(),
-        companyId: companyId, // Asociar al usuario con su compañía
+        companyId: companyId,
       };
-      await setDoc(doc(db, "users", firebaseUser.uid), newUserForFirestore);
-
+      
+      // Crear el documento de la compañía
       const newCompanyForFirestore: Omit<Company, 'id'> = {
           name: values.businessName,
           ruc: `${Date.now()}`, 
@@ -84,7 +91,9 @@ export default function RegisterPage() {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
       };
-      // El ID de la compañía es el mismo que el UID del usuario admin
+      
+      // Guardar ambos documentos en Firestore
+      await setDoc(doc(db, "users", firebaseUser.uid), newUserForFirestore);
       await setDoc(doc(db, "companies", companyId), {
         ...newCompanyForFirestore,
         createdAt: serverTimestamp(),
@@ -92,8 +101,8 @@ export default function RegisterPage() {
       });
       
       toast({
-        title: 'Registro de Administrador Exitoso',
-        description: `El usuario ${fullName} y la empresa "${values.businessName}" han sido creados.`,
+        title: 'Registro Exitoso',
+        description: `La empresa "${values.businessName}" ha sido creada. Ahora puedes iniciar sesión.`,
       });
 
       router.push("/admin/dashboard");
@@ -116,6 +125,8 @@ export default function RegisterPage() {
         description: errorMessage,
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -218,8 +229,9 @@ export default function RegisterPage() {
                   )}
                 />
               </div>
-              <Button type="submit" className="w-full text-lg py-3">
-                <UserPlus className="mr-2 h-5 w-5" /> Registrar Cuenta
+              <Button type="submit" className="w-full text-lg py-3" disabled={isSubmitting}>
+                {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin"/> : <UserPlus className="mr-2 h-5 w-5" />}
+                {isSubmitting ? 'Registrando...' : 'Registrar Cuenta'}
               </Button>
             </form>
           </Form>
