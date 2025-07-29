@@ -6,22 +6,40 @@ import { BarChart, Settings, ShoppingBag, Utensils, Users, CreditCard, Share2, P
 import Link from "next/link";
 import React, { useState, useEffect } from 'react';
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSession } from "@/contexts/session-context";
+import { useDishes } from "@/hooks/use-dishes";
+import { useOrderContext } from "@/contexts/order-context";
 
 export default function AdminDashboardPage() {
+  const { currentUser } = useSession();
+  const { dishes, isLoading: isLoadingDishes } = useDishes(currentUser?.companyId);
+  const { orders, loading: isLoadingOrders } = useOrderContext();
+  
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
+  const pendingOrdersCount = orders.filter(order => order.status === 'pending').length;
+  const totalDishesCount = dishes.length;
+
   if (!isClient) {
     return (
       <div className="space-y-8">
         <Skeleton className="h-12 w-1/2" />
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-32" />)}
+          {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-32" />)}
         </div>
-        <Skeleton className="h-48 w-full" />
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-2">
+            <Skeleton className="h-20" />
+            <Skeleton className="h-20" />
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -139,14 +157,22 @@ export default function AdminDashboardPage() {
                 <BarChart className="h-8 w-8 text-primary"/>
                 <div className="flex-1 space-y-1">
                     <p className="text-sm font-medium leading-none">Platos totales</p>
-                    <p className="text-2xl font-semibold">25</p> {/* Mock Data */}
+                    {isLoadingDishes ? (
+                      <Skeleton className="h-6 w-10 mt-1" />
+                    ) : (
+                      <p className="text-2xl font-semibold">{totalDishesCount}</p>
+                    )}
                 </div>
             </div>
              <div className="flex items-center space-x-4 rounded-md border p-4">
                 <ShoppingBag className="h-8 w-8 text-primary"/>
                 <div className="flex-1 space-y-1">
                     <p className="text-sm font-medium leading-none">Pedidos pendientes</p>
-                    <p className="text-2xl font-semibold">5</p> {/* Mock Data */}
+                    {isLoadingOrders ? (
+                      <Skeleton className="h-6 w-10 mt-1" />
+                    ) : (
+                      <p className="text-2xl font-semibold">{pendingOrdersCount}</p>
+                    )}
                 </div>
             </div>
         </CardContent>
