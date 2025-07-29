@@ -22,6 +22,7 @@ import type { User } from "@/types";
 import { useSession } from "@/contexts/session-context";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { getFirebaseApp } from "@/lib/firebase";
+import React from "react";
 
 const loginFormSchema = z.object({
   email: z.string().email({
