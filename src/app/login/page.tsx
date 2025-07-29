@@ -34,6 +34,7 @@ const mockUsersCredentials: Record<string, { password: string; role: UserRole; n
   "superadmin@example.com": { password: "SuperAdmin2023", role: "superadmin", name: "Super Admin", avatarUrl: "https://placehold.co/100x100.png?text=SA" },
   "admin@example.com": { password: "Admin2023", role: "admin", name: "Admin User", avatarUrl: "https://placehold.co/100x100.png?text=AU" },
   "empleado@example.com": { password: "Empleado2023", role: "employee", name: "Employee User", avatarUrl: "https://placehold.co/100x100.png?text=EU" },
+  "victor01@gmail.com": { password: "Password123", role: "employee", name: "Victor", avatarUrl: "https://placehold.co/100x100.png?text=V" },
 };
 
 export default function LoginPage() {
