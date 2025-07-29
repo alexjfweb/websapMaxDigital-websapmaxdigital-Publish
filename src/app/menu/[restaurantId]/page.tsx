@@ -94,7 +94,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
   const [menuStyles, setMenuStyles] = React.useState(defaultMenuStyles);
 
   React.useEffect(() => {
-    const effectiveRestaurantId = 'websapmax';
+    const effectiveRestaurantId = restaurantId;
     
     if (!effectiveRestaurantId) {
       setError("ID de restaurante no válido.");

@@ -18,11 +18,10 @@ export default function AdminShareMenuPage() {
   const [openCopiedModal, setOpenCopiedModal] = useState(false);
   const { currentUser } = useSession();
 
-  // Usamos un ID fijo y unificado para este ejemplo.
-  const restaurantId = 'websapmax'; 
+  const restaurantId = currentUser.companyId; 
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && restaurantId) {
       // Construir la URL dinámica correcta
       setMenuUrl(`${window.location.origin}/menu/${restaurantId}`);
     }

@@ -24,19 +24,17 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { addDays, isWithinInterval, parseISO } from "date-fns";
 import { storageService } from "@/services/storage-service";
-
-
-// Mock Data for Employees
-const mockEmployees: User[] = [
-  { id: "emp-1", username: "john.chef", email: "john.chef@websapmax.com", contact: "555-1111", role: "employee", status: "active", registrationDate: "2023-01-15", avatarUrl: "https://placehold.co/40x40.png?text=JC" },
-  { id: "emp-2", username: "sara.waitress", email: "sara.waitress@websapmax.com", contact: "555-2222", role: "employee", status: "active", registrationDate: "2023-03-20", avatarUrl: "https://placehold.co/40x40.png?text=SW" },
-  { id: "emp-3", username: "mike.delivery", email: "mike.delivery@websapmax.com", contact: "555-3333", role: "employee", status: "inactive", registrationDate: "2023-05-10", avatarUrl: "https://placehold.co/40x40.png?text=MD" },
-];
+import { useSession } from "@/contexts/session-context";
+import { collection, getDocs, query, where, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 
 export default function AdminEmployeesPage() {
+  const { currentUser } = useSession();
+  const companyId = currentUser.companyId;
   const { toast } = useToast();
-  const [employees, setEmployees] = useState<User[]>(mockEmployees);
+  const [employees, setEmployees] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<User | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -44,6 +42,28 @@ export default function AdminEmployeesPage() {
   const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null }>({ from: null, to: null });
   const [search, setSearch] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const fetchEmployees = async () => {
+    if (!companyId) return;
+    setIsLoading(true);
+    try {
+      const q = query(collection(db, "users"), where("companyId", "==", companyId));
+      const querySnapshot = await getDocs(q);
+      const fetchedEmployees: User[] = [];
+      querySnapshot.forEach((doc) => {
+        fetchedEmployees.push({ id: doc.id, ...doc.data() } as User);
+      });
+      setEmployees(fetchedEmployees);
+    } catch (error) {
+      toast({ title: "Error", description: "No se pudieron cargar los empleados.", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEmployees();
+  }, [companyId]);
 
   const employeeFormSchema = z.object({
       id: z.string().optional(),
@@ -109,6 +129,10 @@ export default function AdminEmployeesPage() {
   };
 
   const onSubmit = async (values: EmployeeFormData) => {
+    if (!companyId) {
+      toast({ title: "Error", description: "ID de la compañía no encontrado.", variant: "destructive" });
+      return;
+    }
     setIsSubmitting(true);
     try {
         let avatarUrl = editingEmployee?.avatarUrl;
@@ -117,33 +141,27 @@ export default function AdminEmployeesPage() {
             if (editingEmployee?.avatarUrl && !editingEmployee.avatarUrl.includes('placehold.co')) {
                 await storageService.deleteFile(editingEmployee.avatarUrl);
             }
-            avatarUrl = await storageService.uploadFile(values.avatar, 'avatars/');
+            avatarUrl = await storageService.uploadFile(values.avatar, `avatars/${companyId}/`);
         }
 
+        const employeeData = {
+          ...values,
+          avatarUrl: avatarUrl || `https://placehold.co/40x40.png?text=${values.username.substring(0,1).toUpperCase()}`,
+          companyId: companyId,
+          registrationDate: editingEmployee?.registrationDate || new Date().toISOString(),
+        };
+        delete (employeeData as any).avatar; // remove file object
+
         if (editingEmployee) {
-            setEmployees(prev => prev.map(emp => 
-              emp.id === editingEmployee.id ? { 
-                  ...emp, 
-                  ...values,
-                  role: values.role as UserRole,
-                  avatarUrl: avatarUrl
-              } : emp
-            ));
+            const employeeRef = doc(db, "users", editingEmployee.id);
+            await updateDoc(employeeRef, employeeData);
             toast({ title: "Empleado Actualizado!", description: `Detalles para ${values.username} han sido actualizados.` });
         } else {
-            const newEmployee: User = {
-              id: `emp-${Date.now()}`,
-              username: values.username,
-              email: values.email,
-              contact: values.contact,
-              role: values.role as UserRole,
-              status: values.status,
-              registrationDate: new Date().toISOString(),
-              avatarUrl: avatarUrl || `https://placehold.co/40x40.png?text=${values.username.substring(0,1).toUpperCase()}`,
-            };
-            setEmployees(prev => [newEmployee, ...prev]);
+            // Note: This does not create a Firebase Auth user, only a user document in Firestore.
+            await addDoc(collection(db, "users"), employeeData);
             toast({ title: "Empleado Agregado!", description: `${values.username} ha sido agregado al equipo.` });
         }
+        await fetchEmployees();
         closeDialog();
     } catch (error) {
         console.error("Error saving employee:", error);
@@ -167,9 +185,14 @@ export default function AdminEmployeesPage() {
     setIsDialogOpen(false);
   }
 
-  const handleDeleteEmployee = (employeeId: string) => {
-    setEmployees(prev => prev.filter(emp => emp.id !== employeeId));
-    toast({ title: "Empleado Eliminado", description: "El empleado ha sido eliminado del sistema.", variant: "destructive" });
+  const handleDeleteEmployee = async (employeeId: string) => {
+    try {
+      await deleteDoc(doc(db, "users", employeeId));
+      toast({ title: "Empleado Eliminado", description: "El empleado ha sido eliminado del sistema.", variant: "destructive" });
+      fetchEmployees();
+    } catch (error) {
+       toast({ title: "Error", description: "No se pudo eliminar el empleado.", variant: "destructive" });
+    }
   };
 
   const filteredEmployees = employees.filter((emp) => {
