@@ -28,9 +28,6 @@ export default function AdminDashboardPage() {
     return (
       <div className="space-y-8">
         <Skeleton className="h-12 w-1/2" />
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-32" />)}
-        </div>
         <Card>
           <CardHeader>
             <Skeleton className="h-6 w-48" />
@@ -40,6 +37,9 @@ export default function AdminDashboardPage() {
             <Skeleton className="h-20" />
           </CardContent>
         </Card>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-32" />)}
+        </div>
       </div>
     );
   }
@@ -49,6 +49,36 @@ export default function AdminDashboardPage() {
       <h1 className="text-3xl font-bold text-primary">Panel de administración</h1>
       <p className="text-lg text-muted-foreground">Descripción del panel de administración</p>
       
+      <Card>
+        <CardHeader>
+          <CardTitle>Estadísticas rápidas</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+            <div className="flex items-center space-x-4 rounded-md border p-4">
+                <BarChart className="h-8 w-8 text-primary"/>
+                <div className="flex-1 space-y-1">
+                    <p className="text-sm font-medium leading-none">Platos totales</p>
+                    {isLoadingDishes ? (
+                      <Skeleton className="h-6 w-10 mt-1" />
+                    ) : (
+                      <p className="text-2xl font-semibold">{totalDishesCount}</p>
+                    )}
+                </div>
+            </div>
+             <div className="flex items-center space-x-4 rounded-md border p-4">
+                <ShoppingBag className="h-8 w-8 text-primary"/>
+                <div className="flex-1 space-y-1">
+                    <p className="text-sm font-medium leading-none">Pedidos pendientes</p>
+                    {isLoadingOrders ? (
+                      <Skeleton className="h-6 w-10 mt-1" />
+                    ) : (
+                      <p className="text-2xl font-semibold">{pendingOrdersCount}</p>
+                    )}
+                </div>
+            </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Link href="/admin/profile">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer">
@@ -147,36 +177,6 @@ export default function AdminDashboardPage() {
           </Card>
         </Link>
       </div>
-
-       <Card>
-        <CardHeader>
-          <CardTitle>Estadísticas rápidas</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
-            <div className="flex items-center space-x-4 rounded-md border p-4">
-                <BarChart className="h-8 w-8 text-primary"/>
-                <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium leading-none">Platos totales</p>
-                    {isLoadingDishes ? (
-                      <Skeleton className="h-6 w-10 mt-1" />
-                    ) : (
-                      <p className="text-2xl font-semibold">{totalDishesCount}</p>
-                    )}
-                </div>
-            </div>
-             <div className="flex items-center space-x-4 rounded-md border p-4">
-                <ShoppingBag className="h-8 w-8 text-primary"/>
-                <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium leading-none">Pedidos pendientes</p>
-                    {isLoadingOrders ? (
-                      <Skeleton className="h-6 w-10 mt-1" />
-                    ) : (
-                      <p className="text-2xl font-semibold">{pendingOrdersCount}</p>
-                    )}
-                </div>
-            </div>
-        </CardContent>
-      </Card>
 
     </div>
   );
