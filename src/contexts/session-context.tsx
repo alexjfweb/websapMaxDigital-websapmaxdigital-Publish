@@ -25,6 +25,7 @@ const guestUser: User = {
   role: 'guest',
   status: 'active',
   registrationDate: new Date(0).toISOString(),
+  companyId: undefined,
 };
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -49,16 +50,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const auth = getAuth(app);
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
-        // Usuario autenticado en Firebase, ahora busca sus datos en Firestore
         const userDocRef = doc(db, "users", firebaseUser.uid);
         const userDocSnap = await getDoc(userDocRef);
         
         if (userDocSnap.exists()) {
-          const userData = userDocSnap.data() as Omit<User, 'id'>;
-          setCurrentUser({ id: firebaseUser.uid, ...userData });
-          localStorage.setItem('currentUser', JSON.stringify({ id: firebaseUser.uid, ...userData }));
+          const userData = userDocSnap.data() as User;
+          const userWithCompanyId = { id: firebaseUser.uid, ...userData };
+          setCurrentUser(userWithCompanyId);
+          localStorage.setItem('currentUser', JSON.stringify(userWithCompanyId));
         } else {
-          // El usuario existe en Auth pero no en Firestore, situación anómala.
           console.warn(`Usuario ${firebaseUser.uid} existe en Auth pero no en Firestore. Cerrando sesión.`);
           await auth.signOut();
           setCurrentUser(guestUser);

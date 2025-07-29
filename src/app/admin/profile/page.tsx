@@ -23,25 +23,27 @@ import { storageService } from "@/services/storage-service";
 import { Skeleton } from "@/components/ui/skeleton";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-
-const RESTAURANT_ID = 'websapmax'; // Usamos ID fijo para el tenant principal
+import { useSession } from "@/contexts/session-context";
 
 export default function AdminProfilePage() {
   const { toast } = useToast();
+  const { currentUser } = useSession();
+  const companyId = currentUser.companyId;
+
   const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState<Partial<Company>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Estados para previsualización de imágenes
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   
-  // En un Saas real, el ID del restaurante vendría del usuario/sesión
-  const companyId = RESTAURANT_ID;
-
   useEffect(() => {
     async function fetchProfile() {
+      if (!companyId) {
+        setIsLoading(false);
+        return;
+      }
       setIsLoading(true);
       try {
         const docRef = doc(db, "companies", companyId);
@@ -115,6 +117,7 @@ export default function AdminProfilePage() {
     setImagePreview: React.Dispatch<React.SetStateAction<string | null>>,
     updateProfileField: (url: string) => void
   ) => {
+    if (!companyId) return;
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -138,6 +141,7 @@ export default function AdminProfilePage() {
 
 
   const handleSave = async () => {
+    if (!companyId) return;
     setIsSaving(true);
     try {
         const docRef = doc(db, "companies", companyId);

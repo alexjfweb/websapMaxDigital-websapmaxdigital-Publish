@@ -3,7 +3,7 @@
 
 import useSWR from 'swr';
 import type { Dish } from '@/types';
-import { useSession } from '@/contexts/session-context'; // Importar hook de sesión
+import { useSession } from '@/contexts/session-context';
 
 const fetcher = async (url: string): Promise<Dish[]> => {
   const response = await fetch(url);
@@ -14,14 +14,15 @@ const fetcher = async (url: string): Promise<Dish[]> => {
   return response.json();
 };
 
-export function useDishes(companyId: string) {
+export function useDishes(companyId: string | undefined) {
   const { currentUser, isLoading: isSessionLoading } = useSession();
 
-  // La petición solo se hará si el usuario está autenticado y no es un invitado
-  const shouldFetch = companyId && !isSessionLoading && currentUser.role !== 'guest';
+  const effectiveCompanyId = companyId || currentUser.companyId;
+
+  const shouldFetch = effectiveCompanyId && !isSessionLoading;
 
   const { data, error, isLoading, mutate } = useSWR<Dish[]>(
-    shouldFetch ? `/api/companies/${companyId}/dishes` : null,
+    shouldFetch ? `/api/companies/${effectiveCompanyId}/dishes` : null,
     fetcher,
     {
       revalidateOnFocus: true,

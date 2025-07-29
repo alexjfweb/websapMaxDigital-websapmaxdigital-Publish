@@ -3,7 +3,7 @@
 
 import useSWR from 'swr';
 import type { Reservation } from '@/types';
-import { useSession } from '@/contexts/session-context'; // Importar hook de sesión
+import { useSession } from '@/contexts/session-context';
 
 const fetcher = async (url: string): Promise<Reservation[]> => {
   const response = await fetch(url);
@@ -14,14 +14,15 @@ const fetcher = async (url: string): Promise<Reservation[]> => {
   return response.json();
 };
 
-export function useReservations(companyId: string) {
+export function useReservations(companyId?: string) {
   const { currentUser, isLoading: isSessionLoading } = useSession();
 
-  // La petición solo se hará si el usuario está autenticado y no es un invitado
-  const shouldFetch = companyId && !isSessionLoading && currentUser.role !== 'guest';
+  const effectiveCompanyId = companyId || currentUser.companyId;
+
+  const shouldFetch = effectiveCompanyId && !isSessionLoading;
 
   const { data, error, isLoading, mutate } = useSWR<Reservation[]>(
-    shouldFetch ? `/api/companies/${companyId}/reservations` : null,
+    shouldFetch ? `/api/companies/${effectiveCompanyId}/reservations` : null,
     fetcher,
     {
       revalidateOnFocus: false,

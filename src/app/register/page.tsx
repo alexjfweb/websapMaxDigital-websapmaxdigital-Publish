@@ -52,17 +52,15 @@ export default function RegisterPage() {
 
   async function onSubmit(values: z.infer<typeof registerFormSchema>) {
     try {
-      // 1. Asegurar que Firebase esté inicializado y obtener los servicios
       const app = getFirebaseApp();
       const auth = getAuth(app);
 
-      // 2. Crear el usuario en Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
       const username = values.email.split('@')[0];
       const fullName = `${values.name} ${values.lastName}`;
+      const companyId = firebaseUser.uid; // Usamos el UID del admin como ID de la compañía
 
-      // 3. Crear el documento del usuario en Firestore
       const newUserForFirestore: User = {
         id: firebaseUser.uid,
         username: username,
@@ -72,13 +70,13 @@ export default function RegisterPage() {
         avatarUrl: `https://placehold.co/100x100.png?text=${values.name.substring(0,1)}${values.lastName.substring(0,1)}`,
         status: 'active',
         registrationDate: new Date().toISOString(),
+        companyId: companyId, // Asociar al usuario con su compañía
       };
       await setDoc(doc(db, "users", firebaseUser.uid), newUserForFirestore);
 
-      // 4. Crear el documento de la compañía en Firestore
       const newCompanyForFirestore: Omit<Company, 'id'> = {
           name: values.businessName,
-          ruc: `${Date.now()}`, // RUC/ID temporal
+          ruc: `${Date.now()}`, 
           location: 'No especificado',
           status: 'active',
           registrationDate: new Date().toISOString(),
@@ -86,7 +84,8 @@ export default function RegisterPage() {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
       };
-      await setDoc(doc(db, "companies", firebaseUser.uid), {
+      // El ID de la compañía es el mismo que el UID del usuario admin
+      await setDoc(doc(db, "companies", companyId), {
         ...newCompanyForFirestore,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()

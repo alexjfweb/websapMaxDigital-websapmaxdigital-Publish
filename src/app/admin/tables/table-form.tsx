@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -28,6 +29,7 @@ interface TableFormProps {
   table?: Table | null;
   onSubmit: () => void;
   onCancel: () => void;
+  companyId?: string;
 }
 
 const initialState = {
@@ -38,7 +40,7 @@ const initialState = {
   status: 'available' as TableStatus,
 };
 
-export function TableForm({ table, onSubmit, onCancel }: TableFormProps) {
+export function TableForm({ table, onSubmit, onCancel, companyId }: TableFormProps) {
   const [form, setForm] = useState({
     number: table?.number?.toString() || '',
     capacity: table?.capacity?.toString() || '',
@@ -56,6 +58,10 @@ export function TableForm({ table, onSubmit, onCancel }: TableFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!companyId) {
+      setModal({ type: 'error', title: 'Error', description: 'ID de la compañía no encontrado.' });
+      return;
+    }
     // Validaciones básicas
     if (!form.number || isNaN(Number(form.number)) || Number(form.number) <= 0) {
       setModal({ type: 'error', title: 'Error', description: 'El número de mesa es obligatorio y debe ser válido' });
@@ -84,7 +90,7 @@ export function TableForm({ table, onSubmit, onCancel }: TableFormProps) {
           description: form.description,
           status: form.status as TableStatus,
           isActive: true,
-          restaurantId: 'websapmax',
+          restaurantId: companyId,
         });
         setModal({ type: 'success', title: 'Mesa creada', description: 'La mesa se creó correctamente' });
       }

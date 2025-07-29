@@ -15,6 +15,7 @@ import { storageService } from "@/services/storage-service";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSession } from "@/contexts/session-context";
 
 interface PaymentMethodsState {
   daviplata: boolean;
@@ -42,9 +43,10 @@ interface FileState {
     nequiQRFile: File | null;
 }
 
-const RESTAURANT_ID = 'websapmax'; // Hardcoded for now
-
 export default function PaymentsPage() {
+  const { currentUser } = useSession();
+  const companyId = currentUser.companyId;
+
   const { toast } = useToast();
   const [methods, setMethods] = useState<PaymentMethodsState>({
     daviplata: true,
@@ -75,8 +77,12 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     async function fetchPaymentConfig() {
+      if (!companyId) {
+        setLoading(false);
+        return;
+      }
       try {
-        const docRef = doc(db, 'payment_configs', RESTAURANT_ID);
+        const docRef = doc(db, 'payment_configs', companyId);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
@@ -90,7 +96,7 @@ export default function PaymentsPage() {
       }
     }
     fetchPaymentConfig();
-  }, [toast]);
+  }, [toast, companyId]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, files: inputFiles } = e.target;
@@ -100,25 +106,29 @@ export default function PaymentsPage() {
   };
 
   const handleSave = async () => {
+    if (!companyId) {
+        toast({ title: "Error", description: "No se pudo identificar la compañía.", variant: "destructive" });
+        return;
+    }
     setSaving(true);
     try {
         let updatedForm = { ...form };
 
         if (files.daviplataQRFile) {
             if (form.daviplataQRUrl) await storageService.deleteFile(form.daviplataQRUrl);
-            updatedForm.daviplataQRUrl = await storageService.uploadFile(files.daviplataQRFile, `qrs/${RESTAURANT_ID}/daviplata`);
+            updatedForm.daviplataQRUrl = await storageService.uploadFile(files.daviplataQRFile, `qrs/${companyId}/daviplata`);
         }
         if (files.bancolombiaQRFile) {
             if (form.bancolombiaQRUrl) await storageService.deleteFile(form.bancolombiaQRUrl);
-            updatedForm.bancolombiaQRUrl = await storageService.uploadFile(files.bancolombiaQRFile, `qrs/${RESTAURANT_ID}/bancolombia`);
+            updatedForm.bancolombiaQRUrl = await storageService.uploadFile(files.bancolombiaQRFile, `qrs/${companyId}/bancolombia`);
         }
         if (files.nequiQRFile) {
             if (form.nequiQRUrl) await storageService.deleteFile(form.nequiQRUrl);
-            updatedForm.nequiQRUrl = await storageService.uploadFile(files.nequiQRFile, `qrs/${RESTAURANT_ID}/nequi`);
+            updatedForm.nequiQRUrl = await storageService.uploadFile(files.nequiQRFile, `qrs/${companyId}/nequi`);
         }
 
         const configToSave = { methods, form: updatedForm };
-        const docRef = doc(db, 'payment_configs', RESTAURANT_ID);
+        const docRef = doc(db, 'payment_configs', companyId);
         await setDoc(docRef, configToSave, { merge: true });
 
         setForm(updatedForm); // Update local form state with new URLs

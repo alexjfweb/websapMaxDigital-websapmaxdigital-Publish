@@ -16,8 +16,10 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { useOrderContext, type Order } from '@/contexts/order-context';
 import { tableService } from '@/services/table-service';
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSession } from "@/contexts/session-context";
 
 export default function AdminOrdersPage() {
+  const { currentUser } = useSession();
   const { orders, updateOrder, loading, error } = useOrderContext();
   const { toast } = useToast();
   const [selectedStatus, setSelectedStatus] = useState<string>("all");

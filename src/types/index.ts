@@ -60,6 +60,10 @@ export interface Dish {
   likes: number; // Number of stars or likes
   category: string; // e.g., 'Appetizers', 'Main Courses', 'Desserts'
   isFeatured?: boolean; // Optional: to highlight certain dishes
+  companyId: string;
+  available: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Data type for the react-hook-form
@@ -89,6 +93,7 @@ export interface User {
   status: 'active' | 'inactive' | 'pending';
   registrationDate: string; // ISO date string
   avatarUrl?: string;
+  companyId?: string; // Tenant ID
 }
 
 // New Project types

@@ -3,7 +3,7 @@
 
 import useSWR from 'swr';
 import type { Table } from '@/services/table-service';
-import { useSession } from '@/contexts/session-context'; // Importar hook de sesión
+import { useSession } from '@/contexts/session-context';
 
 const fetcher = async (url: string): Promise<Table[]> => {
   const response = await fetch(url);
@@ -14,14 +14,15 @@ const fetcher = async (url: string): Promise<Table[]> => {
   return response.json();
 };
 
-export function useTables(companyId: string | null) {
+export function useTables(companyId?: string | null) {
   const { currentUser, isLoading: isSessionLoading } = useSession();
 
-  // La petición solo se hará si el usuario está autenticado y no es un invitado
-  const shouldFetch = companyId && !isSessionLoading && currentUser.role !== 'guest';
+  const effectiveCompanyId = companyId || currentUser.companyId;
+
+  const shouldFetch = effectiveCompanyId && !isSessionLoading;
 
   const { data, error, isLoading, mutate } = useSWR<Table[]>(
-    shouldFetch ? `/api/companies/${companyId}/tables` : null,
+    shouldFetch ? `/api/companies/${effectiveCompanyId}/tables` : null,
     fetcher,
     {
       revalidateOnFocus: false,

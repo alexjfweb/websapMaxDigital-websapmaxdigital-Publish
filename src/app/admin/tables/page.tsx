@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -15,9 +16,11 @@ import { TableForm } from "./table-form";
 import { TableLogsDialog } from "./table-logs-dialog";
 import { useTables } from "@/hooks/use-tables";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSession } from "@/contexts/session-context";
 
 export default function TablesPage() {
-  const companyId = "websapmax"; // Hardcoded for now
+  const { currentUser } = useSession();
+  const companyId = currentUser.companyId;
   const { tables, isLoading, isError, error, refreshTables } = useTables(companyId);
   const [filteredTables, setFilteredTables] = useState<Table[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -206,6 +209,7 @@ export default function TablesPage() {
               table={editingTable}
               onSubmit={handleFormSubmit}
               onCancel={() => setIsFormOpen(false)}
+              companyId={companyId}
             />
           </DialogContent>
         </Dialog>

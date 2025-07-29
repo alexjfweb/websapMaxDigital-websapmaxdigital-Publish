@@ -16,15 +16,15 @@ const fetcher = async (url: string): Promise<Order[]> => {
   return data;
 };
 
-export function useOrders(companyId: string | null) {
+export function useOrders(companyId?: string | null) {
   const { currentUser, isLoading: isSessionLoading } = useSession();
 
-  // Solo intentar hacer fetch si tenemos un ID de compañía y la sesión no está cargando.
-  // El rol 'guest' indica que no hay un usuario autenticado.
-  const shouldFetch = companyId && !isSessionLoading && currentUser.role !== 'guest';
+  const effectiveCompanyId = companyId || currentUser.companyId;
+
+  const shouldFetch = effectiveCompanyId && !isSessionLoading;
 
   const { data, error, isLoading, mutate, isValidating } = useSWR<Order[], Error>(
-    shouldFetch ? `/api/companies/${companyId}/orders` : null,
+    shouldFetch ? `/api/companies/${effectiveCompanyId}/orders` : null,
     fetcher,
     {
       revalidateOnFocus: false,

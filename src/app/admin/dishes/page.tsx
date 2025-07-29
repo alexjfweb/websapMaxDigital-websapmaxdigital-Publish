@@ -24,9 +24,11 @@ import { collection, addDoc, getDocs, query, where, Timestamp, onSnapshot, delet
 import { useDishes } from "@/hooks/use-dishes";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storageService } from "@/services/storage-service";
+import { useSession } from "@/contexts/session-context";
 
 export default function AdminDishesPage() {
-  const companyId = 'websapmax'; // Hardcoded for now
+  const { currentUser } = useSession();
+  const companyId = currentUser.companyId;
   const { dishes, isLoading, error, refreshDishes } = useDishes(companyId);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -120,11 +122,14 @@ export default function AdminDishesPage() {
   };
   
   const onSubmit = async (values: DishFormData) => {
+    if (!companyId) {
+      toast({ title: 'Error', description: 'No se ha identificado la compañía.', variant: 'destructive' });
+      return;
+    }
     setIsSubmitting(true);
     const isUpdating = !!editingDish;
   
     try {
-      // Validación de nombre duplicado (mejorada)
       const normalizedNewName = values.name.trim().toLowerCase();
       const isNameChanged = !isUpdating || normalizedNewName !== editingDish.name.trim().toLowerCase();
       
@@ -145,7 +150,6 @@ export default function AdminDishesPage() {
   
       let imageUrl = editingDish?.imageUrl || "https://placehold.co/800x450.png";
   
-      // Lógica de subida de imagen
       if (values.image instanceof File) {
         const newUrl = await storageService.compressAndUploadFile(values.image, `dishes/${companyId}/`);
         if (newUrl) {

@@ -20,9 +20,11 @@ import type { Reservation } from "@/types";
 import { useReservations } from "@/hooks/use-reservations";
 import { reservationService } from "@/services/reservation-service";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSession } from "@/contexts/session-context";
 
 export default function AdminReservationsPage() {
-  const companyId = "websapmax"; // Hardcoded for now
+  const { currentUser } = useSession();
+  const companyId = currentUser.companyId;
   const { reservations, isLoading, error, refreshReservations } = useReservations(companyId);
   const { toast } = useToast();
   
@@ -56,7 +58,6 @@ export default function AdminReservationsPage() {
       toast({
         title: "Estado actualizado",
         description: `La reserva ha sido marcada como ${status}.`,
-        variant: "success",
       });
       await refreshReservations();
     } catch (err) {

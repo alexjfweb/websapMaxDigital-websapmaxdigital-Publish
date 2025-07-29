@@ -5,7 +5,7 @@ import useSWR from 'swr';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, updateDoc, doc, Timestamp } from 'firebase/firestore';
 import type { Order } from '@/types'; 
-// Eliminamos la importación de useOrders para desacoplar el hook defectuoso.
+import { useSession } from "./session-context";
 
 interface OrderContextType {
   orders: Order[];
@@ -24,7 +24,6 @@ export const useOrderContext = () => {
   return ctx;
 };
 
-// Fetcher seguro para SWR
 const fetcher = async (url: string): Promise<Order[]> => {
   const response = await fetch(url);
   if (!response.ok) {
@@ -36,12 +35,14 @@ const fetcher = async (url: string): Promise<Order[]> => {
 
 
 export const OrderProvider = ({ children }: { children: ReactNode }) => {
-  const restaurantId = 'websapmax'; // Hardcoded, podría venir de un contexto de sesión.
+  const { currentUser } = useSession();
+  const companyId = currentUser.companyId;
+
   const { data: orders = [], error, isLoading, mutate } = useSWR<Order[], Error>(
-    restaurantId ? `/api/companies/${restaurantId}/orders` : null,
+    companyId ? `/api/companies/${companyId}/orders` : null,
     fetcher,
     {
-      revalidateOnFocus: false, // Evita re-fetch innecesarios
+      revalidateOnFocus: false, 
       shouldRetryOnError: false,
     }
   );
@@ -56,7 +57,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
       updatedAt: Timestamp.now(),
     };
     const docRef = await addDoc(collection(db, 'orders'), orderWithTimestamp);
-    mutate(); // Refrescar los datos de SWR
+    mutate(); 
     return docRef.id;
   }, [mutate]);
 
@@ -68,7 +69,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     const updatePayload: any = { ...updates };
     
     await updateDoc(orderRef, { ...updatePayload, updatedAt: Timestamp.now() });
-    mutate(); // Refrescar los datos de SWR
+    mutate();
   }, [mutate]);
 
   return (
