@@ -206,44 +206,38 @@ class LandingPlansService {
    */
   async getPlans(): Promise<LandingPlan[]> {
     try {
-      const q = query(
-        collection(db, this.COLLECTION_NAME), 
-        where('isActive', '==', true), // Filtra solo los planes activos
-        orderBy('order', 'asc')
-      );
-      
+      const q = query(collection(db, this.COLLECTION_NAME), orderBy('order', 'asc'));
       const snapshot = await getDocs(q);
       const plans: LandingPlan[] = [];
-
+  
       snapshot.forEach(doc => {
         const data = doc.data();
         
-        // El filtrado principal se hace en la consulta de Firestore
-        // Este if es una segunda capa de seguridad
-        if (data.isPublic !== false && data.name && data.price !== undefined) {
-            plans.push({
-                id: doc.id,
-                slug: data.slug,
-                name: data.name,
-                description: data.description,
-                price: data.price || 0,
-                currency: data.currency || 'USD',
-                period: data.period,
-                features: data.features || [],
-                isActive: data.isActive,
-                isPublic: data.isPublic,
-                isPopular: data.isPopular || false,
-                order: data.order || 0,
-                icon: data.icon,
-                color: data.color,
-                maxUsers: data.maxUsers,
-                maxProjects: data.maxProjects,
-                ctaText: data.ctaText || 'Comenzar Prueba Gratuita',
-                createdAt: this.parseTimestamp(data.createdAt),
-                updatedAt: this.parseTimestamp(data.updatedAt),
-                createdBy: data.createdBy,
-                updatedBy: data.updatedBy
-            });
+        // Filtrado en el lado del cliente para asegurar consistencia
+        if (data.isActive === true && data.isPublic === true && data.name && data.price !== undefined) {
+          plans.push({
+            id: doc.id,
+            slug: data.slug,
+            name: data.name,
+            description: data.description,
+            price: data.price || 0,
+            currency: data.currency || 'USD',
+            period: data.period,
+            features: data.features || [],
+            isActive: data.isActive,
+            isPublic: data.isPublic,
+            isPopular: data.isPopular || false,
+            order: data.order || 0,
+            icon: data.icon,
+            color: data.color,
+            maxUsers: data.maxUsers,
+            maxProjects: data.maxProjects,
+            ctaText: data.ctaText || 'Comenzar Prueba Gratuita',
+            createdAt: this.parseTimestamp(data.createdAt),
+            updatedAt: this.parseTimestamp(data.updatedAt),
+            createdBy: data.createdBy,
+            updatedBy: data.updatedBy
+          });
         }
       });
       
