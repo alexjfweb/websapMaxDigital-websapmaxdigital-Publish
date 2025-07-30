@@ -56,11 +56,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         if (userDocSnap.exists()) {
           const userData = userDocSnap.data() as User;
           let userWithCompanyId = { id: firebaseUser.uid, ...userData };
-
-          // Asignación especial de rol para el superadmin
-          if (userWithCompanyId.email === 'alexjfweb@gmail.com') {
-            userWithCompanyId.role = 'superadmin';
-          }
           
           setCurrentUser(userWithCompanyId);
           localStorage.setItem('currentUser', JSON.stringify(userWithCompanyId));

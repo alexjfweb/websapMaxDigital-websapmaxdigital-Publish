@@ -22,7 +22,7 @@ import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
 import { getFirebaseApp, db } from "@/lib/firebase"; 
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import type { User, Company } from "@/types";
+import type { User, Company, UserRole } from "@/types";
 import React from "react";
 
 const registerFormSchema = z.object({
@@ -62,50 +62,56 @@ export default function RegisterPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
       
-      // El ID de la compañía será el UID del usuario administrador que la crea.
-      const companyId = firebaseUser.uid; 
+      const isSuperAdmin = values.email === 'alexjfweb@gmail.com';
+      const role: UserRole = isSuperAdmin ? 'superadmin' : 'admin';
+      
       const username = values.email.split('@')[0];
       const fullName = `${values.name} ${values.lastName}`;
 
-      // Crear el documento del usuario con su companyId
+      // Si es un admin normal, creamos la compañía.
+      let companyId;
+      if (role === 'admin') {
+        companyId = firebaseUser.uid; // El ID de la compañía será el UID del usuario administrador.
+        const newCompanyForFirestore: Omit<Company, 'id'> = {
+            name: values.businessName,
+            ruc: `${Date.now()}`, 
+            location: 'No especificado',
+            status: 'active',
+            registrationDate: new Date().toISOString(),
+            email: values.email,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
+        await setDoc(doc(db, "companies", companyId), {
+          ...newCompanyForFirestore,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+      }
+
+      // Crear el documento del usuario con su rol y companyId si aplica.
       const newUserForFirestore: User = {
         id: firebaseUser.uid,
         username: username,
         email: firebaseUser.email || values.email,
-        role: "admin",
+        role: role,
         name: fullName,
         avatarUrl: `https://placehold.co/100x100.png?text=${values.name.substring(0,1)}${values.lastName.substring(0,1)}`,
         status: 'active',
         registrationDate: new Date().toISOString(),
-        companyId: companyId,
+        ...(role === 'admin' && { companyId: companyId }), // Solo asigna companyId si es admin
       };
       
-      // Crear el documento de la compañía
-      const newCompanyForFirestore: Omit<Company, 'id'> = {
-          name: values.businessName,
-          ruc: `${Date.now()}`, 
-          location: 'No especificado',
-          status: 'active',
-          registrationDate: new Date().toISOString(),
-          email: values.email,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-      };
-      
-      // Guardar ambos documentos en Firestore
       await setDoc(doc(db, "users", firebaseUser.uid), newUserForFirestore);
-      await setDoc(doc(db, "companies", companyId), {
-        ...newCompanyForFirestore,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
       
       toast({
         title: 'Registro Exitoso',
-        description: `La empresa "${values.businessName}" ha sido creada. Ahora puedes iniciar sesión.`,
+        description: isSuperAdmin ? `Cuenta de Superadministrador creada. Ahora puedes iniciar sesión.` : `La empresa "${values.businessName}" ha sido creada. Ahora puedes iniciar sesión.`,
       });
 
-      router.push("/admin/dashboard");
+      // Redirigir según el rol
+      const redirectPath = isSuperAdmin ? "/superadmin/dashboard" : "/admin/dashboard";
+      router.push(redirectPath);
 
     } catch (error) {
       const err = error as { code?: string; message?: string };
