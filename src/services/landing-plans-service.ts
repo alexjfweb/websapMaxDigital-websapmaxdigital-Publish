@@ -1,4 +1,5 @@
 
+
 import { 
   collection, 
   doc, 
@@ -207,6 +208,7 @@ class LandingPlansService {
     try {
       const q = query(
         collection(db, this.COLLECTION_NAME), 
+        where('isActive', '==', true), // Filtra solo los planes activos
         orderBy('order', 'asc')
       );
       
@@ -216,11 +218,9 @@ class LandingPlansService {
       snapshot.forEach(doc => {
         const data = doc.data();
         
-        // Lógica de filtrado resiliente: si isPublic o isActive no están definidos, se asumen como true.
-        const isActive = data.isActive !== false; // Activo a menos que sea explícitamente false
-        const isPublic = data.isPublic !== false; // Público a menos que sea explícitamente false
-
-        if (isActive && isPublic && data.name && data.price !== undefined) {
+        // El filtrado principal se hace en la consulta de Firestore
+        // Este if es una segunda capa de seguridad
+        if (data.isPublic !== false && data.name && data.price !== undefined) {
             plans.push({
                 id: doc.id,
                 slug: data.slug,
@@ -260,6 +260,7 @@ class LandingPlansService {
   subscribeToPlans(callback: (plans: LandingPlan[]) => void, onError: (error: Error) => void): () => void {
     const q = query(
       collection(db, this.COLLECTION_NAME),
+      where('isActive', '==', true), // Filtra solo los planes activos en tiempo real
       orderBy('order', 'asc')
     );
   
@@ -267,10 +268,7 @@ class LandingPlansService {
       const plans: LandingPlan[] = [];
       snapshot.forEach(doc => {
         const data = doc.data();
-        const isActive = data.isActive !== false;
-        const isPublic = data.isPublic !== false;
-
-        if (isActive && isPublic) {
+        if (data.isPublic !== false) {
             plans.push({
               id: doc.id,
               slug: data.slug,
