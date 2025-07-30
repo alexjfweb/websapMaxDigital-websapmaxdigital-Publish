@@ -408,21 +408,24 @@ export default function SubscriptionPlansPage() {
                         {/* Delete Button */}
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700">
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>¿Eliminar plan?</AlertDialogTitle>
+                              <AlertDialogTitle>¿Estás seguro de que deseas eliminar este plan?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Esta acción no se puede deshacer. El plan será marcado como inactivo.
+                                Esta acción marcará el plan como "inactivo" y no se puede deshacer. No se eliminará permanentemente de la base de datos.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDelete(plan)}>
-                                Eliminar
+                              <AlertDialogAction 
+                                onClick={() => handleDelete(plan)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Sí, eliminar
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>

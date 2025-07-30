@@ -55,10 +55,20 @@ class AuditService {
       const logData: Omit<AuditLog, 'id'> = {
         ...data,
         timestamp: serverTimestamp() as Timestamp,
+        ipAddress: data.ipAddress || 'not-provided', // Default value
+        userAgent: data.userAgent || 'not-provided', // Default value
         diff: data.action === 'updated' && data.previousData && data.newData 
               ? this.calculateDiff(data.previousData, data.newData) 
               : undefined,
       };
+
+      // Limpiar cualquier propiedad 'undefined' que pueda quedar
+      Object.keys(logData).forEach(key => {
+        if ((logData as any)[key] === undefined) {
+          delete (logData as any)[key];
+        }
+      });
+
 
       const docRef = await addDoc(collection(db, this.AUDIT_COLLECTION), logData);
       return docRef.id;
