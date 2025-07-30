@@ -25,16 +25,27 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import type { User, Company, UserRole } from "@/types";
 import React from "react";
 
+const SUPERADMIN_EMAIL = 'alexjfweb@gmail.com';
+
 const registerFormSchema = z.object({
   name: z.string().min(2, { message: "El nombre es obligatorio." }),
   lastName: z.string().min(2, { message: "El apellido es obligatorio." }),
-  businessName: z.string().min(3, { message: "El nombre del negocio es obligatorio." }),
+  businessName: z.string().optional(),
   email: z.string().email({ message: "Por favor, ingrese un correo electrónico válido." }),
   password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
   confirmPassword: z.string(),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Las contraseñas no coinciden",
   path: ["confirmPassword"],
+}).refine(data => {
+  // El nombre del negocio es obligatorio solo si el usuario no es superadmin
+  if (data.email.toLowerCase() !== SUPERADMIN_EMAIL) {
+    return data.businessName && data.businessName.length >= 3;
+  }
+  return true;
+}, {
+  message: "El nombre del negocio es obligatorio.",
+  path: ["businessName"],
 });
 
 export default function RegisterPage() {
@@ -53,6 +64,9 @@ export default function RegisterPage() {
     },
   });
 
+  const emailValue = form.watch("email");
+  const isSuperAdminFlow = emailValue.toLowerCase() === SUPERADMIN_EMAIL;
+
   async function onSubmit(values: z.infer<typeof registerFormSchema>) {
     setIsSubmitting(true);
     try {
@@ -62,16 +76,15 @@ export default function RegisterPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
       
-      const isSuperAdmin = values.email === 'alexjfweb@gmail.com';
+      const isSuperAdmin = values.email.toLowerCase() === SUPERADMIN_EMAIL;
       const role: UserRole = isSuperAdmin ? 'superadmin' : 'admin';
       
       const username = values.email.split('@')[0];
       const fullName = `${values.name} ${values.lastName}`;
 
-      // Si es un admin normal, creamos la compañía.
       let companyId;
-      if (role === 'admin') {
-        companyId = firebaseUser.uid; // El ID de la compañía será el UID del usuario administrador.
+      if (role === 'admin' && values.businessName) {
+        companyId = firebaseUser.uid; 
         const newCompanyForFirestore: Omit<Company, 'id'> = {
             name: values.businessName,
             ruc: `${Date.now()}`, 
@@ -89,7 +102,6 @@ export default function RegisterPage() {
         });
       }
 
-      // Crear el documento del usuario con su rol y companyId si aplica.
       const newUserForFirestore: User = {
         id: firebaseUser.uid,
         username: username,
@@ -99,7 +111,7 @@ export default function RegisterPage() {
         avatarUrl: `https://placehold.co/100x100.png?text=${values.name.substring(0,1)}${values.lastName.substring(0,1)}`,
         status: 'active',
         registrationDate: new Date().toISOString(),
-        ...(role === 'admin' && { companyId: companyId }), // Solo asigna companyId si es admin
+        ...(role === 'admin' && { companyId: companyId }),
       };
       
       await setDoc(doc(db, "users", firebaseUser.uid), newUserForFirestore);
@@ -109,7 +121,6 @@ export default function RegisterPage() {
         description: isSuperAdmin ? `Cuenta de Superadministrador creada. Ahora puedes iniciar sesión.` : `La empresa "${values.businessName}" ha sido creada. Ahora puedes iniciar sesión.`,
       });
 
-      // Redirigir según el rol
       const redirectPath = isSuperAdmin ? "/superadmin/dashboard" : "/admin/dashboard";
       router.push(redirectPath);
 
@@ -180,33 +191,36 @@ export default function RegisterPage() {
                   />
               </div>
 
-               <FormField
-                  control={form.control}
-                  name="businessName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nombre del Negocio</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ej. Restaurante Sabor Único" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
               <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Correo Electrónico del Administrador</FormLabel>
+                    <FormLabel>Correo Electrónico</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="admin@example.com" {...field} />
+                      <Input type="email" placeholder="su@correo.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              {!isSuperAdminFlow && (
+                 <FormField
+                    control={form.control}
+                    name="businessName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nombre del Negocio</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ej. Restaurante Sabor Único" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
