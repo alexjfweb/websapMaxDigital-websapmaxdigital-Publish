@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Plus, Search, MoreHorizontal, Edit, Trash2, Eye, Clock, Users, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,6 @@ export default function TablesPage() {
   const { currentUser } = useSession();
   const companyId = currentUser.companyId;
   const { tables, isLoading, isError, error, refreshTables } = useTables(companyId);
-  const [filteredTables, setFilteredTables] = useState<Table[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -30,7 +29,7 @@ export default function TablesPage() {
   const [selectedTableForLogs, setSelectedTableForLogs] = useState<Table | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
+  const filteredTables = useMemo(() => {
     let filtered = tables;
     if (searchTerm) {
       filtered = filtered.filter(
@@ -43,7 +42,7 @@ export default function TablesPage() {
     if (statusFilter !== "all") {
       filtered = filtered.filter((table) => table.status === statusFilter);
     }
-    setFilteredTables(filtered);
+    return filtered;
   }, [tables, searchTerm, statusFilter]);
 
 
