@@ -37,6 +37,7 @@ import {
   BellRing,
   Palette,
   Archive,
+  CreditCard,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
@@ -59,6 +60,7 @@ const navItems: NavItem[] = [
   { href: '/superadmin/analytics', labelKey: 'Analítica', icon: BarChart3, allowedRoles: ['superadmin'], tooltipKey: 'Analítica global' },
   { href: '/superadmin/companies', labelKey: 'Empresas', icon: Store, allowedRoles: ['superadmin'], tooltipKey: 'Gestión de empresas' },
   { href: '/superadmin/subscription-plans', labelKey: 'Planes de Suscripción', icon: Gem, allowedRoles: ['superadmin'], tooltipKey: 'Gestionar planes de suscripción' },
+  { href: '/superadmin/payment-methods', labelKey: 'Métodos de Pago', icon: CreditCard, allowedRoles: ['superadmin'], tooltipKey: 'Configurar métodos de pago' },
   { href: '/superadmin/reminders', labelKey: 'Recordatorios', icon: BellRing, allowedRoles: ['superadmin'], tooltipKey: 'Recordatorios de pago' },
   { href: '/superadmin/users', labelKey: 'Usuarios', icon: Users, allowedRoles: ['superadmin'], tooltipKey: 'Gestión de usuarios' },
   { href: '/superadmin/audit', labelKey: 'Auditoría', icon: Archive, allowedRoles: ['superadmin'], tooltipKey: 'Registros de auditoría' },
