@@ -8,16 +8,16 @@ import { landingPlansService } from './landing-plans-service';
 const examplePlans = [
   {
     slug: 'plan-gratuito',
-    name: 'Prueba Gratuita',
+    name: 'Prueba Gratuita (7 días)',
     description: 'Prueba las funciones del Plan Estándar durante 7 días sin compromiso. No se requiere tarjeta de crédito.',
     price: 0,
     currency: 'USD',
     period: 'monthly',
     features: [
-      'Acceso a todas las funciones del Plan Estándar',
-      'Gestión de Menú Digital Ilimitado',
-      'Recepción de Pedidos Online',
+      'Menú Digital con QR y personalización',
+      'Gestión de Pedidos Online',
       'Sistema de Reservas Web',
+      'Hasta 5 usuarios',
       'Soporte por email durante la prueba'
     ],
     isActive: true,
@@ -27,7 +27,7 @@ const examplePlans = [
     icon: 'zap',
     color: 'gray',
     maxUsers: 5,
-    maxProjects: 1, // Limite para la prueba
+    maxProjects: 1, // Representa el número de "restaurantes" o "sucursales"
     ctaText: 'Comenzar Prueba Gratuita',
   },
   {
@@ -40,7 +40,7 @@ const examplePlans = [
     features: [
       'Menú Digital con QR',
       'Gestión de Platos Ilimitada',
-      'Recepción de Pedidos Locales (en el local)',
+      'Pedidos para consumo en el local',
       'Reportes de Ventas Simples',
       'Soporte por email (respuesta en 48h)'
     ],
@@ -52,7 +52,7 @@ const examplePlans = [
     color: 'blue',
     maxUsers: 3,
     maxProjects: 1,
-    ctaText: 'Elegir Básico',
+    ctaText: 'Elegir Plan Básico',
   },
   {
     slug: 'plan-estandar',
@@ -64,9 +64,9 @@ const examplePlans = [
     features: [
       'Todo en el Plan Básico',
       'Pedidos Online para Domicilio y Recogida',
-      'Sistema de Reservas desde tu Web',
-      'Personalización de Colores y Logo',
-      'Reportes de Ventas Avanzados',
+      'Sistema de Reservas integrable en web',
+      'Personalización de Logo y Colores',
+      'Reportes Avanzados (platos más vendidos)',
       'Soporte por Chat (respuesta en 24h)'
     ],
     isActive: true,
@@ -77,7 +77,7 @@ const examplePlans = [
     color: 'purple',
     maxUsers: 10,
     maxProjects: 1,
-    ctaText: 'Iniciar Prueba de 7 Días',
+    ctaText: 'Actualizar a Estándar',
   },
   {
     slug: 'plan-premium',
@@ -89,7 +89,7 @@ const examplePlans = [
     features: [
       'Todo en el Plan Estándar',
       'Herramientas de Fidelización (cupones, puntos)',
-      'Gestión de Múltiples Usuarios con Roles',
+      'Gestión de Empleados con Roles',
       'Integración con Redes Sociales',
       'Automatización de Marketing por Email',
       'Soporte Prioritario por Chat'
@@ -102,11 +102,11 @@ const examplePlans = [
     color: 'green',
     maxUsers: -1, // Ilimitado
     maxProjects: 1,
-    ctaText: 'Elegir Premium',
+    ctaText: 'Obtener Premium',
   },
   {
-    slug: 'plan-empresarial',
-    name: 'Empresarial',
+    slug: 'plan-profesional',
+    name: 'Profesional',
     description: 'Solución a medida para cadenas, franquicias y grandes grupos gastronómicos con necesidades complejas.',
     price: 249.99,
     currency: 'USD',
@@ -125,9 +125,9 @@ const examplePlans = [
     order: 5,
     icon: 'calendar',
     color: 'indigo',
-    maxUsers: -1,
+    maxUsers: -1, // Ilimitado
     maxProjects: -1, // Ilimitado
-    ctaText: 'Contactar Ventas',
+    ctaText: 'Contactar a Ventas',
   }
 ];
 
