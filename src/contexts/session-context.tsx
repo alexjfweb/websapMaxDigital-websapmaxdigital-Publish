@@ -54,8 +54,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         const userDocSnap = await getDoc(userDocRef);
         
         if (userDocSnap.exists()) {
-          const userData = userDocSnap.data() as User;
-          let userWithCompanyId = { id: firebaseUser.uid, ...userData };
+          const userData = userDocSnap.data() as Omit<User, 'id'>;
+          const userWithCompanyId: User = {
+            id: firebaseUser.uid,
+            ...userData,
+          };
           
           setCurrentUser(userWithCompanyId);
           localStorage.setItem('currentUser', JSON.stringify(userWithCompanyId));
@@ -99,12 +102,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   // Protección de rutas
   useEffect(() => {
-    if (!isLoading && currentUser.role === 'guest') {
-      const protectedRoutes = ['/admin', '/superadmin', '/employee'];
-      const isProtected = protectedRoutes.some(route => pathname.startsWith(route));
-      if (isProtected) {
+    if (isLoading) return; // No hacer nada mientras carga la sesión
+
+    const isProtected = ['/admin', '/superadmin', '/employee'].some(route => pathname.startsWith(route));
+    
+    if (isProtected && currentUser.role === 'guest') {
         router.push('/login');
-      }
+    } else if (pathname === '/login' && currentUser.role !== 'guest') {
+        // Si el usuario ya está logueado, redirigir al panel correspondiente
+        const targetDashboard = `/` + currentUser.role + '/dashboard';
+        router.push(targetDashboard);
     }
   }, [isLoading, currentUser.role, pathname, router]);
 

@@ -110,7 +110,9 @@ export default function AdminDishesPage() {
   };
   
   const onSubmit = async (values: DishFormData) => {
-    if (!companyId) {
+    // Volvemos a obtener el companyId desde el currentUser por si hubo alguna demora en la carga
+    const currentCompanyId = currentUser.companyId;
+    if (!currentCompanyId) {
       toast({ title: 'Error', description: 'No se ha identificado la compañía.', variant: 'destructive' });
       return;
     }
@@ -139,7 +141,7 @@ export default function AdminDishesPage() {
       let imageUrl = editingDish?.imageUrl || "https://placehold.co/800x450.png";
   
       if (values.image instanceof File) {
-        const newUrl = await storageService.compressAndUploadFile(values.image, `dishes/${companyId}/`);
+        const newUrl = await storageService.compressAndUploadFile(values.image, `dishes/${currentCompanyId}/`);
         if (newUrl) {
           if (editingDish?.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
             await storageService.deleteFile(editingDish.imageUrl);
@@ -152,7 +154,7 @@ export default function AdminDishesPage() {
       }
       
       const dishData = {
-        companyId: companyId,
+        companyId: currentCompanyId,
         name: values.name,
         description: values.description,
         price: Number(values.price),
