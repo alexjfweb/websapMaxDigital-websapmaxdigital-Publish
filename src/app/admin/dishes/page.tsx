@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, type ChangeEvent, useEffect } from "react";
+import { useState, type ChangeEvent, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -35,24 +35,12 @@ export default function AdminDishesPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [dishToDelete, setDishToDelete] = useState<Dish | null>(null);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-  const [filteredDishes, setFilteredDishes] = useState<Dish[]>([]);
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  useEffect(() => {
-    if (dishes) {
-      console.log('🟢 Platos recibidos en el componente:', dishes);
-      setFilteredDishes(dishes);
-    }
-    if(error){
-      console.error('🔴 Error al cargar platos:', error);
-    }
-  }, [dishes, error]);
-
 
   const dishFormSchema = z.object({
     id: z.string().optional(),
@@ -256,7 +244,7 @@ export default function AdminDishesPage() {
     ));
   };
 
-  useEffect(() => {
+  const filteredDishes = useMemo(() => {
     let filtered = dishes || [];
     if (searchTerm.trim()) {
       filtered = filtered.filter(dish => 
@@ -268,7 +256,7 @@ export default function AdminDishesPage() {
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(dish => dish.category === selectedCategory);
     }
-    setFilteredDishes(filtered);
+    return filtered;
   }, [dishes, searchTerm, selectedCategory]);
 
   const getUniqueCategories = () => {
@@ -631,5 +619,3 @@ export default function AdminDishesPage() {
     </div>
   );
 }
-
-    
