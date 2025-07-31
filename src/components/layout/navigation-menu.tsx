@@ -117,9 +117,9 @@ export default function NavigationMenu({ role }: NavigationMenuProps) {
         if (isSubMenu) {
           return (
             <SidebarMenuSubItem key={item.href}>
-              <Link href={item.href}>
-                <SidebarMenuSubButton isActive={isActive}>
-                  <span>{translatedLabel}</span>
+              <Link href={item.href} legacyBehavior passHref>
+                <SidebarMenuSubButton asChild isActive={isActive}>
+                  <a>{translatedLabel}</a>
                 </SidebarMenuSubButton>
               </Link>
             </SidebarMenuSubItem>
@@ -128,12 +128,12 @@ export default function NavigationMenu({ role }: NavigationMenuProps) {
 
         return (
           <SidebarMenuItem key={item.href}>
-            <Link href={item.href}>
-              <SidebarMenuButton isActive={isActive} tooltip={translatedTooltip}>
+            <SidebarMenuButton asChild isActive={isActive} tooltip={translatedTooltip}>
+              <Link href={item.href}>
                 <Icon />
                 <span>{translatedLabel}</span>
-              </SidebarMenuButton>
-            </Link>
+              </Link>
+            </SidebarMenuButton>
             {content}
           </SidebarMenuItem>
         );
