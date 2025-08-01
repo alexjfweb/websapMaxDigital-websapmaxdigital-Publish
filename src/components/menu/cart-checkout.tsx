@@ -13,7 +13,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent as UiDialogContent, DialogHeader as UiDialogHeader, DialogTitle as UiDialogTitle, DialogDescription as UiDialogDescription, DialogFooter as UiDialogFooter } from '@/components/ui/dialog';
-import { DialogTitle } from '@/components/ui/dialog';
 import { tableService, Table } from '@/services/table-service';
 import { db } from "@/lib/firebase";
 import { collection, addDoc, doc, serverTimestamp } from "firebase/firestore";
@@ -42,11 +41,18 @@ function validatePhone(phone: string) {
   return /^3\d{9}$/.test(phone.replace(/\D/g, "")); // Ejemplo Colombia
 }
 
+function validateEmail(email: string) {
+    if (!email) return true; // El correo es opcional
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+
 export default function CartCheckout({ cart, onQuantity, onRemove, onClear, restaurantId, restaurantProfile, onClose }: CartCheckoutProps) {
   const envio = cart.length > 0 ? 5.0 : 0;
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const total = subtotal + envio;
-  const { toast } = useToast ? useToast() : { toast: () => {} };
+  const { toast } = useToast() || { toast: () => {} };
 
   const [cliente, setCliente] = useState({
     nombre: "",
@@ -64,7 +70,7 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
     nombre: cliente.nombre.trim().length < 3 ? "Nombre requerido" : "",
     telefono: !validatePhone(cliente.telefono) ? "Teléfono inválido (Ej: 3001234567)" : "",
     direccion: cliente.direccion.trim().length < 5 ? "Dirección requerida" : "",
-    correo: cliente.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cliente.correo) ? "Correo inválido" : "",
+    correo: !validateEmail(cliente.correo) ? "Correo inválido" : "",
   };
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -215,7 +221,6 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
-            <DialogTitle className="sr-only">Carrito de compras</DialogTitle>
             <h2 className="sr-only">Resumen del carrito y confirmación de pedido</h2>
             <div className="space-y-4">
               {cart.length === 0 ? (
@@ -454,7 +459,12 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
         </AlertDialogContent>
       </AlertDialog>
 
-      <UiDialogContent open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+      <UiDialogContent open={showSuccessModal} onOpenChange={(open) => {
+          if(!open) {
+              setShowSuccessModal(false);
+              setRemovedItemName("");
+          }
+      }}>
         <UiDialogHeader>
           <div className="flex justify-center mb-4">
             <CheckCircle className="h-16 w-16 text-green-500" />
