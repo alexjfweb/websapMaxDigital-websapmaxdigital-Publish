@@ -22,7 +22,7 @@ import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
 import { getFirebaseApp, db } from "@/lib/firebase"; 
 import { doc, setDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
-import type { User, Company, UserRole } from "@/types";
+import type { User, UserRole } from "@/types";
 import React from "react";
 import { auditService } from "@/services/audit-service";
 
@@ -81,8 +81,6 @@ export default function RegisterPage() {
       
       const isSuperAdmin = values.email.toLowerCase() === SUPERADMIN_EMAIL;
       const role: UserRole = isSuperAdmin ? 'superadmin' : 'admin';
-      const username = values.email.split('@')[0];
-      const fullName = `${values.name} ${values.lastName}`;
       let companyId: string | undefined = undefined;
 
       // Paso 2: Crear compañía si es un admin
@@ -92,8 +90,6 @@ export default function RegisterPage() {
             name: values.businessName,
             email: values.email,
             phone: '', // Puede ser llenado después en el perfil
-            ruc: 'TEMP-RUC-' + Date.now(),
-            location: 'No especificado',
             status: 'active',
             registrationDate: new Date().toISOString(),
             createdAt: serverTimestamp(),
@@ -102,24 +98,15 @@ export default function RegisterPage() {
         const companyRef = await addDoc(collection(db, "companies"), companyData);
         companyId = companyRef.id;
         console.log(`✅ 2. Compañía creada con ID: ${companyId}`);
-        
-        await auditService.log({
-          entity: 'companies',
-          entityId: companyId,
-          action: 'created',
-          performedBy: { uid: firebaseUser.uid, email: firebaseUser.email! },
-          newData: companyData
-        });
       }
 
       // Paso 3: Crear el documento del usuario en Firestore
-      console.log(`🔵 3. Creando documento de usuario para ${fullName} con rol ${role}`);
-      const newUserForFirestore: User = {
-        id: firebaseUser.uid,
-        username: username,
+      console.log(`🔵 3. Creando documento de usuario para ${values.name} con rol ${role}`);
+      const newUserForFirestore: Omit<User, 'id'> = {
+        username: values.email.split('@')[0],
         email: firebaseUser.email || values.email,
         role: role,
-        name: fullName,
+        name: `${values.name} ${values.lastName}`,
         avatarUrl: `https://placehold.co/100x100.png?text=${values.name.substring(0,1)}${values.lastName.substring(0,1)}`,
         status: 'active',
         registrationDate: new Date().toISOString(),
@@ -127,7 +114,7 @@ export default function RegisterPage() {
       };
       
       await setDoc(doc(db, "users", firebaseUser.uid), newUserForFirestore);
-      console.log("✅ 3. Documento de usuario creado en Firestore con companyId:", companyId);
+      console.log("✅ 3. Documento de usuario creado en Firestore con la siguiente estructura:", newUserForFirestore);
       
       toast({
         title: 'Registro Exitoso',
@@ -285,3 +272,5 @@ export default function RegisterPage() {
     </div>
   );
 }
+
+    
