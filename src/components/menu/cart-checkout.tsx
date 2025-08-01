@@ -125,7 +125,7 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
     try {
       const mesaObj = mesas.find(m => m.id === mesaSeleccionada);
       
-      const newOrderData = {
+      const newOrderData: any = { // Usamos 'any' para construir dinámicamente
         restaurantId,
         productos: cart.map(item => ({ id: item.id, nombre: item.name, cantidad: item.quantity, precio: item.price })),
         cliente: {
@@ -140,13 +140,17 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
         customerName: cliente.nombre,
         items: cart.reduce((sum, item) => sum + item.quantity, 0),
         type: mesaObj ? 'dine-in' : 'delivery',
-        mesa: mesaObj ? {
-          tableId: mesaObj.id!,
-          tableNumber: mesaObj.number,
-        } : undefined,
         date: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
+
+      // Añadir el campo 'mesa' solo si se ha seleccionado una
+      if (mesaObj) {
+        newOrderData.mesa = {
+          tableId: mesaObj.id!,
+          tableNumber: mesaObj.number,
+        };
+      }
 
       await addDoc(collection(db, "orders"), newOrderData);
       
