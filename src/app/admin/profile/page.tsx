@@ -269,6 +269,54 @@ export default function AdminProfilePage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Payment Methods Card */}
+      <Card>
+        <CardHeader><CardTitle>Opciones de Pago Disponibles</CardTitle></CardHeader>
+        <CardContent className="space-y-6">
+            <div className="flex items-center space-x-2">
+                <Switch 
+                    id="codEnabled" 
+                    checked={profileData.paymentMethods?.codEnabled || false} 
+                    onCheckedChange={handleCodChange}
+                    disabled={!isEditing}
+                />
+                <Label htmlFor="codEnabled">Habilitar pago contra entrega</Label>
+            </div>
+
+            {/* Nequi */}
+            <div className="space-y-3 p-4 border rounded-lg">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <NequiIcon className="h-6 w-6"/>
+                        <Label htmlFor="nequiEnabled" className="font-semibold">Nequi</Label>
+                    </div>
+                    <Switch 
+                        id="nequiEnabled" 
+                        checked={profileData.paymentMethods?.nequi?.enabled || false}
+                        onCheckedChange={(checked) => handlePaymentMethodChange('nequi', 'enabled', checked)}
+                        disabled={!isEditing}
+                    />
+                </div>
+                {profileData.paymentMethods?.nequi?.enabled && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        <div className="space-y-1">
+                            <Label htmlFor="nequiAccountHolder">Titular</Label>
+                            <Input id="nequiAccountHolder" value={profileData.paymentMethods?.nequi?.accountHolder || ''} disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('nequi', 'accountHolder', e.target.value)} />
+                        </div>
+                         <div className="space-y-1">
+                            <Label htmlFor="nequiAccountNumber">Número de cuenta</Label>
+                            <Input id="nequiAccountNumber" value={profileData.paymentMethods?.nequi?.accountNumber || ''} disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('nequi', 'accountNumber', e.target.value)} />
+                        </div>
+                    </div>
+                )}
+            </div>
+            
+            {/* Otros métodos se pueden agregar aquí siguiendo el mismo patrón */}
+        </CardContent>
+      </Card>
     </div>
   );
 }
+
+    
