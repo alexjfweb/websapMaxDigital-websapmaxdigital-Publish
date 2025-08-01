@@ -20,9 +20,11 @@ const fetcher = async (url: string): Promise<Dish[]> => {
 export function useDishes(companyId: string | undefined) {
   const { currentUser, isLoading: isSessionLoading } = useSession();
 
+  // Asegura que usemos el companyId del currentUser si está disponible, como fallback
   const effectiveCompanyId = companyId || currentUser.companyId;
 
-  const shouldFetch = effectiveCompanyId && !isSessionLoading;
+  // La petición solo se debe hacer si tenemos un ID de compañía válido
+  const shouldFetch = typeof effectiveCompanyId === 'string' && effectiveCompanyId.length > 0;
   
   if (effectiveCompanyId) {
       console.log(`🔵 [useDishes] Hook evaluado. CompanyId efectivo: ${effectiveCompanyId}. ¿Debería hacer fetch? ${shouldFetch}`);
@@ -43,3 +45,5 @@ export function useDishes(companyId: string | undefined) {
     refreshDishes: mutate,
   };
 }
+
+    

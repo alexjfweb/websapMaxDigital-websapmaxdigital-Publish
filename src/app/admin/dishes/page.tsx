@@ -28,7 +28,7 @@ import { useSession } from "@/contexts/session-context";
 
 export default function AdminDishesPage() {
   const { currentUser } = useSession();
-  const companyId = currentUser.companyId;
+  const companyId = currentUser?.companyId;
   const { dishes, isLoading, error, refreshDishes } = useDishes(companyId);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -110,19 +110,25 @@ export default function AdminDishesPage() {
   };
   
   const onSubmit = async (values: DishFormData) => {
+    // Obtener el companyId en el momento de la sumisión para asegurar el valor más reciente.
     const currentCompanyId = currentUser.companyId;
+
     if (!currentCompanyId) {
       toast({ title: 'Error', description: 'No se ha identificado la compañía. Por favor, recargue la página.', variant: 'destructive' });
+      setIsSubmitting(false);
       return;
     }
+    
     setIsSubmitting(true);
     const isUpdating = !!editingDish;
   
     try {
       const normalizedNewName = values.name.trim().toLowerCase();
-      const isNameChanged = !isUpdating || normalizedNewName !== editingDish.name.trim().toLowerCase();
-      
+      // Verificamos si es una actualización y si el nombre ha cambiado
+      const isNameChanged = !isUpdating || (editingDish && normalizedNewName !== editingDish.name.trim().toLowerCase());
+  
       if (isNameChanged) {
+        // Solo verificamos duplicados si el nombre es nuevo o ha cambiado
         const isDuplicate = dishes.some(
           (dish) => dish.name.trim().toLowerCase() === normalizedNewName
         );
@@ -152,7 +158,7 @@ export default function AdminDishesPage() {
         imageUrl = "https://placehold.co/800x450.png";
       }
       
-      const dishData = {
+      const dishData: any = { // Usamos any temporalmente para construir el objeto
         companyId: currentCompanyId,
         name: values.name,
         description: values.description,
@@ -171,13 +177,10 @@ export default function AdminDishesPage() {
           description: `El plato "${values.name}" se ha actualizado correctamente.`,
         });
       } else {
-        const newDishData = {
-          ...dishData,
-          likes: 0,
-          available: true,
-          createdAt: Timestamp.now(),
-        };
-        await addDoc(collection(db, 'dishes'), newDishData);
+        dishData.likes = 0;
+        dishData.available = true;
+        dishData.createdAt = Timestamp.now();
+        await addDoc(collection(db, 'dishes'), dishData);
         toast({
           title: 'Plato creado',
           description: `El plato "${values.name}" se ha creado correctamente.`,
@@ -639,6 +642,8 @@ export default function AdminDishesPage() {
     </div>
   );
 }
+
+    
 
     
 
