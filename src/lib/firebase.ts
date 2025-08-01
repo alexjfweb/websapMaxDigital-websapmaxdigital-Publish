@@ -9,13 +9,14 @@ let app: FirebaseApp;
 // Función para inicializar y obtener la app, garantizando una única instancia.
 function getFirebaseApp(): FirebaseApp {
   console.log("🔵 getFirebaseApp: Verificando estado de la app de Firebase...");
+  if (!firebaseConfig.projectId) {
+    console.error("🔴 ERROR: La configuración de Firebase está incompleta. No se puede inicializar.");
+    throw new Error("Configuración de Firebase inválida.");
+  }
   if (getApps().length === 0) {
-    if (!firebaseConfig.projectId) {
-      console.error("🔴 ERROR: La configuración de Firebase está incompleta. No se puede inicializar.");
-      throw new Error("Configuración de Firebase inválida.");
-    }
+    console.log("🟠 Inicializando nueva instancia de Firebase con projectId:", firebaseConfig.projectId);
     app = initializeApp(firebaseConfig);
-    console.log("✅ Firebase App Initialized con éxito. Project ID:", firebaseConfig.projectId);
+    console.log("✅ Firebase App Initialized con éxito.");
   } else {
     app = getApp();
     console.log("🟢 Firebase App ya estaba inicializada.");

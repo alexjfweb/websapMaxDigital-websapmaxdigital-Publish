@@ -53,23 +53,27 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       console.log("🔵 Auth state changed. Firebase user:", firebaseUser?.uid || 'Ninguno');
       if (firebaseUser) {
         const userDocRef = doc(db, "users", firebaseUser.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        
-        if (userDocSnap.exists()) {
-          const userData = userDocSnap.data() as Omit<User, 'id'>;
-          const userWithCompanyId: User = {
-            id: firebaseUser.uid,
-            ...userData,
-          };
-          
-          console.log("✅ Usuario encontrado en Firestore. CompanyID:", userWithCompanyId.companyId || "N/A");
-          setCurrentUser(userWithCompanyId);
-          localStorage.setItem('currentUser', JSON.stringify(userWithCompanyId));
-        } else {
-          console.error(`🔴 Usuario ${firebaseUser.uid} existe en Auth pero no en Firestore. Cerrando sesión forzosa.`);
-          await auth.signOut();
-          setCurrentUser(guestUser);
-          localStorage.removeItem('currentUser');
+        try {
+            const userDocSnap = await getDoc(userDocRef);
+            if (userDocSnap.exists()) {
+              const userData = userDocSnap.data() as Omit<User, 'id'>;
+              const userWithCompanyId: User = {
+                id: firebaseUser.uid,
+                ...userData,
+              };
+              
+              console.log("✅ Usuario encontrado en Firestore. CompanyID:", userWithCompanyId.companyId || "N/A");
+              setCurrentUser(userWithCompanyId);
+              localStorage.setItem('currentUser', JSON.stringify(userWithCompanyId));
+            } else {
+              console.error(`🔴 Usuario ${firebaseUser.uid} existe en Auth pero no en Firestore. Cerrando sesión forzosa.`);
+              await auth.signOut();
+              setCurrentUser(guestUser);
+              localStorage.removeItem('currentUser');
+            }
+        } catch(e) {
+            console.error("🔴 Error al obtener documento del usuario desde Firestore:", e);
+            await auth.signOut();
         }
       } else {
         console.log("🟡 No hay usuario de Firebase. Estableciendo sesión de invitado.");
