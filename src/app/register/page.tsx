@@ -24,7 +24,7 @@ import { getFirebaseApp, db } from "@/lib/firebase";
 import { doc, setDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
 import type { User, UserRole } from "@/types";
 import React from "react";
-import { auditService } from "@/services/audit-service";
+import { companyService } from "@/services/company-service";
 
 const SUPERADMIN_EMAIL = 'alexjfweb@gmail.com';
 
@@ -86,21 +86,21 @@ export default function RegisterPage() {
       // Paso 2: Crear compañía si es un admin
       if (role === 'admin' && values.businessName) {
         console.log(`🔵 2. Creando documento de compañía para "${values.businessName}"...`);
-        const companyData = {
+        
+        // Llamada al servicio corregido que ahora devuelve el ID.
+        const newCompanyId = await companyService.createCompany({
             name: values.businessName,
+            ruc: 'temp-ruc', // RUC temporal
             email: values.email,
-            phone: '', // Puede ser llenado después en el perfil
-            status: 'active',
-            registrationDate: new Date().toISOString(),
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-        };
-        const companyRef = await addDoc(collection(db, "companies"), companyData);
-        companyId = companyRef.id;
+            location: 'N/D',
+            status: 'pending'
+        }, { uid: firebaseUser.uid, email: firebaseUser.email! });
+
+        companyId = newCompanyId;
         console.log(`✅ 2. Compañía creada con ID: ${companyId}`);
       }
 
-      // Paso 3: Crear el documento del usuario en Firestore
+      // Paso 3: Crear el documento del usuario en Firestore con la estructura CORRECTA
       console.log(`🔵 3. Creando documento de usuario para ${values.name} con rol ${role}`);
       const newUserForFirestore: Omit<User, 'id'> = {
         username: values.email.split('@')[0],
@@ -141,7 +141,7 @@ export default function RegisterPage() {
         variant: "destructive",
       });
 
-      // Opcional: Si el usuario de Auth se creó pero Firestore falló, eliminar el usuario de Auth
+      // Rollback: Si el usuario de Auth se creó pero Firestore falló, eliminar el usuario de Auth
       if (firebaseUser) {
         console.log(`🟡 Intentando rollback: eliminando usuario de Auth ${firebaseUser.uid}`);
         await firebaseUser.delete().catch(e => console.error("🔴 Falló el rollback del usuario de Auth:", e));

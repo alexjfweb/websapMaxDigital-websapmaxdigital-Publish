@@ -17,7 +17,7 @@ import { auditService } from './audit-service';
 
 
 // Define el tipo de entrada para la creación, omitiendo campos generados por el sistema
-export type CreateCompanyInput = Omit<Company, 'id' | 'createdAt' | 'updatedAt' | 'registrationDate' | 'status'>;
+export type CreateCompanyInput = Omit<Company, 'id' | 'createdAt' | 'updatedAt' | 'registrationDate' | 'status' | 'phoneFixed' | 'addressStreet' | 'addressNeighborhood' | 'addressState' | 'addressPostalCode' | 'companyType'> & { status?: Company['status'] };
 
 class CompanyService {
   private get companiesCollection() {
@@ -27,6 +27,51 @@ class CompanyService {
     }
     return collection(db, 'companies');
   }
+
+  /**
+   * Crea una nueva empresa y devuelve su ID.
+   * @param companyData - Los datos esenciales de la nueva empresa.
+   * @param user - El usuario que realiza la creación.
+   * @returns El ID de la nueva empresa.
+   */
+  async createCompany(companyData: CreateCompanyInput, user: { uid: string; email: string }): Promise<string> {
+    const coll = this.companiesCollection;
+    if (!coll) throw new Error("La base de datos no está disponible.");
+
+    if (!companyData.name || !companyData.ruc) {
+      console.error("❌ Validación fallida: El nombre y el RUC de la empresa son obligatorios.");
+      throw new Error("El nombre y el RUC de la empresa son obligatorios.");
+    }
+    console.log("✅ Validación de datos de la empresa superada.");
+
+    const newCompanyDoc = {
+      ...companyData,
+      status: companyData.status || 'pending',
+      registrationDate: new Date().toISOString(),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+
+    try {
+      const docRef = await addDoc(coll, newCompanyDoc);
+      console.log(`✅ Empresa creada en Firestore con ID: ${docRef.id}`);
+
+      // Log de auditoría
+      await auditService.log({
+        entity: 'companies',
+        entityId: docRef.id,
+        action: 'created',
+        performedBy: user,
+        newData: { id: docRef.id, ...newCompanyDoc },
+      });
+
+      return docRef.id;
+    } catch (error) {
+      console.error("❌ Error al crear la empresa en Firestore:", error);
+      throw new Error("No se pudo registrar la nueva empresa.");
+    }
+  }
+
 
   /**
    * Obtiene todas las empresas activas de Firestore.
@@ -138,3 +183,5 @@ class CompanyService {
 }
 
 export const companyService = new CompanyService();
+
+    
