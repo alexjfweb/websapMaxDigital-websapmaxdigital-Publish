@@ -24,6 +24,7 @@ import { getFirebaseApp, db } from "@/lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import type { User, Company, UserRole } from "@/types";
 import React from "react";
+import { companyService } from "@/services/company-service";
 
 const SUPERADMIN_EMAIL = 'alexjfweb@gmail.com';
 
@@ -38,7 +39,6 @@ const registerFormSchema = z.object({
   message: "Las contraseñas no coinciden",
   path: ["confirmPassword"],
 }).refine(data => {
-  // El nombre del negocio es obligatorio solo si el usuario no es superadmin
   if (data.email.toLowerCase() !== SUPERADMIN_EMAIL) {
     return data.businessName && data.businessName.length >= 3;
   }
@@ -72,9 +72,10 @@ export default function RegisterPage() {
     try {
       const app = getFirebaseApp();
       const auth = getAuth(app);
-
+      console.log("🔵 Creando usuario en Firebase Auth...");
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
+      console.log("✅ Usuario creado en Auth con UID:", firebaseUser.uid);
       
       const isSuperAdmin = values.email.toLowerCase() === SUPERADMIN_EMAIL;
       const role: UserRole = isSuperAdmin ? 'superadmin' : 'admin';
@@ -82,26 +83,23 @@ export default function RegisterPage() {
       const username = values.email.split('@')[0];
       const fullName = `${values.name} ${values.lastName}`;
 
-      let companyId;
+      let companyId: string | undefined = undefined;
+
       if (role === 'admin' && values.businessName) {
-        companyId = firebaseUser.uid; 
-        const newCompanyForFirestore: Omit<Company, 'id'> = {
+        console.log("🔵 Creando documento de compañía para", values.businessName);
+        const newCompanyData = {
             name: values.businessName,
-            ruc: `${Date.now()}`, 
-            location: 'No especificado',
-            status: 'active',
-            registrationDate: new Date().toISOString(),
             email: values.email,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            ruc: 'temp-ruc', // RUC temporal, se puede editar después
+            location: 'No especificado',
+            phone: 'No especificado'
         };
-        await setDoc(doc(db, "companies", companyId), {
-          ...newCompanyForFirestore,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        });
+        const userForService = { uid: firebaseUser.uid, email: firebaseUser.email! };
+        companyId = await companyService.createCompany(newCompanyData, userForService);
+        console.log("✅ Compañía creada con ID:", companyId);
       }
 
+      console.log(`🔵 Creando documento de usuario para ${fullName} con rol ${role}`);
       const newUserForFirestore: User = {
         id: firebaseUser.uid,
         username: username,
@@ -111,14 +109,15 @@ export default function RegisterPage() {
         avatarUrl: `https://placehold.co/100x100.png?text=${values.name.substring(0,1)}${values.lastName.substring(0,1)}`,
         status: 'active',
         registrationDate: new Date().toISOString(),
-        ...(role === 'admin' && { companyId: companyId }),
+        companyId: companyId, // Asignar el ID de la compañía aquí
       };
       
       await setDoc(doc(db, "users", firebaseUser.uid), newUserForFirestore);
+      console.log("✅ Documento de usuario creado en Firestore con companyId:", companyId);
       
       toast({
         title: 'Registro Exitoso',
-        description: isSuperAdmin ? `Cuenta de Superadministrador creada. Ahora puedes iniciar sesión.` : `La empresa "${values.businessName}" ha sido creada. Ahora puedes iniciar sesión.`,
+        description: isSuperAdmin ? `Cuenta de Superadministrador creada.` : `La empresa "${values.businessName}" y su administrador han sido creados.`,
       });
 
       const redirectPath = isSuperAdmin ? "/superadmin/dashboard" : "/admin/dashboard";
@@ -126,15 +125,13 @@ export default function RegisterPage() {
 
     } catch (error) {
       const err = error as { code?: string; message?: string };
-      console.error("Error en el registro:", err);
+      console.error("🔴 Error en el registro:", err);
       let errorMessage = 'Hubo un error al crear la cuenta. Por favor, inténtelo más tarde.';
       
       if (err.code === 'auth/email-already-in-use') {
         errorMessage = 'El correo electrónico ya está en uso.';
       } else if (err.code === 'auth/weak-password') {
         errorMessage = 'La contraseña es demasiado débil.';
-      } else if (err.code === 'auth/configuration-not-found'){
-        errorMessage = 'Error de configuración de Firebase. Contacta a soporte.';
       }
       
       toast({

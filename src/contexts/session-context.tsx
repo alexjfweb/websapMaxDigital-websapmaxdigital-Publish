@@ -62,7 +62,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
                 ...userData,
               };
               
-              console.log("✅ Usuario encontrado en Firestore. CompanyID:", userWithCompanyId.companyId || "N/A");
+              if (userData.companyId) {
+                 console.log("✅ Usuario y companyId encontrados en Firestore. CompanyID:", userData.companyId);
+              } else if (userData.role === 'admin') {
+                 console.warn(`🟡 Usuario admin ${firebaseUser.uid} no tiene un companyId asignado.`);
+              }
+              
               setCurrentUser(userWithCompanyId);
               localStorage.setItem('currentUser', JSON.stringify(userWithCompanyId));
             } else {
@@ -143,5 +148,3 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     </SessionContext.Provider>
   );
 }
-
-    
