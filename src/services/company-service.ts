@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -13,9 +14,6 @@ import {
 } from 'firebase/firestore';
 import type { Company } from '@/types';
 import { auditService } from './audit-service';
-
-// Este tipo ya no es necesario aquí, la creación se maneja en la página de registro
-// export type CreateCompanyInput = Omit<Company, 'id' | 'createdAt' | 'updatedAt' | 'registrationDate' | 'status'> & { status?: Company['status'] };
 
 class CompanyService {
   private get companiesCollection() {

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,7 +21,7 @@ import { UserPlus, Loader2 } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
 import { getFirebaseApp, db } from "@/lib/firebase"; 
-import { doc, setDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, addDoc, collection } from "firebase/firestore";
 import type { UserRole } from "@/types";
 import React from "react";
 // import { auditService } from "@/services/audit-service"; // ✅ Comentado temporalmente
@@ -69,7 +70,6 @@ export default function RegisterPage() {
   async function onSubmit(values: z.infer<typeof registerFormSchema>) {
     setIsSubmitting(true);
     let firebaseUser;
-    let companyId: string | undefined = undefined;
     
     try {
       const app = getFirebaseApp();
@@ -82,6 +82,7 @@ export default function RegisterPage() {
       
       const isSuperAdmin = values.email.toLowerCase() === SUPERADMIN_EMAIL;
       const role: UserRole = isSuperAdmin ? 'superadmin' : 'admin';
+      let companyId: string | undefined = undefined;
 
       // Paso 2: Crear compañía si es un admin
       if (role === 'admin' && values.businessName) {
@@ -92,7 +93,7 @@ export default function RegisterPage() {
             phone: '',
             ruc: 'TEMP-RUC-' + Date.now(),
             location: 'No especificado',
-            status: 'active',
+            status: 'active' as const,
             registrationDate: new Date().toISOString(),
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -100,7 +101,6 @@ export default function RegisterPage() {
         const companyRef = await addDoc(collection(db, "companies"), companyData);
         companyId = companyRef.id;
         console.log(`✅ 2. Compañía creada con ID: ${companyId}`);
-        // ✅ Audit log deshabilitado temporalmente para evitar interrupciones
       }
 
       // Paso 3: Crear el documento del usuario en Firestore (CRÍTICO)
@@ -109,23 +109,21 @@ export default function RegisterPage() {
       const userData = {
         uid: firebaseUser.uid,
         email: firebaseUser.email || values.email,
+        username: values.email.split('@')[0],
+        name: `${values.name} ${values.lastName}`,
         firstName: values.name,
         lastName: values.lastName,
         role: role,
         companyId: companyId,
         businessName: values.businessName || '',
         createdAt: new Date(),
-        isActive: true,
         registrationDate: new Date().toISOString(),
-        status: 'active',
-        username: values.email.split('@')[0],
-        name: `${values.name} ${values.lastName}`
+        status: 'active' as const,
+        isActive: true,
       };
       
       await setDoc(doc(db, "users", firebaseUser.uid), userData);
-      console.log("✅ 3. Documento de usuario creado en Firestore:");
-      console.log("   - UID:", firebaseUser.uid);
-      console.log("   - Datos:", userData);
+      console.log("✅ 3. Documento de usuario creado en Firestore:", userData);
       
       toast({
         title: 'Registro Exitoso',

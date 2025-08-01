@@ -14,7 +14,6 @@ export interface AuditLog {
     email: string;
   };
   timestamp: Timestamp;
-  diff?: Record<string, { from: any; to: any }>;
   previousData?: any;
   newData?: any;
   ipAddress?: string;
@@ -22,31 +21,11 @@ export interface AuditLog {
 }
 
 // Interfaz para la entrada de logs
-export type LogInput = Omit<AuditLog, 'id' | 'timestamp'>;
+export type LogInput = Omit<AuditLog, 'id' | 'timestamp' | 'diff'>;
 
 class AuditService {
   private readonly AUDIT_COLLECTION = 'auditLogs';
 
-  /**
-   * Calcula la diferencia entre dos objetos.
-   */
-  private calculateDiff(from: any, to: any): Record<string, { from: any; to: any }> {
-    const diff: Record<string, { from: any; to: any }> = {};
-    const allKeys = new Set([...Object.keys(from), ...Object.keys(to)]);
-
-    for (const key of allKeys) {
-      if (key === 'updatedAt' || key === 'createdAt') continue; // Ignorar timestamps
-
-      const fromValue = JSON.stringify(from[key]);
-      const toValue = JSON.stringify(to[key]);
-
-      if (fromValue !== toValue) {
-        diff[key] = { from: from[key], to: to[key] };
-      }
-    }
-    return diff;
-  }
-  
   /**
    * Elimina las claves con valor `undefined` de un objeto de forma recursiva.
    * Firestore no permite valores `undefined`.
@@ -82,14 +61,10 @@ class AuditService {
         timestamp: serverTimestamp() as Timestamp,
         ipAddress: data.ipAddress || 'not-provided', // Default value
         userAgent: data.userAgent || 'not-provided', // Default value
-        diff: data.action === 'updated' && data.previousData && data.newData 
-              ? this.calculateDiff(data.previousData, data.newData) 
-              : undefined,
       };
 
       // Limpiar cualquier propiedad 'undefined' antes de enviar a Firestore
       const cleanedLogData = this.cleanupObject(logData);
-
 
       const docRef = await addDoc(collection(db, this.AUDIT_COLLECTION), cleanedLogData);
       return docRef.id;
