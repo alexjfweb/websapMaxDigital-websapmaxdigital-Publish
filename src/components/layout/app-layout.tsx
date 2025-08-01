@@ -15,7 +15,7 @@ import {
 import AppHeader from '@/components/layout/header';
 import NavigationMenu from '@/components/layout/navigation-menu';
 import { Button } from '@/components/ui/button';
-import { LogOut, Settings, UserCircle, LoaderCircle } from 'lucide-react';
+import { LogOut, Settings, UserCircle, LoaderCircle, ArrowLeft, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -32,6 +32,34 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
   
   const isPublicPage = ['/login', '/register', '/'].includes(pathname) || pathname.startsWith('/menu/');
+
+  // Función para manejar el botón "Volver"
+  const handleGoBack = () => {
+    if (pathname === '/login') {
+      router.push('/'); // Ir al home público
+    } else if (pathname === '/register') {
+      router.push('/login'); // Volver al login
+    } else {
+      router.back(); // Usar historial del navegador
+    }
+  };
+
+  // Función para manejar el botón "Siguiente"
+  const handleGoNext = () => {
+    if (pathname === '/login') {
+      router.push('/register'); // Ir al registro
+    } else if (pathname === '/register') {
+      router.push('/login'); // Volver al login (o podría ir a una guía)
+    } else if (pathname === '/') {
+      router.push('/login'); // Ir al login desde home
+    } else {
+      // Para otras páginas, podría mostrar una guía o ir al siguiente paso lógico
+      router.push('/login');
+    }
+  };
+  
+  const showNavigationButtons = ['/login', '/register', '/'].includes(pathname);
+
 
   if (isLoading) {
     return (
@@ -57,7 +85,32 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <>
       {isPublicPage ? (
         <div className="flex flex-col min-h-svh">
-          <AppHeader currentUser={currentUser} handleLogout={handleLogout} showSidebarRelatedUI={false} />
+          <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-card px-4 sm:px-6 shadow-sm">
+              {showNavigationButtons && (
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleGoBack}
+                    className="flex items-center gap-1"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    <span className="hidden sm:inline">Volver</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleGoNext}
+                    className="flex items-center gap-1"
+                  >
+                    <span className="hidden sm:inline">Siguiente</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              <div className="flex-1" />
+              <AppHeader currentUser={currentUser} handleLogout={handleLogout} showSidebarRelatedUI={false} />
+          </header>
           <main className="flex-1 bg-background">
             {children}
           </main>

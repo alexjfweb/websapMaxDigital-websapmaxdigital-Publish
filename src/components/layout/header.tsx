@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -38,64 +39,12 @@ export default function AppHeader({ currentUser, handleLogout, showSidebarRelate
     { code: 'fr', name: 'Français', flag: '🇫🇷' },
   ];
 
-  // Función para manejar el botón "Volver"
-  const handleGoBack = () => {
-    if (pathname === '/login') {
-      router.push('/'); // Ir al home público
-    } else if (pathname === '/register') {
-      router.push('/login'); // Volver al login
-    } else {
-      router.back(); // Usar historial del navegador
-    }
-  };
-
-  // Función para manejar el botón "Siguiente"
-  const handleGoNext = () => {
-    if (pathname === '/login') {
-      router.push('/register'); // Ir al registro
-    } else if (pathname === '/register') {
-      router.push('/login'); // Volver al login (o podría ir a una guía)
-    } else if (pathname === '/') {
-      router.push('/login'); // Ir al login desde home
-    } else {
-      // Para otras páginas, podría mostrar una guía o ir al siguiente paso lógico
-      router.push('/login');
-    }
-  };
-
-  // Determinar si mostrar los botones de navegación
-  const showNavigationButtons = ['/login', '/register', '/'].includes(pathname);
-
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 sm:px-6 shadow-sm">
       {showSidebarRelatedUI && (
         <React.Suspense fallback={null}>
           <ConditionalSidebarTrigger />
         </React.Suspense>
-      )}
-      
-      {/* Botones de navegación - siempre visibles */}
-      {showNavigationButtons && (
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleGoBack}
-            className="flex items-center gap-1"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span className="hidden sm:inline">Volver</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleGoNext}
-            className="flex items-center gap-1"
-          >
-            <span className="hidden sm:inline">Siguiente</span>
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </div>
       )}
       
       <div className="flex-1">
