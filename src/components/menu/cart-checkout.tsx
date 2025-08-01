@@ -66,6 +66,16 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [removedItemName, setRemovedItemName] = useState("");
 
+  // Efecto para reiniciar estados cuando el componente se cierra
+  useEffect(() => {
+    return () => {
+      if (onClose) {
+        setShowSuccessModal(false);
+        setItemToRemove(null);
+      }
+    };
+  }, [onClose]);
+
   const errors = {
     nombre: cliente.nombre.trim().length < 3 ? "Nombre requerido" : "",
     telefono: !validatePhone(cliente.telefono) ? "Teléfono inválido (Ej: 3001234567)" : "",
@@ -459,25 +469,22 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
         </AlertDialogContent>
       </AlertDialog>
 
-      <UiDialogContent open={showSuccessModal} onOpenChange={(open) => {
-          if(!open) {
-              setShowSuccessModal(false);
-              setRemovedItemName("");
-          }
-      }}>
-        <UiDialogHeader>
-          <div className="flex justify-center mb-4">
-            <CheckCircle className="h-16 w-16 text-green-500" />
-          </div>
-          <UiDialogTitle className="text-center text-xl">¡Producto Eliminado!</UiDialogTitle>
-          <UiDialogDescription className="text-center">
-            {removedItemName} ha sido eliminado de tu carrito.
-          </UiDialogDescription>
-        </UiDialogHeader>
-        <UiDialogFooter className="sm:justify-center">
-          <Button onClick={() => setShowSuccessModal(false)}>Cerrar</Button>
-        </UiDialogFooter>
-      </UiDialogContent>
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <UiDialogContent>
+            <UiDialogHeader>
+            <div className="flex justify-center mb-4">
+                <CheckCircle className="h-16 w-16 text-green-500" />
+            </div>
+            <UiDialogTitle className="text-center text-xl">¡Producto Eliminado!</UiDialogTitle>
+            <UiDialogDescription className="text-center">
+                {removedItemName} ha sido eliminado de tu carrito.
+            </UiDialogDescription>
+            </UiDialogHeader>
+            <UiDialogFooter className="sm:justify-center">
+            <Button onClick={() => setShowSuccessModal(false)}>Cerrar</Button>
+            </UiDialogFooter>
+        </UiDialogContent>
+      </Dialog>
     </>
   );
 }
