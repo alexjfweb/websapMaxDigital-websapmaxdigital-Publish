@@ -1,9 +1,7 @@
-
 import { db } from '@/lib/firebase';
 import {
   collection,
   doc,
-  addDoc,
   updateDoc,
   getDocs,
   getDoc,
@@ -119,6 +117,7 @@ class CompanyService {
 
     const newData = { id: updatedDoc.id, ...updatedDoc.data() } as Company;
 
+    // El logging de auditoría se puede mantener aquí para las actualizaciones
     await auditService.log({
       entity: 'companies',
       entityId: companyId,

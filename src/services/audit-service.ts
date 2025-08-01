@@ -1,6 +1,5 @@
-
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import type { Timestamp } from 'firebase/firestore';
 
 // Definición de la estructura de un log de auditoría
@@ -21,7 +20,7 @@ export interface AuditLog {
 }
 
 // Interfaz para la entrada de logs
-export type LogInput = Omit<AuditLog, 'id' | 'timestamp' | 'diff'>;
+export type LogInput = Omit<AuditLog, 'id' | 'timestamp'>;
 
 class AuditService {
   private readonly AUDIT_COLLECTION = 'auditLogs';
@@ -56,11 +55,9 @@ class AuditService {
    */
   async log(data: LogInput): Promise<string> {
     try {
-      const logData: Omit<AuditLog, 'id'> = {
+      const logData = {
         ...data,
-        timestamp: serverTimestamp() as Timestamp,
-        ipAddress: data.ipAddress || 'not-provided', // Default value
-        userAgent: data.userAgent || 'not-provided', // Default value
+        timestamp: serverTimestamp(),
       };
 
       // Limpiar cualquier propiedad 'undefined' antes de enviar a Firestore
@@ -70,55 +67,9 @@ class AuditService {
       return docRef.id;
     } catch (error) {
       console.error("Error al registrar el log de auditoría:", error);
-      throw new Error("No se pudo registrar el log de auditoría.");
+      // No relanzar el error para no interrumpir flujos críticos como el registro
+      return '';
     }
-  }
-
-  /**
-   * Obtiene los logs de auditoría con opciones de filtrado.
-   */
-  async getLogs(filters: {
-    entity?: string;
-    action?: string;
-    userId?: string;
-    startDate?: Date;
-    endDate?: Date;
-    searchTerm?: string;
-    pageLimit?: number;
-  }): Promise<AuditLog[]> {
-    let q = query(collection(db, this.AUDIT_COLLECTION), orderBy('timestamp', 'desc'));
-
-    if (filters.entity) {
-      q = query(q, where('entity', '==', filters.entity));
-    }
-    if (filters.action) {
-      q = query(q, where('action', '==', filters.action));
-    }
-    if (filters.userId) {
-      q = query(q, where('performedBy.uid', '==', filters.userId));
-    }
-    if (filters.startDate) {
-        q = query(q, where('timestamp', '>=', filters.startDate));
-    }
-    if (filters.endDate) {
-        q = query(q, where('timestamp', '<=', filters.endDate));
-    }
-
-    q = query(q, limit(filters.pageLimit || 50));
-    
-    const snapshot = await getDocs(q);
-    const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AuditLog));
-
-    // Filtrado por searchTerm se realiza en el cliente ya que Firestore no soporta búsquedas de texto parcial complejas.
-    if(filters.searchTerm) {
-      const term = filters.searchTerm.toLowerCase();
-      return logs.filter(log => 
-          log.entityId.toLowerCase().includes(term) ||
-          log.performedBy.email.toLowerCase().includes(term)
-      );
-    }
-    
-    return logs;
   }
 }
 
