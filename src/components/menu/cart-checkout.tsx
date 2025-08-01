@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent as UiDialogContent, DialogHeader as UiDialogHeader, DialogTitle as UiDialogTitle, DialogDescription as UiDialogDescription, DialogFooter as UiDialogFooter } from '@/components/ui/dialog';
 import { DialogTitle } from '@/components/ui/dialog';
 import { tableService, Table } from '@/services/table-service';
 import { db } from "@/lib/firebase";
@@ -56,6 +57,8 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
   });
   const [touched, setTouched] = useState<{ [k: string]: boolean }>({});
   const [itemToRemove, setItemToRemove] = useState<CartItem | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [removedItemName, setRemovedItemName] = useState("");
 
   const errors = {
     nombre: cliente.nombre.trim().length < 3 ? "Nombre requerido" : "",
@@ -439,10 +442,8 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
               onClick={() => {
                 if (itemToRemove) {
                   onRemove(itemToRemove.id);
-                  toast({
-                    title: "Producto eliminado",
-                    description: `${itemToRemove.name} ha sido eliminado del carrito.`,
-                  });
+                  setRemovedItemName(itemToRemove.name);
+                  setShowSuccessModal(true);
                 }
                 setItemToRemove(null);
               }}
@@ -452,6 +453,22 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <UiDialogContent open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <UiDialogHeader>
+          <div className="flex justify-center mb-4">
+            <CheckCircle className="h-16 w-16 text-green-500" />
+          </div>
+          <UiDialogTitle className="text-center text-xl">¡Producto Eliminado!</UiDialogTitle>
+          <UiDialogDescription className="text-center">
+            {removedItemName} ha sido eliminado de tu carrito.
+          </UiDialogDescription>
+        </UiDialogHeader>
+        <UiDialogFooter className="sm:justify-center">
+          <Button onClick={() => setShowSuccessModal(false)}>Cerrar</Button>
+        </UiDialogFooter>
+      </UiDialogContent>
     </>
   );
-}
+
+    
