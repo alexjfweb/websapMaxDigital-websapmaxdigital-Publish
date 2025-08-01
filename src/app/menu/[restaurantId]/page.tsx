@@ -229,6 +229,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
               onRemove={cart.removeItem}
               onClear={cart.clearCart}
               restaurantId={restaurantId}
+              restaurantProfile={restaurant}
               onClose={() => setCartOpen(false)}
             />
           </DialogContent>

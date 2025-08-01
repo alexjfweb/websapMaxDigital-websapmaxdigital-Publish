@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -15,6 +15,7 @@ import { DialogTitle } from '@/components/ui/dialog';
 import { tableService, Table } from '@/services/table-service';
 import { db } from "@/lib/firebase";
 import { collection, addDoc, doc, serverTimestamp } from "firebase/firestore";
+import type { Company } from '@/types';
 
 // Tipos para los productos del carrito
 interface CartItem {
@@ -31,6 +32,7 @@ interface CartCheckoutProps {
   onRemove: (id: string) => void;
   onClear: () => void;
   restaurantId: string;
+  restaurantProfile: Company | null;
   onClose?: () => void;
 }
 
@@ -38,31 +40,7 @@ function validatePhone(phone: string) {
   return /^3\d{9}$/.test(phone.replace(/\D/g, "")); // Ejemplo Colombia
 }
 
-const paymentMethods = [
-  {
-    key: "cash",
-    label: "Pago Contra Entrega",
-    instructions: "Paga en efectivo al recibir tu pedido. Ten el dinero exacto para agilizar la entrega.",
-  },
-  {
-    key: "qr",
-    label: "Paga con Código QR",
-    instructions: "Escanea este QR con tu app bancaria para transferir el total.",
-    qrUrl: "https://placehold.co/120x120?text=QR",
-  },
-  {
-    key: "nequi",
-    label: "Paga con Nequi/Daviplata",
-    instructions: "Envía el total a 3001234567 (Nequi/Daviplata).",
-  },
-  {
-    key: "paypal",
-    label: "PayPal (Simulado)",
-    instructions: "Serás redirigido a una pasarela simulada.",
-  },
-];
-
-export default function CartCheckout({ cart, onQuantity, onRemove, onClear, restaurantId, onClose }: CartCheckoutProps) {
+export default function CartCheckout({ cart, onQuantity, onRemove, onClear, restaurantId, restaurantProfile, onClose }: CartCheckoutProps) {
   const envio = cart.length > 0 ? 5.0 : 0;
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const total = subtotal + envio;
@@ -97,6 +75,23 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
   const [mesas, setMesas] = useState<Table[]>([]);
   const [mesaSeleccionada, setMesaSeleccionada] = useState<string>("");
   const [loadingMesas, setLoadingMesas] = useState(false);
+
+  const paymentMethods = useMemo(() => {
+    const methods = [];
+    if (restaurantProfile?.paymentMethods?.codEnabled) {
+        methods.push({ key: "cash", label: "Pago Contra Entrega", instructions: "Paga en efectivo al recibir tu pedido." });
+    }
+    if (restaurantProfile?.paymentMethods?.bancolombia?.enabled) {
+        methods.push({ key: "qr", label: "Paga con Código QR", instructions: "Escanea este QR con tu app bancaria.", qrUrl: restaurantProfile.paymentMethods.bancolombia.bancolombiaQrImageUrl });
+    }
+    if (restaurantProfile?.paymentMethods?.nequi?.enabled || restaurantProfile?.paymentMethods?.daviplata?.enabled) {
+        let nequiInfo = restaurantProfile?.paymentMethods?.nequi?.enabled ? `Nequi: ${restaurantProfile.paymentMethods.nequi.accountNumber}` : '';
+        let daviplataInfo = restaurantProfile?.paymentMethods?.daviplata?.enabled ? `Daviplata: ${restaurantProfile.paymentMethods.daviplata.accountNumber}` : '';
+        methods.push({ key: "nequi_daviplata", label: "Paga con Nequi/Daviplata", instructions: `Envía el total a ${[nequiInfo, daviplataInfo].filter(Boolean).join(' o ')}.` });
+    }
+    return methods;
+  }, [restaurantProfile]);
+
 
   useEffect(() => {
     setLoadingMesas(true);
@@ -175,8 +170,8 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
       `💰 *Total a pagar:*  \n$${totalStr}\n\n` +
       `💳 *Método de pago:*  \n${metodo}\n\n` +
       (cliente.notas ? `📝 *Notas del cliente:*  \n${cliente.notas}` : '');
-    const phone = '573001234567'; // Reemplazar con el teléfono real del restaurante
-    const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(mensaje)}`;
+    const phone = restaurantProfile?.phone || '';
+    const url = `https://api.whatsapp.com/send?phone=${phone.replace(/\D/g, '')}&text=${encodeURIComponent(mensaje)}`;
     window.open(url, '_blank');
     toast({ title: 'Pedido preparado', description: 'Redirigiendo a WhatsApp...', variant: 'success' });
     if (pedidoGuardado) {
@@ -294,8 +289,15 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
                     <div className="mt-2 p-3 rounded-md bg-muted border text-sm">
                       <div className="font-medium mb-1">Instrucciones:</div>
                       <div className="mb-2">{paymentMethods.find(m => m.key === selectedPayment)?.instructions}</div>
-                      {selectedPayment === "qr" && (
-                        <Image src={paymentMethods.find(m => m.key === "qr")?.qrUrl || ''} alt="QR" width={112} height={112} className="w-28 h-28 mx-auto rounded" />
+                      {selectedPayment === "qr" && paymentMethods.find(m => m.key === "qr")?.qrUrl && (
+                        <Image 
+                          src={paymentMethods.find(m => m.key === "qr")?.qrUrl || ''} 
+                          alt="QR de Pago" 
+                          width={112} 
+                          height={112} 
+                          className="w-28 h-28 mx-auto rounded border" 
+                          data-ai-hint="payment QR code"
+                        />
                       )}
                     </div>
                   )}
