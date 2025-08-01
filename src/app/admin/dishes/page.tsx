@@ -110,7 +110,6 @@ export default function AdminDishesPage() {
   };
   
   const onSubmit = async (values: DishFormData) => {
-    // Volvemos a obtener el companyId desde el currentUser por si hubo alguna demora en la carga
     const currentCompanyId = currentUser.companyId;
     if (!currentCompanyId) {
       toast({ title: 'Error', description: 'No se ha identificado la compañía.', variant: 'destructive' });
@@ -282,17 +281,21 @@ export default function AdminDishesPage() {
 
   const renderTableBody = () => {
     if (isLoading) {
-      return Array.from({ length: 5 }).map((_, index) => (
-        <TableRow key={`skeleton-${index}`}>
-          <TableCell className="hidden md:table-cell"><Skeleton className="h-12 w-12 rounded-md" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-          <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
-          <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
-          <TableCell className="text-center"><Skeleton className="h-6 w-20 mx-auto rounded-full" /></TableCell>
-          <TableCell className="text-center hidden sm:table-cell"><Skeleton className="h-4 w-20 mx-auto" /></TableCell>
-          <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
-        </TableRow>
-      ));
+      return (
+        <>
+          {Array.from({ length: 5 }).map((_, index) => (
+            <TableRow key={`skeleton-${index}`}>
+              <TableCell className="hidden md:table-cell"><Skeleton className="h-12 w-12 rounded-md" /></TableCell>
+              <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+              <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+              <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+              <TableCell className="text-center"><Skeleton className="h-6 w-20 mx-auto rounded-full" /></TableCell>
+              <TableCell className="text-center hidden sm:table-cell"><Skeleton className="h-4 w-20 mx-auto" /></TableCell>
+              <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
+            </TableRow>
+          ))}
+        </>
+      );
     }
 
     if (error) {
@@ -398,7 +401,22 @@ export default function AdminDishesPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {renderTableBody()}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="hidden md:table-cell">Imagen</TableHead>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Categoría</TableHead>
+                  <TableHead className="text-right">Precio</TableHead>
+                  <TableHead className="text-center">Stock</TableHead>
+                  <TableHead className="text-center hidden sm:table-cell">Likes</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {renderTableBody()}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       </div>
@@ -621,3 +639,5 @@ export default function AdminDishesPage() {
     </div>
   );
 }
+
+    
