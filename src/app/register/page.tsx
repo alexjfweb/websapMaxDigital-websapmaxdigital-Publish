@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,10 +20,10 @@ import { UserPlus, Loader2 } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
 import { getFirebaseApp, db } from "@/lib/firebase"; 
-import { doc, setDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
-import type { User, UserRole } from "@/types";
+import { doc, setDoc, addDoc, collection } from "firebase/firestore";
+import type { UserRole } from "@/types";
 import React from "react";
-import { companyService } from "@/services/company-service";
+import { auditService } from "@/services/audit-service";
 
 const SUPERADMIN_EMAIL = 'alexjfweb@gmail.com';
 
@@ -70,6 +69,8 @@ export default function RegisterPage() {
   async function onSubmit(values: z.infer<typeof registerFormSchema>) {
     setIsSubmitting(true);
     let firebaseUser;
+    let companyId: string | undefined = undefined;
+    
     try {
       const app = getFirebaseApp();
       const auth = getAuth(app);
@@ -81,46 +82,78 @@ export default function RegisterPage() {
       
       const isSuperAdmin = values.email.toLowerCase() === SUPERADMIN_EMAIL;
       const role: UserRole = isSuperAdmin ? 'superadmin' : 'admin';
-      let companyId: string | undefined = undefined;
 
       // Paso 2: Crear compañía si es un admin
       if (role === 'admin' && values.businessName) {
         console.log(`🔵 2. Creando documento de compañía para "${values.businessName}"...`);
-        
-        // Llamada al servicio corregido que ahora devuelve el ID.
-        const newCompanyId = await companyService.createCompany({
-            name: values.businessName,
-            ruc: 'temp-ruc', // RUC temporal
-            email: values.email,
-            location: 'N/D',
-            status: 'pending'
-        }, { uid: firebaseUser.uid, email: firebaseUser.email! });
-
-        companyId = newCompanyId;
-        console.log(`✅ 2. Compañía creada con ID: ${companyId}`);
+        try {
+          const companyData = {
+              name: values.businessName,
+              email: values.email,
+              phone: '',
+              ruc: 'TEMP-RUC-' + Date.now(),
+              location: 'No especificado',
+              status: 'active',
+              registrationDate: new Date().toISOString(),
+              createdAt: new Date(),
+              updatedAt: new Date(),
+          };
+          const companyRef = await addDoc(collection(db, "companies"), companyData);
+          companyId = companyRef.id;
+          console.log(`✅ 2. Compañía creada con ID: ${companyId}`);
+          
+          try {
+            await auditService.log({
+              entity: 'companies',
+              entityId: companyId,
+              action: 'created',
+              performedBy: { uid: firebaseUser.uid, email: firebaseUser.email! },
+              newData: companyData
+            });
+            console.log("✅ 2.1. Audit log de compañía creado");
+          } catch (auditError) {
+            console.warn("⚠️ 2.1. Error en audit log (no crítico):", auditError);
+          }
+        } catch (companyError) {
+          console.error("🔴 2. Error creando compañía:", companyError);
+          throw companyError;
+        }
       }
 
-      // Paso 3: Crear el documento del usuario en Firestore con la estructura CORRECTA
-      console.log(`🔵 3. Creando documento de usuario para ${values.name} con rol ${role}`);
-      const newUserForFirestore: Omit<User, 'id'> = {
-        username: values.email.split('@')[0],
-        email: firebaseUser.email || values.email,
-        role: role,
-        name: `${values.name} ${values.lastName}`,
-        avatarUrl: `https://placehold.co/100x100.png?text=${values.name.substring(0,1)}${values.lastName.substring(0,1)}`,
-        status: 'active',
-        registrationDate: new Date().toISOString(),
-        companyId: companyId,
-      };
+      // Paso 3: Crear el documento del usuario en Firestore
+      console.log(`🔵 3. Creando documento de usuario para ${values.name} ${values.lastName} con rol ${role}`);
       
-      await setDoc(doc(db, "users", firebaseUser.uid), newUserForFirestore);
-      console.log("✅ 3. Documento de usuario creado en Firestore con la siguiente estructura:", newUserForFirestore);
+      try {
+        const userData = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email || values.email,
+          firstName: values.name,
+          lastName: values.lastName,
+          role: role,
+          companyId: companyId,
+          businessName: values.businessName || '',
+          createdAt: new Date(),
+          isActive: true,
+          status: 'active', // Añadir estado inicial
+          username: values.email.split('@')[0], // Añadir username
+          name: `${values.name} ${values.lastName}`, // Añadir nombre completo
+          registrationDate: new Date().toISOString(), // Añadir fecha de registro
+        };
+        
+        await setDoc(doc(db, "users", firebaseUser.uid), userData);
+        console.log("✅ 3. Documento de usuario creado en Firestore:", userData);
+
+      } catch (userError) {
+        console.error("🔴 3. Error creando documento de usuario:", userError);
+        throw userError;
+      }
       
       toast({
         title: 'Registro Exitoso',
         description: isSuperAdmin ? `Cuenta de Superadministrador creada.` : `La empresa "${values.businessName}" y su administrador han sido creados.`,
       });
 
+      console.log("🔵 4. Redirigiendo al dashboard...");
       const redirectPath = isSuperAdmin ? "/superadmin/dashboard" : "/admin/dashboard";
       router.push(redirectPath);
 
@@ -141,10 +174,14 @@ export default function RegisterPage() {
         variant: "destructive",
       });
 
-      // Rollback: Si el usuario de Auth se creó pero Firestore falló, eliminar el usuario de Auth
       if (firebaseUser) {
-        console.log(`🟡 Intentando rollback: eliminando usuario de Auth ${firebaseUser.uid}`);
-        await firebaseUser.delete().catch(e => console.error("🔴 Falló el rollback del usuario de Auth:", e));
+        console.log(`🟡 Iniciando rollback: eliminando usuario de Auth ${firebaseUser.uid}`);
+        try {
+          await firebaseUser.delete();
+          console.log("✅ Rollback completado: usuario eliminado de Auth");
+        } catch (rollbackError) {
+          console.error("🔴 Falló el rollback del usuario de Auth:", rollbackError);
+        }
       }
     } finally {
       setIsSubmitting(false);
@@ -272,5 +309,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-
-    
