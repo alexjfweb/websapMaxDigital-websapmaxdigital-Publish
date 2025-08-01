@@ -131,7 +131,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
     };
 
     const subscribeToDishes = () => {
-      const q = query(collection(db, 'dishes'), where('companyId', '==', effectiveRestaurantId));
+      const q = query(collection(db, 'dishes'), where('companyId', '==', effectiveRestaurantId), where('available', '==', true));
       return onSnapshot(q, (snapshot) => {
         const dishesFromFS = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Dish));
         setDishes(dishesFromFS);
@@ -210,7 +210,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
       }}
       className="min-h-screen"
     >
-      <div className="absolute right-4 top-4 z-30">
+      <div className="fixed right-4 top-4 z-30">
         <Dialog open={cartOpen} onOpenChange={setCartOpen}>
           <DialogTrigger asChild>
             <button className="relative p-2 rounded-full bg-white shadow hover:bg-primary/10 transition">
