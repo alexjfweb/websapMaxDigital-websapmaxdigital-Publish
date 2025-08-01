@@ -35,7 +35,7 @@ export interface RestaurantProfile {
       accountHolder?: string;
       accountNumber?: string;
     };
-    daviplata?: {
+     daviplata?: {
       enabled: boolean;
       qrCodeUrl?: string;
       accountHolder?: string;
@@ -43,7 +43,8 @@ export interface RestaurantProfile {
     };
     bancolombia?: {
       enabled: boolean;
-      qrCodeUrl?: string;
+      qrCodeUrl?: string; // Kept for backwards compatibility if needed, but not used in UI
+      bancolombiaQrImageUrl?: string; // New field for uploaded image
       accountHolder?: string;
       accountNumber?: string;
     };
@@ -156,7 +157,7 @@ export interface Company {
     };
     bancolombia?: {
       enabled: boolean;
-      qrCodeUrl?: string;
+      bancolombiaQrImageUrl?: string;
     };
   };
   corporateColors?: {

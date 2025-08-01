@@ -37,6 +37,7 @@ export default function AdminProfilePage() {
 
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [bancolombiaQrPreview, setBancolombiaQrPreview] = useState<string | null>(null);
   
   useEffect(() => {
     async function fetchProfile() {
@@ -53,6 +54,7 @@ export default function AdminProfilePage() {
           setProfileData(data);
           if(data.logoUrl) setLogoPreview(data.logoUrl);
           if(data.bannerUrl) setBannerPreview(data.bannerUrl);
+          if(data.paymentMethods?.bancolombia?.bancolombiaQrImageUrl) setBancolombiaQrPreview(data.paymentMethods.bancolombia.bancolombiaQrImageUrl);
         } else {
           console.log("No such document! Creating a default profile structure.");
           setProfileData({ id: companyId, name: "Mi Restaurante" }); // Estado inicial mínimo
@@ -139,6 +141,28 @@ export default function AdminProfilePage() {
     }
   };
 
+  const handleQrImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    if (!companyId) return;
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setBancolombiaQrPreview(URL.createObjectURL(file));
+    setIsSaving(true);
+    try {
+      const url = await storageService.compressAndUploadFile(file, `qrs/${companyId}/`);
+      if (url) {
+        handlePaymentMethodChange('bancolombia', 'bancolombiaQrImageUrl', url);
+        toast({
+          title: "Imagen QR subida",
+          description: "El nuevo QR se ha cargado. Guarda los cambios para aplicarlo.",
+        });
+      }
+    } catch (error: any) {
+       toast({ title: "Error de Subida", description: error.message, variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!companyId) return;
@@ -356,9 +380,17 @@ export default function AdminProfilePage() {
                 </div>
                 {profileData.paymentMethods?.bancolombia?.enabled && (
                     <div className="pt-2">
-                        <Label htmlFor="bancolombiaQrCodeUrl">URL del Código QR</Label>
-                        <Input id="bancolombiaQrCodeUrl" placeholder="https://.../qr.png" value={profileData.paymentMethods?.bancolombia?.qrCodeUrl || ''} disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('bancolombia', 'qrCodeUrl', e.target.value)} />
-                        <p className="text-xs text-muted-foreground mt-1">Sube tu imagen QR a un servicio como Imgur y pega el enlace aquí.</p>
+                        <Label>Imagen del Código QR</Label>
+                        <div className="flex items-center gap-4 mt-2">
+                            <Image src={bancolombiaQrPreview || "https://placehold.co/100x100.png?text=QR"} alt="QR Bancolombia" width={96} height={96} className="h-24 w-24 rounded-md border object-cover" data-ai-hint="payment qr code"/>
+                             <Button variant="outline" asChild disabled={!isEditing}>
+                                <Label htmlFor="bancolombia-qr-upload" className="cursor-pointer">
+                                    <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
+                                    <Input id="bancolombia-qr-upload" type="file" className="hidden" accept="image/*" onChange={handleQrImageUpload} disabled={!isEditing} />
+                                </Label>
+                            </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">Sube la imagen de tu código QR de Bancolombia.</p>
                     </div>
                 )}
             </div>
