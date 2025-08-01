@@ -142,7 +142,23 @@ export interface Company {
     website?: string;
     menuShareLink?: string;
   };
-  paymentMethods?: any; // Define properly if needed
+  paymentMethods?: {
+    codEnabled?: boolean;
+    nequi?: {
+      enabled: boolean;
+      accountHolder?: string;
+      accountNumber?: string;
+    };
+    daviplata?: {
+      enabled: boolean;
+      accountHolder?: string;
+      accountNumber?: string;
+    };
+    bancolombia?: {
+      enabled: boolean;
+      qrCodeUrl?: string;
+    };
+  };
   corporateColors?: {
       primary?: string;
       secondary?: string;

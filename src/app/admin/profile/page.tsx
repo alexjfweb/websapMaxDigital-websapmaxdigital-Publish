@@ -312,11 +312,58 @@ export default function AdminProfilePage() {
                 )}
             </div>
             
-            {/* Otros métodos se pueden agregar aquí siguiendo el mismo patrón */}
+            {/* Daviplata */}
+            <div className="space-y-3 p-4 border rounded-lg">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <DaviplataIcon className="h-6 w-6"/>
+                        <Label htmlFor="daviplataEnabled" className="font-semibold">Daviplata</Label>
+                    </div>
+                    <Switch 
+                        id="daviplataEnabled" 
+                        checked={profileData.paymentMethods?.daviplata?.enabled || false}
+                        onCheckedChange={(checked) => handlePaymentMethodChange('daviplata', 'enabled', checked)}
+                        disabled={!isEditing}
+                    />
+                </div>
+                {profileData.paymentMethods?.daviplata?.enabled && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        <div className="space-y-1">
+                            <Label htmlFor="daviplataAccountHolder">Titular</Label>
+                            <Input id="daviplataAccountHolder" value={profileData.paymentMethods?.daviplata?.accountHolder || ''} disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('daviplata', 'accountHolder', e.target.value)} />
+                        </div>
+                         <div className="space-y-1">
+                            <Label htmlFor="daviplataAccountNumber">Número de cuenta</Label>
+                            <Input id="daviplataAccountNumber" value={profileData.paymentMethods?.daviplata?.accountNumber || ''} disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('daviplata', 'accountNumber', e.target.value)} />
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Bancolombia */}
+            <div className="space-y-3 p-4 border rounded-lg">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <BancolombiaIcon className="h-6 w-6"/>
+                        <Label htmlFor="bancolombiaEnabled" className="font-semibold">Bancolombia (QR)</Label>
+                    </div>
+                    <Switch 
+                        id="bancolombiaEnabled" 
+                        checked={profileData.paymentMethods?.bancolombia?.enabled || false}
+                        onCheckedChange={(checked) => handlePaymentMethodChange('bancolombia', 'enabled', checked)}
+                        disabled={!isEditing}
+                    />
+                </div>
+                {profileData.paymentMethods?.bancolombia?.enabled && (
+                    <div className="pt-2">
+                        <Label htmlFor="bancolombiaQrCodeUrl">URL del Código QR</Label>
+                        <Input id="bancolombiaQrCodeUrl" placeholder="https://.../qr.png" value={profileData.paymentMethods?.bancolombia?.qrCodeUrl || ''} disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('bancolombia', 'qrCodeUrl', e.target.value)} />
+                        <p className="text-xs text-muted-foreground mt-1">Sube tu imagen QR a un servicio como Imgur y pega el enlace aquí.</p>
+                    </div>
+                )}
+            </div>
         </CardContent>
       </Card>
     </div>
   );
 }
-
-    
