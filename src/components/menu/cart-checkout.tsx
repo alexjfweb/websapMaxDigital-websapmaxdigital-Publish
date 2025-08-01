@@ -81,7 +81,7 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
     nombre: cliente.nombre.trim().length < 3 ? "Nombre requerido" : "",
     telefono: !validatePhone(cliente.telefono) ? "Teléfono inválido (Ej: 3001234567)" : "",
     direccion: cliente.direccion.trim().length < 5 ? "Dirección requerida" : "",
-    correo: cliente.correo && !/^[^@\s]+\.[^@\s]+$/.test(cliente.correo) ? "Correo inválido" : "",
+    correo: cliente.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cliente.correo) ? "Correo inválido" : "",
   };
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
