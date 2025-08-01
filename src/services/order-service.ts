@@ -22,6 +22,7 @@ class OrderService {
   private parseTimestamp(timestamp: any): Date {
     if (!timestamp) return new Date();
     if (timestamp instanceof Timestamp) return timestamp.toDate();
+    // Añadido para manejar el formato de objeto que a veces devuelve Firestore
     if (timestamp.seconds) return new Date(timestamp.seconds * 1000);
     if (typeof timestamp === 'string') return new Date(timestamp);
     if (timestamp instanceof Date) return timestamp;
@@ -29,13 +30,15 @@ class OrderService {
   }
 
   async getOrdersByCompany(companyId: string): Promise<Order[]> {
-    if (!companyId) {
-      console.error('[OrderService] El ID de la compañía es requerido.');
-      throw new Error('El ID de la compañía es requerido.');
+    if (!companyId || typeof companyId !== 'string' || companyId.trim() === '') {
+      console.error('[OrderService] El ID de la compañía es requerido y debe ser una cadena válida.');
+      // Devolver un array vacío para evitar que la UI se rompa si el ID es inválido.
+      return [];
     }
     
     const coll = this.ordersCollection;
     if (!coll) {
+        console.error("[OrderService] La conexión a la base de datos no está disponible.");
         throw new Error("La conexión a la base de datos no está disponible.");
     }
     
@@ -55,8 +58,9 @@ class OrderService {
       querySnapshot.forEach(doc => {
         const data = doc.data();
         
+        // Validación más robusta de los datos del pedido
         if (!data.cliente?.nombre || !data.date || typeof data.total !== 'number' || !data.status) {
-          console.warn(`[WARN] Documento de pedido ${doc.id} omitido por datos incompletos.`);
+          console.warn(`[WARN] Documento de pedido ${doc.id} omitido por datos incompletos.`, data);
           return;
         }
 

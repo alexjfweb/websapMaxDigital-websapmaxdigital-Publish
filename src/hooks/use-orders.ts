@@ -8,11 +8,19 @@ import { useSession } from '@/contexts/session-context';
 const fetcher = async (url: string): Promise<Order[]> => {
   const response = await fetch(url);
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: 'Error en la solicitud a la API de pedidos' }));
-    throw new Error(errorData.error || errorData.message || 'Error al obtener los datos de los pedidos');
+    let errorInfo = 'Error en la solicitud a la API de pedidos';
+    try {
+        const errorData = await response.json();
+        console.error("❌ [useOrders-Fetcher] Error en la respuesta de la API:", errorData);
+        errorInfo = errorData.error || errorData.message || JSON.stringify(errorData);
+    } catch (e) {
+        console.error("❌ [useOrders-Fetcher] No se pudo parsear el error JSON. Status:", response.status, "Texto:", response.statusText);
+        errorInfo = response.statusText;
+    }
+    throw new Error(errorInfo);
   }
   const data = await response.json();
-  console.log('✅ [useOrders] Datos recibidos de la API:', data);
+  console.log('✅ [useOrders] Datos recibidos de la API:', data.length);
   return data;
 };
 
@@ -27,10 +35,10 @@ export function useOrders(companyId?: string | null) {
     shouldFetch ? `/api/companies/${effectiveCompanyId}/orders` : null,
     fetcher,
     {
-      revalidateOnFocus: false,
+      revalidateOnFocus: true,
       shouldRetryOnError: false,
       onError: (err) => {
-        console.error("❌ [useOrders] Error capturado por SWR:", err);
+        console.error("❌ [useOrders] Error capturado por SWR en el hook:", err);
       }
     }
   );

@@ -8,10 +8,11 @@ import {
   query,
   where,
   serverTimestamp,
-  Timestamp
+  Timestamp,
+  addDoc
 } from 'firebase/firestore';
-import type { Company } from '@/types';
-import { auditService } from './audit-service';
+import type { Company, CreateCompanyInput } from '@/types';
+// import { auditService } from './audit-service'; // Descomentar cuando el servicio de auditoría sea estable
 
 class CompanyService {
   private get companiesCollection() {
@@ -24,7 +25,6 @@ class CompanyService {
 
   /**
    * Obtiene todas las empresas activas de Firestore.
-   * @returns Un array de objetos Company.
    */
   async getCompanies(): Promise<Company[]> {
     const coll = this.companiesCollection;
@@ -37,32 +37,14 @@ class CompanyService {
       
       querySnapshot.forEach(doc => {
         const data = doc.data();
-        // Validación en tiempo de lectura
-        if (!data.name || !data.ruc) {
-          console.warn(`[WARN] Documento de empresa ${doc.id} omitido por datos incompletos.`);
+        if (!data.name) {
+          console.warn(`[WARN] Documento de empresa ${doc.id} omitido por falta de nombre.`);
           return;
         }
 
-        const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date();
-        const updatedAt = data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date();
-
         companies.push({
           id: doc.id,
-          name: data.name,
-          ruc: data.ruc,
-          location: data.location,
-          addressStreet: data.addressStreet,
-          addressNeighborhood: data.addressNeighborhood,
-          addressState: data.addressState,
-          addressPostalCode: data.addressPostalCode,
-          companyType: data.companyType,
-          status: data.status,
-          registrationDate: data.registrationDate || new Date(0).toISOString(),
-          phone: data.phone,
-          phoneFixed: data.phoneFixed,
-          email: data.email,
-          createdAt: createdAt.toISOString(),
-          updatedAt: updatedAt.toISOString(),
+          ...data
         } as Company);
       });
       
@@ -91,16 +73,12 @@ class CompanyService {
   
   /**
    * Actualiza una empresa existente en Firestore.
-   * @param companyId - El ID de la empresa a actualizar.
-   * @param companyData - Los campos a actualizar.
-   * @returns La empresa actualizada.
    */
   async updateCompany(companyId: string, companyData: Partial<Company>, user: { uid: string; email: string }): Promise<Company> {
     const coll = this.companiesCollection;
     if (!coll) throw new Error("La base de datos no está disponible.");
 
     const docRef = doc(coll, companyId);
-
     const docSnap = await getDoc(docRef);
     if (!docSnap.exists()) {
       throw new Error("La empresa no existe.");
@@ -117,15 +95,8 @@ class CompanyService {
 
     const newData = { id: updatedDoc.id, ...updatedDoc.data() } as Company;
 
-    // El logging de auditoría se puede mantener aquí para las actualizaciones
-    await auditService.log({
-      entity: 'companies',
-      entityId: companyId,
-      action: 'updated',
-      performedBy: user,
-      previousData,
-      newData,
-    });
+    // Aquí se podría reactivar la auditoría si se desea
+    // await auditService.log(...)
 
     console.log(`✅ Empresa actualizada con éxito en Firestore. ID: ${companyId}`);
     return newData;
