@@ -84,16 +84,21 @@ export interface CartItem extends Dish {
 export type UserRole = 'guest' | 'employee' | 'admin' | 'superadmin';
 
 export interface User {
-  id: string;
+  id: string; // Document ID, same as uid for simplicity
+  uid: string; // Firebase Auth User ID
   username: string;
   email: string;
-  name?: string; // Added name for display
+  name?: string; // Legacy or display name
+  firstName?: string; // Preferred field
+  lastName?: string;  // Preferred field
+  businessName?: string; // For admin users
   contact?: string;
   role: UserRole;
   status: 'active' | 'inactive' | 'pending';
   registrationDate: string; // ISO date string
   avatarUrl?: string;
   companyId?: string; // Tenant ID
+  isActive?: boolean; // To control access
 }
 
 // New Project types
@@ -161,7 +166,7 @@ export interface Table {
 }
 
 export type TableInput = {
-  number: number;
+  number: string;
   capacity: number;
   zone: string;
   status: 'available' | 'occupied' | 'reserved' | 'out_of_service';

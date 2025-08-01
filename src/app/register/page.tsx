@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,11 +19,12 @@ import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
 import { UserPlus, Loader2 } from "lucide-react";
 import { useRouter } from 'next/navigation';
-import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
+import { createUserWithEmailAndPassword, getAuth, User as FirebaseUser } from "firebase/auth";
 import { getFirebaseApp, db } from "@/lib/firebase"; 
 import { doc, setDoc, addDoc, collection } from "firebase/firestore";
-import type { UserRole } from "@/types";
+import type { UserRole, User } from "@/types"; // ✅ Importar User
 import React from "react";
+// import { auditService } from "@/services/audit-service"; // Audit service temporalmente deshabilitado
 
 const SUPERADMIN_EMAIL = 'alexjfweb@gmail.com';
 
@@ -37,7 +39,6 @@ const registerFormSchema = z.object({
   message: "Las contraseñas no coinciden",
   path: ["confirmPassword"],
 }).refine(data => {
-  // El nombre del negocio es obligatorio si no es el superadmin
   if (data.email.toLowerCase() !== SUPERADMIN_EMAIL) {
     return data.businessName && data.businessName.length >= 3;
   }
@@ -68,7 +69,8 @@ export default function RegisterPage() {
 
   async function onSubmit(values: z.infer<typeof registerFormSchema>) {
     setIsSubmitting(true);
-    let firebaseUser;
+    let firebaseUser: FirebaseUser | undefined;
+    let companyId: string | undefined = undefined;
     
     try {
       const app = getFirebaseApp();
@@ -81,9 +83,7 @@ export default function RegisterPage() {
       
       const isSuperAdmin = values.email.toLowerCase() === SUPERADMIN_EMAIL;
       const role: UserRole = isSuperAdmin ? 'superadmin' : 'admin';
-      let companyId: string | undefined = undefined;
 
-      // Paso 2: Crear la compañía si es un administrador normal
       if (role === 'admin' && values.businessName) {
         console.log(`🔵 2. Creando documento de compañía para "${values.businessName}"...`);
         const companyData = {
@@ -99,30 +99,30 @@ export default function RegisterPage() {
         };
         const companyRef = await addDoc(collection(db, "companies"), companyData);
         companyId = companyRef.id;
-        console.log(`✅ 2. Compañía creada en Firestore con ID: ${companyId}`);
+        console.log(`✅ 2. Compañía creada con ID: ${companyId}`);
       }
 
-      // Paso 3: Crear el documento del usuario en Firestore (CRÍTICO)
-      console.log(`🔵 3. Creando documento de usuario para ${values.name} ${values.lastName}...`);
+      console.log(`🔵 3. Creando documento de usuario para ${values.name} ${values.lastName}`);
       
-      const userData = {
+      // ✅ Estructura de datos del usuario corregida para coincidir con `types/index.ts`
+      const userData: User = {
+        id: firebaseUser.uid, // Campo `id` para consistencia con otras partes de la app
         uid: firebaseUser.uid,
         email: firebaseUser.email || values.email,
+        username: values.email.split('@')[0],
         firstName: values.name,
         lastName: values.lastName,
         role: role,
         companyId: companyId,
         businessName: values.businessName || '',
-        createdAt: new Date(),
+        status: 'active',
         registrationDate: new Date().toISOString(),
-        status: 'active' as const,
         isActive: true,
         avatarUrl: `https://placehold.co/100x100.png?text=${values.name.charAt(0)}`,
-        username: values.email.split('@')[0]
       };
       
       await setDoc(doc(db, "users", firebaseUser.uid), userData);
-      console.log("✅ 3. Documento de usuario creado en Firestore. Datos:", userData);
+      console.log("✅ 3. Documento de usuario creado en Firestore con UID:", firebaseUser.uid);
       
       toast({
         title: '¡Registro Exitoso!',
@@ -140,8 +140,6 @@ export default function RegisterPage() {
       
       if (err.code === 'auth/email-already-in-use') {
         errorMessage = 'El correo electrónico ya está en uso. Por favor, utilice otro.';
-      } else if (err.code === 'auth/weak-password') {
-        errorMessage = 'La contraseña es demasiado débil.';
       }
       
       toast({
@@ -150,9 +148,8 @@ export default function RegisterPage() {
         variant: "destructive",
       });
 
-      // Rollback: Si el usuario de Auth se creó pero algo falló después, eliminarlo.
       if (firebaseUser) {
-        console.log(`🟡 Iniciando ROLLBACK: eliminando usuario de Auth ${firebaseUser.uid} debido a un error posterior.`);
+        console.log(`🟡 Iniciando ROLLBACK: eliminando usuario de Auth ${firebaseUser.uid}`);
         try {
           await firebaseUser.delete();
           console.log("✅ Rollback completado: usuario de Auth eliminado.");
