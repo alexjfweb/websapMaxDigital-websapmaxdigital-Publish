@@ -23,7 +23,9 @@ class OrderService {
     if (!timestamp) return new Date();
     if (timestamp instanceof Timestamp) return timestamp.toDate();
     // Añadido para manejar el formato de objeto que a veces devuelve Firestore
-    if (timestamp.seconds) return new Date(timestamp.seconds * 1000);
+    if (typeof timestamp === 'object' && timestamp !== null && 'seconds' in timestamp) {
+        return new Date(timestamp.seconds * 1000);
+    }
     if (typeof timestamp === 'string') return new Date(timestamp);
     if (timestamp instanceof Date) return timestamp;
     return new Date();
@@ -31,8 +33,7 @@ class OrderService {
 
   async getOrdersByCompany(companyId: string): Promise<Order[]> {
     if (!companyId || typeof companyId !== 'string' || companyId.trim() === '') {
-      console.error('[OrderService] El ID de la compañía es requerido y debe ser una cadena válida.');
-      // Devolver un array vacío para evitar que la UI se rompa si el ID es inválido.
+      console.error('[OrderService] El ID de la compañía es requerido y debe ser una cadena válida. Devolviendo array vacío.');
       return [];
     }
     
@@ -53,12 +54,16 @@ class OrderService {
       const querySnapshot = await getDocs(q);
       console.log(`[OrderService] Se encontraron ${querySnapshot.size} documentos para la compañía ${companyId}.`);
       
+      if (querySnapshot.empty) {
+        console.log(`[OrderService] No se encontraron pedidos para la compañía ${companyId}. Devolviendo array vacío.`);
+        return []; // Retorna un array vacío si no hay pedidos, en lugar de fallar.
+      }
+      
       const orders: Order[] = [];
 
       querySnapshot.forEach(doc => {
         const data = doc.data();
         
-        // Validación más robusta de los datos del pedido
         if (!data.cliente?.nombre || !data.date || typeof data.total !== 'number' || !data.status) {
           console.warn(`[WARN] Documento de pedido ${doc.id} omitido por datos incompletos.`, data);
           return;
@@ -84,9 +89,11 @@ class OrderService {
       
       console.log(`✅ Se obtuvieron ${orders.length} pedidos válidos para la compañía ${companyId}.`);
       return orders;
-    } catch (error) {
+    } catch (error: any) {
       console.error(`❌ Error al obtener los pedidos para la compañía ${companyId}:`, error);
-      throw new Error(`No se pudieron obtener los pedidos: ${error}`);
+      // En lugar de lanzar un error que rompa la UI, devolvemos un array vacío y logueamos el error.
+      // Esto es más resiliente si el servicio de pedidos falla temporalmente.
+      return [];
     }
   }
 }

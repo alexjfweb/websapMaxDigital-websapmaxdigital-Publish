@@ -9,7 +9,7 @@ import { useSession } from "./session-context";
 
 interface OrderContextType {
   orders: Order[];
-  addOrder: (order: Omit<Order, 'id'>) => Promise<string>;
+  addOrder: (order: Omit<Order, 'id' | 'date'>) => Promise<string>;
   updateOrder: (id: string, updates: Partial<Order>) => Promise<void>;
   loading: boolean;
   error: Error | null;
@@ -33,13 +33,15 @@ const fetcher = async (url: string): Promise<Order[]> => {
   return response.json();
 };
 
-
 export const OrderProvider = ({ children }: { children: ReactNode }) => {
   const { currentUser } = useSession();
   const companyId = currentUser.companyId;
 
+  // Solo intentar hacer fetch si hay un companyId
+  const shouldFetch = !!companyId;
+
   const { data: orders = [], error, isLoading, mutate } = useSWR<Order[], Error>(
-    companyId ? `/api/companies/${companyId}/orders` : null,
+    shouldFetch ? `/api/companies/${companyId}/orders` : null,
     fetcher,
     {
       revalidateOnFocus: false, 
@@ -47,14 +49,14 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     }
   );
 
-  const addOrder = useCallback(async (orderData: Omit<Order, 'id'>) => {
+  const addOrder = useCallback(async (orderData: Omit<Order, 'id' | 'date'>) => {
     if (!db) {
       throw new Error("La base de datos no está disponible.");
     }
     const orderWithTimestamp = {
       ...orderData,
-      date: Timestamp.now(), 
-      updatedAt: Timestamp.now(),
+      date: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     };
     const docRef = await addDoc(collection(db, 'orders'), orderWithTimestamp);
     mutate(); 
@@ -68,9 +70,14 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     const orderRef = doc(db, 'orders', id);
     const updatePayload: any = { ...updates };
     
-    await updateDoc(orderRef, { ...updatePayload, updatedAt: Timestamp.now() });
+    await updateDoc(orderRef, { ...updatePayload, updatedAt: serverTimestamp() });
     mutate();
   }, [mutate]);
+
+  // Si no hay companyId, no hay nada que renderizar o procesar aún
+  if (!shouldFetch && currentUser.role !== 'guest') {
+    return <>{children}</>;
+  }
 
   return (
     <OrderContext.Provider value={{ orders, addOrder, updateOrder, loading: isLoading, error, refreshOrders: mutate }}>

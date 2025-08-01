@@ -15,7 +15,6 @@ import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog';
 import { db } from '@/lib/firebase';
 import { collection, query, onSnapshot, doc, getDoc, where } from 'firebase/firestore';
 
-// Cart Hook (simple version for now)
 interface CartStore {
   items: CartItem[];
   addItem: (dish: Dish) => void;
@@ -49,7 +48,7 @@ const useCart = (): CartStore => {
     setItems((prevItems) =>
       prevItems.map((item) =>
         item.id === dishId ? { ...item, quantity: Math.max(0, quantity) } : item
-      ).filter(item => item.quantity > 0) // Remove if quantity is 0
+      ).filter(item => item.quantity > 0)
     );
   };
   
@@ -64,7 +63,6 @@ const useCart = (): CartStore => {
   const totalItems = React.useMemo(() => {
     return items.reduce((total, item) => total + item.quantity, 0);
   }, [items]);
-
 
   return { items, addItem, removeItem, updateQuantity, clearCart, totalPrice, totalItems };
 };
@@ -135,9 +133,11 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
       return onSnapshot(q, (snapshot) => {
         const dishesFromFS = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Dish));
         setDishes(dishesFromFS);
+        setIsLoading(false); // Marcar como cargado después de obtener los platos
       }, (error) => {
         console.error("Error cargando platos:", error);
         setError("No se pudieron cargar los platos del menú.");
+        setIsLoading(false);
       });
     };
     
@@ -148,8 +148,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
           fetchMenuStyles()
         ]);
         const unsubscribeDishes = subscribeToDishes();
-        setIsLoading(false);
-
+        
         return () => {
             unsubscribeDishes();
         };

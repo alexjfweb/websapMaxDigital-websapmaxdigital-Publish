@@ -1,5 +1,7 @@
 
-import React, { useState, useEffect } from "react";
+"use client";
+
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -9,9 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
-import { useOrderContext, type Order } from '@/contexts/order-context';
 import { DialogTitle } from '@/components/ui/dialog';
 import { tableService, Table } from '@/services/table-service';
+import { db } from "@/lib/firebase";
+import { collection, addDoc, doc, serverTimestamp } from "firebase/firestore";
 
 // Tipos para los productos del carrito
 interface CartItem {
@@ -60,13 +63,11 @@ const paymentMethods = [
 ];
 
 export default function CartCheckout({ cart, onQuantity, onRemove, onClear, restaurantId, onClose }: CartCheckoutProps) {
-  const { addOrder } = useOrderContext();
   const envio = cart.length > 0 ? 5.0 : 0;
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const total = subtotal + envio;
   const { toast } = useToast ? useToast() : { toast: () => {} };
 
-  // Estado del formulario de cliente
   const [cliente, setCliente] = useState({
     nombre: "",
     telefono: "",
@@ -76,12 +77,11 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
   });
   const [touched, setTouched] = useState<{ [k: string]: boolean }>({});
 
-  // Validaciones
   const errors = {
     nombre: cliente.nombre.trim().length < 3 ? "Nombre requerido" : "",
     telefono: !validatePhone(cliente.telefono) ? "Teléfono inválido (Ej: 3001234567)" : "",
     direccion: cliente.direccion.trim().length < 5 ? "Dirección requerida" : "",
-    correo: cliente.correo && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(cliente.correo) ? "Correo inválido" : "",
+    correo: cliente.correo && !/^[^@\s]+\.[^@\s]+$/.test(cliente.correo) ? "Correo inválido" : "",
   };
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -94,8 +94,6 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
 
   const [accordionOpen, setAccordionOpen] = useState<string>('payment');
   const [selectedPayment, setSelectedPayment] = useState<string>("");
-
-  // Estado para mesas
   const [mesas, setMesas] = useState<Table[]>([]);
   const [mesaSeleccionada, setMesaSeleccionada] = useState<string>("");
   const [loadingMesas, setLoadingMesas] = useState(false);
@@ -103,7 +101,6 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
   useEffect(() => {
     setLoadingMesas(true);
     tableService.getAllTables(restaurantId).then((todas) => {
-      // Solo mesas activas y disponibles
       setMesas(todas.filter(m => m.isActive && m.status === 'available'));
     }).finally(() => setLoadingMesas(false));
   }, [restaurantId]);
@@ -128,7 +125,7 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
     try {
       const mesaObj = mesas.find(m => m.id === mesaSeleccionada);
       
-      const newOrderData: Omit<Order, 'id' | 'date'> = {
+      const newOrderData = {
         restaurantId,
         productos: cart.map(item => ({ id: item.id, nombre: item.name, cantidad: item.quantity, precio: item.price })),
         cliente: {
@@ -140,24 +137,25 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
         },
         status: 'pending',
         total,
-        // --- Campos calculados que el contexto necesita ---
         customerName: cliente.nombre,
         items: cart.reduce((sum, item) => sum + item.quantity, 0),
         type: mesaObj ? 'dine-in' : 'delivery',
-        // --- Mesa ---
         mesa: mesaObj ? {
           tableId: mesaObj.id!,
           tableNumber: mesaObj.number,
         } : undefined,
+        date: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       };
 
-      await addOrder(newOrderData);
+      await addDoc(collection(db, "orders"), newOrderData);
       
       if (mesaObj) {
         await tableService.changeTableStatus(mesaObj.id!, 'occupied');
       }
       pedidoGuardado = true;
     } catch (err) {
+      console.error("Error al registrar pedido:", err);
       toast({ title: 'Error al registrar pedido', description: 'No se pudo guardar el pedido en el sistema.', variant: 'destructive' });
       return;
     }
@@ -173,7 +171,7 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
       `💰 *Total a pagar:*  \n$${totalStr}\n\n` +
       `💳 *Método de pago:*  \n${metodo}\n\n` +
       (cliente.notas ? `📝 *Notas del cliente:*  \n${cliente.notas}` : '');
-    const phone = '573001234567';
+    const phone = '573001234567'; // Reemplazar con el teléfono real del restaurante
     const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(mensaje)}`;
     window.open(url, '_blank');
     toast({ title: 'Pedido preparado', description: 'Redirigiendo a WhatsApp...', variant: 'success' });
@@ -215,7 +213,6 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
         <CardContent className="p-6 space-y-6">
           <DialogTitle className="sr-only">Carrito de compras</DialogTitle>
           <h2 className="sr-only">Resumen del carrito y confirmación de pedido</h2>
-          {/* Resumen de productos */}
           <div className="space-y-4">
             {cart.length === 0 ? (
               <div className="text-muted-foreground text-center py-8">Tu carrito está vacío</div>
@@ -230,6 +227,7 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
                       height={56} 
                       className="rounded-md object-cover" 
                       style={{ width: '56px', height: '56px', objectFit: 'cover' }}
+                      data-ai-hint="food item"
                     />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-base truncate">{item.name}</p>
@@ -253,7 +251,6 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
               </ul>
             )}
           </div>
-          {/* Subtotal y total */}
           {cart.length > 0 && (
             <div className="space-y-1 text-base">
               <div className="flex justify-between">
@@ -270,11 +267,10 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
               </div>
             </div>
           )}
-          {/* Acordeón principal */}
           <Accordion type="single" collapsible value={accordionOpen} onValueChange={setAccordionOpen} className="rounded-lg border bg-muted/50">
             <AccordionItem value="payment">
               <AccordionTrigger className="text-base font-semibold px-4">Opciones de Pago Disponibles</AccordionTrigger>
-              <AccordionContent className="space-y-3">
+              <AccordionContent className="space-y-3 p-4">
                 <div className="flex flex-col gap-3">
                   {paymentMethods.map((method) => (
                     <label key={method.key} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition ${selectedPayment === method.key ? 'border-primary bg-primary/10 ring-2 ring-primary' : 'hover:border-primary/50'}`}>
@@ -295,7 +291,7 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
                       <div className="font-medium mb-1">Instrucciones:</div>
                       <div className="mb-2">{paymentMethods.find(m => m.key === selectedPayment)?.instructions}</div>
                       {selectedPayment === "qr" && (
-                        <img src={paymentMethods.find(m => m.key === "qr")?.qrUrl} alt="QR" className="w-28 h-28 mx-auto rounded" />
+                        <Image src={paymentMethods.find(m => m.key === "qr")?.qrUrl || ''} alt="QR" width={112} height={112} className="w-28 h-28 mx-auto rounded" />
                       )}
                     </div>
                   )}
@@ -304,7 +300,7 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
             </AccordionItem>
             <AccordionItem value="customer">
               <AccordionTrigger className="text-base font-semibold px-4">Información del Cliente</AccordionTrigger>
-              <AccordionContent>
+              <AccordionContent className="p-4">
                 <form className="space-y-4 pt-2">
                   <div>
                     <label className="block text-sm font-medium mb-1">Nombre completo *</label>
@@ -378,7 +374,6 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
                     />
                   </div>
                 </form>
-                {/* Selector de mesa */}
                 <div className="mt-4">
                   <label className="block text-sm font-medium mb-1">Mesa (opcional)</label>
                   {loadingMesas ? (
