@@ -46,9 +46,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
+    console.log("🔵 SessionProvider: Montado. Configurando listener de Auth...");
     const app = getFirebaseApp();
     const auth = getAuth(app);
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      console.log("🔵 Auth state changed. Firebase user:", firebaseUser?.uid || 'Ninguno');
       if (firebaseUser) {
         const userDocRef = doc(db, "users", firebaseUser.uid);
         const userDocSnap = await getDoc(userDocRef);
@@ -60,22 +62,28 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             ...userData,
           };
           
+          console.log("✅ Usuario encontrado en Firestore. CompanyID:", userWithCompanyId.companyId || "N/A");
           setCurrentUser(userWithCompanyId);
           localStorage.setItem('currentUser', JSON.stringify(userWithCompanyId));
         } else {
-          console.warn(`Usuario ${firebaseUser.uid} existe en Auth pero no en Firestore. Cerrando sesión.`);
+          console.error(`🔴 Usuario ${firebaseUser.uid} existe en Auth pero no en Firestore. Cerrando sesión forzosa.`);
           await auth.signOut();
           setCurrentUser(guestUser);
           localStorage.removeItem('currentUser');
         }
       } else {
+        console.log("🟡 No hay usuario de Firebase. Estableciendo sesión de invitado.");
         setCurrentUser(guestUser);
         localStorage.removeItem('currentUser');
       }
       setIsLoading(false);
+      console.log("🔵 SessionProvider: Carga de sesión finalizada.");
     });
 
-    return () => unsubscribe();
+    return () => {
+      console.log("🔵 SessionProvider: Desmontado. Limpiando listener de Auth.");
+      unsubscribe();
+    };
   }, []);
 
   const login = useCallback((user: User) => {
@@ -107,10 +115,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const isProtected = ['/admin', '/superadmin', '/employee'].some(route => pathname.startsWith(route));
     
     if (isProtected && currentUser.role === 'guest') {
+        console.log(`🔵 Redirigiendo: Página protegida (${pathname}) y usuario no autenticado.`);
         router.push('/login');
     } else if (pathname === '/login' && currentUser.role !== 'guest') {
         // Si el usuario ya está logueado, redirigir al panel correspondiente
         const targetDashboard = `/` + currentUser.role + '/dashboard';
+        console.log(`🔵 Redirigiendo: Usuario ya logueado. Enviando a ${targetDashboard}.`);
         router.push(targetDashboard);
     }
   }, [isLoading, currentUser.role, pathname, router]);
