@@ -62,10 +62,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
                 ...userData,
               };
               
-              if (userData.companyId) {
-                 console.log("✅ Usuario y companyId encontrados en Firestore. CompanyID:", userData.companyId);
-              } else if (userData.role === 'admin') {
-                 console.warn(`🟡 Usuario admin ${firebaseUser.uid} no tiene un companyId asignado.`);
+              if (userData.role === 'admin' && !userData.companyId) {
+                console.warn(`🟡 WARNING: El usuario admin ${firebaseUser.uid} no tiene un companyId. Esto puede causar problemas.`);
+              } else if (userData.companyId) {
+                console.log(`✅ Usuario y companyId encontrados en Firestore. CompanyID:`, userData.companyId);
               }
               
               setCurrentUser(userWithCompanyId);
@@ -73,8 +73,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             } else {
               console.error(`🔴 Usuario ${firebaseUser.uid} existe en Auth pero no en Firestore. Cerrando sesión forzosa.`);
               await auth.signOut();
-              setCurrentUser(guestUser);
-              localStorage.removeItem('currentUser');
+              // No es necesario llamar a setCurrentUser(guestUser) aquí, 
+              // el propio onAuthStateChanged se volverá a disparar con 'null'
             }
         } catch(e) {
             console.error("🔴 Error al obtener documento del usuario desde Firestore:", e);

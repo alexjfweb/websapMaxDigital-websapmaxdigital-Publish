@@ -21,10 +21,10 @@ import { UserPlus, Loader2 } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
 import { getFirebaseApp, db } from "@/lib/firebase"; 
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
 import type { User, Company, UserRole } from "@/types";
 import React from "react";
-import { companyService } from "@/services/company-service";
+import { auditService } from "@/services/audit-service";
 
 const SUPERADMIN_EMAIL = 'alexjfweb@gmail.com';
 
@@ -69,36 +69,51 @@ export default function RegisterPage() {
 
   async function onSubmit(values: z.infer<typeof registerFormSchema>) {
     setIsSubmitting(true);
+    let firebaseUser;
     try {
       const app = getFirebaseApp();
       const auth = getAuth(app);
-      console.log("🔵 Creando usuario en Firebase Auth...");
+      
+      console.log("🔵 1. Creando usuario en Firebase Auth...");
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-      const firebaseUser = userCredential.user;
-      console.log("✅ Usuario creado en Auth con UID:", firebaseUser.uid);
+      firebaseUser = userCredential.user;
+      console.log("✅ 1. Usuario creado en Auth con UID:", firebaseUser.uid);
       
       const isSuperAdmin = values.email.toLowerCase() === SUPERADMIN_EMAIL;
       const role: UserRole = isSuperAdmin ? 'superadmin' : 'admin';
-      
       const username = values.email.split('@')[0];
       const fullName = `${values.name} ${values.lastName}`;
-
       let companyId: string | undefined = undefined;
 
-      // Solo crea una compañía si el rol es 'admin' y se proporcionó un nombre de negocio
+      // Paso 2: Crear compañía si es un admin
       if (role === 'admin' && values.businessName) {
-        console.log("🔵 Creando documento de compañía para", values.businessName);
-        const userForService = { uid: firebaseUser.uid, email: firebaseUser.email! };
-        companyId = await companyService.createCompany({
+        console.log(`🔵 2. Creando documento de compañía para "${values.businessName}"...`);
+        const companyData = {
             name: values.businessName,
             email: values.email,
-            ruc: 'TEMP-RUC-' + Date.now(), // RUC temporal
+            phone: '', // Puede ser llenado después en el perfil
+            ruc: 'TEMP-RUC-' + Date.now(),
             location: 'No especificado',
-        }, userForService);
-        console.log("✅ Compañía creada con ID:", companyId);
+            status: 'active',
+            registrationDate: new Date().toISOString(),
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        };
+        const companyRef = await addDoc(collection(db, "companies"), companyData);
+        companyId = companyRef.id;
+        console.log(`✅ 2. Compañía creada con ID: ${companyId}`);
+        
+        await auditService.log({
+          entity: 'companies',
+          entityId: companyId,
+          action: 'created',
+          performedBy: { uid: firebaseUser.uid, email: firebaseUser.email! },
+          newData: companyData
+        });
       }
 
-      console.log(`🔵 Creando documento de usuario para ${fullName} con rol ${role}`);
+      // Paso 3: Crear el documento del usuario en Firestore
+      console.log(`🔵 3. Creando documento de usuario para ${fullName} con rol ${role}`);
       const newUserForFirestore: User = {
         id: firebaseUser.uid,
         username: username,
@@ -108,11 +123,11 @@ export default function RegisterPage() {
         avatarUrl: `https://placehold.co/100x100.png?text=${values.name.substring(0,1)}${values.lastName.substring(0,1)}`,
         status: 'active',
         registrationDate: new Date().toISOString(),
-        companyId: companyId, // Asignar el ID de la compañía aquí
+        companyId: companyId,
       };
       
       await setDoc(doc(db, "users", firebaseUser.uid), newUserForFirestore);
-      console.log("✅ Documento de usuario creado en Firestore con companyId:", companyId);
+      console.log("✅ 3. Documento de usuario creado en Firestore con companyId:", companyId);
       
       toast({
         title: 'Registro Exitoso',
@@ -128,7 +143,7 @@ export default function RegisterPage() {
       let errorMessage = err.message || 'Hubo un error al crear la cuenta. Por favor, inténtelo más tarde.';
       
       if (err.code === 'auth/email-already-in-use') {
-        errorMessage = 'El correo electrónico ya está en uso.';
+        errorMessage = 'El correo electrónico ya está en uso. Por favor, utilice otro.';
       } else if (err.code === 'auth/weak-password') {
         errorMessage = 'La contraseña es demasiado débil.';
       }
@@ -138,6 +153,12 @@ export default function RegisterPage() {
         description: errorMessage,
         variant: "destructive",
       });
+
+      // Opcional: Si el usuario de Auth se creó pero Firestore falló, eliminar el usuario de Auth
+      if (firebaseUser) {
+        console.log(`🟡 Intentando rollback: eliminando usuario de Auth ${firebaseUser.uid}`);
+        await firebaseUser.delete().catch(e => console.error("🔴 Falló el rollback del usuario de Auth:", e));
+      }
     } finally {
       setIsSubmitting(false);
     }
