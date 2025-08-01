@@ -85,17 +85,16 @@ export default function RegisterPage() {
 
       let companyId: string | undefined = undefined;
 
+      // Solo crea una compañía si el rol es 'admin' y se proporcionó un nombre de negocio
       if (role === 'admin' && values.businessName) {
         console.log("🔵 Creando documento de compañía para", values.businessName);
-        const newCompanyData = {
+        const userForService = { uid: firebaseUser.uid, email: firebaseUser.email! };
+        companyId = await companyService.createCompany({
             name: values.businessName,
             email: values.email,
-            ruc: 'temp-ruc', // RUC temporal, se puede editar después
+            ruc: 'TEMP-RUC-' + Date.now(), // RUC temporal
             location: 'No especificado',
-            phone: 'No especificado'
-        };
-        const userForService = { uid: firebaseUser.uid, email: firebaseUser.email! };
-        companyId = await companyService.createCompany(newCompanyData, userForService);
+        }, userForService);
         console.log("✅ Compañía creada con ID:", companyId);
       }
 
@@ -126,7 +125,7 @@ export default function RegisterPage() {
     } catch (error) {
       const err = error as { code?: string; message?: string };
       console.error("🔴 Error en el registro:", err);
-      let errorMessage = 'Hubo un error al crear la cuenta. Por favor, inténtelo más tarde.';
+      let errorMessage = err.message || 'Hubo un error al crear la cuenta. Por favor, inténtelo más tarde.';
       
       if (err.code === 'auth/email-already-in-use') {
         errorMessage = 'El correo electrónico ya está en uso.';
