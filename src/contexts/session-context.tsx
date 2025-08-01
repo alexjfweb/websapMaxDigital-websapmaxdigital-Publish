@@ -128,7 +128,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         router.push('/login');
     } else if (pathname === '/login' && currentUser.role !== 'guest') {
         // Si el usuario ya está logueado, redirigir al panel correspondiente
-        const targetDashboard = `/` + currentUser.role + '/dashboard';
+        const targetDashboard = `/${currentUser.role}/dashboard`;
         console.log(`🔵 Redirigiendo: Usuario ya logueado. Enviando a ${targetDashboard}.`);
         router.push(targetDashboard);
     }

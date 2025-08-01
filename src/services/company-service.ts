@@ -23,7 +23,7 @@ class CompanyService {
   private get companiesCollection() {
     if (!db) {
       console.error("Firebase no está inicializado. No se puede acceder a la colección 'companies'.");
-      return null;
+      throw new Error("La base de datos no está disponible.");
     }
     return collection(db, 'companies');
   }
@@ -53,8 +53,7 @@ class CompanyService {
    */
   async createCompany(companyData: CreateCompanyInput, user: { uid: string; email: string }): Promise<string> {
     const coll = this.companiesCollection;
-    if (!coll) throw new Error("La base de datos no está disponible.");
-
+    
     // 1. Validar los datos antes de la escritura
     this.validateCompanyData(companyData);
     console.log('✅ Validación de datos de la empresa superada.');
