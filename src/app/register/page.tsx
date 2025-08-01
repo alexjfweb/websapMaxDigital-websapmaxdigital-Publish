@@ -22,9 +22,10 @@ import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, getAuth, User as FirebaseUser } from "firebase/auth";
 import { getFirebaseApp, db } from "@/lib/firebase"; 
 import { doc, setDoc, addDoc, collection } from "firebase/firestore";
-import type { UserRole, User } from "@/types"; // ✅ Importar User
+import type { UserRole, User } from "@/types";
 import React from "react";
-// import { auditService } from "@/services/audit-service"; // Audit service temporalmente deshabilitado
+// El auditService se puede reactivar una vez que el flujo principal sea estable.
+// import { auditService } from "@/services/audit-service";
 
 const SUPERADMIN_EMAIL = 'alexjfweb@gmail.com';
 
@@ -70,7 +71,6 @@ export default function RegisterPage() {
   async function onSubmit(values: z.infer<typeof registerFormSchema>) {
     setIsSubmitting(true);
     let firebaseUser: FirebaseUser | undefined;
-    let companyId: string | undefined = undefined;
     
     try {
       const app = getFirebaseApp();
@@ -83,15 +83,13 @@ export default function RegisterPage() {
       
       const isSuperAdmin = values.email.toLowerCase() === SUPERADMIN_EMAIL;
       const role: UserRole = isSuperAdmin ? 'superadmin' : 'admin';
+      let companyId: string | undefined = undefined;
 
       if (role === 'admin' && values.businessName) {
         console.log(`🔵 2. Creando documento de compañía para "${values.businessName}"...`);
         const companyData = {
             name: values.businessName,
             email: values.email,
-            phone: '',
-            ruc: 'TEMP-RUC-' + Date.now(),
-            location: 'No especificado',
             status: 'active' as const,
             registrationDate: new Date().toISOString(),
             createdAt: new Date(),
@@ -103,11 +101,9 @@ export default function RegisterPage() {
       }
 
       console.log(`🔵 3. Creando documento de usuario para ${values.name} ${values.lastName}`);
-      
-      // ✅ Estructura de datos del usuario corregida para coincidir con `types/index.ts`
       const userData: User = {
-        id: firebaseUser.uid, // Campo `id` para consistencia con otras partes de la app
         uid: firebaseUser.uid,
+        id: firebaseUser.uid,
         email: firebaseUser.email || values.email,
         username: values.email.split('@')[0],
         firstName: values.name,
@@ -122,31 +118,26 @@ export default function RegisterPage() {
       };
       
       await setDoc(doc(db, "users", firebaseUser.uid), userData);
-      console.log("✅ 3. Documento de usuario creado en Firestore con UID:", firebaseUser.uid);
+      console.log("✅ 3. Documento de usuario creado en Firestore.");
       
       toast({
         title: '¡Registro Exitoso!',
         description: isSuperAdmin ? `Cuenta de Superadministrador creada.` : `La empresa "${values.businessName}" y su administrador han sido creados.`,
       });
 
-      console.log("🔵 4. Redirigiendo al dashboard...");
-      const redirectPath = isSuperAdmin ? "/superadmin/dashboard" : "/admin/dashboard";
-      router.push(redirectPath);
+      console.log("🔵 4. Redirección se manejará por SessionProvider.");
+      // No es necesario redirigir aquí, el SessionProvider lo hará automáticamente.
 
     } catch (error) {
       const err = error as { code?: string; message?: string };
       console.error("🔴 Error CRÍTICO en el registro:", err);
-      let errorMessage = err.message || 'Hubo un error al crear la cuenta. Por favor, inténtelo más tarde.';
+      let errorMessage = err.message || 'Hubo un error al crear la cuenta.';
       
       if (err.code === 'auth/email-already-in-use') {
-        errorMessage = 'El correo electrónico ya está en uso. Por favor, utilice otro.';
+        errorMessage = 'El correo electrónico ya está en uso.';
       }
       
-      toast({
-        title: 'Error de Registro',
-        description: errorMessage,
-        variant: "destructive",
-      });
+      toast({ title: 'Error de Registro', description: errorMessage, variant: "destructive" });
 
       if (firebaseUser) {
         console.log(`🟡 Iniciando ROLLBACK: eliminando usuario de Auth ${firebaseUser.uid}`);
