@@ -209,13 +209,15 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
       }}
       className="min-h-screen"
     >
-      <div className="fixed right-4 top-4 z-30">
+      <div className="fixed right-4 top-4 z-50">
         <Dialog open={cartOpen} onOpenChange={setCartOpen}>
           <DialogTrigger asChild>
-            <button className="relative p-2 rounded-full bg-white shadow hover:bg-primary/10 transition">
+            <button className="relative p-2 rounded-full bg-white shadow-lg hover:bg-primary/10 transition hover:scale-110 active:scale-95">
               <ShoppingCart className="h-7 w-7 text-primary" />
               {cart.totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold border border-white">{cart.totalItems}</span>
+                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center bg-green-500 text-white text-xs rounded-full font-bold border-2 border-white">
+                  {cart.totalItems}
+                </span>
               )}
             </button>
           </DialogTrigger>
@@ -232,7 +234,9 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
           </DialogContent>
         </Dialog>
       </div>
+      
       <RestaurantInfoDisplay restaurant={restaurantInfoForDisplay} />
+      
       <Separator className="my-8" />
 
       <div className="container mx-auto px-4 md:px-6 lg:px-8">
