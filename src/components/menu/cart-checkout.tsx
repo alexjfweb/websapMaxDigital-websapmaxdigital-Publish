@@ -470,5 +470,4 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
       </UiDialogContent>
     </>
   );
-
-    
+}
