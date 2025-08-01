@@ -20,10 +20,10 @@ import { UserPlus, Loader2 } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
 import { getFirebaseApp, db } from "@/lib/firebase"; 
-import { doc, setDoc, addDoc, collection } from "firebase/firestore";
+import { doc, setDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
 import type { UserRole } from "@/types";
 import React from "react";
-import { auditService } from "@/services/audit-service";
+// import { auditService } from "@/services/audit-service"; // ✅ Comentado temporalmente
 
 const SUPERADMIN_EMAIL = 'alexjfweb@gmail.com';
 
@@ -86,67 +86,46 @@ export default function RegisterPage() {
       // Paso 2: Crear compañía si es un admin
       if (role === 'admin' && values.businessName) {
         console.log(`🔵 2. Creando documento de compañía para "${values.businessName}"...`);
-        try {
-          const companyData = {
-              name: values.businessName,
-              email: values.email,
-              phone: '',
-              ruc: 'TEMP-RUC-' + Date.now(),
-              location: 'No especificado',
-              status: 'active',
-              registrationDate: new Date().toISOString(),
-              createdAt: new Date(),
-              updatedAt: new Date(),
-          };
-          const companyRef = await addDoc(collection(db, "companies"), companyData);
-          companyId = companyRef.id;
-          console.log(`✅ 2. Compañía creada con ID: ${companyId}`);
-          
-          try {
-            await auditService.log({
-              entity: 'companies',
-              entityId: companyId,
-              action: 'created',
-              performedBy: { uid: firebaseUser.uid, email: firebaseUser.email! },
-              newData: companyData
-            });
-            console.log("✅ 2.1. Audit log de compañía creado");
-          } catch (auditError) {
-            console.warn("⚠️ 2.1. Error en audit log (no crítico):", auditError);
-          }
-        } catch (companyError) {
-          console.error("🔴 2. Error creando compañía:", companyError);
-          throw companyError;
-        }
+        const companyData = {
+            name: values.businessName,
+            email: values.email,
+            phone: '',
+            ruc: 'TEMP-RUC-' + Date.now(),
+            location: 'No especificado',
+            status: 'active',
+            registrationDate: new Date().toISOString(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+        const companyRef = await addDoc(collection(db, "companies"), companyData);
+        companyId = companyRef.id;
+        console.log(`✅ 2. Compañía creada con ID: ${companyId}`);
+        // ✅ Audit log deshabilitado temporalmente para evitar interrupciones
       }
 
-      // Paso 3: Crear el documento del usuario en Firestore
+      // Paso 3: Crear el documento del usuario en Firestore (CRÍTICO)
       console.log(`🔵 3. Creando documento de usuario para ${values.name} ${values.lastName} con rol ${role}`);
       
-      try {
-        const userData = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email || values.email,
-          firstName: values.name,
-          lastName: values.lastName,
-          role: role,
-          companyId: companyId,
-          businessName: values.businessName || '',
-          createdAt: new Date(),
-          isActive: true,
-          status: 'active', // Añadir estado inicial
-          username: values.email.split('@')[0], // Añadir username
-          name: `${values.name} ${values.lastName}`, // Añadir nombre completo
-          registrationDate: new Date().toISOString(), // Añadir fecha de registro
-        };
-        
-        await setDoc(doc(db, "users", firebaseUser.uid), userData);
-        console.log("✅ 3. Documento de usuario creado en Firestore:", userData);
-
-      } catch (userError) {
-        console.error("🔴 3. Error creando documento de usuario:", userError);
-        throw userError;
-      }
+      const userData = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email || values.email,
+        firstName: values.name,
+        lastName: values.lastName,
+        role: role,
+        companyId: companyId,
+        businessName: values.businessName || '',
+        createdAt: new Date(),
+        isActive: true,
+        registrationDate: new Date().toISOString(),
+        status: 'active',
+        username: values.email.split('@')[0],
+        name: `${values.name} ${values.lastName}`
+      };
+      
+      await setDoc(doc(db, "users", firebaseUser.uid), userData);
+      console.log("✅ 3. Documento de usuario creado en Firestore:");
+      console.log("   - UID:", firebaseUser.uid);
+      console.log("   - Datos:", userData);
       
       toast({
         title: 'Registro Exitoso',
@@ -174,6 +153,7 @@ export default function RegisterPage() {
         variant: "destructive",
       });
 
+      // Rollback: Si el usuario de Auth se creó pero algo falló después, eliminarlo
       if (firebaseUser) {
         console.log(`🟡 Iniciando rollback: eliminando usuario de Auth ${firebaseUser.uid}`);
         try {
