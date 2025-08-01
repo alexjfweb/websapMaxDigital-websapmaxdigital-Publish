@@ -112,7 +112,7 @@ export default function AdminDishesPage() {
   const onSubmit = async (values: DishFormData) => {
     const currentCompanyId = currentUser.companyId;
     if (!currentCompanyId) {
-      toast({ title: 'Error', description: 'No se ha identificado la compañía.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'No se ha identificado la compañía. Por favor, recargue la página.', variant: 'destructive' });
       return;
     }
     setIsSubmitting(true);
@@ -639,5 +639,7 @@ export default function AdminDishesPage() {
     </div>
   );
 }
+
+    
 
     
