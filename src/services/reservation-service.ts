@@ -65,10 +65,11 @@ class ReservationService {
 
     try {
       console.log(`[ReservationService] Consultando reservas para la compañía: ${companyId}`);
+      // Se elimina el `orderBy` para evitar la necesidad de un índice compuesto inmediato.
+      // La ordenación se hará en el cliente.
       const q = query(
         coll,
-        where('restaurantId', '==', companyId),
-        orderBy('dateTime', 'desc')
+        where('restaurantId', '==', companyId)
       );
 
       const querySnapshot = await getDocs(q);
@@ -80,7 +81,6 @@ class ReservationService {
       
       const reservations: Reservation[] = querySnapshot.docs.map(doc => {
           const data = doc.data();
-          // Aseguramos que los timestamps se conviertan a strings ISO
           const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : new Date().toISOString();
           const updatedAt = data.updatedAt instanceof Timestamp ? data.updatedAt.toDate().toISOString() : new Date().toISOString();
           const dateTime = data.dateTime instanceof Timestamp ? data.dateTime.toDate().toISOString() : data.dateTime;
@@ -93,6 +93,9 @@ class ReservationService {
               dateTime,
           } as Reservation;
       });
+
+      // Ordenar los resultados por fecha descendente en el lado del cliente
+      reservations.sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
 
       console.log(`[ReservationService] Se encontraron y procesaron ${reservations.length} reservas.`);
       return reservations;
