@@ -106,7 +106,6 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
 
     const fetchRestaurantData = async () => {
       try {
-        // Busca la compañía por el slug/nombre en la URL
         const companyQuery = query(collection(db, "companies"), where("name", "==", slug));
         const companySnapshot = await getDocs(companyQuery);
 
@@ -120,7 +119,6 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
         const companyData = { id: companyDoc.id, ...companyDoc.data() } as Company;
         
         setRestaurant(companyData);
-        // **** LA CORRECCIÓN CLAVE ****
         // Usamos el ID del documento, que es el companyId correcto.
         setCorrectCompanyId(companyDoc.id); 
 
@@ -141,7 +139,6 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
 
   }, [restaurantId]);
 
-  // Suscribirse a los platos una vez que tenemos el ID correcto de la compañía
   React.useEffect(() => {
     if (!correctCompanyId) return;
 

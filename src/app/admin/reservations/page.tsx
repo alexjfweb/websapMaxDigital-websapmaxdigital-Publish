@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -123,7 +124,7 @@ export default function AdminReservationsPage() {
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => { setSelectedReservation(reservation); setOpenDetail(true); }}>Ver detalles</DropdownMenuItem>
               {reservation.status === 'pending' && <DropdownMenuItem onClick={() => setActionToConfirm({ action: 'confirm', reservation })}>Confirmar</DropdownMenuItem>}
-              {reservation.status === 'pending' && <DropdownMenuItem onClick={() => setActionToConfirm({ action: 'cancel', reservation })}>Cancelar</DropdownMenuItem>}
+              {reservation.status !== 'cancelled' && reservation.status !== 'completed' && <DropdownMenuItem onClick={() => setActionToConfirm({ action: 'cancel', reservation })} className="text-destructive">Cancelar</DropdownMenuItem>}
               {reservation.status === 'confirmed' && <DropdownMenuItem onClick={() => setActionToConfirm({ action: 'complete', reservation })}>Marcar como Completada</DropdownMenuItem>}
             </DropdownMenuContent>
           </DropdownMenu>

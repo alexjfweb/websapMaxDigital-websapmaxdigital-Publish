@@ -231,10 +231,10 @@ export interface Order {
 // Definición de una Reserva
 export interface Reservation {
   id: string;
-  restaurantId: string;
+  restaurantId: string; // Estandarizado a restaurantId
   customerName: string;
   customerPhone: string;
-  customerEmail?: string;
+  customerEmail?: string; // Hecho opcional
   dateTime: string; // ISO date string
   numberOfGuests: number;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';

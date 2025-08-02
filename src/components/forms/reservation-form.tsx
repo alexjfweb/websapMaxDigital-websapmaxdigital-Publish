@@ -82,11 +82,10 @@ export default function ReservationForm({ restaurantId, onSuccess }: { restauran
             restaurantId: restaurantId,
             customerName: values.customerName,
             customerPhone: values.customerPhone,
-            customerEmail: values.customerEmail,
+            customerEmail: values.customerEmail || undefined, // Enviar undefined si está vacío
             dateTime: combinedDateTime.toISOString(),
             numberOfGuests: values.numberOfGuests,
-            status: 'pending',
-            notes: values.notes,
+            notes: values.notes || '',
         });
 
         toast({
