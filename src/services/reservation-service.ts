@@ -71,7 +71,7 @@ class ReservationService {
       
       if (querySnapshot.empty) {
         console.log(`[ReservationService] No se encontraron reservas para la compañía ${companyId}.`);
-        return []; // Devolver array vacío si no hay resultados
+        return [];
       }
       
       const reservations: Reservation[] = [];
@@ -79,7 +79,6 @@ class ReservationService {
       querySnapshot.forEach(doc => {
         const data = doc.data();
         
-        // Validación de datos en el servidor
         if (!data.customerName || !data.dateTime || !data.status) {
             console.warn(`[WARN] Reserva ${doc.id} omitida por datos incompletos.`);
             return;

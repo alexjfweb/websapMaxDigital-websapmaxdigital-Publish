@@ -47,7 +47,7 @@ class OrderService {
       console.log(`[OrderService] Buscando pedidos para la compañía: ${companyId}`);
       const q = query(
         coll,
-        where('restaurantId', '==', companyId),
+        where('companyId', '==', companyId),
         orderBy('date', 'desc') 
       );
 
