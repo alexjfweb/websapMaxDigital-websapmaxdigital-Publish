@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -39,7 +40,7 @@ class ReservationService {
     // Estandarización: Siempre guardar con el campo 'restaurantId'.
     const reservationDoc = {
       ...data,
-      restaurantId: restaurantId, // Aseguramos que el campo se llame 'restaurantId'
+      restaurantId: restaurantId,
       status: 'pending',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -50,7 +51,7 @@ class ReservationService {
     return docRef.id;
   }
   
-  // Obtiene todas las reservas para una compañía específica, ordenadas por fecha.
+  // Obtiene todas las reservas para una compañía específica.
   async getReservationsByCompany(companyId: string): Promise<Reservation[]> {
     const coll = this.reservationsCollection;
 
@@ -62,12 +63,10 @@ class ReservationService {
     try {
       console.log(`[ReservationService] Consultando reservas con restaurantId: ${companyId}`);
       
-      // Corrección: Se elimina el filtro `where('isActive', '==', true)` que era incorrecto.
-      // Se añade `orderBy` para mostrar las más recientes primero.
+      // Consulta simplificada SIN orderBy para evitar el error de índice.
       const q = query(
         coll,
-        where('restaurantId', '==', companyId),
-        orderBy('dateTime', 'desc')
+        where('restaurantId', '==', companyId)
       );
 
       const querySnapshot = await getDocs(q);
@@ -89,13 +88,15 @@ class ReservationService {
           } as Reservation;
       });
 
-      console.log(`[ReservationService] Se procesaron ${reservations.length} reservas.`);
+      // Ordenar los resultados en el lado del cliente.
+      reservations.sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
+
+      console.log(`[ReservationService] Se procesaron y ordenaron ${reservations.length} reservas.`);
       return reservations;
 
     } catch (error: any) {
       console.error(`[ReservationService] Error al obtener las reservas para ${companyId}:`, error);
-      // Si el error es por un índice faltante, Firestore lo indicará en la consola con un enlace para crearlo.
-      throw new Error("No se pudieron obtener las reservas. Verifica la consola para posibles errores de índice en Firestore.");
+      throw new Error("No se pudieron obtener las reservas. Verifica la consola para posibles errores.");
     }
   }
   
