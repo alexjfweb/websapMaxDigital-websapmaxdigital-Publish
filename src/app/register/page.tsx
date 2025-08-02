@@ -89,9 +89,6 @@ function RegisterForm() {
       if (role === 'admin' && values.businessName) {
         console.log(`🔵 2. Creando documento de compañía para "${values.businessName}"...`);
         
-        const trialEndDate = new Date();
-        trialEndDate.setDate(trialEndDate.getDate() + 7);
-
         const companyData: Partial<Company> = {
             name: values.businessName,
             email: values.email,
@@ -106,6 +103,8 @@ function RegisterForm() {
         };
 
         if (planId === 'plan-gratuito-7-das') {
+            const trialEndDate = new Date();
+            trialEndDate.setDate(trialEndDate.getDate() + 7);
             companyData.trialEndsAt = trialEndDate.toISOString();
         }
         
