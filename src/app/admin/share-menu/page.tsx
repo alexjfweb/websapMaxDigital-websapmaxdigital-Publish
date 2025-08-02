@@ -21,7 +21,6 @@ import SuccessModal from "@/components/ui/success-modal";
 export default function AdminShareMenuPage() {
   const { toast } = useToast();
   const { currentUser } = useSession();
-  const companyId = currentUser.companyId;
 
   const [menuUrl, setMenuUrl] = useState('');
   const [customMessage, setCustomMessage] = useState('');
@@ -35,6 +34,7 @@ export default function AdminShareMenuPage() {
   const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
+    const companyId = currentUser.companyId;
     if (typeof window !== 'undefined' && companyId) {
       setMenuUrl(`${window.location.origin}/menu/${companyId}`);
     }
@@ -59,8 +59,8 @@ export default function AdminShareMenuPage() {
       }
     }
     
-    if(companyId) fetchShareConfig();
-  }, [companyId, toast]);
+    if(currentUser.companyId) fetchShareConfig();
+  }, [currentUser.companyId, toast]);
 
   const handleCopyToClipboard = () => {
     if (!menuUrl) return;
@@ -107,7 +107,7 @@ export default function AdminShareMenuPage() {
   };
 
   const handleSaveConfig = async () => {
-    if (!companyId) {
+    if (!currentUser.companyId) {
       toast({ title: "Error", description: "No se encontró el ID de la compañía.", variant: "destructive" });
       return;
     }
@@ -116,26 +116,21 @@ export default function AdminShareMenuPage() {
     let finalImageUrl = customImageUrl;
 
     try {
-      // 1. Si hay un nuevo archivo, súbelo primero
       if (imageFile) {
         toast({ title: "Subiendo imagen...", description: "Por favor espera." });
-        const newUrl = await storageService.uploadFile(imageFile, `share_images/${companyId}/`);
-        finalImageUrl = newUrl;
+        finalImageUrl = await storageService.uploadFile(imageFile, `share_images/${currentUser.companyId}/`);
       }
       
-      // 2. Prepara los datos para guardar en Firestore
       const configToSave = {
         customShareMessage: customMessage,
         customShareImageUrl: finalImageUrl,
         updatedAt: serverTimestamp(),
       };
 
-      // 3. Guarda los datos en Firestore
-      await setDoc(doc(db, 'companies', companyId), configToSave, { merge: true });
+      await setDoc(doc(db, 'companies', currentUser.companyId), configToSave, { merge: true });
       
-      // 4. Actualiza el estado local y muestra el modal de éxito
       setCustomImageUrl(finalImageUrl);
-      setImageFile(null); // Limpiar el archivo después de guardar
+      setImageFile(null);
       setShowSuccess(true);
 
     } catch (e: any) {
@@ -146,7 +141,7 @@ export default function AdminShareMenuPage() {
     }
   };
   
-  if (isLoading || !companyId) {
+  if (isLoading || !currentUser.companyId) {
     return (
       <div className="space-y-8 max-w-2xl mx-auto">
         <Skeleton className="h-10 w-1/2 mx-auto" />
