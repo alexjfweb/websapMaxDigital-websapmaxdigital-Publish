@@ -21,18 +21,18 @@ class StorageService {
     
     // Intenta comprimir solo si es una imagen
     if (file.type.startsWith('image/')) {
-        try {
-            console.log(`Comprimiendo imagen: ${file.name}, tamaño original: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
-            const options = {
-                maxSizeMB: 1,
-                maxWidthOrHeight: 1080,
-                useWebWorker: true,
-            };
-            fileToUpload = await imageCompression(file, options);
-            console.log(`Imagen comprimida: ${fileToUpload.name}, nuevo tamaño: ${(fileToUpload.size / 1024 / 1024).toFixed(2)} MB`);
-        } catch (error) {
-            console.warn("No se pudo comprimir la imagen, se subirá el archivo original.", error);
-        }
+      try {
+        console.log(`Comprimiendo imagen: ${file.name}, tamaño original: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+        const options = {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1080,
+          useWebWorker: true,
+        };
+        fileToUpload = await imageCompression(file, options);
+        console.log(`Imagen comprimida: ${fileToUpload.name}, nuevo tamaño: ${(fileToUpload.size / 1024 / 1024).toFixed(2)} MB`);
+      } catch (compressionError) {
+        console.warn("No se pudo comprimir la imagen, se subirá el archivo original.", compressionError);
+      }
     }
 
     try {
@@ -47,14 +47,15 @@ class StorageService {
       console.log(`✅ Archivo subido exitosamente. URL: ${downloadURL}`);
       return downloadURL;
 
-    } catch (error: any) {
-      console.error("❌ Error al subir el archivo a Firebase Storage:", error);
+    } catch (uploadError: any) {
+      console.error("❌ Error al subir el archivo a Firebase Storage:", uploadError);
       
-      if (error.serverResponse) {
-        console.error("Respuesta del servidor de Firebase:", error.serverResponse);
+      if (uploadError.serverResponse) {
+        console.error("Respuesta del servidor de Firebase:", uploadError.serverResponse);
       }
       
-      throw new Error(`Error al subir: ${error.code || error.message}`);
+      // Lanza un error más específico para que pueda ser capturado y mostrado en la UI.
+      throw new Error(`Error al subir: ${uploadError.code || 'La solicitud fue bloqueada por el servidor.'}`);
     }
   }
 

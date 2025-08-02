@@ -108,34 +108,35 @@ export default function AdminShareMenuPage() {
 
   const handleSaveConfig = async () => {
     if (!companyId) {
-        toast({ title: "Error", description: "No se encontró el ID de la compañía.", variant: "destructive" });
-        return;
+      toast({ title: "Error", description: "No se encontró el ID de la compañía.", variant: "destructive" });
+      return;
     }
     setIsSaving(true);
     
     let finalImageUrl = customImageUrl;
 
     try {
+      // 1. Si hay un nuevo archivo, súbelo primero
       if (imageFile) {
         toast({ title: "Subiendo imagen...", description: "Por favor espera." });
-        // Usamos el storageService que funciona correctamente
         const newUrl = await storageService.uploadFile(imageFile, `share_images/${companyId}/`);
-        if (newUrl) {
-          finalImageUrl = newUrl;
-        } else {
-            throw new Error("La URL de la imagen no se pudo generar.");
-        }
+        finalImageUrl = newUrl;
       }
-
-      await setDoc(doc(db, 'companies', companyId), {
+      
+      // 2. Prepara los datos para guardar en Firestore
+      const configToSave = {
         customShareMessage: customMessage,
         customShareImageUrl: finalImageUrl,
         updatedAt: serverTimestamp(),
-      }, { merge: true });
+      };
+
+      // 3. Guarda los datos en Firestore
+      await setDoc(doc(db, 'companies', companyId), configToSave, { merge: true });
       
+      // 4. Actualiza el estado local y muestra el modal de éxito
       setCustomImageUrl(finalImageUrl);
       setImageFile(null); // Limpiar el archivo después de guardar
-      setShowSuccess(true); // Mostrar modal de éxito
+      setShowSuccess(true);
 
     } catch (e: any) {
       console.error("Error al guardar o subir:", e);
@@ -196,7 +197,7 @@ export default function AdminShareMenuPage() {
                 className="rounded-md border object-cover"
                 data-ai-hint="share image"
               />
-              <Button asChild variant="outline" disabled={isSaving}>
+              <Button asChild variant="outline">
                 <label htmlFor="image-upload" className="cursor-pointer flex items-center">
                   <UploadCloud className="mr-2 h-4 w-4" />
                   Cambiar Imagen
