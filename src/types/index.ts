@@ -231,7 +231,7 @@ export interface Order {
 // Definición de una Reserva
 export interface Reservation {
   id: string;
-  companyId: string;
+  restaurantId: string;
   customerName: string;
   customerPhone: string;
   dateTime: string; // ISO date string
