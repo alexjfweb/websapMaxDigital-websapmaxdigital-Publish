@@ -18,14 +18,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
 import { UserPlus, Loader2 } from "lucide-react";
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createUserWithEmailAndPassword, getAuth, User as FirebaseUser } from "firebase/auth";
 import { getFirebaseApp, db } from "@/lib/firebase"; 
-import { doc, setDoc, addDoc, collection } from "firebase/firestore";
-import type { UserRole, User } from "@/types";
-import React from "react";
-// El auditService se puede reactivar una vez que el flujo principal sea estable.
-// import { auditService } from "@/services/audit-service";
+import { doc, setDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
+import type { UserRole, User, Company } from "@/types";
+import React, { Suspense } from "react";
 
 const SUPERADMIN_EMAIL = 'alexjfweb@gmail.com';
 
@@ -49,8 +47,10 @@ const registerFormSchema = z.object({
   path: ["businessName"],
 });
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const planId = searchParams.get('plan');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm<z.infer<typeof registerFormSchema>>({
@@ -87,23 +87,35 @@ export default function RegisterPage() {
 
       if (role === 'admin' && values.businessName) {
         console.log(`🔵 2. Creando documento de compañía para "${values.businessName}"...`);
-        const companyData = {
+        
+        const trialEndDate = new Date();
+        trialEndDate.setDate(trialEndDate.getDate() + 7);
+
+        const companyData: Omit<Company, 'id'> = {
             name: values.businessName,
             email: values.email,
-            status: 'active' as const,
+            status: 'active',
             registrationDate: new Date().toISOString(),
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            planId: planId || 'plan-gratuito', // Asigna el plan desde la URL o uno por defecto
+            subscriptionStatus: planId === 'plan-gratuito' ? 'trialing' : 'pending_payment',
+            trialEndsAt: planId === 'plan-gratuito' ? trialEndDate.toISOString() : undefined,
+            ruc: '', // RUC se puede añadir después en el perfil
+            location: '',
         };
-        const companyRef = await addDoc(collection(db, "companies"), companyData);
+        const companyRef = await addDoc(collection(db, "companies"), {
+          ...companyData,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
         companyId = companyRef.id;
-        console.log(`✅ 2. Compañía creada con ID: ${companyId}`);
+        console.log(`✅ 2. Compañía creada con ID: ${companyId} y Plan ID: ${companyData.planId}`);
       }
 
       console.log(`🔵 3. Creando documento de usuario para ${values.name} ${values.lastName}`);
-      const userData: User = {
+      const userData: Omit<User, 'id'> = {
         uid: firebaseUser.uid,
-        id: firebaseUser.uid,
         email: firebaseUser.email || values.email,
         username: values.email.split('@')[0],
         firstName: values.name,
@@ -126,8 +138,6 @@ export default function RegisterPage() {
       });
 
       console.log("🔵 4. Redirección se manejará por SessionProvider.");
-      // No es necesario redirigir aquí, el SessionProvider lo hará automáticamente.
-
     } catch (error) {
       const err = error as { code?: string; message?: string };
       console.error("🔴 Error CRÍTICO en el registro:", err);
@@ -272,5 +282,13 @@ export default function RegisterPage() {
         </CardFooter>
       </Card>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }

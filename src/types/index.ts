@@ -139,6 +139,9 @@ export interface Company {
   email?: string;
   createdAt: string; // ISO Date String
   updatedAt: string; // ISO Date String
+  planId?: string;
+  subscriptionStatus?: 'trialing' | 'active' | 'past_due' | 'canceled' | 'pending_payment';
+  trialEndsAt?: string;
   socialLinks?: {
     website?: string;
     menuShareLink?: string;

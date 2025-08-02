@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { LandingPlan } from '@/services/landing-plans-service';
+import Link from 'next/link';
 
 // Opciones para íconos y colores (debe coincidir con el panel admin)
 const PLAN_ICONS = [
@@ -33,6 +34,7 @@ const PLAN_COLORS = [
   { value: 'orange', class: 'bg-orange-500 border-orange-500' },
   { value: 'red', class: 'bg-red-500 border-red-500' },
   { value: 'indigo', class: 'bg-indigo-500 border-indigo-500' },
+  { value: 'gray', class: 'bg-gray-500 border-gray-500' },
 ];
 
 const getPlanIcon = (iconValue: string) => {
@@ -48,8 +50,6 @@ const getPlanColorClass = (colorValue: string, type: 'bg' | 'border' | 'text') =
   
   if (type === 'bg') return bgClass;
   if (type === 'border') return borderClass;
-  // Asumiendo Tailwind JIT puede generar clases como text-blue-500 dinámicamente
-  // si los colores están en la configuración de Tailwind. Si no, esto podría no funcionar.
   return `text-${colorValue}-500`; 
 };
 
@@ -111,10 +111,12 @@ export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSec
                 </div>
               </CardContent>
               <div className="px-6 pb-6 mt-auto">
-                <Button className={`w-full ${colorClass} hover:${colorClass.replace('bg-', 'bg-opacity-90-')} text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200`} size="lg">
-                  {plan.ctaText || 'Comenzar Prueba Gratuita'}
+                <Button asChild className={`w-full ${colorClass} hover:${colorClass.replace('bg-', 'bg-opacity-90-')} text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200`} size="lg">
+                  <Link href={`/register?plan=${plan.slug}`}>
+                    {plan.ctaText || 'Comenzar Prueba Gratuita'}
+                  </Link>
                 </Button>
-                <p className="text-xs text-gray-500 mt-2 text-center">Prueba gratuita disponible</p>
+                {plan.price > 0 && <p className="text-xs text-gray-500 mt-2 text-center">Impuestos no incluidos</p>}
               </div>
             </Card>
           );
@@ -123,4 +125,3 @@ export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSec
     </motion.section>
   );
 }
-
