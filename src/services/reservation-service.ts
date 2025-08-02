@@ -40,12 +40,15 @@ class ReservationService {
     // Estandarización: Siempre guardar con el campo 'restaurantId'.
     const reservationDoc = {
       ...data,
-      restaurantId: restaurantId,
+      restaurantId: restaurantId, // Asegura que el campo siempre se llame así
       status: 'pending',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
     
+    // Eliminamos cualquier posible campo 'companyId' para evitar duplicados
+    delete (reservationDoc as any).companyId;
+
     const docRef = await addDoc(coll, reservationDoc);
     console.log(`✅ Reserva creada con restaurantId: ${reservationDoc.restaurantId}`);
     return docRef.id;
@@ -63,10 +66,10 @@ class ReservationService {
     try {
       console.log(`[ReservationService] Consultando reservas con restaurantId: ${companyId}`);
       
+      // Se elimina el orderBy para evitar el error de índice. La ordenación se hará en el cliente.
       const q = query(
         coll,
-        where('restaurantId', '==', companyId),
-        orderBy('dateTime', 'desc')
+        where('restaurantId', '==', companyId)
       );
 
       const querySnapshot = await getDocs(q);
@@ -87,6 +90,9 @@ class ReservationService {
               dateTime,
           } as Reservation;
       });
+
+      // Ordenar los resultados en el lado del cliente
+      reservations.sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
 
       console.log(`[ReservationService] Se procesaron y ordenaron ${reservations.length} reservas.`);
       return reservations;
