@@ -39,8 +39,6 @@ export function useSession() {
   return context;
 }
 
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User>(guestUser);
   const [isLoading, setIsLoading] = useState(true);
@@ -72,7 +70,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
               setCurrentUser(userWithId);
               localStorage.setItem('currentUser', JSON.stringify(userWithId));
-              console.log(`✅ Sesión iniciada para ${userWithId.email}. CompanyId: ${userWithId.companyId}`);
+              console.log(`✅ Sesión iniciada para ${userWithId.email} con companyId: ${userWithId.companyId}`);
             } else {
               console.error(`🔴 Usuario ${firebaseUser.uid} existe en Auth pero no en Firestore. Cerrando sesión forzosa.`);
               await auth.signOut();

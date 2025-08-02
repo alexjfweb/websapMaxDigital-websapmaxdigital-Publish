@@ -33,14 +33,16 @@ class ReservationService {
   async createReservation(data: CreateReservationInput): Promise<string> {
     const coll = this.reservationsCollection;
     
-    if (!data.restaurantId) {
+    const restaurantId = data.restaurantId;
+
+    if (!restaurantId) {
         throw new Error("El ID del restaurante es obligatorio para crear una reserva.");
     }
 
-    // Aseguramos que el campo siempre se guarde como 'restaurantId'.
+    // Estandarización: Siempre guardar con el campo 'restaurantId'.
     const reservationDoc = {
       ...data,
-      restaurantId: data.restaurantId,
+      restaurantId: restaurantId, // Aseguramos que el campo se llame 'restaurantId'
       status: 'pending',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -67,7 +69,6 @@ class ReservationService {
       console.log(`[ReservationService] Consultando reservas con restaurantId: ${companyId}`);
       
       // Estandarización: Siempre buscar por el campo 'restaurantId'.
-      // Esta es la corrección clave para la lectura de datos.
       const q = query(
         coll,
         where('restaurantId', '==', companyId)

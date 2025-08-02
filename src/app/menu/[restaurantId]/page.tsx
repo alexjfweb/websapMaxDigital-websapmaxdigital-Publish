@@ -83,7 +83,7 @@ const defaultMenuStyles = {
 };
 
 export default function MenuPage({ params }: { params: { restaurantId: string } }) {
-  const { restaurantId } = params;
+  const { restaurantId: slug } = params; // Usamos slug para referirnos al nombre en la URL
   const [restaurant, setRestaurant] = React.useState<Company | null>(null);
   const [dishes, setDishes] = React.useState<Dish[]>([]);
   const cart = useCart();
@@ -95,7 +95,6 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
   const [correctCompanyId, setCorrectCompanyId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    const slug = restaurantId;
     if (!slug) {
       setError("ID de restaurante no válido.");
       setIsLoading(false);
@@ -120,7 +119,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
         
         setRestaurant(companyData);
         // Usamos el ID del documento, que es el companyId correcto.
-        setCorrectCompanyId(companyDoc.id); 
+        setCorrectCompanyId(companyData.id); // <- CORRECCIÓN CLAVE
 
         // Cargar estilos de menú
         const stylesRef = doc(db, 'menu_styles', slug);
@@ -137,7 +136,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
     
     fetchRestaurantData();
 
-  }, [restaurantId]);
+  }, [slug]);
 
   React.useEffect(() => {
     if (!correctCompanyId) return;
