@@ -30,6 +30,7 @@ import type { Company } from "@/types"
 import NequiIcon from "@/components/icons/nequi-icon"
 import DaviplataIcon from "@/components/icons/daviplata-icon"
 import BancolombiaIcon from "@/components/icons/bancolombia-icon"
+import Image from 'next/image';
 
 const reservationFormSchema = z.object({
   customerName: z.string().min(2, { message: "El nombre completo debe tener al menos 2 caracteres." }),
@@ -91,6 +92,8 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
     },
   })
 
+  const selectedPaymentMethod = form.watch("paymentMethod");
+
   async function onSubmit(values: z.infer<typeof reservationFormSchema>) {
     setIsSubmitting(true);
     if (!restaurantId) {
@@ -131,6 +134,46 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
     } finally {
         setIsSubmitting(false);
     }
+  }
+
+  const renderPaymentDetails = () => {
+    if (!selectedPaymentMethod) return null;
+
+    const pm = restaurantProfile?.paymentMethods;
+
+    if (selectedPaymentMethod === 'nequi' && pm?.nequi?.enabled) {
+      return (
+        <div className="mt-4 p-3 bg-muted rounded-md border text-sm">
+          <p><strong>Pagar a Nequi:</strong> {pm.nequi.accountNumber}</p>
+          <p><strong>Titular:</strong> {pm.nequi.accountHolder}</p>
+        </div>
+      );
+    }
+    if (selectedPaymentMethod === 'daviplata' && pm?.daviplata?.enabled) {
+      return (
+        <div className="mt-4 p-3 bg-muted rounded-md border text-sm">
+          <p><strong>Pagar a Daviplata:</strong> {pm.daviplata.accountNumber}</p>
+          <p><strong>Titular:</strong> {pm.daviplata.accountHolder}</p>
+        </div>
+      );
+    }
+    if (selectedPaymentMethod === 'bancolombia_qr' && pm?.bancolombia?.enabled && pm.bancolombia.bancolombiaQrImageUrl) {
+        return (
+            <div className="mt-4 p-3 bg-muted rounded-md border text-center">
+                <p className="font-semibold mb-2">Escanea para pagar con Bancolombia</p>
+                <Image 
+                    src={pm.bancolombia.bancolombiaQrImageUrl}
+                    alt="Código QR Bancolombia"
+                    width={150}
+                    height={150}
+                    className="mx-auto rounded-lg"
+                    data-ai-hint="payment QR code"
+                />
+            </div>
+        )
+    }
+
+    return null;
   }
 
   return (
@@ -285,6 +328,8 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
           )}
         />
         
+        {renderPaymentDetails()}
+
         <FormField
           control={form.control}
           name="notes"
