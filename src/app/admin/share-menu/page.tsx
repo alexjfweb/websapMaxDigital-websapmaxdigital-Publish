@@ -107,10 +107,13 @@ export default function AdminShareMenuPage() {
   };
 
   const handleSaveConfig = async () => {
-    if (!currentUser.companyId) {
-      toast({ title: "Error", description: "No se encontró el ID de la compañía.", variant: "destructive" });
+    const companyId = currentUser.companyId;
+
+    if (!companyId) {
+      toast({ title: "Error de Autenticación", description: "No se pudo identificar la compañía. Por favor, recargue la página.", variant: "destructive" });
       return;
     }
+
     setIsSaving(true);
     
     let finalImageUrl = customImageUrl;
@@ -118,7 +121,8 @@ export default function AdminShareMenuPage() {
     try {
       if (imageFile) {
         toast({ title: "Subiendo imagen...", description: "Por favor espera." });
-        finalImageUrl = await storageService.uploadFile(imageFile, `share_images/${currentUser.companyId}/`);
+        // Llama al servicio de subida y espera la URL
+        finalImageUrl = await storageService.uploadFile(imageFile, `share_images/${companyId}/`);
       }
       
       const configToSave = {
@@ -127,17 +131,17 @@ export default function AdminShareMenuPage() {
         updatedAt: serverTimestamp(),
       };
 
-      await setDoc(doc(db, 'companies', currentUser.companyId), configToSave, { merge: true });
+      await setDoc(doc(db, 'companies', companyId), configToSave, { merge: true });
       
       setCustomImageUrl(finalImageUrl);
-      setImageFile(null);
-      setShowSuccess(true);
+      setImageFile(null); // Limpia el archivo después de subirlo
+      setShowSuccess(true); // Muestra el modal de éxito
 
     } catch (e: any) {
       console.error("Error al guardar o subir:", e);
       toast({ title: 'Error al Guardar', description: e.message || 'No se pudo guardar la configuración.', variant: 'destructive' });
     } finally {
-      setIsSaving(false);
+      setIsSaving(false); // Asegura que el estado de guardado se resetee siempre
     }
   };
   
