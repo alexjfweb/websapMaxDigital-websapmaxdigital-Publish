@@ -15,7 +15,10 @@ import {
 import type { Reservation } from '@/types';
 
 // La entrada para crear una reserva debe contener explícitamente el ID del restaurante.
-type CreateReservationInput = Omit<Reservation, 'id' | 'createdAt' | 'updatedAt' | 'status'>;
+// Usamos restaurantId como el nombre de campo estándar.
+type CreateReservationInput = Omit<Reservation, 'id' | 'createdAt' | 'updatedAt' | 'status'> & {
+    restaurantId: string;
+};
 
 class ReservationService {
   private get reservationsCollection() {
@@ -34,16 +37,16 @@ class ReservationService {
         throw new Error("El ID del restaurante es obligatorio para crear una reserva.");
     }
 
-    // Estandarización: Siempre guardar el identificador como 'restaurantId'.
+    // Aseguramos que el campo siempre se guarde como 'restaurantId'.
     const reservationDoc = {
       ...data,
-      restaurantId: data.restaurantId, // Aseguramos que el campo se llame 'restaurantId'
+      restaurantId: data.restaurantId,
       status: 'pending',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
     
-    // Eliminamos el campo companyId si existiera para evitar duplicados
+    // Eliminamos cualquier otro alias que pudiera existir para evitar inconsistencias.
     delete (reservationDoc as any).companyId;
 
     const docRef = await addDoc(coll, reservationDoc);
@@ -64,6 +67,7 @@ class ReservationService {
       console.log(`[ReservationService] Consultando reservas con restaurantId: ${companyId}`);
       
       // Estandarización: Siempre buscar por el campo 'restaurantId'.
+      // Esta es la corrección clave para la lectura de datos.
       const q = query(
         coll,
         where('restaurantId', '==', companyId)
