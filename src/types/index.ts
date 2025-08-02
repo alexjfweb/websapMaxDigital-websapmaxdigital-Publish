@@ -167,7 +167,9 @@ export interface Company {
       primary?: string;
       secondary?: string;
       accent?: string;
-  }
+  };
+  customShareMessage?: string;
+  customShareImageUrl?: string;
 }
 // Sistema de Gestión de Mesas
 export interface Table {

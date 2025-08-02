@@ -4,70 +4,68 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Copy, CheckCircle, Download } from "lucide-react";
+import { Copy, CheckCircle, Download, Save, UploadCloud, Image as ImageIcon, MessageSquare, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import WhatsAppIcon from "@/components/icons/whatsapp-icon";
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useSession } from "@/contexts/session-context";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { storageService } from "@/services/storage-service";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export default function AdminShareMenuPage() {
   const { toast } = useToast();
+  const { currentUser } = useSession();
+  const companyId = currentUser.companyId;
+
   const [menuUrl, setMenuUrl] = useState('');
   const [openCopiedModal, setOpenCopiedModal] = useState(false);
-  const { currentUser } = useSession();
-
-  const restaurantId = currentUser.companyId; 
+  const [customMessage, setCustomMessage] = useState('');
+  const [customImageUrl, setCustomImageUrl] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && restaurantId) {
-      // Construir la URL dinámica correcta
-      setMenuUrl(`${window.location.origin}/menu/${restaurantId}`);
+    if (typeof window !== 'undefined' && companyId) {
+      setMenuUrl(`${window.location.origin}/menu/${companyId}`);
     }
-  }, [restaurantId]);
-
+    
+    async function fetchShareConfig() {
+      if (!companyId) return;
+      setIsLoading(true);
+      try {
+        const docRef = doc(db, 'companies', companyId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setCustomMessage(data.customShareMessage || `¡Mira nuestro delicioso menú! 🌮🥗🍰`);
+          setCustomImageUrl(data.customShareImageUrl || null);
+        }
+      } catch (e) {
+        toast({ title: 'Error', description: 'No se pudo cargar la configuración para compartir.', variant: 'destructive' });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    fetchShareConfig();
+  }, [companyId, toast]);
 
   const handleCopyToClipboard = () => {
     if (!menuUrl) return;
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(menuUrl)
-        .then(() => {
-          setOpenCopiedModal(true);
-        })
-        .catch(err => {
-          toast({
-            title: '¡Error!',
-            description: 'No se pudo copiar el enlace',
-            variant: "destructive",
-          });
-          console.error('Failed to copy: ', err);
-        });
-    } else {
-      // Fallback para contextos inseguros
-      try {
-        const textArea = document.createElement("textarea");
-        textArea.value = menuUrl;
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textArea);
-        setOpenCopiedModal(true);
-      } catch (err) {
-        toast({
-          title: '¡Error!',
-          description: 'No se pudo copiar el enlace',
-          variant: "destructive",
-        });
-        console.error('Failed to copy: ', err);
-      }
-    }
+    navigator.clipboard.writeText(menuUrl)
+      .then(() => setOpenCopiedModal(true))
+      .catch(() => toast({ title: 'Error', description: 'No se pudo copiar el enlace', variant: "destructive" }));
   };
 
   const handleShareViaWhatsApp = () => {
     if (!menuUrl) return;
-    const message = `Check out our delicious menu at websapMax: ${menuUrl}`; // This message could also be translated
+    const message = `${customMessage}\n\n${menuUrl}`;
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
@@ -78,35 +76,63 @@ export default function AdminShareMenuPage() {
       const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(menuUrl)}`;
       const response = await fetch(qrApiUrl);
       const blob = await response.blob();
-      
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
       link.download = 'menu-qr.png';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      toast({
-        title: "Descarga iniciada",
-        description: "El código QR se está descargando."
-      });
-      
+      toast({ title: "Descarga iniciada", description: "El código QR se está descargando." });
     } catch (error) {
-       toast({
-        title: "Error de descarga",
-        description: "No se pudo descargar el código QR.",
-        variant: "destructive"
-      });
-      console.error("Error al descargar QR:", error);
+       toast({ title: "Error de descarga", description: "No se pudo descargar el código QR.", variant: "destructive" });
     }
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        setImageFile(file);
+        setCustomImageUrl(URL.createObjectURL(file)); // Show preview
+    }
+  };
 
-  if (!menuUrl) {
+  const handleSaveConfig = async () => {
+    if (!companyId) return;
+    setIsSaving(true);
+    try {
+      let finalImageUrl = customImageUrl;
+
+      if (imageFile) {
+        if (customImageUrl && customImageUrl.startsWith('blob:')) { // Only delete old if new one is uploaded
+          const oldImageUrl = (await getDoc(doc(db, 'companies', companyId))).data()?.customShareImageUrl;
+          if (oldImageUrl) await storageService.deleteFile(oldImageUrl);
+        }
+        finalImageUrl = await storageService.compressAndUploadFile(imageFile, `share_images/${companyId}/`);
+      }
+      
+      const docRef = doc(db, 'companies', companyId);
+      await setDoc(docRef, {
+        customShareMessage: customMessage,
+        customShareImageUrl: finalImageUrl,
+      }, { merge: true });
+
+      setCustomImageUrl(finalImageUrl); // Update state with final URL
+      setImageFile(null); // Clear file input
+      toast({ title: 'Configuración guardada', description: 'Tus cambios para compartir han sido guardados.' });
+    } catch (e) {
+      toast({ title: 'Error', description: 'No se pudo guardar la configuración.', variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  
+  if (isLoading || !menuUrl) {
     return (
-      <div className="space-y-8">
-        <h1 className="text-3xl font-bold text-primary">Compartir menú</h1>
-        <p className="text-lg text-muted-foreground">Cargando descripción...</p>
+      <div className="space-y-8 max-w-2xl mx-auto">
+        <Skeleton className="h-10 w-1/2 mx-auto" />
+        <Skeleton className="h-6 w-3/4 mx-auto" />
+        <Card><CardContent className="p-6"><Skeleton className="h-40 w-full" /></CardContent></Card>
+        <Card><CardContent className="p-6"><Skeleton className="h-20 w-full" /></CardContent></Card>
       </div>
     );
   }
@@ -114,12 +140,55 @@ export default function AdminShareMenuPage() {
   return (
     <div className="space-y-8 max-w-2xl mx-auto">
       <h1 className="text-3xl font-bold text-primary text-center">Compartir menú</h1>
-      <p className="text-lg text-muted-foreground text-center">Descripción de la página...</p>
+      <p className="text-lg text-muted-foreground text-center">Personaliza cómo se ve tu menú al compartirlo y usa las herramientas para llegar a más clientes.</p>
 
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle>Enlace</CardTitle>
-          <CardDescription>Descripción del enlace</CardDescription>
+          <CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5" /> Personaliza tu Mensaje</CardTitle>
+          <CardDescription>Edita el mensaje y la imagen que se mostrarán al compartir tu menú.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="customMessage">Mensaje para WhatsApp</Label>
+            <Textarea
+              id="customMessage"
+              value={customMessage}
+              onChange={(e) => setCustomMessage(e.target.value)}
+              placeholder="¡Mira nuestro delicioso menú! 🌮🥗🍰"
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground mt-1">El enlace a tu menú se añadirá automáticamente al final.</p>
+          </div>
+          <div className="space-y-2">
+            <Label>Imagen para Vista Previa</Label>
+            <div className="flex items-center gap-4">
+              <Image 
+                src={customImageUrl || "https://placehold.co/200x200.png?text=Imagen"}
+                alt="Vista previa de imagen para compartir"
+                width={100}
+                height={100}
+                className="rounded-md border object-cover"
+              />
+              <Button asChild variant="outline">
+                <label htmlFor="image-upload" className="cursor-pointer flex items-center">
+                  <UploadCloud className="mr-2 h-4 w-4" /> Cambiar Imagen
+                  <input id="image-upload" type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                </label>
+              </Button>
+            </div>
+             <p className="text-xs text-muted-foreground mt-1">Esta imagen se usará en vistas previas de redes sociales.</p>
+          </div>
+          <Button onClick={handleSaveConfig} disabled={isSaving}>
+            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle>Enlace del Menú</CardTitle>
+          <CardDescription>Usa este enlace para compartir tu menú digital donde quieras.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center space-x-2">
@@ -128,50 +197,43 @@ export default function AdminShareMenuPage() {
               <Copy className="h-4 w-4" />
             </Button>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Información adicional sobre el enlace
-          </p>
         </CardContent>
       </Card>
 
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle>Compartir por WhatsApp</CardTitle>
-          <CardDescription>Descripción del botón de WhatsApp</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button onClick={handleShareViaWhatsApp} className="w-full bg-green-500 hover:bg-green-600 text-white">
-            <WhatsAppIcon className="mr-2 h-5 w-5" /> Compartir por WhatsApp
-          </Button>
-          <p className="text-sm text-muted-foreground mt-3 text-center">
-            Información adicional sobre el botón de WhatsApp
-          </p>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle>Compartir por WhatsApp</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={handleShareViaWhatsApp} className="w-full bg-green-500 hover:bg-green-600 text-white">
+              <WhatsAppIcon className="mr-2 h-5 w-5" /> Enviar por WhatsApp
+            </Button>
+          </CardContent>
+        </Card>
+        
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle>Código QR</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center space-y-4">
+            <div className="p-4 border rounded-lg bg-white">
+              <Image 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(menuUrl)}`} 
+                  alt="Menu QR Code" 
+                  width={150} 
+                  height={150}
+                  data-ai-hint="QR code"
+              />
+            </div>
+            <Button variant="outline" onClick={handleDownloadQR}>
+              <Download className="mr-2 h-4 w-4"/>
+              Descargar QR
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
       
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle>Código QR</CardTitle>
-          <CardDescription>Descripción del código QR</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center space-y-4">
-          <div className="p-4 border rounded-lg bg-white">
-            <Image 
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(menuUrl)}`} 
-                alt="Menu QR Code" 
-                width={200} 
-                height={200}
-                data-ai-hint="QR code"
-            />
-          </div>
-          <Button variant="outline" onClick={handleDownloadQR}>
-            <Download className="mr-2 h-4 w-4"/>
-            Descargar código QR
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Modal de enlace copiado */}
       <Dialog open={openCopiedModal} onOpenChange={setOpenCopiedModal}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -179,9 +241,7 @@ export default function AdminShareMenuPage() {
               <CheckCircle className="h-16 w-16 text-green-500" />
             </div>
             <DialogTitle className="text-center text-xl">¡Enlace copiado!</DialogTitle>
-            <DialogDescription className="text-center">
-              El enlace del menú ha sido copiado al portapapeles.
-            </DialogDescription>
+            <DialogDescription className="text-center">El enlace del menú ha sido copiado al portapapeles.</DialogDescription>
           </DialogHeader>
           <DialogFooter className="sm:justify-center">
             <Button onClick={() => setOpenCopiedModal(false)}>Cerrar</Button>

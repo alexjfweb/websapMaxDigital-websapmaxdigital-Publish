@@ -4,7 +4,8 @@
 
 import * as React from 'react';
 import Image from 'next/image';
-import type { Company, Dish, CartItem, Reservation } from '@/types';
+import Head from 'next/head';
+import type { Company, Dish, CartItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { LoaderCircle, ShoppingCart, CalendarCheck } from 'lucide-react';
@@ -13,7 +14,7 @@ import DishItem from '@/components/menu/dish-item';
 import CartCheckout from '@/components/menu/cart-checkout';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { db } from '@/lib/firebase';
-import { collection, query, onSnapshot, doc, getDoc, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import ReservationForm from '@/components/forms/reservation-form';
 import { useDishes } from '@/hooks/use-dishes';
 
@@ -119,7 +120,6 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
         
         setRestaurant(companyData);
 
-        // Cargar estilos de menú
         const stylesRef = doc(db, 'menu_styles', restaurantId);
         const stylesSnap = await getDoc(stylesRef);
         if (stylesSnap.exists()) {
@@ -177,10 +177,30 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
       </div>
     );
   }
+  
+  const ogTitle = restaurant.name;
+  const ogDescription = restaurant.customShareMessage || restaurant.description || `Menú digital de ${restaurant.name}`;
+  const ogImage = restaurant.customShareImageUrl || restaurant.logoUrl || 'https://placehold.co/1200x630.png';
+
 
   const restaurantInfoForDisplay = { ...restaurant, address: restaurant.addressStreet, logoUrl: restaurant.logoUrl, bannerUrl: restaurant.bannerUrl };
 
   return (
+    <>
+    <Head>
+        <title>{ogTitle}</title>
+        <meta name="description" content={ogDescription} />
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={ogTitle} />
+        <meta property="og:description" content={ogDescription} />
+        <meta property="og:image" content={ogImage} />
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:title" content={ogTitle} />
+        <meta property="twitter:description" content={ogDescription} />
+        <meta property="twitter:image" content={ogImage} />
+    </Head>
     <div
       style={{
         background: menuStyles.secondary_color,
@@ -191,7 +211,6 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
       className="min-h-screen"
     >
       <div className="fixed right-4 top-4 z-50 flex flex-col gap-4">
-        {/* Cart Dialog */}
         <Dialog open={cartOpen} onOpenChange={setCartOpen}>
           <DialogTrigger asChild>
             <button className="relative p-2 rounded-full bg-white shadow-lg hover:bg-primary/10 transition hover:scale-110 active:scale-95">
@@ -217,7 +236,6 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
           </DialogContent>
         </Dialog>
         
-        {/* Reservation Dialog */}
         <Dialog open={reservationOpen} onOpenChange={setReservationOpen}>
             <DialogTrigger asChild>
                 <button className="p-2 rounded-full bg-white shadow-lg hover:bg-primary/10 transition hover:scale-110 active:scale-95">
@@ -274,5 +292,6 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
         </div>
       </div>
     </div>
+    </>
   );
 }
