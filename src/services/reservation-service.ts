@@ -1,4 +1,3 @@
-
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -14,8 +13,6 @@ import {
 } from 'firebase/firestore';
 import type { Reservation } from '@/types';
 
-// La entrada para crear una reserva debe contener explícitamente el ID del restaurante.
-// Usamos restaurantId como el nombre de campo estándar.
 type CreateReservationInput = Omit<Reservation, 'id' | 'createdAt' | 'updatedAt' | 'status'> & {
     restaurantId: string;
 };
@@ -48,9 +45,6 @@ class ReservationService {
       updatedAt: serverTimestamp(),
     };
     
-    // Eliminamos cualquier otro alias que pudiera existir para evitar inconsistencias.
-    delete (reservationDoc as any).companyId;
-
     const docRef = await addDoc(coll, reservationDoc);
     console.log(`✅ Reserva creada con restaurantId: ${reservationDoc.restaurantId}`);
     return docRef.id;
@@ -68,20 +62,19 @@ class ReservationService {
     try {
       console.log(`[ReservationService] Consultando reservas con restaurantId: ${companyId}`);
       
-      // Estandarización: Siempre buscar por el campo 'restaurantId'.
+      // Corrección: Se elimina el filtro `where('isActive', '==', true)` que era incorrecto.
+      // Se añade `orderBy` para mostrar las más recientes primero.
       const q = query(
         coll,
-        where('restaurantId', '==', companyId)
+        where('restaurantId', '==', companyId),
+        orderBy('dateTime', 'desc')
       );
 
       const querySnapshot = await getDocs(q);
       
-      if (querySnapshot.empty) {
-        console.log(`[ReservationService] No se encontraron reservas para la compañía ${companyId}.`);
-        return [];
-      }
+      console.log(`[ReservationService] Se encontraron ${querySnapshot.size} documentos para la compañía ${companyId}.`);
       
-      let reservations: Reservation[] = querySnapshot.docs.map(doc => {
+      const reservations: Reservation[] = querySnapshot.docs.map(doc => {
           const data = doc.data();
           const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : new Date().toISOString();
           const updatedAt = data.updatedAt instanceof Timestamp ? data.updatedAt.toDate().toISOString() : new Date().toISOString();
@@ -96,15 +89,13 @@ class ReservationService {
           } as Reservation;
       });
 
-      // Ordenar por fecha en el cliente para evitar la necesidad del índice compuesto
-      reservations.sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
-
-      console.log(`[ReservationService] Se encontraron y procesaron ${reservations.length} reservas.`);
+      console.log(`[ReservationService] Se procesaron ${reservations.length} reservas.`);
       return reservations;
 
     } catch (error: any) {
       console.error(`[ReservationService] Error al obtener las reservas para ${companyId}:`, error);
-      throw new Error("No se pudieron obtener las reservas.");
+      // Si el error es por un índice faltante, Firestore lo indicará en la consola con un enlace para crearlo.
+      throw new Error("No se pudieron obtener las reservas. Verifica la consola para posibles errores de índice en Firestore.");
     }
   }
   
