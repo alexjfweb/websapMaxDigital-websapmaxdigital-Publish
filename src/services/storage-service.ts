@@ -31,7 +31,13 @@ class StorageService {
       return await this.uploadFile(compressedFile, path);
     } catch (error) {
       console.error("Error durante la compresión, se intentará subir el archivo original.", error);
-      return await this.uploadFile(file, path);
+      // Fallback a subir el archivo original si la compresión falla
+      try {
+        return await this.uploadFile(file, path);
+      } catch (uploadError) {
+         console.error("Error al subir el archivo original después de un fallo de compresión:", uploadError);
+         throw uploadError; // Relanzar el error de subida
+      }
     }
   }
 
@@ -96,5 +102,3 @@ class StorageService {
 }
 
 export const storageService = new StorageService();
-
-    
