@@ -4,12 +4,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Copy, CheckCircle, Download, Save, UploadCloud, Image as ImageIcon, MessageSquare, Loader2, AlertTriangle } from "lucide-react";
+import { Copy, Download, Save, UploadCloud, MessageSquare, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import WhatsAppIcon from "@/components/icons/whatsapp-icon";
 import React, { useEffect, useState, type ChangeEvent } from 'react';
 import Image from 'next/image';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useSession } from "@/contexts/session-context";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -25,13 +24,14 @@ export default function AdminShareMenuPage() {
   const companyId = currentUser.companyId;
 
   const [menuUrl, setMenuUrl] = useState('');
-  const [openCopiedModal, setOpenCopiedModal] = useState(false);
   const [customMessage, setCustomMessage] = useState('');
   const [customImageUrl, setCustomImageUrl] = useState<string | null>(null);
   
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
@@ -48,7 +48,9 @@ export default function AdminShareMenuPage() {
         if (docSnap.exists()) {
           const data = docSnap.data();
           setCustomMessage(data.customShareMessage || `¡Mira nuestro delicioso menú! 🌮🥗🍰`);
-          setCustomImageUrl(data.customShareImageUrl || null);
+          const imageUrl = data.customShareImageUrl || null;
+          setCustomImageUrl(imageUrl);
+          setImagePreview(imageUrl);
         }
       } catch (e) {
         toast({ title: 'Error', description: 'No se pudo cargar la configuración para compartir.', variant: 'destructive' });
@@ -63,7 +65,7 @@ export default function AdminShareMenuPage() {
   const handleCopyToClipboard = () => {
     if (!menuUrl) return;
     navigator.clipboard.writeText(menuUrl)
-      .then(() => setOpenCopiedModal(true))
+      .then(() => toast({ title: "¡Enlace copiado!", description: "El enlace del menú ha sido copiado al portapapeles." }))
       .catch(() => toast({ title: 'Error', description: 'No se pudo copiar el enlace', variant: "destructive" }));
   };
 
@@ -91,47 +93,49 @@ export default function AdminShareMenuPage() {
        toast({ title: "Error de descarga", description: "No se pudo descargar el código QR.", variant: "destructive" });
     }
   };
-
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files[0] || !companyId) return;
-    
-    const file = e.target.files[0];
-    
-    setIsUploading(true);
-    toast({ title: "Subiendo imagen...", description: "Por favor espera." });
-    
-    try {
-      // Usamos el servicio que ya funciona en otras partes de la app
-      const newImageUrl = await storageService.compressAndUploadFile(file, `share_images/${companyId}/`);
-      
-      if (newImageUrl) {
-        setCustomImageUrl(newImageUrl);
-        toast({ title: 'Imagen subida', description: 'La nueva imagen está lista. Haz clic en Guardar para confirmar todos los cambios.', variant: 'success' });
-      } else {
-        throw new Error("La URL de la imagen no se pudo generar.");
-      }
-
-    } catch (err: any) {
-        console.error("Error al subir imagen:", err);
-        toast({ title: "Error al subir", description: err.message, variant: "destructive" });
-    } finally {
-        setIsUploading(false);
+  
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const handleSaveConfig = async () => {
     if (!companyId) return;
     setIsSaving(true);
-    try {
-      const docRef = doc(db, 'companies', companyId);
-      await setDoc(docRef, {
-        customShareMessage: customMessage,
-        customShareImageUrl: customImageUrl,
-      }, { merge: true });
+    
+    let finalImageUrl = customImageUrl;
 
+    try {
+      if (imageFile) {
+        toast({ title: "Subiendo y comprimiendo imagen...", description: "Por favor espera." });
+        const newUrl = await storageService.compressAndUploadFile(imageFile, `share_images/${companyId}/`);
+        if (newUrl) {
+          finalImageUrl = newUrl;
+        } else {
+            throw new Error("La URL de la imagen no se pudo generar.");
+        }
+      }
+
+      await setDoc(doc(db, 'companies', companyId), {
+        customShareMessage: customMessage,
+        customShareImageUrl: finalImageUrl,
+      }, { merge: true });
+      
+      // Actualizar estado local para reflejar la nueva URL guardada
+      setCustomImageUrl(finalImageUrl);
+      setImageFile(null); // Limpiar el archivo después de subirlo
       setShowSuccess(true);
-    } catch (e) {
-      toast({ title: 'Error al Guardar', description: 'No se pudo guardar la configuración.', variant: 'destructive' });
+
+    } catch (e: any) {
+      console.error("Error al guardar o subir:", e);
+      toast({ title: 'Error al Guardar', description: e.message || 'No se pudo guardar la configuración.', variant: 'destructive' });
     } finally {
       setIsSaving(false);
     }
@@ -181,24 +185,24 @@ export default function AdminShareMenuPage() {
             <Label>Imagen para Vista Previa</Label>
             <div className="flex items-center gap-4">
               <Image 
-                src={customImageUrl || "https://placehold.co/200x200.png?text=Imagen"}
+                src={imagePreview || "https://placehold.co/200x200.png?text=Imagen"}
                 alt="Vista previa de imagen para compartir"
                 width={100}
                 height={100}
                 className="rounded-md border object-cover"
                 data-ai-hint="share image"
               />
-              <Button asChild variant="outline" disabled={isUploading}>
+              <Button asChild variant="outline" disabled={isSaving}>
                 <label htmlFor="image-upload" className="cursor-pointer flex items-center">
-                  {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
-                  {isUploading ? "Subiendo..." : "Cambiar Imagen"}
+                  <UploadCloud className="mr-2 h-4 w-4" />
+                  Cambiar Imagen
                   <input id="image-upload" type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
                 </label>
               </Button>
             </div>
-             <p className="text-xs text-muted-foreground mt-1">Esta imagen se usará en vistas previas de redes sociales.</p>
+             <p className="text-xs text-muted-foreground mt-1">Esta imagen se usará en vistas previas de redes sociales. Haz clic en 'Guardar Cambios' para subirla.</p>
           </div>
-          <Button onClick={handleSaveConfig} disabled={isSaving || isUploading}>
+          <Button onClick={handleSaveConfig} disabled={isSaving}>
             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
             {isSaving ? 'Guardando...' : 'Guardar Cambios'}
           </Button>
@@ -253,24 +257,8 @@ export default function AdminShareMenuPage() {
           </CardContent>
         </Card>
       </div>
-      
-      <Dialog open={openCopiedModal} onOpenChange={setOpenCopiedModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <div className="flex justify-center mb-2">
-              <CheckCircle className="h-16 w-16 text-green-500" />
-            </div>
-            <DialogTitle className="text-center text-xl">¡Enlace copiado!</DialogTitle>
-            <DialogDescription className="text-center">El enlace del menú ha sido copiado al portapapeles.</DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="sm:justify-center">
-            <Button onClick={() => setOpenCopiedModal(false)}>Cerrar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
     </>
   );
 }
-
     

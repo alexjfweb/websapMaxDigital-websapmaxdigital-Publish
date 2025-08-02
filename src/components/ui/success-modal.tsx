@@ -37,5 +37,4 @@ export default function SuccessModal({ isOpen, onClose, title, message }: Succes
     </Dialog>
   );
 }
-
     
