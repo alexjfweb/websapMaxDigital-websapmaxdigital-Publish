@@ -41,19 +41,20 @@ export function useSubscription() {
   const { currentUser, isLoading: isSessionLoading } = useSession();
   const companyId = currentUser?.companyId;
 
-  const { data: company, error: companyError } = useSWR<Company | null>(
+  const { data: company, error: companyError, isLoading: isCompanyLoading } = useSWR<Company | null>(
     companyId ? `company/${companyId}` : null,
     () => fetchCompany(companyId!)
   );
 
   const planId = company?.planId;
 
-  const { data: plan, error: planError } = useSWR<LandingPlan | null>(
+  const { data: plan, error: planError, isLoading: isPlanLoading } = useSWR<LandingPlan | null>(
     planId ? `plan/${planId}` : null,
     () => fetchPlan(planId!)
   );
 
-  const isLoading = isSessionLoading || (companyId && !company && !companyError) || (planId && !plan && !planError);
+  // La carga general depende de la sesión y de las cargas de datos condicionales.
+  const isLoading = isSessionLoading || (companyId && isCompanyLoading) || (planId && isPlanLoading);
 
   const permissions = {
     // La gestión de empleados está disponible en planes 'estándar', 'premium' y 'profesional'.
@@ -66,8 +67,8 @@ export function useSubscription() {
 
   return {
     subscription: {
-      company,
-      plan,
+      company: company || null,
+      plan: plan || null,
       permissions,
     },
     isLoading,
