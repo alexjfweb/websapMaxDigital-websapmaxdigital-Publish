@@ -17,9 +17,11 @@ import { reservationService } from "@/services/reservation-service";
 import { useToast } from "@/hooks/use-toast";
 import type { Reservation } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSession } from "@/contexts/session-context";
 
 export default function EmployeeReservationsPage() {
-  const companyId = "websapmax"; // Hardcoded for now
+  const { currentUser } = useSession();
+  const companyId = currentUser.companyId; 
   const { reservations, isLoading, error, refreshReservations } = useReservations(companyId);
   const { toast } = useToast();
 
@@ -45,7 +47,6 @@ export default function EmployeeReservationsPage() {
       toast({
         title: "Estado actualizado",
         description: `La reserva ha sido marcada como ${status === 'confirmed' ? 'confirmada' : 'cancelada'}.`,
-        variant: "success",
       });
       await refreshReservations();
     } catch (err) {
@@ -175,6 +176,7 @@ export default function EmployeeReservationsPage() {
           {selectedReservation && (
             <div className="space-y-2 text-base">
               <div><b>Nombre del cliente:</b> {selectedReservation.customerName}</div>
+              <div><b>Teléfono:</b> {selectedReservation.customerPhone}</div>
               <div><b>Fecha y hora:</b> {format(new Date(selectedReservation.dateTime), 'PPPp')}</div>
               <div><b>Invitados:</b> {selectedReservation.numberOfGuests}</div>
               <div><b>Notas:</b> {selectedReservation.notes || 'Sin notas'}</div>

@@ -17,24 +17,29 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
+import { es } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/hooks/use-toast"
+import { reservationService } from "@/services/reservation-service"
+import { useParams } from "next/navigation"
+import { useState } from "react"
+import { Loader2 } from "lucide-react"
 
 const reservationFormSchema = z.object({
-  fullName: z.string().min(2, { message: "Full name must be at least 2 characters." }),
-  phoneNumber: z.string().regex(/^\+?[1-9]\d{1,14}$/, { message: "Please enter a valid phone number." }),
-  email: z.string().email({ message: "Please enter a valid email address." }),
-  numberOfGuests: z.coerce.number().min(1, { message: "Must reserve for at least 1 guest." }).max(20, { message: "For parties larger than 20, please call us." }),
-  reservationDate: z.date({ required_error: "A date for reservation is required." }),
-  reservationTime: z.string({ required_error: "A time for reservation is required." }),
+  fullName: z.string().min(2, { message: "El nombre completo debe tener al menos 2 caracteres." }),
+  phoneNumber: z.string().regex(/^\d{10}$/, { message: "Por favor, ingrese un número de teléfono válido de 10 dígitos." }),
+  email: z.string().email({ message: "Por favor, ingrese un correo electrónico válido." }),
+  numberOfGuests: z.coerce.number().min(1, { message: "La reserva debe ser para al menos 1 persona." }).max(20, { message: "Para grupos de más de 20, por favor llámenos." }),
+  reservationDate: z.date({ required_error: "Se requiere una fecha para la reserva." }),
+  reservationTime: z.string({ required_error: "Se requiere una hora para la reserva." }),
   specialRequests: z.string().optional(),
 })
 
-// Generate time slots (e.g., every 30 minutes from 12 PM to 9 PM)
+// Generar franjas horarias (ej. cada 30 minutos de 12 PM a 9 PM)
 const generateTimeSlots = () => {
   const slots = [];
-  for (let hour = 12; hour <= 21; hour++) { // 12 PM to 9 PM
+  for (let hour = 12; hour <= 21; hour++) { // De 12:00 a 21:00
     for (let minute = 0; minute < 60; minute += 30) {
       const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
       slots.push(time);
@@ -46,6 +51,10 @@ const timeSlots = generateTimeSlots();
 
 
 export default function ReservationForm() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const params = useParams();
+  const restaurantId = params.restaurantId as string;
+
   const form = useForm<z.infer<typeof reservationFormSchema>>({
     resolver: zodResolver(reservationFormSchema),
     defaultValues: {
@@ -57,18 +66,44 @@ export default function ReservationForm() {
     },
   })
 
-  function onSubmit(values: z.infer<typeof reservationFormSchema>) {
-    // In a real app, you would send this data to your backend
-    console.log("Reservation Form Submitted:", values)
-    toast({
-      title: "Reservation Request Sent!",
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(values, null, 2)}</code>
-        </pre>
-      ),
-    });
-    form.reset(); // Reset form after submission
+  async function onSubmit(values: z.infer<typeof reservationFormSchema>) {
+    setIsSubmitting(true);
+    if (!restaurantId) {
+        toast({ title: 'Error', description: 'No se pudo identificar el restaurante.', variant: 'destructive' });
+        setIsSubmitting(false);
+        return;
+    }
+    
+    const combinedDateTime = new Date(values.reservationDate);
+    const [hours, minutes] = values.reservationTime.split(':').map(Number);
+    combinedDateTime.setHours(hours, minutes);
+
+    try {
+        await reservationService.createReservation({
+            companyId: restaurantId,
+            customerName: values.fullName,
+            customerPhone: values.phoneNumber,
+            dateTime: combinedDateTime.toISOString(),
+            numberOfGuests: values.numberOfGuests,
+            status: 'pending',
+            notes: values.specialRequests,
+        });
+
+        toast({
+            title: "¡Reserva Solicitada!",
+            description: "Hemos enviado tu solicitud de reserva. Recibirás una confirmación pronto.",
+        });
+        form.reset();
+    } catch(error) {
+        console.error("Error al crear la reserva:", error);
+        toast({
+            title: "Error al Reservar",
+            description: "No pudimos procesar tu reserva. Por favor, intenta de nuevo.",
+            variant: "destructive",
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   }
 
   return (
@@ -80,9 +115,9 @@ export default function ReservationForm() {
             name="fullName"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Full Name</FormLabel>
+                <FormLabel>Nombre Completo</FormLabel>
                 <FormControl>
-                    <Input placeholder="Jane Smith" {...field} />
+                    <Input placeholder="Ej: Ana Pérez" {...field} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -93,9 +128,9 @@ export default function ReservationForm() {
             name="phoneNumber"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Phone Number</FormLabel>
+                <FormLabel>Número de Teléfono</FormLabel>
                 <FormControl>
-                    <Input type="tel" placeholder="+1 987 654 3210" {...field} />
+                    <Input type="tel" placeholder="Ej: 3001234567" {...field} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -107,9 +142,9 @@ export default function ReservationForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email Address</FormLabel>
+              <FormLabel>Correo Electrónico</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="jane.smith@example.com" {...field} />
+                <Input type="email" placeholder="ana.perez@correo.com" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -121,7 +156,7 @@ export default function ReservationForm() {
             name="numberOfGuests"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Number of Guests</FormLabel>
+                <FormLabel>Número de Invitados</FormLabel>
                 <FormControl>
                     <Input type="number" min="1" max="20" placeholder="2" {...field} />
                 </FormControl>
@@ -134,7 +169,7 @@ export default function ReservationForm() {
             name="reservationDate"
             render={({ field }) => (
                 <FormItem className="flex flex-col">
-                <FormLabel>Reservation Date</FormLabel>
+                <FormLabel>Fecha de Reserva</FormLabel>
                 <Popover>
                     <PopoverTrigger asChild>
                     <FormControl>
@@ -146,9 +181,9 @@ export default function ReservationForm() {
                         )}
                         >
                         {field.value ? (
-                            format(field.value, "PPP")
+                            format(field.value, "PPP", { locale: es })
                         ) : (
-                            <span>Pick a date</span>
+                            <span>Elige una fecha</span>
                         )}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
@@ -160,7 +195,7 @@ export default function ReservationForm() {
                         selected={field.value}
                         onSelect={field.onChange}
                         disabled={(date) =>
-                            date < new Date(new Date().setHours(0,0,0,0)) // Disable past dates
+                            date < new Date(new Date().setHours(0,0,0,0)) // Deshabilitar fechas pasadas
                         }
                         initialFocus
                     />
@@ -175,11 +210,11 @@ export default function ReservationForm() {
             name="reservationTime"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Reservation Time</FormLabel>
+                <FormLabel>Hora de Reserva</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                     <SelectTrigger>
-                        <SelectValue placeholder="Select a time" />
+                        <SelectValue placeholder="Elige una hora" />
                     </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -199,15 +234,18 @@ export default function ReservationForm() {
           name="specialRequests"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Special Requests (Optional)</FormLabel>
+              <FormLabel>Solicitudes Especiales (Opcional)</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., window seat, birthday celebration" {...field} />
+                <Input placeholder="Ej: mesa junto a la ventana, celebración de cumpleaños" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full">Request Reservation</Button>
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+           {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+           {isSubmitting ? 'Enviando...' : 'Solicitar Reserva'}
+        </Button>
       </form>
     </Form>
   )
