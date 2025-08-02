@@ -1,11 +1,11 @@
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, serverTimestamp, where, orderBy, limit } from 'firebase/firestore';
 import type { Timestamp } from 'firebase/firestore';
 
 // Definición de la estructura de un log de auditoría
 export interface AuditLog {
-  id?: string;
-  entity: 'landingPlans' | 'companies' | 'users';
+  id: string;
+  entity: 'landingPlans' | 'companies' | 'users' | 'tables' | 'reservations' | 'orders';
   entityId: string;
   action: 'created' | 'updated' | 'deleted' | 'reordered' | 'status_changed' | 'role_changed';
   performedBy: {
@@ -15,15 +15,17 @@ export interface AuditLog {
   timestamp: Timestamp;
   previousData?: any;
   newData?: any;
+  diff?: Record<string, { from: any, to: any }>;
   ipAddress?: string;
   userAgent?: string;
+  details?: string;
 }
 
 // Interfaz para la entrada de logs
 export type LogInput = Omit<AuditLog, 'id' | 'timestamp'>;
 
 class AuditService {
-  private readonly AUDIT_COLLECTION = 'auditLogs';
+  private readonly AUDIT_COLLECTION = 'globalAuditLogs';
 
   /**
    * Elimina las claves con valor `undefined` de un objeto de forma recursiva.
@@ -70,6 +72,29 @@ class AuditService {
       // No relanzar el error para no interrumpir flujos críticos como el registro
       return '';
     }
+  }
+
+  /**
+   * Obtiene los logs de auditoría con opciones de filtrado.
+   */
+  async getLogs(options: { entity?: string; action?: string; limit?: number } = {}): Promise<AuditLog[]> {
+    const coll = collection(db, this.AUDIT_COLLECTION);
+    const queryConstraints = [orderBy('timestamp', 'desc')];
+    
+    if (options.entity) {
+      queryConstraints.push(where('entity', '==', options.entity));
+    }
+    if (options.action) {
+      queryConstraints.push(where('action', '==', options.action));
+    }
+    if (options.limit) {
+      queryConstraints.push(limit(options.limit));
+    }
+
+    const q = query(coll, ...queryConstraints);
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AuditLog));
   }
 }
 

@@ -11,8 +11,10 @@ import {
   Timestamp,
   addDoc
 } from 'firebase/firestore';
-import type { Company, CreateCompanyInput } from '@/types';
-// import { auditService } from './audit-service'; // Descomentar cuando el servicio de auditoría sea estable
+import type { Company } from '@/types';
+import { auditService } from './audit-service';
+
+export type CreateCompanyInput = Omit<Company, 'id' | 'createdAt' | 'updatedAt'>;
 
 class CompanyService {
   private get companiesCollection() {
@@ -72,6 +74,40 @@ class CompanyService {
   }
   
   /**
+   * Crea una nueva empresa en Firestore.
+   * @param companyData - Datos de la nueva empresa.
+   * @param user - Información del usuario que realiza la acción.
+   * @returns La empresa recién creada con su ID.
+   */
+  async createCompany(companyData: CreateCompanyInput, user: { uid: string; email: string }): Promise<Company> {
+    const coll = this.companiesCollection;
+    if (!coll) throw new Error("La base de datos no está disponible.");
+
+    if (!companyData.name || !companyData.ruc) {
+      throw new Error("El nombre de la empresa y el RUC son obligatorios.");
+    }
+
+    const companyToCreate = {
+      ...companyData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+    
+    const docRef = await addDoc(coll, companyToCreate);
+    const newCompany: Company = { ...companyData, id: docRef.id, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    
+    await auditService.log({
+      entity: 'companies',
+      entityId: docRef.id,
+      action: 'created',
+      performedBy: user,
+      newData: newCompany,
+    });
+    
+    return newCompany;
+  }
+
+  /**
    * Actualiza una empresa existente en Firestore.
    */
   async updateCompany(companyId: string, companyData: Partial<Company>, user: { uid: string; email: string }): Promise<Company> {
@@ -95,8 +131,14 @@ class CompanyService {
 
     const newData = { id: updatedDoc.id, ...updatedDoc.data() } as Company;
 
-    // Aquí se podría reactivar la auditoría si se desea
-    // await auditService.log(...)
+    await auditService.log({
+      entity: 'companies',
+      entityId: companyId,
+      action: 'updated',
+      performedBy: user,
+      previousData,
+      newData,
+    });
 
     console.log(`✅ Empresa actualizada con éxito en Firestore. ID: ${companyId}`);
     return newData;

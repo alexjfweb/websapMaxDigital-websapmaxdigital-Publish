@@ -25,7 +25,8 @@ import { doc, setDoc, addDoc, collection, serverTimestamp } from "firebase/fires
 import type { UserRole, User, Company } from "@/types";
 import React, { Suspense, useState } from "react";
 import { dishService } from "@/services/dish-service";
-import ErrorModal from "@/components/ui/error-modal"; // Importar el nuevo modal
+import ErrorModal from "@/components/ui/error-modal";
+import { companyService } from "@/services/company-service";
 
 const SUPERADMIN_EMAIL = 'alexjfweb@gmail.com';
 
@@ -74,56 +75,41 @@ function RegisterForm() {
 
   async function onSubmit(values: z.infer<typeof registerFormSchema>) {
     setIsSubmitting(true);
-    setErrorState(null); // Limpiar errores anteriores
+    setErrorState(null);
     let firebaseUser: FirebaseUser | undefined;
     
     try {
       const app = getFirebaseApp();
       const auth = getAuth(app);
       
-      console.log("🔵 1. Creando usuario en Firebase Auth...");
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       firebaseUser = userCredential.user;
-      console.log("✅ 1. Usuario creado en Auth con UID:", firebaseUser.uid);
       
       const isSuperAdmin = values.email.toLowerCase() === SUPERADMIN_EMAIL;
       const role: UserRole = isSuperAdmin ? 'superadmin' : 'admin';
       let companyId: string | undefined = undefined;
 
       if (role === 'admin' && values.businessName) {
-        console.log(`🔵 2. Creando documento de compañía para "${values.businessName}"...`);
         
-        const companyData: Partial<Omit<Company, 'id'>> = {
+        const companyData: Omit<Company, 'id'|'createdAt'|'updatedAt'> = {
             name: values.businessName,
             email: values.email,
             status: 'active',
             registrationDate: new Date().toISOString(),
-            planId: planId || 'plan-gratuito',
+            planId: planId || 'plan-gratuito', // Asignar plan o uno por defecto
             subscriptionStatus: planId === 'plan-gratuito-7-das' ? 'trialing' : 'pending_payment',
-            ruc: '',
+            ruc: '', // Estos campos pueden ser opcionales o llenarse después
             location: '',
         };
-
-        if (planId === 'plan-gratuito-7-das') {
-            const trialEndDate = new Date();
-            trialEndDate.setDate(trialEndDate.getDate() + 7);
-            companyData.trialEndsAt = trialEndDate.toISOString();
-        }
         
-        const companyRef = await addDoc(collection(db, "companies"), {
-          ...companyData,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-        companyId = companyRef.id;
-        console.log(`✅ 2. Compañía creada con ID: ${companyId} y Plan ID: ${companyData.planId}`);
+        // Usamos el companyService para la creación, que incluye lógica de auditoría si es necesario
+        const newCompany = await companyService.createCompany(companyData, { uid: firebaseUser.uid, email: firebaseUser.email || values.email });
+        companyId = newCompany.id;
 
         // Automatizar la creación de platos de ejemplo
         await dishService.createSampleDishesForCompany(companyId);
-
       }
 
-      console.log(`🔵 3. Creando documento de usuario para ${values.name} ${values.lastName}`);
       const userData: Omit<User, 'id'> = {
         uid: firebaseUser.uid,
         email: firebaseUser.email || values.email,
@@ -140,17 +126,14 @@ function RegisterForm() {
       };
       
       await setDoc(doc(db, "users", firebaseUser.uid), userData);
-      console.log("✅ 3. Documento de usuario creado en Firestore.");
       
       toast({
         title: '¡Registro Exitoso!',
         description: isSuperAdmin ? `Cuenta de Superadministrador creada.` : `La empresa "${values.businessName}" y su administrador han sido creados.`,
       });
 
-      console.log("🔵 4. Redirección se manejará por SessionProvider.");
     } catch (error) {
       const err = error as { code?: string; message?: string };
-      console.error("🔴 Error CRÍTICO en el registro:", err);
       let errorMessage = err.message || 'Hubo un error al crear la cuenta.';
       
       if (err.code === 'auth/email-already-in-use') {
@@ -163,12 +146,10 @@ function RegisterForm() {
       }
       
       if (firebaseUser) {
-        console.log(`🟡 Iniciando ROLLBACK: eliminando usuario de Auth ${firebaseUser.uid}`);
         try {
           await firebaseUser.delete();
-          console.log("✅ Rollback completado: usuario de Auth eliminado.");
         } catch (rollbackError) {
-          console.error("🔴 Falló el rollback del usuario de Auth:", rollbackError);
+          console.error("Falló el rollback del usuario de Auth:", rollbackError);
         }
       }
     } finally {
