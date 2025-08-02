@@ -2,7 +2,7 @@
 "use client";
 
 import useSWR from 'swr';
-import { useSession } from './session-context';
+import { useSession } from '@/contexts/session-context';
 import type { Company } from '@/types';
 import type { LandingPlan } from '@/services/landing-plans-service';
 import { doc, getDoc } from 'firebase/firestore';
