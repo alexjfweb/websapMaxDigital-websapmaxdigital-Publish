@@ -92,19 +92,23 @@ function RegisterForm() {
         const trialEndDate = new Date();
         trialEndDate.setDate(trialEndDate.getDate() + 7);
 
-        const companyData: Omit<Company, 'id'> = {
+        const companyData: Partial<Company> = {
             name: values.businessName,
             email: values.email,
             status: 'active',
             registrationDate: new Date().toISOString(),
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            planId: planId || 'plan-gratuito', // Asigna el plan desde la URL o uno por defecto
-            subscriptionStatus: planId === 'plan-gratuito' ? 'trialing' : 'pending_payment',
-            trialEndsAt: planId === 'plan-gratuito' ? trialEndDate.toISOString() : undefined,
-            ruc: '', // RUC se puede añadir después en el perfil
+            planId: planId || 'plan-gratuito',
+            subscriptionStatus: planId === 'plan-gratuito-7-das' ? 'trialing' : 'pending_payment',
+            ruc: '',
             location: '',
         };
+
+        if (planId === 'plan-gratuito-7-das') {
+            companyData.trialEndsAt = trialEndDate.toISOString();
+        }
+        
         const companyRef = await addDoc(collection(db, "companies"), {
           ...companyData,
           createdAt: serverTimestamp(),
