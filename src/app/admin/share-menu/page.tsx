@@ -101,7 +101,6 @@ export default function AdminShareMenuPage() {
     toast({ title: "Subiendo imagen...", description: "Por favor espera." });
     
     try {
-      // Directamente subimos el archivo y obtenemos la URL final
       const newImageUrl = await storageService.compressAndUploadFile(file, `share_images/${companyId}/`);
       
       if (newImageUrl) {
@@ -272,4 +271,3 @@ export default function AdminShareMenuPage() {
     </>
   );
 }
-
