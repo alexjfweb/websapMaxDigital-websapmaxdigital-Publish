@@ -1,0 +1,168 @@
+
+"use client";
+
+import { useSubscription } from "@/hooks/use-subscription";
+import { usePublicLandingPlans } from "@/hooks/use-plans";
+import { useEmployees } from "@/hooks/use-employees";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Check, Star, ArrowRight, AlertCircle, XCircle } from 'lucide-react';
+import Link from 'next/link';
+
+function SubscriptionSkeleton() {
+    return (
+        <div className="space-y-8">
+            <div>
+                <Skeleton className="h-9 w-1/3 mb-2" />
+                <Skeleton className="h-5 w-2/3" />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <Card className="lg:col-span-1">
+                    <CardHeader>
+                        <Skeleton className="h-6 w-1/2 mb-2" />
+                        <Skeleton className="h-4 w-3/4" />
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <Skeleton className="h-5 w-full" />
+                        <Skeleton className="h-5 w-full" />
+                        <Skeleton className="h-5 w-full" />
+                        <Skeleton className="h-10 w-full mt-4" />
+                    </CardContent>
+                </Card>
+                <div className="lg:col-span-2 space-y-6">
+                    <Skeleton className="h-8 w-1/4" />
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Skeleton className="h-64 w-full" />
+                        <Skeleton className="h-64 w-full" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+function PlanCard({ plan, isCurrent, isPopular }: { plan: any, isCurrent?: boolean, isPopular?: boolean }) {
+    return (
+        <Card className={`flex flex-col ${isCurrent ? 'border-primary border-2' : ''} ${isPopular ? 'border-yellow-400' : ''}`}>
+             {isPopular && <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-900">Popular</Badge>}
+            <CardHeader className="text-center">
+                <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                <CardDescription className="min-h-[40px]">{plan.description}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow space-y-4">
+                <div className="text-center">
+                    <span className="text-4xl font-bold">${plan.price}</span>
+                    <span className="text-muted-foreground">/mes</span>
+                </div>
+                <ul className="space-y-2 text-sm">
+                    {plan.features.map((feature: string, index: number) => (
+                        <li key={index} className="flex items-start">
+                            <Check className="h-4 w-4 mr-2 mt-1 text-green-500 shrink-0" />
+                            <span>{feature}</span>
+                        </li>
+                    ))}
+                </ul>
+            </CardContent>
+            <CardFooter>
+                 <Button className="w-full" disabled={isCurrent}>
+                    {isCurrent ? 'Plan Actual' : 'Mejorar Plan'}
+                 </Button>
+            </CardFooter>
+        </Card>
+    );
+}
+
+
+export default function SubscriptionPage() {
+    const { subscription, isLoading: isLoadingSubscription, error: errorSubscription } = useSubscription();
+    const { plans, isLoading: isLoadingPlans, error: errorPlans } = usePublicLandingPlans();
+    const { employees, isLoading: isLoadingEmployees } = useEmployees(subscription?.company?.id);
+
+    const isLoading = isLoadingSubscription || isLoadingPlans || isLoadingEmployees;
+    const error = errorSubscription || errorPlans;
+
+    if (isLoading) {
+       return <SubscriptionSkeleton />;
+    }
+
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center text-center text-destructive py-12">
+                <AlertCircle className="h-12 w-12 mb-4" />
+                <h2 className="text-xl font-semibold">Error al Cargar la Suscripción</h2>
+                <p>{error.message}</p>
+            </div>
+        )
+    }
+
+    const { company, plan } = subscription;
+    
+    // Filtramos los planes para no mostrar el plan actual en la lista de "otros planes"
+    const otherPlans = plans.filter(p => p.id !== plan?.id);
+
+    return (
+        <div className="space-y-8">
+            <div>
+                <h1 className="text-3xl font-bold text-primary">Gestiona tu Suscripción</h1>
+                <p className="text-lg text-muted-foreground">Consulta tu plan actual y explora otras opciones para crecer.</p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                <div className="lg:col-span-1">
+                    <Card className="sticky top-6">
+                        <CardHeader>
+                            <CardTitle>Tu Plan Actual</CardTitle>
+                            <CardDescription>Este es el plan que tu empresa tiene actualmente.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            {plan ? (
+                                <>
+                                    <div className="text-center p-6 bg-muted rounded-lg">
+                                        <h3 className="text-3xl font-bold text-primary">{plan.name}</h3>
+                                        <p className="text-4xl font-extrabold mt-2">${plan.price}<span className="text-base font-normal text-muted-foreground">/mes</span></p>
+                                    </div>
+                                    <div className="space-y-3 text-sm">
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Estado:</span>
+                                            <Badge variant={company?.subscriptionStatus === 'active' || company?.subscriptionStatus === 'trialing' ? 'default' : 'destructive'} className={company?.subscriptionStatus === 'active' || company?.subscriptionStatus === 'trialing' ? 'bg-green-500' : ''}>
+                                                {company?.subscriptionStatus === 'trialing' ? 'En Prueba' : company?.subscriptionStatus === 'active' ? 'Activo' : 'Vencido'}
+                                            </Badge>
+                                        </div>
+                                         {company?.trialEndsAt && (
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Prueba termina en:</span>
+                                                <span className="font-medium">{new Date(company.trialEndsAt).toLocaleDateString()}</span>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Límite de empleados:</span>
+                                            <span className="font-medium">{employees.length} / {plan.maxUsers === -1 ? 'Ilimitados' : plan.maxUsers}</span>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <p className="text-muted-foreground">No tienes un plan asignado.</p>
+                            )}
+                             <Button className="w-full" asChild>
+                                <Link href="#">
+                                    Contactar a Soporte
+                                </Link>
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <div className="lg:col-span-2">
+                    <h2 className="text-2xl font-bold mb-6">Explora otros planes</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {otherPlans.map(p => (
+                            <PlanCard key={p.id} plan={p} isPopular={p.isPopular}/>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}

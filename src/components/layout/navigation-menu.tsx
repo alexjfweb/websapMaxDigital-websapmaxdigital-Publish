@@ -38,6 +38,7 @@ import {
   Palette,
   Archive,
   CreditCard,
+  Rocket
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
@@ -73,6 +74,7 @@ const navItems: NavItem[] = [
   // Admin
   { href: '/admin/dashboard', labelKey: 'Panel', icon: LayoutDashboard, allowedRoles: ['admin'], tooltipKey: 'Panel de administración' },
   { href: '/admin/profile', labelKey: 'Perfil', icon: Settings, allowedRoles: ['admin'], tooltipKey: 'Perfil del restaurante' },
+  { href: '/admin/subscription', labelKey: 'Suscripción', icon: Rocket, allowedRoles: ['admin'], tooltipKey: 'Gestionar Suscripción' },
   { href: '/admin/dishes', labelKey: 'Platos', icon: Utensils, allowedRoles: ['admin'], tooltipKey: 'Gestión de platos' },
   { href: '/admin/employees', labelKey: 'Empleados', icon: UserCog, allowedRoles: ['admin'], tooltipKey: 'Gestión de empleados' },
   { href: '/admin/tables', labelKey: 'Mesas', icon: ClipboardList, allowedRoles: ['admin'], tooltipKey: 'Gestión de mesas' },
