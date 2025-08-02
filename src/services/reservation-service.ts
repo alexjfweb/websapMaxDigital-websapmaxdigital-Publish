@@ -54,7 +54,7 @@ class ReservationService {
     return docRef.id;
   }
   
-  // Obtiene todas las reservas para una compañía específica.
+  // Obtiene todas las reservas para una compañía específica, ordenadas por fecha.
   async getReservationsByCompany(companyId: string): Promise<Reservation[]> {
     const coll = this.reservationsCollection;
 
@@ -65,9 +65,11 @@ class ReservationService {
 
     try {
       console.log(`[ReservationService] Consultando reservas para la compañía: ${companyId}`);
+      // Consulta optimizada con ordenamiento. Requiere un índice compuesto en Firestore.
       const q = query(
         coll,
-        where('restaurantId', '==', companyId)
+        where('restaurantId', '==', companyId),
+        orderBy('dateTime', 'desc') // Ordenar por fecha de la reserva, más recientes primero
       );
 
       const querySnapshot = await getDocs(q);
@@ -92,13 +94,14 @@ class ReservationService {
           } as Reservation;
       });
 
-      // Ordenar los resultados por fecha descendente en el lado del cliente
-      reservations.sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
-
       console.log(`[ReservationService] Se encontraron y procesaron ${reservations.length} reservas.`);
       return reservations;
 
-    } catch (error) {
+    } catch (error: any) {
+        if (error.code === 'failed-precondition') {
+            console.error("❌ [Firestore Error] Índice requerido. Por favor, crea el índice compuesto en tu consola de Firebase.", error.message);
+            throw new Error("Se requiere un índice en la base de datos. Revisa la consola para ver el enlace de creación.");
+        }
       console.error(`[ReservationService] Error al obtener las reservas para ${companyId}:`, error);
       throw new Error("No se pudieron obtener las reservas.");
     }
