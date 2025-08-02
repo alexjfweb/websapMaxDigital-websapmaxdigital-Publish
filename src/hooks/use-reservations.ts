@@ -19,13 +19,15 @@ export function useReservations(companyId?: string) {
 
   const effectiveCompanyId = companyId || currentUser.companyId;
 
-  const shouldFetch = effectiveCompanyId && !isSessionLoading;
+  // Solo intentar hacer fetch si tenemos un ID de compañía válido
+  const shouldFetch = !!effectiveCompanyId;
 
   const { data, error, isLoading, mutate } = useSWR<Reservation[]>(
-    shouldFetch ? `/api/companies/${effectiveCompanyId}/reservations` : null,
+    shouldFetch ? `/api/reservations?companyId=${effectiveCompanyId}` : null,
     fetcher,
     {
-      revalidateOnFocus: false,
+      revalidateOnFocus: true,
+      shouldRetryOnError: false
     }
   );
 

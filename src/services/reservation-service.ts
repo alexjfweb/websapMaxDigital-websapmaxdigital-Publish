@@ -94,6 +94,7 @@ class ReservationService {
           restaurantId: data.restaurantId,
           customerName: data.customerName,
           customerPhone: data.customerPhone,
+          customerEmail: data.customerEmail,
           dateTime,
           numberOfGuests: data.numberOfGuests,
           status: data.status,
