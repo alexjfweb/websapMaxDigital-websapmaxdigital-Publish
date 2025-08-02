@@ -83,7 +83,7 @@ const defaultMenuStyles = {
 };
 
 export default function MenuPage({ params }: { params: { restaurantId: string } }) {
-  const { restaurantId: slug } = params; // Usamos slug para referirnos al nombre en la URL
+  const { restaurantId: slug } = params;
   const [restaurant, setRestaurant] = React.useState<Company | null>(null);
   const [dishes, setDishes] = React.useState<Dish[]>([]);
   const cart = useCart();
@@ -115,11 +115,12 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
         }
 
         const companyDoc = companySnapshot.docs[0];
-        const companyData = { id: companyDoc.id, ...companyDoc.data() } as Company;
+        const companyData = { ...companyDoc.data(), id: companyDoc.data().id || companyDoc.id } as Company;
         
         setRestaurant(companyData);
-        // Usamos el ID del documento, que es el companyId correcto.
-        setCorrectCompanyId(companyData.id); // <- CORRECCIÓN CLAVE
+        // **LA CORRECCIÓN CLAVE ESTÁ AQUÍ**
+        // Usamos el `id` del documento, que es el companyId correcto, no el ID del documento de Firestore.
+        setCorrectCompanyId(companyData.id);
 
         // Cargar estilos de menú
         const stylesRef = doc(db, 'menu_styles', slug);

@@ -63,10 +63,10 @@ class ReservationService {
     try {
       console.log(`[ReservationService] Consultando reservas con restaurantId: ${companyId}`);
       
-      // Consulta simplificada SIN orderBy para evitar el error de índice.
       const q = query(
         coll,
-        where('restaurantId', '==', companyId)
+        where('restaurantId', '==', companyId),
+        orderBy('dateTime', 'desc')
       );
 
       const querySnapshot = await getDocs(q);
@@ -88,15 +88,17 @@ class ReservationService {
           } as Reservation;
       });
 
-      // Ordenar los resultados en el lado del cliente.
-      reservations.sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
-
       console.log(`[ReservationService] Se procesaron y ordenaron ${reservations.length} reservas.`);
       return reservations;
 
     } catch (error: any) {
       console.error(`[ReservationService] Error al obtener las reservas para ${companyId}:`, error);
-      throw new Error("No se pudieron obtener las reservas. Verifica la consola para posibles errores.");
+      // Devuelve un error claro si es un problema de índice
+      if (error.code === 'failed-precondition') {
+          console.error("Firestore requiere un índice para esta consulta. Por favor, crea uno desde el enlace en el mensaje de error de la consola.");
+          throw new Error("Se requiere un índice de Firestore para esta consulta. Revisa la consola del navegador para ver el enlace para crearlo.");
+      }
+      throw new Error("No se pudieron obtener las reservas. Verifica la consola para más detalles.");
     }
   }
   
