@@ -15,6 +15,7 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { db } from '@/lib/firebase';
 import { collection, query, onSnapshot, doc, getDoc, where, getDocs } from 'firebase/firestore';
 import ReservationForm from '@/components/forms/reservation-form';
+import { useDishes } from '@/hooks/use-dishes';
 
 interface CartStore {
   items: CartItem[];
@@ -83,19 +84,19 @@ const defaultMenuStyles = {
 };
 
 export default function MenuPage({ params }: { params: { restaurantId: string } }) {
-  const { restaurantId: slug } = params;
+  const { restaurantId } = params;
   const [restaurant, setRestaurant] = React.useState<Company | null>(null);
-  const [dishes, setDishes] = React.useState<Dish[]>([]);
   const cart = useCart();
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [cartOpen, setCartOpen] = React.useState(false);
   const [reservationOpen, setReservationOpen] = React.useState(false);
   const [menuStyles, setMenuStyles] = React.useState(defaultMenuStyles);
-  const [correctCompanyId, setCorrectCompanyId] = React.useState<string | null>(null);
+  
+  const { dishes, isLoading: isLoadingDishes, error: errorDishes } = useDishes(restaurantId);
 
   React.useEffect(() => {
-    if (!slug) {
+    if (!restaurantId) {
       setError("ID de restaurante no válido.");
       setIsLoading(false);
       return;
@@ -105,25 +106,21 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
 
     const fetchRestaurantData = async () => {
       try {
-        const companyQuery = query(collection(db, "companies"), where("name", "==", slug));
-        const companySnapshot = await getDocs(companyQuery);
+        const companyDocRef = doc(db, "companies", restaurantId);
+        const companySnapshot = await getDoc(companyDocRef);
 
-        if (companySnapshot.empty) {
+        if (!companySnapshot.exists()) {
             setError("No se pudo encontrar el restaurante.");
             setIsLoading(false);
             return;
         }
 
-        const companyDoc = companySnapshot.docs[0];
-        const companyData = { ...companyDoc.data(), id: companyDoc.data().id || companyDoc.id } as Company;
+        const companyData = { ...companySnapshot.data(), id: companySnapshot.id } as Company;
         
         setRestaurant(companyData);
-        // **LA CORRECCIÓN CLAVE ESTÁ AQUÍ**
-        // Usamos el `id` del documento, que es el companyId correcto, no el ID del documento de Firestore.
-        setCorrectCompanyId(companyData.id);
 
         // Cargar estilos de menú
-        const stylesRef = doc(db, 'menu_styles', slug);
+        const stylesRef = doc(db, 'menu_styles', restaurantId);
         const stylesSnap = await getDoc(stylesRef);
         if (stylesSnap.exists()) {
           setMenuStyles({ ...defaultMenuStyles, ...stylesSnap.data() });
@@ -132,29 +129,14 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
       } catch (e) {
         console.error("Error cargando datos del restaurante:", e);
         setError("Error al cargar la información del restaurante.");
+      } finally {
+        setIsLoading(false);
       }
     };
     
     fetchRestaurantData();
 
-  }, [slug]);
-
-  React.useEffect(() => {
-    if (!correctCompanyId) return;
-
-    const dishesQuery = query(collection(db, 'dishes'), where('companyId', '==', correctCompanyId), where('available', '==', true));
-    const unsubscribe = onSnapshot(dishesQuery, (snapshot) => {
-      const dishesFromFS = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Dish));
-      setDishes(dishesFromFS);
-      setIsLoading(false);
-    }, (error) => {
-      console.error("Error cargando platos:", error);
-      setError("No se pudieron cargar los platos del menú.");
-      setIsLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [correctCompanyId]);
+  }, [restaurantId]);
 
 
   const categories = React.useMemo(() => {
@@ -228,7 +210,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
               onQuantity={(id, delta) => cart.updateQuantity(id, (cart.items.find(i => i.id === id)?.quantity || 0) + delta)}
               onRemove={cart.removeItem}
               onClear={cart.clearCart}
-              restaurantId={correctCompanyId!}
+              restaurantId={restaurantId}
               restaurantProfile={restaurant}
               onClose={() => setCartOpen(false)}
             />
@@ -249,9 +231,9 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
                         Completa el siguiente formulario para asegurar tu mesa.
                     </DialogDescription>
                 </DialogHeader>
-                {correctCompanyId && (
+                {restaurantId && (
                   <ReservationForm 
-                      restaurantId={correctCompanyId}
+                      restaurantId={restaurantId}
                       onSuccess={() => setReservationOpen(false)}
                   />
                 )}
@@ -287,7 +269,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
           {filteredDishes.map((dish) => (
              <DishItem key={dish.id} dish={dish} onAddToCart={() => cart.addItem(dish)} styles={menuStyles} />
           ))}
-          {filteredDishes.length === 0 && !isLoading && <p>No se encontraron platos en esta categoría.</p>}
+          {filteredDishes.length === 0 && !isLoadingDishes && <p>No se encontraron platos en esta categoría.</p>}
         </div>
       </div>
     </div>
