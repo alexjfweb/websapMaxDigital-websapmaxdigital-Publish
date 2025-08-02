@@ -13,7 +13,7 @@ import { useSession } from "@/contexts/session-context";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { storageService } from "@/services/storage-service";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import SuccessModal from "@/components/ui/success-modal";
@@ -59,7 +59,7 @@ export default function AdminShareMenuPage() {
       }
     }
     
-    fetchShareConfig();
+    if(companyId) fetchShareConfig();
   }, [companyId, toast]);
 
   const handleCopyToClipboard = () => {
@@ -107,15 +107,19 @@ export default function AdminShareMenuPage() {
   };
 
   const handleSaveConfig = async () => {
-    if (!companyId) return;
+    if (!companyId) {
+        toast({ title: "Error", description: "No se encontró el ID de la compañía.", variant: "destructive" });
+        return;
+    }
     setIsSaving(true);
     
     let finalImageUrl = customImageUrl;
 
     try {
       if (imageFile) {
-        toast({ title: "Subiendo y comprimiendo imagen...", description: "Por favor espera." });
-        const newUrl = await storageService.compressAndUploadFile(imageFile, `share_images/${companyId}/`);
+        toast({ title: "Subiendo imagen...", description: "Por favor espera." });
+        // Usamos el storageService que funciona correctamente
+        const newUrl = await storageService.uploadFile(imageFile, `share_images/${companyId}/`);
         if (newUrl) {
           finalImageUrl = newUrl;
         } else {
@@ -126,12 +130,12 @@ export default function AdminShareMenuPage() {
       await setDoc(doc(db, 'companies', companyId), {
         customShareMessage: customMessage,
         customShareImageUrl: finalImageUrl,
+        updatedAt: serverTimestamp(),
       }, { merge: true });
       
-      // Actualizar estado local para reflejar la nueva URL guardada
       setCustomImageUrl(finalImageUrl);
-      setImageFile(null); // Limpiar el archivo después de subirlo
-      setShowSuccess(true);
+      setImageFile(null); // Limpiar el archivo después de guardar
+      setShowSuccess(true); // Mostrar modal de éxito
 
     } catch (e: any) {
       console.error("Error al guardar o subir:", e);
@@ -141,7 +145,7 @@ export default function AdminShareMenuPage() {
     }
   };
   
-  if (isLoading || !menuUrl) {
+  if (isLoading || !companyId) {
     return (
       <div className="space-y-8 max-w-2xl mx-auto">
         <Skeleton className="h-10 w-1/2 mx-auto" />
@@ -261,4 +265,3 @@ export default function AdminShareMenuPage() {
     </>
   );
 }
-    
