@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,7 +32,7 @@ const createUserFormSchema = z.object({
   password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres" }),
   confirmPassword: z.string(),
   role: z.enum(["admin", "employee"], { required_error: "Por favor selecciona un rol" }),
-  name: z.string().optional(),
+  name: z.string().min(2, { message: "El nombre es obligatorio." }),
   contact: z.string().optional(),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Las contraseñas no coinciden",
@@ -60,6 +61,7 @@ export default function SuperAdminCreateUserPage() {
 
       const newUser: User = {
         id: firebaseUser.uid,
+        uid: firebaseUser.uid,
         username: values.username,
         email: firebaseUser.email || values.email,
         role: values.role as UserRole,
@@ -124,12 +126,12 @@ export default function SuperAdminCreateUserPage() {
               <div className="grid md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
-                  name="username"
+                  name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nombre de usuario</FormLabel>
+                      <FormLabel>Nombre completo</FormLabel>
                       <FormControl>
-                        <Input placeholder="Nombre de usuario" {...field} />
+                        <Input placeholder="Nombre y Apellido" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -137,18 +139,32 @@ export default function SuperAdminCreateUserPage() {
                 />
                 <FormField
                   control={form.control}
-                  name="email"
+                  name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Correo electrónico</FormLabel>
+                      <FormLabel>Nombre de usuario</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="Correo electrónico" {...field} />
+                        <Input placeholder="nombre.usuario" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
+
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Correo electrónico</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="Correo electrónico" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
               <div className="grid md:grid-cols-2 gap-6">
                 <FormField
@@ -179,39 +195,24 @@ export default function SuperAdminCreateUserPage() {
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Rol</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar rol" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="admin">Administrador</SelectItem>
-                        <SelectItem value="employee">Empleado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               <div className="grid md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
-                  name="name"
+                  name="role"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nombre</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Nombre" {...field} />
-                      </FormControl>
-                      <FormDescription>Descripción del nombre</FormDescription>
+                      <FormLabel>Rol</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar rol" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="admin">Administrador</SelectItem>
+                          <SelectItem value="employee">Empleado</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -221,11 +222,10 @@ export default function SuperAdminCreateUserPage() {
                   name="contact"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contacto</FormLabel>
+                      <FormLabel>Contacto (Opcional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="Contacto" {...field} />
+                        <Input placeholder="Número de teléfono" {...field} />
                       </FormControl>
-                      <FormDescription>Descripción del contacto</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

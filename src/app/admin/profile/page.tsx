@@ -288,7 +288,7 @@ export default function AdminProfilePage() {
             <div className="relative">
               <Share2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input id="menuShareLink" placeholder="Enlace del menú" value={profileData.socialLinks?.menuShareLink || ''} className="pl-10 pr-12" disabled={!isEditing} onChange={handleSocialChange} />
-              <Button type="button" size="icon" variant="ghost" className="absolute right-1 top-1/2 -translate-y-1/2" onClick={() => navigator.clipboard.writeText(profileData.socialLinks?.menuShareLink || '')}><Clipboard className="h-4 w-4" /></Button>
+              <Button type="button" size="icon" variant="ghost" className="absolute right-1 top-1/2 -translate-y-1/2" onClick={() => navigator.clipboard.writeText(profileData.socialLinks?.menuShareLink || '')} disabled={!profileData.socialLinks?.menuShareLink}><Clipboard className="h-4 w-4" /></Button>
             </div>
           </div>
         </CardContent>
