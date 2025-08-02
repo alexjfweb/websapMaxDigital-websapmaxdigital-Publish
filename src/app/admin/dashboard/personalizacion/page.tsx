@@ -11,6 +11,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { useSubscription } from '@/hooks/use-subscription';
+import UpgradePlanCard from '@/components/UpgradePlanCard';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const defaultStyles = {
   primary_color: '#FF6600',
@@ -43,8 +46,9 @@ const RESTAURANT_ID = 'websapmax';
 export default function PersonalizacionMenuPage() {
   const [styles, setStyles] = useState(defaultStyles);
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { subscription, isLoading: isSubscriptionLoading } = useSubscription();
 
   // Cargar configuración al montar
   useEffect(() => {
@@ -120,6 +124,29 @@ export default function PersonalizacionMenuPage() {
       </div>
     </div>
   );
+
+  if (isSubscriptionLoading || loading) {
+    return (
+        <div className="space-y-6">
+            <Skeleton className="h-10 w-1/3" />
+            <Skeleton className="h-6 w-2/3" />
+            <div className="grid md:grid-cols-2 gap-8">
+                <Card><CardContent className="p-6"><Skeleton className="h-96 w-full" /></CardContent></Card>
+                <Card><CardContent className="p-6"><Skeleton className="h-96 w-full" /></CardContent></Card>
+            </div>
+        </div>
+    );
+  }
+
+  if (!subscription?.permissions.canCustomizeBranding) {
+    return (
+        <UpgradePlanCard
+            featureName="Personalización del Menú"
+            description="Adapta los colores, tipografías y el estilo de tu menú para que coincida con la identidad de tu marca. Esta es una herramienta poderosa para ofrecer una experiencia única a tus clientes."
+            requiredPlan="Cualquier plan de pago"
+        />
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-2 md:px-0">
