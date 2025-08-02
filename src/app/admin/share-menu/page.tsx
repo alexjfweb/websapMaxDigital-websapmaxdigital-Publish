@@ -106,9 +106,6 @@ export default function AdminShareMenuPage() {
       
       if (newImageUrl) {
         setCustomImageUrl(newImageUrl);
-        // Opcional: Podríamos guardar automáticamente la URL en la BD aquí
-        // O esperar a que el usuario guarde todo junto.
-        // Por ahora, solo actualizamos el estado para la vista previa.
         toast({ title: 'Imagen subida', description: 'La nueva imagen está lista. Haz clic en Guardar para confirmar todos los cambios.', variant: 'success' });
       } else {
         throw new Error("La URL de la imagen no se pudo generar.");
@@ -122,7 +119,6 @@ export default function AdminShareMenuPage() {
     }
   };
 
-
   const handleSaveConfig = async () => {
     if (!companyId) return;
     setIsSaving(true);
@@ -130,10 +126,10 @@ export default function AdminShareMenuPage() {
       const docRef = doc(db, 'companies', companyId);
       await setDoc(docRef, {
         customShareMessage: customMessage,
-        customShareImageUrl: customImageUrl, // Guardamos la URL que ya obtuvimos al subir
+        customShareImageUrl: customImageUrl,
       }, { merge: true });
 
-      setShowSuccess(true); // Mostrar modal de éxito
+      setShowSuccess(true);
     } catch (e) {
       toast({ title: 'Error al Guardar', description: 'No se pudo guardar la configuración.', variant: 'destructive' });
     } finally {
@@ -190,6 +186,7 @@ export default function AdminShareMenuPage() {
                 width={100}
                 height={100}
                 className="rounded-md border object-cover"
+                data-ai-hint="share image"
               />
               <Button asChild variant="outline" disabled={isUploading}>
                 <label htmlFor="image-upload" className="cursor-pointer flex items-center">
@@ -275,3 +272,4 @@ export default function AdminShareMenuPage() {
     </>
   );
 }
+
