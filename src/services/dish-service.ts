@@ -124,8 +124,7 @@ class DishService {
     try {
       const q = query(
         coll,
-        where('companyId', '==', companyId),
-        where('available', '==', true) // Asumiendo 'available' en lugar de 'isActive' para platos
+        where('companyId', '==', companyId)
       );
 
       const querySnapshot = await getDocs(q);

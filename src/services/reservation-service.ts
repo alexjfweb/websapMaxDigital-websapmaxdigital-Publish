@@ -24,7 +24,8 @@ class ReservationService {
   }
 
   private validateReservationData(data: Partial<Omit<Reservation, 'id' | 'restaurantId'>> & { restaurantId?: string; companyId?: string }): void {
-    if (!data.restaurantId && !data.companyId) throw new Error("restaurantId es obligatorio.");
+    const idToCheck = data.restaurantId || data.companyId;
+    if (!idToCheck) throw new Error("restaurantId es obligatorio.");
     if (!data.customerName) throw new Error("El nombre del cliente es obligatorio.");
     if (!data.customerPhone) throw new Error("El teléfono del cliente es obligatorio.");
     if (!data.dateTime) throw new Error("La fecha y hora son obligatorias.");
@@ -57,11 +58,11 @@ class ReservationService {
     if (!coll) return [];
 
     if (!companyId) {
-      throw new Error("companyId es requerido.");
+      console.log("[ReservationService] ID de compañía no proporcionado. Devolviendo array vacío.");
+      return [];
     }
 
     try {
-      // Corrected to query by 'restaurantId'
       const q = query(
         coll,
         where('restaurantId', '==', companyId),
@@ -91,7 +92,7 @@ class ReservationService {
 
         reservations.push({
           id: doc.id,
-          companyId: data.restaurantId, // Use restaurantId here
+          companyId: data.restaurantId,
           customerName: data.customerName,
           customerPhone: data.customerPhone,
           dateTime,
@@ -105,7 +106,8 @@ class ReservationService {
       return reservations;
     } catch (error) {
       console.error("Error al obtener las reservas:", error);
-      throw new Error("No se pudieron obtener las reservas.");
+      // Devuelve un array vacío en caso de error para no romper la UI
+      return [];
     }
   }
   
