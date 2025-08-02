@@ -4,7 +4,7 @@
 import { useSubscription } from "@/hooks/use-subscription";
 import { usePublicLandingPlans } from "@/hooks/use-plans";
 import { useEmployees } from "@/hooks/use-employees";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -78,6 +78,8 @@ function PlanCard({ plan, isCurrent, isPopular }: { plan: any, isCurrent?: boole
 export default function SubscriptionPage() {
     const { subscription, isLoading: isLoadingSubscription, error: errorSubscription } = useSubscription();
     const { plans, isLoading: isLoadingPlans, error: errorPlans } = usePublicLandingPlans();
+    
+    // El hook de empleados ahora se puede llamar sin miedo a errores si no hay ID de compañía
     const { employees, isLoading: isLoadingEmployees } = useEmployees(subscription?.company?.id);
 
     const isLoading = isLoadingSubscription || isLoadingPlans || isLoadingEmployees;
@@ -97,10 +99,11 @@ export default function SubscriptionPage() {
         )
     }
 
-    const { company, plan } = subscription;
+    // Aseguramos que subscription y company no sean nulos para evitar errores
+    const { company, plan } = subscription || {};
     
     // Filtramos los planes para no mostrar el plan actual en la lista de "otros planes"
-    const otherPlans = plans.filter(p => p.id !== plan?.id);
+    const otherPlans = (plans || []).filter(p => p.id !== plan?.id);
 
     return (
         <div className="space-y-8">
@@ -117,7 +120,7 @@ export default function SubscriptionPage() {
                             <CardDescription>Este es el plan que tu empresa tiene actualmente.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            {plan ? (
+                            {plan && company ? (
                                 <>
                                     <div className="text-center p-6 bg-muted rounded-lg">
                                         <h3 className="text-3xl font-bold text-primary">{plan.name}</h3>
@@ -126,11 +129,11 @@ export default function SubscriptionPage() {
                                     <div className="space-y-3 text-sm">
                                         <div className="flex justify-between">
                                             <span className="text-muted-foreground">Estado:</span>
-                                            <Badge variant={company?.subscriptionStatus === 'active' || company?.subscriptionStatus === 'trialing' ? 'default' : 'destructive'} className={company?.subscriptionStatus === 'active' || company?.subscriptionStatus === 'trialing' ? 'bg-green-500' : ''}>
-                                                {company?.subscriptionStatus === 'trialing' ? 'En Prueba' : company?.subscriptionStatus === 'active' ? 'Activo' : 'Vencido'}
+                                            <Badge variant={company.subscriptionStatus === 'active' || company.subscriptionStatus === 'trialing' ? 'default' : 'destructive'} className={company.subscriptionStatus === 'active' || company.subscriptionStatus === 'trialing' ? 'bg-green-500' : ''}>
+                                                {company.subscriptionStatus === 'trialing' ? 'En Prueba' : company.subscriptionStatus === 'active' ? 'Activo' : 'Vencido'}
                                             </Badge>
                                         </div>
-                                         {company?.trialEndsAt && (
+                                         {company.trialEndsAt && (
                                             <div className="flex justify-between">
                                                 <span className="text-muted-foreground">Prueba termina en:</span>
                                                 <span className="font-medium">{new Date(company.trialEndsAt).toLocaleDateString()}</span>
@@ -143,7 +146,7 @@ export default function SubscriptionPage() {
                                     </div>
                                 </>
                             ) : (
-                                <p className="text-muted-foreground">No tienes un plan asignado.</p>
+                                <p className="text-muted-foreground text-center py-4">No tienes un plan o empresa asignada.</p>
                             )}
                              <Button className="w-full" asChild>
                                 <Link href="#">
