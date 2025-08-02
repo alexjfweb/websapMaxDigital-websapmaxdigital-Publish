@@ -13,7 +13,7 @@ import DishItem from '@/components/menu/dish-item';
 import CartCheckout from '@/components/menu/cart-checkout';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { db } from '@/lib/firebase';
-import { collection, query, onSnapshot, doc, getDoc, where } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, getDoc, where, getDocs } from 'firebase/firestore';
 import ReservationForm from '@/components/forms/reservation-form';
 
 interface CartStore {
@@ -92,93 +92,73 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
   const [cartOpen, setCartOpen] = React.useState(false);
   const [reservationOpen, setReservationOpen] = React.useState(false);
   const [menuStyles, setMenuStyles] = React.useState(defaultMenuStyles);
-  const [companyIdForReservation, setCompanyIdForReservation] = React.useState<string | null>(null);
+  const [correctCompanyId, setCorrectCompanyId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    const effectiveRestaurantId = restaurantId;
-    
-    if (!effectiveRestaurantId) {
+    const slug = restaurantId;
+    if (!slug) {
       setError("ID de restaurante no válido.");
       setIsLoading(false);
       return;
     }
-
-    const fetchRestaurantProfile = async () => {
-      try {
-        const q = query(collection(db, "companies"), where("name", "==", effectiveRestaurantId));
-        const querySnapshot = await getDocs(q);
-
-        if (!querySnapshot.empty) {
-          const profileDoc = querySnapshot.docs[0];
-          const companyData = { id: profileDoc.id, ...profileDoc.data() } as Company;
-          setRestaurant(companyData);
-          setCompanyIdForReservation(companyData.id); // Guardamos el ID correcto para la reserva
-        } else {
-           console.error("No se encontró el perfil del restaurante");
-           setError("No se pudo cargar la información del restaurante.");
-        }
-      } catch (e) {
-        console.error("Error cargando perfil del restaurante:", e);
-        setError("Error al cargar el perfil del restaurante.");
-      }
-    };
     
-    const fetchMenuStyles = async () => {
-       try {
-        const stylesRef = doc(db, 'menu_styles', effectiveRestaurantId);
+    setIsLoading(true);
+
+    const fetchRestaurantData = async () => {
+      try {
+        // Busca la compañía por el slug/nombre en la URL
+        const companyQuery = query(collection(db, "companies"), where("name", "==", slug));
+        const companySnapshot = await getDocs(companyQuery);
+
+        if (companySnapshot.empty) {
+            setError("No se pudo encontrar el restaurante.");
+            setIsLoading(false);
+            return;
+        }
+
+        const companyDoc = companySnapshot.docs[0];
+        const companyData = { id: companyDoc.id, ...companyDoc.data() } as Company;
+        
+        setRestaurant(companyData);
+        // **** LA CORRECCIÓN CLAVE ****
+        // Usamos el ID del documento, que es el companyId correcto.
+        setCorrectCompanyId(companyDoc.id); 
+
+        // Cargar estilos de menú
+        const stylesRef = doc(db, 'menu_styles', slug);
         const stylesSnap = await getDoc(stylesRef);
         if (stylesSnap.exists()) {
           setMenuStyles({ ...defaultMenuStyles, ...stylesSnap.data() });
         }
-      } catch(e) {
-        console.error("Error cargando estilos de menú:", e);
+
+      } catch (e) {
+        console.error("Error cargando datos del restaurante:", e);
+        setError("Error al cargar la información del restaurante.");
       }
     };
+    
+    fetchRestaurantData();
 
-    const subscribeToDishes = (companyId: string) => {
-      const q = query(collection(db, 'dishes'), where('companyId', '==', companyId), where('available', '==', true));
-      return onSnapshot(q, (snapshot) => {
-        const dishesFromFS = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Dish));
-        setDishes(dishesFromFS);
-        setIsLoading(false);
-      }, (error) => {
-        console.error("Error cargando platos:", error);
-        setError("No se pudieron cargar los platos del menú.");
-        setIsLoading(false);
-      });
-    };
-    
-    async function loadAllData() {
-        setIsLoading(true);
-        await Promise.all([
-          fetchRestaurantProfile(),
-          fetchMenuStyles()
-        ]);
-        
-        // El subscribeToDishes se llamará desde dentro de fetchRestaurantProfile
-        // una vez que tengamos el companyId correcto.
-    }
-    
-    loadAllData();
-    
   }, [restaurantId]);
 
+  // Suscribirse a los platos una vez que tenemos el ID correcto de la compañía
   React.useEffect(() => {
-    let unsubscribe: () => void = () => {};
-    if (companyIdForReservation) {
-      const q = query(collection(db, 'dishes'), where('companyId', '==', companyIdForReservation), where('available', '==', true));
-      unsubscribe = onSnapshot(q, (snapshot) => {
-        const dishesFromFS = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Dish));
-        setDishes(dishesFromFS);
-        setIsLoading(false);
-      }, (error) => {
-        console.error("Error cargando platos:", error);
-        setError("No se pudieron cargar los platos del menú.");
-        setIsLoading(false);
-      });
-    }
+    if (!correctCompanyId) return;
+
+    const dishesQuery = query(collection(db, 'dishes'), where('companyId', '==', correctCompanyId), where('available', '==', true));
+    const unsubscribe = onSnapshot(dishesQuery, (snapshot) => {
+      const dishesFromFS = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Dish));
+      setDishes(dishesFromFS);
+      setIsLoading(false);
+    }, (error) => {
+      console.error("Error cargando platos:", error);
+      setError("No se pudieron cargar los platos del menú.");
+      setIsLoading(false);
+    });
+
     return () => unsubscribe();
-  }, [companyIdForReservation]);
+  }, [correctCompanyId]);
+
 
   const categories = React.useMemo(() => {
     const uniqueCategories = new Set<string>();
@@ -251,7 +231,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
               onQuantity={(id, delta) => cart.updateQuantity(id, (cart.items.find(i => i.id === id)?.quantity || 0) + delta)}
               onRemove={cart.removeItem}
               onClear={cart.clearCart}
-              restaurantId={restaurant.id}
+              restaurantId={correctCompanyId!}
               restaurantProfile={restaurant}
               onClose={() => setCartOpen(false)}
             />
@@ -272,9 +252,9 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
                         Completa el siguiente formulario para asegurar tu mesa.
                     </DialogDescription>
                 </DialogHeader>
-                {companyIdForReservation && (
+                {correctCompanyId && (
                   <ReservationForm 
-                      restaurantId={companyIdForReservation}
+                      restaurantId={correctCompanyId}
                       onSuccess={() => setReservationOpen(false)}
                   />
                 )}
