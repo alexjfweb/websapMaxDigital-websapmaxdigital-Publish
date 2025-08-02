@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
-import { CalendarIcon, CreditCard, User, Clock, Phone, Mail, MessageSquare, CheckCircle, ArrowRight } from "lucide-react"
+import { CalendarIcon, CreditCard, User, Clock, Phone, Mail, MessageSquare, CheckCircle, ArrowRight, Users } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { cn } from "@/lib/utils"
@@ -436,5 +436,3 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
     </>
   )
 }
-
-    
