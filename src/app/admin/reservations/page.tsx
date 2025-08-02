@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, Search, Filter, CalendarDays, MoreVertical, AlertCircle } from "lucide-react";
+import { Eye, Search, Filter, CalendarDays, MoreVertical, AlertCircle, Phone } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -199,6 +199,7 @@ export default function AdminReservationsPage() {
             <div className="space-y-2 mt-2">
               <div><b>Nombre del cliente:</b> {selectedReservation.customerName}</div>
               <div><b>Teléfono:</b> {selectedReservation.customerPhone}</div>
+               {selectedReservation.customerEmail && <div><b>Email:</b> {selectedReservation.customerEmail}</div>}
               <div><b>Fecha y hora:</b> {format(new Date(selectedReservation.dateTime), "PPPp")}</div>
               <div><b>Invitados:</b> {selectedReservation.numberOfGuests}</div>
               <div><b>Notas:</b> {selectedReservation.notes || 'Ninguna'}</div>

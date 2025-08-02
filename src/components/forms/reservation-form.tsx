@@ -28,13 +28,13 @@ import { useState } from "react"
 import { Loader2 } from "lucide-react"
 
 const reservationFormSchema = z.object({
-  fullName: z.string().min(2, { message: "El nombre completo debe tener al menos 2 caracteres." }),
-  phoneNumber: z.string().regex(/^\d{10}$/, { message: "Por favor, ingrese un número de teléfono válido de 10 dígitos." }),
-  email: z.string().email({ message: "Por favor, ingrese un correo electrónico válido." }),
+  customerName: z.string().min(2, { message: "El nombre completo debe tener al menos 2 caracteres." }),
+  customerPhone: z.string().regex(/^\d{10}$/, { message: "Por favor, ingrese un número de teléfono válido de 10 dígitos." }),
+  customerEmail: z.string().email({ message: "Por favor, ingrese un correo electrónico válido." }).optional().or(z.literal('')),
   numberOfGuests: z.coerce.number().min(1, { message: "La reserva debe ser para al menos 1 persona." }).max(20, { message: "Para grupos de más de 20, por favor llámenos." }),
   reservationDate: z.date({ required_error: "Se requiere una fecha para la reserva." }),
   reservationTime: z.string({ required_error: "Se requiere una hora para la reserva." }),
-  specialRequests: z.string().optional(),
+  notes: z.string().optional(),
 })
 
 // Generar franjas horarias (ej. cada 30 minutos de 12 PM a 9 PM)
@@ -59,11 +59,11 @@ export default function ReservationForm() {
   const form = useForm<z.infer<typeof reservationFormSchema>>({
     resolver: zodResolver(reservationFormSchema),
     defaultValues: {
-      fullName: "",
-      phoneNumber: "",
-      email: "",
+      customerName: "",
+      customerPhone: "",
+      customerEmail: "",
       numberOfGuests: 1,
-      specialRequests: "",
+      notes: "",
     },
   })
 
@@ -82,12 +82,13 @@ export default function ReservationForm() {
     try {
         await reservationService.createReservation({
             restaurantId: restaurantId,
-            customerName: values.fullName,
-            customerPhone: values.phoneNumber,
+            customerName: values.customerName,
+            customerPhone: values.customerPhone,
+            customerEmail: values.customerEmail,
             dateTime: combinedDateTime.toISOString(),
             numberOfGuests: values.numberOfGuests,
             status: 'pending',
-            notes: values.specialRequests,
+            notes: values.notes,
         });
 
         toast({
@@ -113,7 +114,7 @@ export default function ReservationForm() {
         <div className="grid md:grid-cols-2 gap-6">
             <FormField
             control={form.control}
-            name="fullName"
+            name="customerName"
             render={({ field }) => (
                 <FormItem>
                 <FormLabel>Nombre Completo</FormLabel>
@@ -126,7 +127,7 @@ export default function ReservationForm() {
             />
             <FormField
             control={form.control}
-            name="phoneNumber"
+            name="customerPhone"
             render={({ field }) => (
                 <FormItem>
                 <FormLabel>Número de Teléfono</FormLabel>
@@ -140,10 +141,10 @@ export default function ReservationForm() {
         </div>
         <FormField
           control={form.control}
-          name="email"
+          name="customerEmail"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Correo Electrónico</FormLabel>
+              <FormLabel>Correo Electrónico (Opcional)</FormLabel>
               <FormControl>
                 <Input type="email" placeholder="ana.perez@correo.com" {...field} />
               </FormControl>
@@ -232,7 +233,7 @@ export default function ReservationForm() {
         
         <FormField
           control={form.control}
-          name="specialRequests"
+          name="notes"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Solicitudes Especiales (Opcional)</FormLabel>
