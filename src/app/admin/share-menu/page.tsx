@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { storageService } from "@/services/storage-service";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminShareMenuPage() {
   const { toast } = useToast();
