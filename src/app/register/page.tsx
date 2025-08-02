@@ -24,6 +24,7 @@ import { getFirebaseApp, db } from "@/lib/firebase";
 import { doc, setDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
 import type { UserRole, User, Company } from "@/types";
 import React, { Suspense } from "react";
+import { dishService } from "@/services/dish-service"; // Importar el servicio
 
 const SUPERADMIN_EMAIL = 'alexjfweb@gmail.com';
 
@@ -111,6 +112,10 @@ function RegisterForm() {
         });
         companyId = companyRef.id;
         console.log(`✅ 2. Compañía creada con ID: ${companyId} y Plan ID: ${companyData.planId}`);
+
+        // Automatizar la creación de platos de ejemplo
+        await dishService.createSampleDishesForCompany(companyId);
+
       }
 
       console.log(`🔵 3. Creando documento de usuario para ${values.name} ${values.lastName}`);
