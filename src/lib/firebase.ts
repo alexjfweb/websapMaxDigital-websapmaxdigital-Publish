@@ -1,3 +1,4 @@
+
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getStorage } from 'firebase/storage';
@@ -24,8 +25,10 @@ function getFirebaseApp(): FirebaseApp {
   return app;
 }
 
-// Exportamos la función que nos dará la app y los servicios que no dependen de Auth.
-const db = getFirestore(getFirebaseApp());
-const storage = getStorage(getFirebaseApp());
+const appInstance = getFirebaseApp();
+const db = getFirestore(appInstance);
+
+// Solución al problema de CORS: Especificar explícitamente el bucket de almacenamiento.
+const storage = getStorage(appInstance, firebaseConfig.storageBucket);
 
 export { getFirebaseApp, db, storage };
