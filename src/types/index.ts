@@ -234,6 +234,7 @@ export interface Reservation {
   restaurantId: string;
   customerName: string;
   customerPhone: string;
+  customerEmail?: string;
   dateTime: string; // ISO date string
   numberOfGuests: number;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';

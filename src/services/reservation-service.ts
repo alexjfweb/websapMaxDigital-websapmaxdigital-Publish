@@ -14,6 +14,11 @@ import {
 } from 'firebase/firestore';
 import type { Reservation } from '@/types';
 
+// Definición para la creación de una reserva, haciendo email opcional.
+type CreateReservationInput = Omit<Reservation, 'id' | 'createdAt' | 'updatedAt' | 'status'> & {
+  customerEmail?: string;
+};
+
 class ReservationService {
   private get reservationsCollection() {
     if (!db) {
@@ -24,15 +29,22 @@ class ReservationService {
   }
 
   // Crea una nueva reserva en Firestore.
-  async createReservation(data: Partial<Omit<Reservation, 'id' | 'createdAt' | 'updatedAt'>>): Promise<string> {
+  async createReservation(data: CreateReservationInput): Promise<string> {
     const coll = this.reservationsCollection;
     
     if (!data.restaurantId) {
         throw new Error("El ID del restaurante es obligatorio para crear una reserva.");
     }
 
+    // Asegura que los datos enviados a Firebase sean limpios.
     const reservationDoc = {
-      ...data,
+      restaurantId: data.restaurantId,
+      customerName: data.customerName,
+      customerPhone: data.customerPhone,
+      customerEmail: data.customerEmail || '', // Guardar un string vacío si es undefined
+      dateTime: data.dateTime,
+      numberOfGuests: data.numberOfGuests,
+      notes: data.notes || '',
       status: 'pending', // Siempre se crean como pendientes.
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
