@@ -5,13 +5,14 @@
 // # ============================ #
 
 // src/lib/firebase-config.ts
+// Las variables se cargan desde el archivo .env.local
 
 export const firebaseConfig = {
-    apiKey: "AIzaSyC3UzUVh_OPavejyo-kviYVX_Zy9494yjg",
-    authDomain: "websapmax.firebaseapp.com",
-    projectId: "websapmax",
-    storageBucket: "websapmax.firebasestorage.app",
-    messagingSenderId: "560613070255",
-    appId: "1:560613070255:web:7ce75870dbe6b19a084b5a",
-    measurementId: "G-DD5JWPV701"
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
