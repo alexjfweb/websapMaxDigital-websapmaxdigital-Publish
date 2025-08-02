@@ -65,8 +65,6 @@ class ReservationService {
 
     try {
       console.log(`[ReservationService] Consultando reservas para la compañía: ${companyId}`);
-      // Se elimina el `orderBy` para evitar la necesidad de un índice compuesto inmediato.
-      // La ordenación se hará en el cliente.
       const q = query(
         coll,
         where('restaurantId', '==', companyId)

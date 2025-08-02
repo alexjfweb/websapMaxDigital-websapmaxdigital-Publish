@@ -92,6 +92,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
   const [cartOpen, setCartOpen] = React.useState(false);
   const [reservationOpen, setReservationOpen] = React.useState(false);
   const [menuStyles, setMenuStyles] = React.useState(defaultMenuStyles);
+  const [companyIdForReservation, setCompanyIdForReservation] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     const effectiveRestaurantId = restaurantId;
@@ -104,11 +105,14 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
 
     const fetchRestaurantProfile = async () => {
       try {
-        const profileRef = doc(db, 'companies', effectiveRestaurantId);
-        const profileSnap = await getDoc(profileRef);
-        if (profileSnap.exists()) {
-          // El ID del documento es el companyId que necesitamos
-          setRestaurant({ id: profileSnap.id, ...profileSnap.data() } as Company);
+        const q = query(collection(db, "companies"), where("name", "==", effectiveRestaurantId));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          const profileDoc = querySnapshot.docs[0];
+          const companyData = { id: profileDoc.id, ...profileDoc.data() } as Company;
+          setRestaurant(companyData);
+          setCompanyIdForReservation(companyData.id); // Guardamos el ID correcto para la reserva
         } else {
            console.error("No se encontró el perfil del restaurante");
            setError("No se pudo cargar la información del restaurante.");
@@ -131,13 +135,12 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
       }
     };
 
-    const subscribeToDishes = () => {
-      // Usamos el `restaurantId` de la URL para filtrar los platos, asumiendo que es el `companyId`
-      const q = query(collection(db, 'dishes'), where('companyId', '==', effectiveRestaurantId), where('available', '==', true));
+    const subscribeToDishes = (companyId: string) => {
+      const q = query(collection(db, 'dishes'), where('companyId', '==', companyId), where('available', '==', true));
       return onSnapshot(q, (snapshot) => {
         const dishesFromFS = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Dish));
         setDishes(dishesFromFS);
-        setIsLoading(false); // Marcar como cargado después de obtener los platos
+        setIsLoading(false);
       }, (error) => {
         console.error("Error cargando platos:", error);
         setError("No se pudieron cargar los platos del menú.");
@@ -151,16 +154,31 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
           fetchRestaurantProfile(),
           fetchMenuStyles()
         ]);
-        const unsubscribeDishes = subscribeToDishes();
         
-        return () => {
-            unsubscribeDishes();
-        };
+        // El subscribeToDishes se llamará desde dentro de fetchRestaurantProfile
+        // una vez que tengamos el companyId correcto.
     }
     
     loadAllData();
     
   }, [restaurantId]);
+
+  React.useEffect(() => {
+    let unsubscribe: () => void = () => {};
+    if (companyIdForReservation) {
+      const q = query(collection(db, 'dishes'), where('companyId', '==', companyIdForReservation), where('available', '==', true));
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        const dishesFromFS = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Dish));
+        setDishes(dishesFromFS);
+        setIsLoading(false);
+      }, (error) => {
+        console.error("Error cargando platos:", error);
+        setError("No se pudieron cargar los platos del menú.");
+        setIsLoading(false);
+      });
+    }
+    return () => unsubscribe();
+  }, [companyIdForReservation]);
 
   const categories = React.useMemo(() => {
     const uniqueCategories = new Set<string>();
@@ -254,10 +272,12 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
                         Completa el siguiente formulario para asegurar tu mesa.
                     </DialogDescription>
                 </DialogHeader>
-                <ReservationForm 
-                    restaurantId={restaurant.id}
-                    onSuccess={() => setReservationOpen(false)}
-                />
+                {companyIdForReservation && (
+                  <ReservationForm 
+                      restaurantId={companyIdForReservation}
+                      onSuccess={() => setReservationOpen(false)}
+                  />
+                )}
             </DialogContent>
         </Dialog>
       </div>
