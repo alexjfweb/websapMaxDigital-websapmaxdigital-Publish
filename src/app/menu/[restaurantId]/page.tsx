@@ -7,13 +7,14 @@ import Image from 'next/image';
 import type { Company, Dish, CartItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { LoaderCircle, ShoppingCart } from 'lucide-react';
+import { LoaderCircle, ShoppingCart, CalendarCheck } from 'lucide-react';
 import RestaurantInfoDisplay from '@/components/menu/restaurant-info-display';
 import DishItem from '@/components/menu/dish-item';
 import CartCheckout from '@/components/menu/cart-checkout';
-import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { db } from '@/lib/firebase';
 import { collection, query, onSnapshot, doc, getDoc, where } from 'firebase/firestore';
+import ReservationForm from '@/components/forms/reservation-form';
 
 interface CartStore {
   items: CartItem[];
@@ -89,6 +90,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [cartOpen, setCartOpen] = React.useState(false);
+  const [reservationOpen, setReservationOpen] = React.useState(false);
   const [menuStyles, setMenuStyles] = React.useState(defaultMenuStyles);
 
   React.useEffect(() => {
@@ -209,7 +211,8 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
       }}
       className="min-h-screen"
     >
-      <div className="fixed right-4 top-4 z-50">
+      <div className="fixed right-4 top-4 z-50 flex flex-col gap-4">
+        {/* Cart Dialog */}
         <Dialog open={cartOpen} onOpenChange={setCartOpen}>
           <DialogTrigger asChild>
             <button className="relative p-2 rounded-full bg-white shadow-lg hover:bg-primary/10 transition hover:scale-110 active:scale-95">
@@ -233,6 +236,24 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
               onClose={() => setCartOpen(false)}
             />
           </DialogContent>
+        </Dialog>
+        
+        {/* Reservation Dialog */}
+        <Dialog open={reservationOpen} onOpenChange={setReservationOpen}>
+            <DialogTrigger asChild>
+                <button className="p-2 rounded-full bg-white shadow-lg hover:bg-primary/10 transition hover:scale-110 active:scale-95">
+                    <CalendarCheck className="h-7 w-7 text-primary" />
+                </button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Hacer una reserva</DialogTitle>
+                    <DialogDescription>
+                        Completa el siguiente formulario para asegurar tu mesa.
+                    </DialogDescription>
+                </DialogHeader>
+                <ReservationForm />
+            </DialogContent>
         </Dialog>
       </div>
       
