@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -17,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
-import { CalendarIcon, CreditCard } from "lucide-react"
+import { CalendarIcon, CreditCard, User, Clock, Phone, Mail, MessageSquare, CheckCircle, ArrowRight } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { cn } from "@/lib/utils"
@@ -31,6 +30,8 @@ import NequiIcon from "@/components/icons/nequi-icon"
 import DaviplataIcon from "@/components/icons/daviplata-icon"
 import BancolombiaIcon from "@/components/icons/bancolombia-icon"
 import Image from 'next/image';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import WhatsAppIcon from "@/components/icons/whatsapp-icon"
 
 const reservationFormSchema = z.object({
   customerName: z.string().min(2, { message: "El nombre completo debe tener al menos 2 caracteres." }),
@@ -42,6 +43,8 @@ const reservationFormSchema = z.object({
   paymentMethod: z.string({ required_error: "Debe seleccionar un método de pago." }),
   notes: z.string().optional(),
 })
+
+type ReservationFormData = z.infer<typeof reservationFormSchema>;
 
 // Generar franjas horarias (ej. cada 30 minutos de 12 PM a 9 PM)
 const generateTimeSlots = () => {
@@ -63,6 +66,8 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
     onSuccess?: () => void; 
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [reservationData, setReservationData] = useState<ReservationFormData | null>(null);
 
   const paymentMethods = useMemo(() => {
     const methods = [];
@@ -80,7 +85,7 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
     return methods;
   }, [restaurantProfile]);
 
-  const form = useForm<z.infer<typeof reservationFormSchema>>({
+  const form = useForm<ReservationFormData>({
     resolver: zodResolver(reservationFormSchema),
     defaultValues: {
       customerName: "",
@@ -94,36 +99,61 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
 
   const selectedPaymentMethod = form.watch("paymentMethod");
 
-  async function onSubmit(values: z.infer<typeof reservationFormSchema>) {
+  async function onValidSubmit(values: ReservationFormData) {
+    setReservationData(values);
+    setIsConfirmModalOpen(true);
+  }
+  
+  async function handleConfirmAndSend() {
+    if (!reservationData) return;
     setIsSubmitting(true);
+
     if (!restaurantId) {
-        toast({ title: 'Error', description: 'No se pudo identificar el restaurante.', variant: 'destructive' });
-        setIsSubmitting(false);
-        return;
+      toast({ title: 'Error', description: 'No se pudo identificar el restaurante.', variant: 'destructive' });
+      setIsSubmitting(false);
+      return;
     }
-    
-    const combinedDateTime = new Date(values.reservationDate);
-    const [hours, minutes] = values.reservationTime.split(':').map(Number);
+
+    const combinedDateTime = new Date(reservationData.reservationDate);
+    const [hours, minutes] = reservationData.reservationTime.split(':').map(Number);
     combinedDateTime.setHours(hours, minutes);
 
     try {
         await reservationService.createReservation({
             restaurantId: restaurantId,
-            customerName: values.customerName,
-            customerPhone: values.customerPhone,
-            customerEmail: values.customerEmail || undefined, // Enviar undefined si está vacío
+            customerName: reservationData.customerName,
+            customerPhone: reservationData.customerPhone,
+            customerEmail: reservationData.customerEmail || undefined,
             dateTime: combinedDateTime.toISOString(),
-            numberOfGuests: values.numberOfGuests,
-            paymentMethod: values.paymentMethod,
-            notes: values.notes || '',
+            numberOfGuests: reservationData.numberOfGuests,
+            paymentMethod: reservationData.paymentMethod,
+            notes: reservationData.notes || '',
         });
+
+        // Preparamos el mensaje de WhatsApp
+        const paymentMethodLabel = paymentMethods.find(p => p.key === reservationData.paymentMethod)?.label || 'No especificado';
+        const message = `✨ *Nueva Solicitud de Reserva* ✨\n\n` +
+                        `*Restaurante:* ${restaurantProfile?.name}\n\n` +
+                        `*Cliente:* ${reservationData.customerName}\n` +
+                        `*Teléfono:* ${reservationData.customerPhone}\n` +
+                        `*Fecha:* ${format(combinedDateTime, "EEEE, d 'de' MMMM", { locale: es })}\n` +
+                        `*Hora:* ${reservationData.reservationTime}\n` +
+                        `*Invitados:* ${reservationData.numberOfGuests}\n` +
+                        `*Pago:* ${paymentMethodLabel}\n\n` +
+                        `${reservationData.notes ? `*Notas:* ${reservationData.notes}\n` : ''}` +
+                        `_Solicitud enviada a través de WebSapMax._`;
+        
+        const whatsappUrl = `https://wa.me/${restaurantProfile?.phone?.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, '_blank');
 
         toast({
             title: "¡Reserva Solicitada!",
-            description: "Hemos enviado tu solicitud de reserva. Recibirás una confirmación pronto.",
+            description: "Hemos enviado tu solicitud. Te redirigimos a WhatsApp para confirmar.",
         });
         form.reset();
-        if (onSuccess) onSuccess(); // Llama al callback de éxito
+        setIsConfirmModalOpen(false);
+        if (onSuccess) onSuccess();
+
     } catch(error) {
         console.error("Error al crear la reserva:", error);
         toast({
@@ -135,6 +165,7 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
         setIsSubmitting(false);
     }
   }
+
 
   const renderPaymentDetails = () => {
     if (!selectedPaymentMethod) return null;
@@ -177,8 +208,9 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
   }
 
   return (
+    <>
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onValidSubmit)} className="space-y-6">
         <div className="grid md:grid-cols-2 gap-6">
             <FormField
             control={form.control}
@@ -345,9 +377,64 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
         />
         <Button type="submit" className="w-full" disabled={isSubmitting}>
            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-           {isSubmitting ? 'Enviando...' : 'Solicitar Reserva'}
+           {isSubmitting ? 'Procesando...' : 'Solicitar Reserva'}
         </Button>
       </form>
     </Form>
+
+    <Dialog open={isConfirmModalOpen} onOpenChange={setIsConfirmModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-2xl text-center">Confirmar tu Reserva</DialogTitle>
+            <DialogDescription className="text-center">
+              Revisa los detalles de tu reserva antes de confirmar.
+            </DialogDescription>
+          </DialogHeader>
+          {reservationData && (
+             <div className="space-y-3 my-4">
+                <div className="flex justify-between items-center p-2 bg-muted rounded-md">
+                    <span className="font-semibold text-muted-foreground flex items-center gap-2"><User className="h-4 w-4"/>Cliente</span>
+                    <span className="font-medium text-right">{reservationData.customerName}</span>
+                </div>
+                 <div className="flex justify-between items-center p-2 bg-muted rounded-md">
+                    <span className="font-semibold text-muted-foreground flex items-center gap-2"><Phone className="h-4 w-4"/>Teléfono</span>
+                    <span className="font-medium text-right">{reservationData.customerPhone}</span>
+                </div>
+                 <div className="flex justify-between items-center p-2 bg-muted rounded-md">
+                    <span className="font-semibold text-muted-foreground flex items-center gap-2"><Users className="h-4 w-4"/>Invitados</span>
+                    <span className="font-medium text-right">{reservationData.numberOfGuests}</span>
+                </div>
+                 <div className="flex justify-between items-center p-2 bg-muted rounded-md">
+                    <span className="font-semibold text-muted-foreground flex items-center gap-2"><CalendarIcon className="h-4 w-4"/>Fecha y Hora</span>
+                    <span className="font-medium text-right">
+                        {format(reservationData.reservationDate, "d MMM, yyyy", { locale: es })} a las {reservationData.reservationTime}
+                    </span>
+                </div>
+                {reservationData.notes && (
+                  <div className="p-2 bg-muted rounded-md">
+                    <span className="font-semibold text-muted-foreground flex items-center gap-2"><MessageSquare className="h-4 w-4"/>Notas</span>
+                    <p className="font-medium text-sm mt-1">{reservationData.notes}</p>
+                  </div>
+                )}
+             </div>
+          )}
+          <DialogFooter className="flex-col gap-2 sm:flex-col sm:space-x-0">
+             <Button 
+                onClick={handleConfirmAndSend} 
+                disabled={isSubmitting} 
+                className="w-full bg-green-500 hover:bg-green-600 text-lg py-6"
+             >
+                {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <WhatsAppIcon className="mr-2 h-5 w-5" />}
+                {isSubmitting ? 'Confirmando...' : 'Confirmar y Enviar por WhatsApp'}
+             </Button>
+            <Button variant="outline" onClick={() => setIsConfirmModalOpen(false)} disabled={isSubmitting}>
+                Volver y Editar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
+
+    
