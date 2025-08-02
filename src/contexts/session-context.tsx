@@ -77,12 +77,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           }
 
             if (userDocSnap.exists()) {
-              const userData = userDocSnap.data() as User;
-              const userWithId = { id: firebaseUser.uid, ...userData };
-              
+              const userData = userDocSnap.data() as Omit<User, 'id'>; // Tomamos los datos tal cual de Firestore
+              // Construimos el objeto de usuario final, asegurando que id y companyId estén correctos.
+              const userWithId: User = {
+                  id: firebaseUser.uid,
+                  uid: firebaseUser.uid,
+                  ...userData
+              };
+
               setCurrentUser(userWithId);
               localStorage.setItem('currentUser', JSON.stringify(userWithId));
-              console.log("✅ Sesión iniciada para el usuario:", userWithId);
+              console.log("✅ Sesión iniciada para el usuario:", userWithId.email, "con companyId:", userWithId.companyId);
             } else {
               console.error(`🔴 Usuario ${firebaseUser.uid} existe en Auth pero no en Firestore. Cerrando sesión forzosa.`);
               await auth.signOut();
