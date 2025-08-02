@@ -238,6 +238,7 @@ export interface Reservation {
   dateTime: string; // ISO date string
   numberOfGuests: number;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  paymentMethod?: string;
   notes?: string;
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string

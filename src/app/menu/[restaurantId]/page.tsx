@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import Image from 'next/image';
-import type { Company, Dish, CartItem } from '@/types';
+import type { Company, Dish, CartItem, Reservation } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { LoaderCircle, ShoppingCart, CalendarCheck } from 'lucide-react';
@@ -234,6 +234,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
                 {restaurantId && (
                   <ReservationForm 
                       restaurantId={restaurantId}
+                      restaurantProfile={restaurant}
                       onSuccess={() => setReservationOpen(false)}
                   />
                 )}

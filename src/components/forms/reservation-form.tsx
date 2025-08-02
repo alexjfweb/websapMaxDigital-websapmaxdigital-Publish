@@ -17,15 +17,19 @@ import {
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, CreditCard } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/hooks/use-toast"
 import { reservationService } from "@/services/reservation-service"
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Loader2 } from "lucide-react"
+import type { Company } from "@/types"
+import NequiIcon from "@/components/icons/nequi-icon"
+import DaviplataIcon from "@/components/icons/daviplata-icon"
+import BancolombiaIcon from "@/components/icons/bancolombia-icon"
 
 const reservationFormSchema = z.object({
   customerName: z.string().min(2, { message: "El nombre completo debe tener al menos 2 caracteres." }),
@@ -34,6 +38,7 @@ const reservationFormSchema = z.object({
   numberOfGuests: z.coerce.number().min(1, { message: "La reserva debe ser para al menos 1 persona." }).max(20, { message: "Para grupos de más de 20, por favor llámenos." }),
   reservationDate: z.date({ required_error: "Se requiere una fecha para la reserva." }),
   reservationTime: z.string({ required_error: "Se requiere una hora para la reserva." }),
+  paymentMethod: z.string({ required_error: "Debe seleccionar un método de pago." }),
   notes: z.string().optional(),
 })
 
@@ -51,8 +56,28 @@ const generateTimeSlots = () => {
 const timeSlots = generateTimeSlots();
 
 
-export default function ReservationForm({ restaurantId, onSuccess }: { restaurantId: string; onSuccess?: () => void; }) {
+export default function ReservationForm({ restaurantId, restaurantProfile, onSuccess }: { 
+    restaurantId: string; 
+    restaurantProfile: Company | null;
+    onSuccess?: () => void; 
+}) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const paymentMethods = useMemo(() => {
+    const methods = [];
+    if (!restaurantProfile?.paymentMethods) return [];
+
+    if (restaurantProfile.paymentMethods.nequi?.enabled) {
+      methods.push({ key: 'nequi', label: 'Nequi', icon: <NequiIcon className="h-5 w-5" /> });
+    }
+    if (restaurantProfile.paymentMethods.daviplata?.enabled) {
+      methods.push({ key: 'daviplata', label: 'Daviplata', icon: <DaviplataIcon className="h-5 w-5" /> });
+    }
+    if (restaurantProfile.paymentMethods.bancolombia?.enabled && restaurantProfile.paymentMethods.bancolombia.bancolombiaQrImageUrl) {
+      methods.push({ key: 'bancolombia_qr', label: 'Bancolombia QR', icon: <BancolombiaIcon className="h-5 w-5" /> });
+    }
+    return methods;
+  }, [restaurantProfile]);
 
   const form = useForm<z.infer<typeof reservationFormSchema>>({
     resolver: zodResolver(reservationFormSchema),
@@ -61,6 +86,7 @@ export default function ReservationForm({ restaurantId, onSuccess }: { restauran
       customerPhone: "",
       customerEmail: "",
       numberOfGuests: 1,
+      paymentMethod: "",
       notes: "",
     },
   })
@@ -85,6 +111,7 @@ export default function ReservationForm({ restaurantId, onSuccess }: { restauran
             customerEmail: values.customerEmail || undefined, // Enviar undefined si está vacío
             dateTime: combinedDateTime.toISOString(),
             numberOfGuests: values.numberOfGuests,
+            paymentMethod: values.paymentMethod,
             notes: values.notes || '',
         });
 
@@ -228,6 +255,35 @@ export default function ReservationForm({ restaurantId, onSuccess }: { restauran
             )}
             />
         </div>
+
+        <FormField
+          control={form.control}
+          name="paymentMethod"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Método de Pago</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un método de pago" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {paymentMethods.map(method => (
+                     <SelectItem key={method.key} value={method.key}>
+                        <div className="flex items-center gap-2">
+                            {method.icon}
+                            <span>{method.label}</span>
+                        </div>
+                     </SelectItem>
+                  ))}
+                  {paymentMethods.length === 0 && <SelectItem value="no-methods" disabled>No hay métodos de pago online</SelectItem>}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         
         <FormField
           control={form.control}
