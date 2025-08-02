@@ -8,7 +8,7 @@ import { z } from "zod";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Edit3, Trash2, Search, UploadCloud, Save, Filter, CalendarDays } from "lucide-react";
+import { PlusCircle, Edit3, Trash2, Search, UploadCloud, Save, Filter, CalendarDays, Lock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +27,8 @@ import { storageService } from "@/services/storage-service";
 import { useSession } from "@/contexts/session-context";
 import { collection, getDocs, query, where, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useSubscription } from '@/hooks/use-subscription';
+import UpgradePlanCard from "@/components/UpgradePlanCard";
 
 
 export default function AdminEmployeesPage() {
@@ -42,6 +44,7 @@ export default function AdminEmployeesPage() {
   const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null }>({ from: null, to: null });
   const [search, setSearch] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { subscription, isLoading: isSubscriptionLoading } = useSubscription();
 
   const fetchEmployees = async () => {
     if (!companyId) return;
@@ -211,6 +214,20 @@ export default function AdminEmployeesPage() {
     )) return false;
     return true;
   });
+
+  if (isSubscriptionLoading) {
+    return <div>Cargando información de suscripción...</div>;
+  }
+
+  if (!subscription?.permissions.canManageEmployees) {
+    return (
+        <UpgradePlanCard 
+            featureName="Gestión de Empleados"
+            description="Esta funcionalidad te permite añadir, editar y gestionar los roles de los miembros de tu equipo. Ideal para restaurantes con personal."
+            requiredPlan="Estándar o superior"
+        />
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -449,4 +466,3 @@ export default function AdminEmployeesPage() {
     </div>
   );
 }
-
