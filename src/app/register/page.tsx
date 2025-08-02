@@ -23,8 +23,9 @@ import { createUserWithEmailAndPassword, getAuth, User as FirebaseUser } from "f
 import { getFirebaseApp, db } from "@/lib/firebase"; 
 import { doc, setDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
 import type { UserRole, User, Company } from "@/types";
-import React, { Suspense } from "react";
-import { dishService } from "@/services/dish-service"; // Importar el servicio
+import React, { Suspense, useState } from "react";
+import { dishService } from "@/services/dish-service";
+import ErrorModal from "@/components/ui/error-modal"; // Importar el nuevo modal
 
 const SUPERADMIN_EMAIL = 'alexjfweb@gmail.com';
 
@@ -52,7 +53,9 @@ function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const planId = searchParams.get('plan');
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorState, setErrorState] = useState<{ title: string; message: string } | null>(null);
+
 
   const form = useForm<z.infer<typeof registerFormSchema>>({
     resolver: zodResolver(registerFormSchema),
@@ -71,6 +74,7 @@ function RegisterForm() {
 
   async function onSubmit(values: z.infer<typeof registerFormSchema>) {
     setIsSubmitting(true);
+    setErrorState(null); // Limpiar errores anteriores
     let firebaseUser: FirebaseUser | undefined;
     
     try {
@@ -89,13 +93,11 @@ function RegisterForm() {
       if (role === 'admin' && values.businessName) {
         console.log(`🔵 2. Creando documento de compañía para "${values.businessName}"...`);
         
-        const companyData: Partial<Company> = {
+        const companyData: Partial<Omit<Company, 'id'>> = {
             name: values.businessName,
             email: values.email,
             status: 'active',
             registrationDate: new Date().toISOString(),
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
             planId: planId || 'plan-gratuito',
             subscriptionStatus: planId === 'plan-gratuito-7-das' ? 'trialing' : 'pending_payment',
             ruc: '',
@@ -152,11 +154,14 @@ function RegisterForm() {
       let errorMessage = err.message || 'Hubo un error al crear la cuenta.';
       
       if (err.code === 'auth/email-already-in-use') {
-        errorMessage = 'El correo electrónico ya está en uso.';
+        setErrorState({
+            title: "Error de Registro",
+            message: "El correo electrónico que ingresaste ya está asociado con otra cuenta. Por favor, intenta con otro correo o inicia sesión si ya tienes una cuenta.",
+        });
+      } else {
+        toast({ title: 'Error de Registro', description: errorMessage, variant: "destructive" });
       }
       
-      toast({ title: 'Error de Registro', description: errorMessage, variant: "destructive" });
-
       if (firebaseUser) {
         console.log(`🟡 Iniciando ROLLBACK: eliminando usuario de Auth ${firebaseUser.uid}`);
         try {
@@ -172,6 +177,13 @@ function RegisterForm() {
   }
 
   return (
+    <>
+    <ErrorModal
+        isOpen={!!errorState}
+        title={errorState?.title || ""}
+        message={errorState?.message || ""}
+        onClose={() => setErrorState(null)}
+    />
     <div className="flex items-center justify-center min-h-[calc(100vh-theme(spacing.16))] bg-gradient-to-br from-background to-accent/10 p-4">
       <Card className="w-full max-w-lg shadow-2xl">
          <CardHeader className="text-center">
@@ -290,6 +302,7 @@ function RegisterForm() {
         </CardFooter>
       </Card>
     </div>
+    </>
   );
 }
 
