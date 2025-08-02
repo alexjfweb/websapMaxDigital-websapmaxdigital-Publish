@@ -23,7 +23,6 @@ import { cn } from "@/lib/utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/hooks/use-toast"
 import { reservationService } from "@/services/reservation-service"
-import { useParams } from "next/navigation"
 import { useState } from "react"
 import { Loader2 } from "lucide-react"
 
@@ -51,10 +50,8 @@ const generateTimeSlots = () => {
 const timeSlots = generateTimeSlots();
 
 
-export default function ReservationForm() {
+export default function ReservationForm({ restaurantId, onSuccess }: { restaurantId: string; onSuccess?: () => void; }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const params = useParams();
-  const restaurantId = params.restaurantId as string;
 
   const form = useForm<z.infer<typeof reservationFormSchema>>({
     resolver: zodResolver(reservationFormSchema),
@@ -96,6 +93,7 @@ export default function ReservationForm() {
             description: "Hemos enviado tu solicitud de reserva. Recibirás una confirmación pronto.",
         });
         form.reset();
+        if (onSuccess) onSuccess(); // Llama al callback de éxito
     } catch(error) {
         console.error("Error al crear la reserva:", error);
         toast({

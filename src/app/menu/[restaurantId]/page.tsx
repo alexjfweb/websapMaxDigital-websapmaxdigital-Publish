@@ -107,7 +107,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
         const profileRef = doc(db, 'companies', effectiveRestaurantId);
         const profileSnap = await getDoc(profileRef);
         if (profileSnap.exists()) {
-          setRestaurant(profileSnap.data() as Company);
+          setRestaurant({ id: profileSnap.id, ...profileSnap.data() } as Company);
         } else {
            console.error("No se encontró el perfil del restaurante");
            setError("No se pudo cargar la información del restaurante.");
@@ -252,7 +252,10 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
                         Completa el siguiente formulario para asegurar tu mesa.
                     </DialogDescription>
                 </DialogHeader>
-                <ReservationForm />
+                <ReservationForm 
+                    restaurantId={restaurant.id}
+                    onSuccess={() => setReservationOpen(false)}
+                />
             </DialogContent>
         </Dialog>
       </div>
