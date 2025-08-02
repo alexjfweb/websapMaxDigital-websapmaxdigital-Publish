@@ -107,6 +107,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
         const profileRef = doc(db, 'companies', effectiveRestaurantId);
         const profileSnap = await getDoc(profileRef);
         if (profileSnap.exists()) {
+          // El ID del documento es el companyId que necesitamos
           setRestaurant({ id: profileSnap.id, ...profileSnap.data() } as Company);
         } else {
            console.error("No se encontró el perfil del restaurante");
@@ -131,6 +132,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
     };
 
     const subscribeToDishes = () => {
+      // Usamos el `restaurantId` de la URL para filtrar los platos, asumiendo que es el `companyId`
       const q = query(collection(db, 'dishes'), where('companyId', '==', effectiveRestaurantId), where('available', '==', true));
       return onSnapshot(q, (snapshot) => {
         const dishesFromFS = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Dish));
@@ -231,7 +233,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
               onQuantity={(id, delta) => cart.updateQuantity(id, (cart.items.find(i => i.id === id)?.quantity || 0) + delta)}
               onRemove={cart.removeItem}
               onClear={cart.clearCart}
-              restaurantId={restaurantId}
+              restaurantId={restaurant.id}
               restaurantProfile={restaurant}
               onClose={() => setCartOpen(false)}
             />
