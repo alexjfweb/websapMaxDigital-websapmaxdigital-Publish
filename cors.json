@@ -16,8 +16,7 @@
     ],
     "responseHeader": [
       "Content-Type",
-      "Authorization",
-      "x-goog-resumable"
+      "Authorization"
     ],
     "maxAgeSeconds": 3600
   }
