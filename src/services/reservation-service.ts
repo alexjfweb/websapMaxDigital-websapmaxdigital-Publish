@@ -14,11 +14,8 @@ import {
 } from 'firebase/firestore';
 import type { Reservation } from '@/types';
 
-// Definición para la creación de una reserva.
-// El servicio se encargará de manejar el identificador de la compañía.
-type CreateReservationInput = Omit<Reservation, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'restaurantId'> & {
-  restaurantId: string; // Se requiere explícitamente el ID del restaurante.
-};
+// La entrada para crear una reserva debe contener explícitamente el ID del restaurante.
+type CreateReservationInput = Omit<Reservation, 'id' | 'createdAt' | 'updatedAt' | 'status'>;
 
 class ReservationService {
   private get reservationsCollection() {
@@ -39,13 +36,18 @@ class ReservationService {
 
     // Estandarización: Siempre guardar el identificador como 'restaurantId'.
     const reservationDoc = {
-      ...data, // Copia todos los datos de la reserva
-      status: 'pending', // Siempre se crean como pendientes.
+      ...data,
+      restaurantId: data.restaurantId, // Aseguramos que el campo se llame 'restaurantId'
+      status: 'pending',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
     
+    // Eliminamos el campo companyId si existiera para evitar duplicados
+    delete (reservationDoc as any).companyId;
+
     const docRef = await addDoc(coll, reservationDoc);
+    console.log(`✅ Reserva creada con restaurantId: ${reservationDoc.restaurantId}`);
     return docRef.id;
   }
   
@@ -59,7 +61,7 @@ class ReservationService {
     }
 
     try {
-      console.log(`[ReservationService] Consultando reservas para la compañía: ${companyId}`);
+      console.log(`[ReservationService] Consultando reservas con restaurantId: ${companyId}`);
       
       // Estandarización: Siempre buscar por el campo 'restaurantId'.
       const q = query(

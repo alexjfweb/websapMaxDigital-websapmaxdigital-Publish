@@ -91,22 +91,24 @@ function RegisterForm() {
 
       if (role === 'admin' && values.businessName) {
         
-        const companyData: Omit<Company, 'id'|'createdAt'|'updatedAt'> = {
+        // Se crea la compañía primero para obtener su ID
+        const companyDocRef = doc(collection(db, "companies"));
+        companyId = companyDocRef.id;
+
+        const companyData: Omit<Company, 'createdAt'|'updatedAt'> = {
+            id: companyId,
             name: values.businessName,
             email: values.email,
             status: 'active',
             registrationDate: new Date().toISOString(),
-            planId: planId || 'plan-gratuito', // Asignar plan o uno por defecto
-            subscriptionStatus: planId === 'plan-gratuito-7-das' ? 'trialing' : 'pending_payment',
-            ruc: '', // Estos campos pueden ser opcionales o llenarse después
+            planId: planId || 'plan-gratuito-7-das',
+            subscriptionStatus: planId ? 'pending_payment' : 'trialing',
+            ruc: '', 
             location: '',
         };
         
-        // Usamos el companyService para la creación, que incluye lógica de auditoría si es necesario
-        const newCompany = await companyService.createCompany(companyData, { uid: firebaseUser.uid, email: firebaseUser.email || values.email });
-        companyId = newCompany.id;
+        await setDoc(companyDocRef, { ...companyData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
 
-        // Automatizar la creación de platos de ejemplo
         await dishService.createSampleDishesForCompany(companyId);
       }
 
@@ -117,7 +119,7 @@ function RegisterForm() {
         firstName: values.name,
         lastName: values.lastName,
         role: role,
-        companyId: companyId,
+        companyId: companyId, // Se asigna el companyId generado
         businessName: values.businessName || '',
         status: 'active',
         registrationDate: new Date().toISOString(),
@@ -131,6 +133,8 @@ function RegisterForm() {
         title: '¡Registro Exitoso!',
         description: isSuperAdmin ? `Cuenta de Superadministrador creada.` : `La empresa "${values.businessName}" y su administrador han sido creados.`,
       });
+
+      router.push('/login');
 
     } catch (error) {
       const err = error as { code?: string; message?: string };

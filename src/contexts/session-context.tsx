@@ -39,7 +39,6 @@ export function useSession() {
   return context;
 }
 
-// Función de utilidad para esperar
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export function SessionProvider({ children }: { children: ReactNode }) {
@@ -58,36 +57,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       console.log("🔵 Auth state changed. Firebase user:", firebaseUser?.uid || 'Ninguno');
       if (firebaseUser) {
         const userDocRef = doc(db, "users", firebaseUser.uid);
-        let userDocSnap;
-        
-        // Estrategia de reintentos para solucionar la condición de carrera
-        const isNewUser = (new Date().getTime() - new Date(firebaseUser.metadata.creationTime || 0).getTime()) < 5000; // 5 segundos de ventana
-        if (isNewUser) {
-          console.log("🟡 Usuario nuevo detectado. Dando tiempo para la creación en Firestore...");
-          await delay(2000); // Espera inicial de 2 segundos
-        }
-
         try {
-          userDocSnap = await getDoc(userDocRef);
-          
-          if (!userDocSnap.exists() && isNewUser) {
-            console.log("🟡 Reintentando obtener el documento del usuario en 2 segundos...");
-            await delay(2000);
-            userDocSnap = await getDoc(userDocRef);
-          }
+          const userDocSnap = await getDoc(userDocRef);
 
             if (userDocSnap.exists()) {
-              const userData = userDocSnap.data() as Omit<User, 'id'>; // Tomamos los datos tal cual de Firestore
-              // Construimos el objeto de usuario final, asegurando que id y companyId estén correctos.
+              const userData = userDocSnap.data() as Omit<User, 'id'>;
+              // Aseguramos que el companyId del documento de usuario se asigne correctamente.
               const userWithId: User = {
                   id: firebaseUser.uid,
                   uid: firebaseUser.uid,
-                  ...userData
+                  ...userData,
+                  companyId: userData.companyId, // Asignación explícita y correcta
               };
 
               setCurrentUser(userWithId);
               localStorage.setItem('currentUser', JSON.stringify(userWithId));
-              console.log("✅ Sesión iniciada para el usuario:", userWithId.email, "con companyId:", userWithId.companyId);
+              console.log(`✅ Sesión iniciada para ${userWithId.email}. CompanyId: ${userWithId.companyId}`);
             } else {
               console.error(`🔴 Usuario ${firebaseUser.uid} existe en Auth pero no en Firestore. Cerrando sesión forzosa.`);
               await auth.signOut();
@@ -125,15 +110,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       toast({ title: 'Error', description: 'No se pudo cerrar la sesión.', variant: 'destructive' });
     } finally {
-      // El onAuthStateChanged se encargará de limpiar el estado y el local storage
-      // Esto evita condiciones de carrera al no establecer el estado de invitado aquí directamente.
       setIsLoading(false);
     }
   }, [toast]);
 
-  // Protección de rutas
   useEffect(() => {
-    if (isLoading) return; // No hacer nada mientras carga la sesión
+    if (isLoading) return;
 
     const isProtected = ['/admin', '/superadmin', '/employee'].some(route => pathname.startsWith(route));
     
