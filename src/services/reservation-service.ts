@@ -68,6 +68,12 @@ class ReservationService {
       );
 
       const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        console.log(`[ReservationService] No se encontraron reservas para la compañía ${companyId}.`);
+        return []; // Devolver array vacío si no hay resultados
+      }
+      
       const reservations: Reservation[] = [];
 
       querySnapshot.forEach(doc => {
