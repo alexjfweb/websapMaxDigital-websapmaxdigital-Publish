@@ -101,6 +101,7 @@ export default function AdminShareMenuPage() {
     toast({ title: "Subiendo imagen...", description: "Por favor espera." });
     
     try {
+      // Usamos el servicio que ya funciona en otras partes de la app
       const newImageUrl = await storageService.compressAndUploadFile(file, `share_images/${companyId}/`);
       
       if (newImageUrl) {
@@ -271,3 +272,5 @@ export default function AdminShareMenuPage() {
     </>
   );
 }
+
+    
