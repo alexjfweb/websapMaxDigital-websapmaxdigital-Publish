@@ -1,3 +1,4 @@
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -80,7 +81,7 @@ export default function ReservationForm() {
 
     try {
         await reservationService.createReservation({
-            companyId: restaurantId,
+            restaurantId: restaurantId,
             customerName: values.fullName,
             customerPhone: values.phoneNumber,
             dateTime: combinedDateTime.toISOString(),

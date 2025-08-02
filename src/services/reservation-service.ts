@@ -23,8 +23,8 @@ class ReservationService {
     return collection(db, 'reservations');
   }
 
-  private validateReservationData(data: Partial<Omit<Reservation, 'id'>>): void {
-    if (!data.companyId) throw new Error("companyId es obligatorio.");
+  private validateReservationData(data: Partial<Omit<Reservation, 'id' | 'restaurantId'>> & { restaurantId?: string; companyId?: string }): void {
+    if (!data.restaurantId && !data.companyId) throw new Error("restaurantId es obligatorio.");
     if (!data.customerName) throw new Error("El nombre del cliente es obligatorio.");
     if (!data.customerPhone) throw new Error("El teléfono del cliente es obligatorio.");
     if (!data.dateTime) throw new Error("La fecha y hora son obligatorias.");
@@ -32,7 +32,7 @@ class ReservationService {
     if (!data.status) throw new Error("El estado es obligatorio.");
   }
 
-  async createReservation(data: Omit<Reservation, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  async createReservation(data: Omit<Reservation, 'id' | 'createdAt' | 'updatedAt' | 'companyId'> & { restaurantId: string }): Promise<string> {
     const coll = this.reservationsCollection;
     if (!coll) throw new Error("La base de datos no está disponible.");
 
@@ -61,9 +61,10 @@ class ReservationService {
     }
 
     try {
+      // Corrected to query by 'restaurantId'
       const q = query(
         coll,
-        where('companyId', '==', companyId),
+        where('restaurantId', '==', companyId),
         orderBy('dateTime', 'desc')
       );
 
@@ -90,7 +91,7 @@ class ReservationService {
 
         reservations.push({
           id: doc.id,
-          companyId: data.companyId,
+          companyId: data.restaurantId, // Use restaurantId here
           customerName: data.customerName,
           customerPhone: data.customerPhone,
           dateTime,
