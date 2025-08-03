@@ -24,11 +24,8 @@ export default function AdminShareMenuPage() {
 
   const [menuUrl, setMenuUrl] = useState('');
   const [customMessage, setCustomMessage] = useState('');
-  const [customImageUrl, setCustomImageUrl] = useState<string | null>(null);
+  const [customImageUrl, setCustomImageUrl] = useState('');
   
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -51,9 +48,7 @@ export default function AdminShareMenuPage() {
         if (docSnap.exists()) {
           const data = docSnap.data();
           setCustomMessage(data.customShareMessage || `¡Mira nuestro delicioso menú! 🌮🥗🍰`);
-          const imageUrl = data.customShareImageUrl || null;
-          setCustomImageUrl(imageUrl);
-          setImagePreview(imageUrl);
+          setCustomImageUrl(data.customShareImageUrl || '');
         }
       } catch (e) {
         toast({ title: 'Error', description: 'No se pudo cargar la configuración para compartir.', variant: 'destructive' });
@@ -97,18 +92,6 @@ export default function AdminShareMenuPage() {
     }
   };
   
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleSaveConfig = async () => {
     if (!currentUser.companyId) {
       toast({ title: "Error de Autenticación", description: "No se pudo identificar la compañía. Por favor, recargue la página.", variant: "destructive" });
@@ -117,28 +100,19 @@ export default function AdminShareMenuPage() {
 
     setIsSaving(true);
     
-    let finalImageUrl = customImageUrl;
-
     try {
-      if (imageFile) {
-        toast({ title: "Subiendo imagen...", description: "Por favor espera." });
-        finalImageUrl = await storageService.compressAndUploadFile(imageFile, `share_images/${currentUser.companyId}/`);
-      }
-      
       const configToSave = {
         customShareMessage: customMessage,
-        customShareImageUrl: finalImageUrl,
+        customShareImageUrl: customImageUrl, // Guardar la URL directamente
         updatedAt: serverTimestamp(),
       };
 
       await setDoc(doc(db, 'companies', currentUser.companyId), configToSave, { merge: true });
       
-      setCustomImageUrl(finalImageUrl);
-      setImageFile(null);
       setShowSuccess(true);
 
     } catch (e: any) {
-      console.error("Error al guardar o subir:", e);
+      console.error("Error al guardar:", e);
       toast({ title: 'Error al Guardar', description: e.message || 'No se pudo guardar la configuración.', variant: 'destructive' });
     } finally {
       setIsSaving(false);
@@ -186,25 +160,28 @@ export default function AdminShareMenuPage() {
             <p className="text-xs text-muted-foreground mt-1">El enlace a tu menú se añadirá automáticamente al final.</p>
           </div>
           <div className="space-y-2">
-            <Label>Imagen para Vista Previa</Label>
-            <div className="flex items-center gap-4">
-              <Image 
-                src={imagePreview || "https://placehold.co/200x200.png?text=Imagen"}
-                alt="Vista previa de imagen para compartir"
-                width={100}
-                height={100}
-                className="rounded-md border object-cover"
-                data-ai-hint="share image"
-              />
-              <Button asChild variant="outline">
-                <label htmlFor="image-upload" className="cursor-pointer flex items-center">
-                  <UploadCloud className="mr-2 h-4 w-4" />
-                  Cambiar Imagen
-                  <input id="image-upload" type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
-                </label>
-              </Button>
-            </div>
-             <p className="text-xs text-muted-foreground mt-1">Esta imagen se usará en vistas previas de redes sociales. Haz clic en 'Guardar Cambios' para subirla.</p>
+            <Label htmlFor="customImageUrl">URL de la Imagen para Vista Previa</Label>
+            <Input
+              id="customImageUrl"
+              value={customImageUrl}
+              onChange={(e) => setCustomImageUrl(e.target.value)}
+              placeholder="https://ejemplo.com/imagen.png"
+            />
+             <p className="text-xs text-muted-foreground mt-1">Pega aquí la URL de la imagen que quieres mostrar en vistas previas.</p>
+             {customImageUrl && (
+                <div className="mt-2">
+                    <Label>Vista Previa de la Imagen</Label>
+                    <Image 
+                        src={customImageUrl}
+                        alt="Vista previa de imagen para compartir"
+                        width={100}
+                        height={100}
+                        className="rounded-md border object-cover mt-1"
+                        data-ai-hint="share image"
+                        unoptimized // Útil si usas URLs externas que no están en next.config.js
+                    />
+                </div>
+             )}
           </div>
           <Button onClick={handleSaveConfig} disabled={isSaving}>
             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
