@@ -68,23 +68,16 @@ export default function AdminShareMenuPage() {
   };
 
   const handleShareViaWhatsApp = () => {
-    // Construir el mensaje con la estructura correcta
-    let messageParts = [];
-    messageParts.push(customMessage);
+    // Construir el mensaje con la estructura correcta para la vista previa
+    // Opción 1: Solo la imagen al final (RECOMENDADO)
+    const textoPrincipal = `${customMessage}\n\nHaz clic para ver el menú: ${menuUrl}`;
     
-    // Añadir la URL de la imagen si existe
+    let textoCompleto = textoPrincipal;
     if (customImageUrl) {
-        messageParts.push(customImageUrl);
+      textoCompleto += `\n\n${customImageUrl}`;
     }
 
-    // Añadir el enlace al menú
-    messageParts.push(`\nHaz clic para ver el menú: ${menuUrl}`);
-    
-    // Unir las partes con saltos de línea
-    const fullText = messageParts.join('\n\n');
-    
-    // Codificar el mensaje completo para la URL
-    const encodedMessage = encodeURIComponent(fullText);
+    const encodedMessage = encodeURIComponent(textoCompleto);
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
     
     window.open(whatsappUrl, '_blank');
