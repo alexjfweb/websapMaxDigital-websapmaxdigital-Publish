@@ -68,24 +68,15 @@ export default function AdminShareMenuPage() {
   };
 
   const handleShareViaWhatsApp = () => {
-    // Prioritize the image URL for the preview, as it's visually more engaging.
-    // WhatsApp usually picks the first well-formed URL for its preview.
-    
-    const messageParts = [];
-
-    // Part 1: The custom message and the link to the menu.
     const textAndMenu = `${customMessage}\n${menuUrl}`;
-    messageParts.push(textAndMenu);
 
-    // Part 2: The image URL, on a new line, to encourage a preview.
-    if (customImageUrl) {
-        messageParts.push(customImageUrl);
-    }
-    
-    // Join parts with a double newline to create visual separation in the message.
-    const message = messageParts.join('\n\n');
-    
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    // Usamos códigos de escape de URL para los emojis para evitar problemas de codificación.
+    // %F0%9F%91%89 es el emoji 👉 (dedo señalando a la derecha).
+    const fullMessage = customImageUrl 
+      ? `${customImageUrl}\n\n*${customMessage}*\n%F0%9F%91%89 Haz clic aquí para ver: ${menuUrl}`
+      : `*${customMessage}*\n%F0%9F%91%89 Haz clic aquí para ver: ${menuUrl}`;
+
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(fullMessage)}`;
     window.open(whatsappUrl, '_blank');
   };
   
