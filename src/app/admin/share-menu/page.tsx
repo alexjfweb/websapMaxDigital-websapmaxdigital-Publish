@@ -122,7 +122,7 @@ export default function AdminShareMenuPage() {
     try {
       if (imageFile) {
         toast({ title: "Subiendo imagen...", description: "Por favor espera." });
-        finalImageUrl = await storageService.uploadFile(imageFile, `share_images/${currentUser.companyId}/`);
+        finalImageUrl = await storageService.compressAndUploadFile(imageFile, `share_images/${currentUser.companyId}/`);
       }
       
       const configToSave = {
