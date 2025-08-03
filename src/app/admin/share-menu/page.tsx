@@ -40,7 +40,10 @@ export default function AdminShareMenuPage() {
     }
     
     async function fetchShareConfig() {
-      if (!companyId) return;
+      if (!companyId) {
+        setIsLoading(false);
+        return
+      };
       setIsLoading(true);
       try {
         const docRef = doc(db, 'companies', companyId);
@@ -107,9 +110,7 @@ export default function AdminShareMenuPage() {
   };
 
   const handleSaveConfig = async () => {
-    const companyId = currentUser.companyId;
-
-    if (!companyId) {
+    if (!currentUser.companyId) {
       toast({ title: "Error de Autenticación", description: "No se pudo identificar la compañía. Por favor, recargue la página.", variant: "destructive" });
       return;
     }
@@ -121,8 +122,7 @@ export default function AdminShareMenuPage() {
     try {
       if (imageFile) {
         toast({ title: "Subiendo imagen...", description: "Por favor espera." });
-        // Llama al servicio de subida y espera la URL
-        finalImageUrl = await storageService.uploadFile(imageFile, `share_images/${companyId}/`);
+        finalImageUrl = await storageService.uploadFile(imageFile, `share_images/${currentUser.companyId}/`);
       }
       
       const configToSave = {
@@ -131,21 +131,21 @@ export default function AdminShareMenuPage() {
         updatedAt: serverTimestamp(),
       };
 
-      await setDoc(doc(db, 'companies', companyId), configToSave, { merge: true });
+      await setDoc(doc(db, 'companies', currentUser.companyId), configToSave, { merge: true });
       
       setCustomImageUrl(finalImageUrl);
-      setImageFile(null); // Limpia el archivo después de subirlo
-      setShowSuccess(true); // Muestra el modal de éxito
+      setImageFile(null);
+      setShowSuccess(true);
 
     } catch (e: any) {
       console.error("Error al guardar o subir:", e);
       toast({ title: 'Error al Guardar', description: e.message || 'No se pudo guardar la configuración.', variant: 'destructive' });
     } finally {
-      setIsSaving(false); // Asegura que el estado de guardado se resetee siempre
+      setIsSaving(false);
     }
   };
   
-  if (isLoading || !currentUser.companyId) {
+  if (isLoading) {
     return (
       <div className="space-y-8 max-w-2xl mx-auto">
         <Skeleton className="h-10 w-1/2 mx-auto" />
