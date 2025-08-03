@@ -69,7 +69,14 @@ export default function AdminShareMenuPage() {
 
   const handleShareViaWhatsApp = () => {
     if (!menuUrl) return;
-    const message = `${customMessage}\n\n${menuUrl}`;
+
+    let messageParts = [];
+    if (customMessage) messageParts.push(customMessage);
+    // Incluir la URL de la imagen si existe para que WhatsApp pueda generar la vista previa.
+    if (customImageUrl) messageParts.push(customImageUrl); 
+    messageParts.push(menuUrl);
+    
+    const message = messageParts.join('\n\n');
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
@@ -103,7 +110,7 @@ export default function AdminShareMenuPage() {
     try {
       const configToSave = {
         customShareMessage: customMessage,
-        customShareImageUrl: customImageUrl, // Guardar la URL directamente
+        customShareImageUrl: customImageUrl,
         updatedAt: serverTimestamp(),
       };
 
@@ -178,7 +185,7 @@ export default function AdminShareMenuPage() {
                         height={100}
                         className="rounded-md border object-cover mt-1"
                         data-ai-hint="share image"
-                        unoptimized // Útil si usas URLs externas que no están en next.config.js
+                        unoptimized
                     />
                 </div>
              )}
