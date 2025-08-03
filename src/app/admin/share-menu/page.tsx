@@ -4,10 +4,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Copy, Download, Save, UploadCloud, MessageSquare, Loader2 } from "lucide-react";
+import { Copy, Download, Save, MessageSquare, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import WhatsAppIcon from "@/components/icons/whatsapp-icon";
-import React, { useEffect, useState, type ChangeEvent } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useSession } from "@/contexts/session-context";
 import { Textarea } from "@/components/ui/textarea";
@@ -70,18 +70,25 @@ export default function AdminShareMenuPage() {
   const handleShareViaWhatsApp = () => {
     if (!menuUrl) return;
 
-    // Estructura optimizada para vista previa de WhatsApp
-    // 1. La URL de la imagen va primero para que WhatsApp la tome como vista previa principal.
-    // 2. El texto y el enlace al menú van juntos después.
+    // Estrategia para asegurar la vista previa de la imagen:
+    // 1. El enlace de la imagen va primero.
+    // 2. El resto del texto, incluyendo el enlace del menú, va como descripción.
+    // WhatsApp prioriza la primera URL para la vista previa.
+
     let messageParts = [];
+
+    // Si hay una imagen, la ponemos primero para la vista previa.
     if (customImageUrl) {
         messageParts.push(customImageUrl);
     }
     
+    // El mensaje personalizado y el enlace al menú van juntos.
     const textAndMenu = `${customMessage}\n${menuUrl}`;
     messageParts.push(textAndMenu);
 
-    const message = messageParts.join('\n\n'); // Separar imagen del texto con doble salto de línea
+    // Unimos las partes. El doble salto de línea ayuda a WhatsApp a separar visualmente.
+    const message = messageParts.join('\n\n'); 
+    
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
@@ -169,7 +176,6 @@ export default function AdminShareMenuPage() {
               placeholder="¡Mira nuestro delicioso menú! 🌮🥗🍰"
               rows={3}
             />
-            <p className="text-xs text-muted-foreground mt-1">El enlace a tu menú se añadirá automáticamente al final.</p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="customImageUrl">URL de la Imagen para Vista Previa</Label>
