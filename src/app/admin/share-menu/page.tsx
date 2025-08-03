@@ -68,12 +68,20 @@ export default function AdminShareMenuPage() {
   };
 
   const handleShareViaWhatsApp = () => {
-    // Estructura del mensaje para que WhatsApp interprete la imagen y el texto
-    const fullMessage = customImageUrl 
-      ? `${customImageUrl}\n\n*${customMessage}*\n👉 Haz clic aquí para ver: ${menuUrl}`
-      : `*${customMessage}*\n👉 Haz clic aquí para ver: ${menuUrl}`;
+    const encodedMessage = encodeURIComponent(customMessage);
+    const encodedMenuUrl = encodeURIComponent(menuUrl);
+    const encodedImageUrl = customImageUrl ? encodeURIComponent(customImageUrl) : '';
+  
+    // Estructura robusta para la vista previa
+    // 1. URL de la imagen (para la vista previa de imagen)
+    // 2. Texto y URL del menú (para el contexto)
+    let fullMessage;
+    if (encodedImageUrl) {
+        fullMessage = `${encodedImageUrl}\n\n*${encodedMessage}*\n👉 Haz clic para ver el menú: ${encodedMenuUrl}`;
+    } else {
+        fullMessage = `*${encodedMessage}*\n👉 Haz clic para ver el menú: ${encodedMenuUrl}`;
+    }
 
-    // Codificación correcta del mensaje para la URL
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(fullMessage)}`;
     window.open(whatsappUrl, '_blank');
   };
