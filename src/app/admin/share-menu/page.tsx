@@ -68,14 +68,12 @@ export default function AdminShareMenuPage() {
   };
 
   const handleShareViaWhatsApp = () => {
-    const textAndMenu = `${customMessage}\n${menuUrl}`;
-
-    // Usamos códigos de escape de URL para los emojis para evitar problemas de codificación.
-    // %F0%9F%91%89 es el emoji 👉 (dedo señalando a la derecha).
+    // Estructura del mensaje para que WhatsApp interprete la imagen y el texto
     const fullMessage = customImageUrl 
-      ? `${customImageUrl}\n\n*${customMessage}*\n%F0%9F%91%89 Haz clic aquí para ver: ${menuUrl}`
-      : `*${customMessage}*\n%F0%9F%91%89 Haz clic aquí para ver: ${menuUrl}`;
+      ? `${customImageUrl}\n\n*${customMessage}*\n👉 Haz clic aquí para ver: ${menuUrl}`
+      : `*${customMessage}*\n👉 Haz clic aquí para ver: ${menuUrl}`;
 
+    // Codificación correcta del mensaje para la URL
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(fullMessage)}`;
     window.open(whatsappUrl, '_blank');
   };
