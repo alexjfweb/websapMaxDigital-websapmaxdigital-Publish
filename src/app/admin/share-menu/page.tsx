@@ -70,11 +70,14 @@ export default function AdminShareMenuPage() {
   const handleShareViaWhatsApp = () => {
     if (!menuUrl) return;
 
+    // Construir el mensaje en el orden correcto para una mejor vista previa en WhatsApp
+    // 1. Mensaje de texto personalizado
+    // 2. URL del menú (para que genere su propia vista previa si es posible)
+    // 3. URL de la imagen (en una nueva línea para que la trate como una imagen a previsualizar)
     let messageParts = [];
     if (customMessage) messageParts.push(customMessage);
-    // Incluir la URL de la imagen si existe para que WhatsApp pueda generar la vista previa.
-    if (customImageUrl) messageParts.push(customImageUrl); 
     messageParts.push(menuUrl);
+    if (customImageUrl) messageParts.push(customImageUrl); 
     
     const message = messageParts.join('\n\n');
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
