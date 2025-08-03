@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Copy, Download, Save, MessageSquare, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import WhatsAppIcon from "@/components/icons/whatsapp-icon";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, ChangeEvent } from 'react';
 import Image from 'next/image';
 import { useSession } from "@/contexts/session-context";
 import { Textarea } from "@/components/ui/textarea";
@@ -68,26 +68,22 @@ export default function AdminShareMenuPage() {
   };
 
   const handleShareViaWhatsApp = () => {
-    if (!menuUrl) return;
+    // Prioritize the image URL for the preview, as it's visually more engaging.
+    // WhatsApp usually picks the first well-formed URL for its preview.
+    
+    const messageParts = [];
 
-    // Estrategia para asegurar la vista previa de la imagen:
-    // 1. El enlace de la imagen va primero.
-    // 2. El resto del texto, incluyendo el enlace del menú, va como descripción.
-    // WhatsApp prioriza la primera URL para la vista previa.
+    // Part 1: The custom message and the link to the menu.
+    const textAndMenu = `${customMessage}\n${menuUrl}`;
+    messageParts.push(textAndMenu);
 
-    let messageParts = [];
-
-    // Si hay una imagen, la ponemos primero para la vista previa.
+    // Part 2: The image URL, on a new line, to encourage a preview.
     if (customImageUrl) {
         messageParts.push(customImageUrl);
     }
     
-    // El mensaje personalizado y el enlace al menú van juntos.
-    const textAndMenu = `${customMessage}\n${menuUrl}`;
-    messageParts.push(textAndMenu);
-
-    // Unimos las partes. El doble salto de línea ayuda a WhatsApp a separar visualmente.
-    const message = messageParts.join('\n\n'); 
+    // Join parts with a double newline to create visual separation in the message.
+    const message = messageParts.join('\n\n');
     
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');

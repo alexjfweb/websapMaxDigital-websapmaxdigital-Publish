@@ -183,13 +183,13 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
     const totalStr = (cart.reduce((acc, item) => acc + item.price * item.quantity, 0) + envio).toFixed(2);
     const metodo = paymentMethods.find(m => m.key === selectedPayment)?.label || '';
     const mensaje =
-      `🧾 *Nuevo pedido recibido desde WebSapMax*\n\n` +
-      `📍 *Dirección de entrega:*  \n${cliente.direccion}\n\n` +
-      `🧍 *Cliente:*  \n${cliente.nombre}  \n📞 ${cliente.telefono}  \n${cliente.correo ? `✉ ${cliente.correo}\n` : ''}` +
-      `\n🛍️ *Productos solicitados:*  \n${productos}\n\n` +
-      `💰 *Total a pagar:*  \n$${totalStr}\n\n` +
-      `💳 *Método de pago:*  \n${metodo}\n\n` +
-      (cliente.notas ? `📝 *Notas del cliente:*  \n${cliente.notas}` : '');
+      `🧾 *Nuevo Pedido Recibido*\n\n` +
+      `📍 *Dirección de Entrega:*\n${cliente.direccion}\n\n` +
+      `🧍‍♂️ *Cliente:*\n${cliente.nombre}\n📞 ${cliente.telefono}\n${cliente.correo ? `✉️ ${cliente.correo}\n` : ''}` +
+      `\n🛍️ *Productos Solicitados:*\n${productos}\n\n` +
+      `💰 *Total a Pagar:*\n$${totalStr}\n\n` +
+      `💳 *Método de Pago:*\n${metodo}\n\n` +
+      (cliente.notas ? `📝 *Notas del Cliente:*\n${cliente.notas}` : '');
     const phone = restaurantProfile?.phone || '';
     const url = `https://api.whatsapp.com/send?phone=${phone.replace(/\D/g, '')}&text=${encodeURIComponent(mensaje)}`;
     window.open(url, '_blank');
