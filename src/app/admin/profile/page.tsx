@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { UploadCloud, Save, Edit, Trash2, XCircle, Clipboard, Globe, Share2, Facebook, Instagram, Twitter, MessageCircle, Loader2 } from "lucide-react";
+import { UploadCloud, Save, Edit, Trash2, XCircle, Clipboard, Globe, Share2, Facebook, Instagram, Twitter, MessageCircle, Loader2, CreditCard } from "lucide-react";
 import React, { useState, type ChangeEvent, useEffect } from "react";
 import Image from "next/image";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,6 +18,7 @@ import TikTokIcon from "@/components/icons/tiktok-icon";
 import PinterestIcon from "@/components/icons/pinterest-icon";
 import DaviplataIcon from "@/components/icons/daviplata-icon";
 import BancolombiaIcon from "@/components/icons/bancolombia-icon";
+import MercadoPagoIcon from "@/components/icons/mercadopago-icon";
 import type { Company } from "@/types";
 import { storageService } from "@/services/storage-service";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,6 +38,7 @@ export default function AdminProfilePage() {
 
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [nequiQrPreview, setNequiQrPreview] = useState<string | null>(null);
   const [bancolombiaQrPreview, setBancolombiaQrPreview] = useState<string | null>(null);
   
   useEffect(() => {
@@ -54,6 +56,7 @@ export default function AdminProfilePage() {
           setProfileData(data);
           if(data.logoUrl) setLogoPreview(data.logoUrl);
           if(data.bannerUrl) setBannerPreview(data.bannerUrl);
+          if(data.paymentMethods?.nequi?.nequiQrImageUrl) setNequiQrPreview(data.paymentMethods.nequi.nequiQrImageUrl);
           if(data.paymentMethods?.bancolombia?.bancolombiaQrImageUrl) setBancolombiaQrPreview(data.paymentMethods.bancolombia.bancolombiaQrImageUrl);
         } else {
           console.log("No such document! Creating a default profile structure.");
@@ -84,7 +87,7 @@ export default function AdminProfilePage() {
     }));
   };
 
-  const handlePaymentMethodChange = (method: 'nequi' | 'daviplata' | 'bancolombia', field: string, value: string | boolean) => {
+  const handlePaymentMethodChange = (method: 'nequi' | 'daviplata' | 'bancolombia' | 'mercadoPago', field: string, value: string | boolean) => {
     setProfileData(prev => ({
         ...prev,
         paymentMethods: {
@@ -141,17 +144,20 @@ export default function AdminProfilePage() {
     }
   };
 
-  const handleQrImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+  const handleQrImageUpload = async (event: ChangeEvent<HTMLInputElement>, method: 'nequi' | 'bancolombia') => {
     if (!companyId) return;
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setBancolombiaQrPreview(URL.createObjectURL(file));
+    const setPreview = method === 'nequi' ? setNequiQrPreview : setBancolombiaQrPreview;
+    const fieldName = method === 'nequi' ? 'nequiQrImageUrl' : 'bancolombiaQrImageUrl';
+
+    setPreview(URL.createObjectURL(file));
     setIsSaving(true);
     try {
       const url = await storageService.compressAndUploadFile(file, `qrs/${companyId}/`);
       if (url) {
-        handlePaymentMethodChange('bancolombia', 'bancolombiaQrImageUrl', url);
+        handlePaymentMethodChange(method, fieldName, url);
         toast({
           title: "Imagen QR subida",
           description: "El nuevo QR se ha cargado. Guarda los cambios para aplicarlo.",
@@ -332,6 +338,18 @@ export default function AdminProfilePage() {
                             <Label htmlFor="nequiAccountNumber">Número de cuenta</Label>
                             <Input id="nequiAccountNumber" value={profileData.paymentMethods?.nequi?.accountNumber || ''} disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('nequi', 'accountNumber', e.target.value)} />
                         </div>
+                        <div className="space-y-1 col-span-2">
+                            <Label>Imagen del Código QR</Label>
+                            <div className="flex items-center gap-4 mt-1">
+                                <Image src={nequiQrPreview || "https://placehold.co/100x100.png?text=QR"} alt="QR Nequi" width={96} height={96} className="h-24 w-24 rounded-md border object-cover" data-ai-hint="payment qr code"/>
+                                <Button variant="outline" asChild disabled={!isEditing}>
+                                    <Label htmlFor="nequi-qr-upload" className="cursor-pointer">
+                                        <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
+                                        <Input id="nequi-qr-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleQrImageUpload(e, 'nequi')} disabled={!isEditing} />
+                                    </Label>
+                                </Button>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
@@ -369,7 +387,7 @@ export default function AdminProfilePage() {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <BancolombiaIcon className="h-6 w-6"/>
-                        <Label htmlFor="bancolombiaEnabled" className="font-semibold">Bancolombia (QR)</Label>
+                        <Label htmlFor="bancolombiaEnabled" className="font-semibold">Bancolombia</Label>
                     </div>
                     <Switch 
                         id="bancolombiaEnabled" 
@@ -379,18 +397,57 @@ export default function AdminProfilePage() {
                     />
                 </div>
                 {profileData.paymentMethods?.bancolombia?.enabled && (
-                    <div className="pt-2">
-                        <Label>Imagen del Código QR</Label>
-                        <div className="flex items-center gap-4 mt-2">
-                            <Image src={bancolombiaQrPreview || "https://placehold.co/100x100.png?text=QR"} alt="QR Bancolombia" width={96} height={96} className="h-24 w-24 rounded-md border object-cover" data-ai-hint="payment qr code"/>
-                             <Button variant="outline" asChild disabled={!isEditing}>
-                                <Label htmlFor="bancolombia-qr-upload" className="cursor-pointer">
-                                    <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
-                                    <Input id="bancolombia-qr-upload" type="file" className="hidden" accept="image/*" onChange={handleQrImageUpload} disabled={!isEditing} />
-                                </Label>
-                            </Button>
+                    <div className="space-y-4 pt-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <Label htmlFor="bancolombiaAccountHolder">Titular</Label>
+                                <Input id="bancolombiaAccountHolder" value={profileData.paymentMethods?.bancolombia?.accountHolder || ''} disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('bancolombia', 'accountHolder', e.target.value)} />
+                            </div>
+                            <div className="space-y-1">
+                                <Label htmlFor="bancolombiaAccountNumber">Número de cuenta</Label>
+                                <Input id="bancolombiaAccountNumber" value={profileData.paymentMethods?.bancolombia?.accountNumber || ''} disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('bancolombia', 'accountNumber', e.target.value)} />
+                            </div>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-2">Sube la imagen de tu código QR de Bancolombia.</p>
+                        <div className="space-y-1">
+                            <Label>Imagen del Código QR</Label>
+                            <div className="flex items-center gap-4 mt-1">
+                                <Image src={bancolombiaQrPreview || "https://placehold.co/100x100.png?text=QR"} alt="QR Bancolombia" width={96} height={96} className="h-24 w-24 rounded-md border object-cover" data-ai-hint="payment qr code"/>
+                                <Button variant="outline" asChild disabled={!isEditing}>
+                                    <Label htmlFor="bancolombia-qr-upload" className="cursor-pointer">
+                                        <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
+                                        <Input id="bancolombia-qr-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleQrImageUpload(e, 'bancolombia')} disabled={!isEditing} />
+                                    </Label>
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+            
+            {/* MercadoPago */}
+            <div className="space-y-3 p-4 border rounded-lg">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <MercadoPagoIcon className="h-6 w-6"/>
+                        <Label htmlFor="mercadoPagoEnabled" className="font-semibold">Mercado Pago</Label>
+                    </div>
+                    <Switch 
+                        id="mercadoPagoEnabled" 
+                        checked={profileData.paymentMethods?.mercadoPago?.enabled || false}
+                        onCheckedChange={(checked) => handlePaymentMethodChange('mercadoPago', 'enabled', checked)}
+                        disabled={!isEditing}
+                    />
+                </div>
+                {profileData.paymentMethods?.mercadoPago?.enabled && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        <div className="space-y-1">
+                            <Label htmlFor="mercadoPagoPublicKey">Public Key</Label>
+                            <Input id="mercadoPagoPublicKey" value={profileData.paymentMethods?.mercadoPago?.publicKey || ''} disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('mercadoPago', 'publicKey', e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                            <Label htmlFor="mercadoPagoAccessToken">Access Token</Label>
+                            <Input id="mercadoPagoAccessToken" type="password" value={profileData.paymentMethods?.mercadoPago?.accessToken || ''} disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('mercadoPago', 'accessToken', e.target.value)} />
+                        </div>
                     </div>
                 )}
             </div>

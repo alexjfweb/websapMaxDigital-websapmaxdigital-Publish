@@ -31,7 +31,8 @@ export interface RestaurantProfile {
     codEnabled: boolean; // Cash on Delivery
     nequi?: {
       enabled: boolean;
-      qrCodeUrl?: string;
+      qrCodeUrl?: string; // Kept for backwards compatibility if needed, but not used in UI
+      nequiQrImageUrl?: string; // New field for uploaded image
       accountHolder?: string;
       accountNumber?: string;
     };
@@ -47,6 +48,11 @@ export interface RestaurantProfile {
       bancolombiaQrImageUrl?: string; // New field for uploaded image
       accountHolder?: string;
       accountNumber?: string;
+    };
+    mercadoPago?: {
+      enabled: boolean;
+      publicKey?: string;
+      accessToken?: string;
     };
   };
 }
@@ -152,6 +158,7 @@ export interface Company {
       enabled: boolean;
       accountHolder?: string;
       accountNumber?: string;
+      nequiQrImageUrl?: string;
     };
     daviplata?: {
       enabled: boolean;
@@ -160,7 +167,14 @@ export interface Company {
     };
     bancolombia?: {
       enabled: boolean;
+      accountHolder?: string;
+      accountNumber?: string;
       bancolombiaQrImageUrl?: string;
+    };
+    mercadoPago?: {
+        enabled: boolean;
+        publicKey?: string;
+        accessToken?: string;
     };
   };
   corporateColors?: {
