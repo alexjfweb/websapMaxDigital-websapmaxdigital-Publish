@@ -13,6 +13,7 @@ import { Save, CreditCard, DollarSign, UploadCloud, Image as ImageIcon } from 'l
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import NequiIcon from '@/components/icons/nequi-icon';
+import BancolombiaIcon from '@/components/icons/bancolombia-icon';
 
 type PlanName = 'básico' | 'estándar' | 'premium';
 
@@ -29,6 +30,12 @@ interface PlanPaymentConfig {
     identityDocument?: string;
   };
   nequiQr?: PaymentMethodConfig & {
+    qrImageUrl?: string;
+    accountNumber?: string;
+    accountHolder?: string;
+    identityDocument?: string;
+  };
+  bancolombiaQr?: PaymentMethodConfig & {
     qrImageUrl?: string;
     accountNumber?: string;
     accountHolder?: string;
@@ -63,6 +70,14 @@ const initialConfig: Record<PlanName, PlanPaymentConfig> = {
         accountHolder: '',
         identityDocument: '',
         instructions: 'Escanea este código QR desde tu app Nequi para realizar el pago.\nLuego, sube el comprobante o haz clic en “Ya pagué” para que podamos verificar y activar tu plan.',
+    },
+    bancolombiaQr: {
+        enabled: true,
+        qrImageUrl: '',
+        accountNumber: '',
+        accountHolder: '',
+        identityDocument: '',
+        instructions: 'Escanea el código QR desde la App Bancolombia. Sube el comprobante para que podamos verificar y activar tu plan.',
     },
     stripe: {
       enabled: true,
@@ -165,7 +180,10 @@ export default function SuperAdminPaymentMethodsPage() {
   const [config, setConfig] = useState(initialConfig);
   const [activePlan, setActivePlan] = useState<PlanName>('básico');
   const [isSaving, setIsSaving] = useState(false);
-  const [qrPreview, setQrPreview] = useState<string | null>(null);
+  
+  // Estados separados para las vistas previas de los QR
+  const [nequiQrPreview, setNequiQrPreview] = useState<string | null>(null);
+  const [bancolombiaQrPreview, setBancolombiaQrPreview] = useState<string | null>(null);
 
   const handleConfigChange = (plan: PlanName, method: keyof PlanPaymentConfig, newValues: Partial<PaymentMethodConfig>) => {
     setConfig(prev => ({
@@ -193,7 +211,7 @@ export default function SuperAdminPaymentMethodsPage() {
     }, 1000);
   };
   
-  const handleQrImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleQrImageUpload = (e: ChangeEvent<HTMLInputElement>, method: 'nequiQr' | 'bancolombiaQr') => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
@@ -207,8 +225,12 @@ export default function SuperAdminPaymentMethodsPage() {
       const reader = new FileReader();
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
-        setQrPreview(dataUrl); // Para la vista previa
-        handleConfigChange(activePlan, 'nequiQr', { qrImageUrl: dataUrl }); // Guarda la URL en el estado
+        if (method === 'nequiQr') {
+          setNequiQrPreview(dataUrl);
+        } else if (method === 'bancolombiaQr') {
+          setBancolombiaQrPreview(dataUrl);
+        }
+        handleConfigChange(activePlan, method, { qrImageUrl: dataUrl });
       };
       reader.readAsDataURL(file);
     }
@@ -278,7 +300,7 @@ export default function SuperAdminPaymentMethodsPage() {
                                     <Input 
                                       type="file" 
                                       accept="image/jpeg, image/png"
-                                      onChange={handleQrImageUpload} 
+                                      onChange={(e) => handleQrImageUpload(e, 'nequiQr')} 
                                     />
                                 </div>
                                 <div>
@@ -291,12 +313,12 @@ export default function SuperAdminPaymentMethodsPage() {
                                     />
                                 </div>
                             </div>
-                            {qrPreview || currentPlanConfig.nequiQr.qrImageUrl ? (
+                            {(nequiQrPreview || currentPlanConfig.nequiQr.qrImageUrl) && (
                                 <div className="text-center">
                                     <Label>Vista Previa QR</Label>
-                                    <img src={qrPreview || currentPlanConfig.nequiQr.qrImageUrl} alt="Vista previa QR" className="w-32 h-32 mt-2 rounded-md border p-1" />
+                                    <img src={nequiQrPreview || currentPlanConfig.nequiQr.qrImageUrl} alt="Vista previa QR Nequi" className="w-32 h-32 mt-2 rounded-md border p-1" />
                                 </div>
-                            ) : null}
+                            )}
                         </div>
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                             <div>
@@ -311,6 +333,58 @@ export default function SuperAdminPaymentMethodsPage() {
                                 <Input
                                     value={currentPlanConfig.nequiQr.identityDocument || ''}
                                     onChange={(e) => handleConfigChange(activePlan, 'nequiQr', { identityDocument: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                    </PaymentMethodCard>
+                )}
+                
+                {currentPlanConfig.bancolombiaQr && (
+                    <PaymentMethodCard
+                        title="Bancolombia con Código QR"
+                        icon={<BancolombiaIcon className="h-8 w-8" />}
+                        config={currentPlanConfig.bancolombiaQr}
+                        onConfigChange={(newValues) => handleConfigChange(activePlan, 'bancolombiaQr', newValues)}
+                    >
+                        <div className="flex flex-col md:flex-row gap-4">
+                            <div className="flex-1 space-y-4">
+                                <div>
+                                    <Label>Imagen del Código QR (JPG/PNG, máx 5MB)</Label>
+                                    <Input 
+                                      type="file" 
+                                      accept="image/jpeg, image/png"
+                                      onChange={(e) => handleQrImageUpload(e, 'bancolombiaQr')} 
+                                    />
+                                </div>
+                                <div>
+                                    <Label>Número de cuenta asociado *</Label>
+                                    <Input
+                                        value={currentPlanConfig.bancolombiaQr.accountNumber || ''}
+                                        onChange={(e) => handleConfigChange(activePlan, 'bancolombiaQr', { accountNumber: e.target.value.replace(/\D/g, '') })}
+                                        placeholder="1234567890"
+                                    />
+                                </div>
+                            </div>
+                            {(bancolombiaQrPreview || currentPlanConfig.bancolombiaQr.qrImageUrl) && (
+                                <div className="text-center">
+                                    <Label>Vista Previa QR</Label>
+                                    <img src={bancolombiaQrPreview || currentPlanConfig.bancolombiaQr.qrImageUrl} alt="Vista previa QR Bancolombia" className="w-32 h-32 mt-2 rounded-md border p-1" />
+                                </div>
+                            )}
+                        </div>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <div>
+                                <Label>Nombre del titular *</Label>
+                                <Input
+                                    value={currentPlanConfig.bancolombiaQr.accountHolder || ''}
+                                    onChange={(e) => handleConfigChange(activePlan, 'bancolombiaQr', { accountHolder: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <Label>Documento de identidad *</Label>
+                                <Input
+                                    value={currentPlanConfig.bancolombiaQr.identityDocument || ''}
+                                    onChange={(e) => handleConfigChange(activePlan, 'bancolombiaQr', { identityDocument: e.target.value })}
                                 />
                             </div>
                         </div>
