@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { usePublicLandingPlans } from '@/hooks/use-plans';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
@@ -16,6 +16,9 @@ import { useToast } from '@/hooks/use-toast';
 import { companyService } from '@/services/company-service';
 import { useSession } from '@/contexts/session-context';
 import MercadoPagoIcon from '@/components/icons/mercadopago-icon';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import type { LandingPlan } from '@/services/landing-plans-service';
 
 function CheckoutSkeleton() {
     return (
@@ -36,6 +39,43 @@ function CheckoutSkeleton() {
     );
 }
 
+// Tipo para la configuración de métodos de pago disponibles
+interface AvailablePayments {
+  stripe: boolean;
+  mercadopago: boolean;
+  manual: boolean;
+  qrUrl?: string;
+}
+
+const CONFIG_DOC_ID = 'main_payment_methods';
+
+async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<AvailablePayments> {
+    if (!plan) return { stripe: false, mercadopago: false, manual: false };
+    
+    const planNameKey = plan.slug?.split('-')[1] as 'básico' | 'estándar' | 'premium' || 'básico';
+
+    try {
+        const docRef = doc(db, "payment_methods", CONFIG_DOC_ID);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const allConfig = docSnap.data();
+            const planConfig = allConfig[planNameKey];
+            return {
+                stripe: planConfig?.stripe?.enabled ?? false,
+                mercadopago: planConfig?.mercadoPago?.enabled ?? false,
+                manual: planConfig?.bancolombiaQr?.enabled ?? false,
+                qrUrl: planConfig?.bancolombiaQr?.qrImageUrl ?? "https://placehold.co/200x200.png?text=QR"
+            };
+        }
+    } catch (error) {
+        console.error("Error fetching payment methods config:", error);
+    }
+
+    return { stripe: false, mercadopago: false, manual: false };
+}
+
+
 function CheckoutContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -44,9 +84,18 @@ function CheckoutContent() {
     const { toast } = useToast();
     const { currentUser } = useSession();
     const [isProcessingPayment, setIsProcessingPayment] = useState<null | 'stripe' | 'mercadopago'>(null);
+    const [availablePayments, setAvailablePayments] = useState<AvailablePayments | null>(null);
+    
+    const selectedPlan = plans.find(p => p.slug === planSlug);
+    
+    useEffect(() => {
+        if (selectedPlan) {
+            fetchAvailablePayments(selectedPlan).then(setAvailablePayments);
+        }
+    }, [selectedPlan]);
 
 
-    if (isLoading) {
+    if (isLoading || availablePayments === null) {
         return <CheckoutSkeleton />;
     }
 
@@ -63,8 +112,6 @@ function CheckoutContent() {
         );
     }
     
-    const selectedPlan = plans.find(p => p.slug === planSlug);
-
     if (!selectedPlan) {
         return (
              <div className="text-center py-10">
@@ -206,37 +253,46 @@ function CheckoutContent() {
                                  <AccordionItem value="automatic">
                                     <AccordionTrigger className="font-semibold text-base">Pago Automático (Recomendado)</AccordionTrigger>
                                     <AccordionContent className="space-y-3 pt-3">
-                                        <Button 
-                                            className="w-full"
-                                            onClick={() => handleAutomaticPayment('stripe')}
-                                            disabled={isProcessingPayment === 'stripe'}
-                                        >
-                                             {isProcessingPayment === 'stripe' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CreditCard className="mr-2 h-4 w-4" />}
-                                             {isProcessingPayment === 'stripe' ? 'Procesando...' : 'Pagar con Tarjeta (Stripe)'}
-                                        </Button>
-                                        <Button 
-                                            className="w-full"
-                                            onClick={() => handleAutomaticPayment('mercadopago')}
-                                            disabled={isProcessingPayment === 'mercadopago'}
-                                        >
-                                            {isProcessingPayment === 'mercadopago' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <MercadoPagoIcon className="mr-2 h-4 w-4"/>}
-                                            {isProcessingPayment === 'mercadopago' ? 'Procesando...' : 'Pagar con Mercado Pago'}
-                                        </Button>
+                                        {availablePayments.stripe && (
+                                            <Button 
+                                                className="w-full"
+                                                onClick={() => handleAutomaticPayment('stripe')}
+                                                disabled={isProcessingPayment === 'stripe'}
+                                            >
+                                                 {isProcessingPayment === 'stripe' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CreditCard className="mr-2 h-4 w-4" />}
+                                                 {isProcessingPayment === 'stripe' ? 'Procesando...' : 'Pagar con Tarjeta (Stripe)'}
+                                            </Button>
+                                        )}
+                                        {availablePayments.mercadopago && (
+                                            <Button 
+                                                className="w-full"
+                                                onClick={() => handleAutomaticPayment('mercadopago')}
+                                                disabled={isProcessingPayment === 'mercadopago'}
+                                            >
+                                                {isProcessingPayment === 'mercadopago' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <MercadoPagoIcon className="mr-2 h-4 w-4"/>}
+                                                {isProcessingPayment === 'mercadopago' ? 'Procesando...' : 'Pagar con Mercado Pago'}
+                                            </Button>
+                                        )}
+                                        {!availablePayments.stripe && !availablePayments.mercadopago && (
+                                            <p className="text-sm text-muted-foreground text-center">No hay métodos de pago automáticos habilitados para este plan.</p>
+                                        )}
                                     </AccordionContent>
                                 </AccordionItem>
-                                 <AccordionItem value="manual">
-                                    <AccordionTrigger className="font-semibold text-base">Pago Manual (QR)</AccordionTrigger>
-                                     <AccordionContent className="space-y-4 pt-3">
-                                        <div className="text-center space-y-2">
-                                            <p className="text-sm">Escanea el código QR desde la App Bancolombia para realizar el pago.</p>
-                                            <Image src="https://placehold.co/200x200.png?text=QR+Bancolombia" alt="QR Bancolombia" width={150} height={150} className="mx-auto rounded-md border" />
-                                            <p className="text-xs text-muted-foreground">Titular: Websapmax SAS <br/> NIT: 900.123.456-7</p>
-                                        </div>
-                                         <Button className="w-full" size="lg" onClick={handleConfirmManualPayment}>
-                                            He realizado el pago
-                                        </Button>
-                                    </AccordionContent>
-                                </AccordionItem>
+                                 {availablePayments.manual && (
+                                    <AccordionItem value="manual">
+                                        <AccordionTrigger className="font-semibold text-base">Pago Manual (QR)</AccordionTrigger>
+                                         <AccordionContent className="space-y-4 pt-3">
+                                            <div className="text-center space-y-2">
+                                                <p className="text-sm">Escanea el código QR desde la App Bancolombia para realizar el pago.</p>
+                                                <Image src={availablePayments.qrUrl || ''} alt="QR Bancolombia" width={150} height={150} className="mx-auto rounded-md border" />
+                                                <p className="text-xs text-muted-foreground">Titular: Websapmax SAS <br/> NIT: 900.123.456-7</p>
+                                            </div>
+                                             <Button className="w-full" size="lg" onClick={handleConfirmManualPayment}>
+                                                He realizado el pago
+                                            </Button>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                 )}
                             </Accordion>
                         </CardContent>
                     </Card>

@@ -73,9 +73,12 @@ export async function POST(request: NextRequest) {
     // 3. Generar la sesión de pago según el proveedor
     if (provider === 'stripe') {
       const stripeConfig = paymentMethodsConfig.stripe;
-      if (!stripeConfig?.enabled || !stripeConfig.secretKey) {
-        console.error('🔴 [Checkout API] - Error: La clave secreta de Stripe no está configurada o el método está deshabilitado.');
-        return NextResponse.json({ error: 'El método de pago Stripe no está configurado para este plan.' }, { status: 400 });
+      if (!stripeConfig?.enabled) {
+        return NextResponse.json({ error: 'El método de pago Stripe no está habilitado para este plan.' }, { status: 400 });
+      }
+      if (!stripeConfig.secretKey) {
+        console.error('🔴 [Checkout API] - Error: La clave secreta de Stripe no está configurada.');
+        return NextResponse.json({ error: 'El método de pago Stripe no está configurado.' }, { status: 400 });
       }
       const stripe = new Stripe(stripeConfig.secretKey, { apiVersion: '2024-06-20' });
 
@@ -108,9 +111,12 @@ export async function POST(request: NextRequest) {
 
     } else if (provider === 'mercadopago') {
       const mpConfig = paymentMethodsConfig.mercadoPago;
-      if (!mpConfig?.enabled || !mpConfig.accessToken) {
-        console.error('🔴 [Checkout API] - Error: El Access Token de Mercado Pago no está configurado o el método está deshabilitado.');
-        return NextResponse.json({ error: 'El método de pago Mercado Pago no está configurado para esta empresa.' }, { status: 400 });
+       if (!mpConfig?.enabled) {
+        return NextResponse.json({ error: 'El método de pago Mercado Pago no está habilitado para este plan.' }, { status: 400 });
+      }
+      if (!mpConfig.accessToken) {
+        console.error('🔴 [Checkout API] - Error: El Access Token de Mercado Pago no está configurado.');
+        return NextResponse.json({ error: 'El método de pago Mercado Pago no está configurado.' }, { status: 400 });
       }
 
       if (plan.price <= 0) {
