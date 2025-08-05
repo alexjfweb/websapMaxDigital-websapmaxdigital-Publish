@@ -112,6 +112,12 @@ export async function POST(request: NextRequest) {
         console.error('🔴 [Checkout API] - Error: El Access Token de Mercado Pago no está configurado o el método está deshabilitado.');
         return NextResponse.json({ error: 'El método de pago Mercado Pago no está configurado para esta empresa.' }, { status: 400 });
       }
+
+      if (plan.price <= 0) {
+        console.error('🔴 [Checkout API] - Error: El precio del plan debe ser mayor a 0 para Mercado Pago.');
+        return NextResponse.json({ error: 'El precio del plan debe ser mayor a 0 para pagos con Mercado Pago.' }, { status: 400 });
+      }
+
       const client = new MercadoPagoConfig({ accessToken: mpConfig.accessToken });
       const preference = new Preference(client);
 
@@ -131,7 +137,7 @@ export async function POST(request: NextRequest) {
             name: company.name,
           },
           back_urls: {
-            success: `${baseUrl}/admin/subscription?payment=success`,
+            success: `${baseUrl}/admin/subscription?payment=success&status=approved`,
             failure: `${baseUrl}/admin/checkout?plan=${plan.slug}&payment=failure`,
             pending: `${baseUrl}/admin/checkout?plan=${plan.slug}&payment=pending`,
           },
