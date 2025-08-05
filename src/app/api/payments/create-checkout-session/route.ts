@@ -15,6 +15,9 @@ function getBaseUrl() {
   return process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002';
 }
 
+const CONFIG_DOC_ID = 'main_payment_methods';
+
+
 // Handler para la creación de sesiones de checkout
 export async function POST(request: NextRequest) {
   console.log('🔵 [Checkout API] - Solicitud de pago recibida.');
@@ -44,16 +47,25 @@ export async function POST(request: NextRequest) {
     }
     const company = companySnap.data() as Company;
 
-    // Correcto: Cargar la configuración de pago del perfil de la COMPAÑÍA que realiza el pago.
-    // Esto es relevante si cada compañía puede tener sus propias credenciales, pero para un modelo SaaS,
-    // usaremos una configuración central del Superadmin.
-    const paymentMethodsConfig = company.paymentMethods;
-    if (!paymentMethodsConfig) {
-        console.error(`🔴 [Checkout API] - Error: La empresa ${companyId} no tiene métodos de pago configurados.`);
-        throw new Error('La configuración de métodos de pago no está disponible para esta empresa.');
+    // Obtener la configuración de pago centralizada desde el documento del superadmin
+    const paymentMethodsDoc = await getDoc(doc(db, "payment_methods", CONFIG_DOC_ID));
+    if (!paymentMethodsDoc.exists()) {
+        console.error(`🔴 [Checkout API] - Error: El documento de configuración de métodos de pago ('${CONFIG_DOC_ID}') no existe.`);
+        throw new Error('La configuración de métodos de pago no está disponible.');
     }
     
-    console.log('[Checkout API] - Configuración de pago encontrada.');
+    const allPlansConfig = paymentMethodsDoc.data();
+    
+    // Determinar el "nombre" del plan (ej. 'básico', 'estándar') basado en el slug o nombre del planId
+    const planNameKey = plan.slug?.split('-')[1] as 'básico' | 'estándar' | 'premium' || 'básico';
+    const paymentMethodsConfig = allPlansConfig[planNameKey];
+
+    if (!paymentMethodsConfig) {
+        console.error(`🔴 [Checkout API] - Error: No hay configuración de pago para el plan '${planNameKey}'.`);
+        throw new Error(`La configuración de pago para el plan ${plan.name} no está disponible.`);
+    }
+    
+    console.log(`[Checkout API] - Configuración de pago encontrada para el plan: ${planNameKey}`);
 
     const baseUrl = getBaseUrl();
     let checkoutUrl = '';
@@ -63,7 +75,7 @@ export async function POST(request: NextRequest) {
       const stripeConfig = paymentMethodsConfig.stripe;
       if (!stripeConfig?.enabled || !stripeConfig.secretKey) {
         console.error('🔴 [Checkout API] - Error: La clave secreta de Stripe no está configurada o el método está deshabilitado.');
-        throw new Error('El método de pago Stripe no está configurado para esta empresa.');
+        return NextResponse.json({ error: 'El método de pago Stripe no está configurado para este plan.' }, { status: 400 });
       }
       const stripe = new Stripe(stripeConfig.secretKey, { apiVersion: '2024-06-20' });
 
@@ -98,7 +110,7 @@ export async function POST(request: NextRequest) {
       const mpConfig = paymentMethodsConfig.mercadoPago;
       if (!mpConfig?.enabled || !mpConfig.accessToken) {
         console.error('🔴 [Checkout API] - Error: El Access Token de Mercado Pago no está configurado o el método está deshabilitado.');
-        throw new Error('El método de pago Mercado Pago no está configurado para esta empresa.');
+        return NextResponse.json({ error: 'El método de pago Mercado Pago no está configurado para esta empresa.' }, { status: 400 });
       }
       const client = new MercadoPagoConfig({ accessToken: mpConfig.accessToken });
       const preference = new Preference(client);
