@@ -124,26 +124,26 @@ export async function POST(request: NextRequest) {
       console.log('[Checkout API] - Creando preferencia de Mercado Pago...');
       const result = await preference.create({
         body: {
-          items: [{
-            id: plan.id,
-            title: `Plan ${plan.name}`,
-            quantity: 1,
-            unit_price: plan.price,
-            currency_id: plan.currency || 'USD',
-            description: plan.description,
-          }],
-          payer: {
-            email: company.email || undefined,
-            name: company.name,
-          },
-          back_urls: {
+            items: [{
+                id: plan.id,
+                title: `Plan ${plan.name}`,
+                quantity: 1,
+                unit_price: plan.price,
+                currency_id: plan.currency || 'USD',
+                description: plan.description,
+            }],
+            payer: {
+                email: company.email || undefined,
+                name: company.name,
+            },
+            external_reference: `${companyId}|${planId}`,
+        },
+        back_urls: {
             success: `${baseUrl}/admin/subscription?payment=success&status=approved`,
             failure: `${baseUrl}/admin/checkout?plan=${plan.slug}&payment=failure`,
             pending: `${baseUrl}/admin/checkout?plan=${plan.slug}&payment=pending`,
-          },
-          auto_return: 'approved',
-          external_reference: `${companyId}|${planId}`,
-        }
+        },
+        auto_return: 'approved',
       });
 
       checkoutUrl = result.init_point!;
