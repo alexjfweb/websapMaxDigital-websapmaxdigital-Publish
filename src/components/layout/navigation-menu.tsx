@@ -121,8 +121,12 @@ export default function NavigationMenu({ role }: NavigationMenuProps) {
     return items
       .filter(item => {
         const userRole = role ? role.toLowerCase() : 'guest';
+        // Buscamos el item en la configuración traída de la DB
         const configItem = navConfig.find(c => c.id === item.id);
-        return item.allowedRoles.includes(userRole) && configItem?.visible;
+        // Si no se encuentra en la config, no se muestra.
+        if (!configItem) return false;
+        // Se muestra si el rol está permitido Y está visible en la config.
+        return configItem.roles.includes(userRole) && configItem.visible;
       })
       .map((item) => {
         const Icon = item.icon;
@@ -163,5 +167,5 @@ export default function NavigationMenu({ role }: NavigationMenuProps) {
       });
   };
 
-  return <SidebarMenu>{renderNavItems(navConfig)}</SidebarMenu>;
+  return <SidebarMenu>{renderNavItems(baseNavItems)}</SidebarMenu>;
 }
