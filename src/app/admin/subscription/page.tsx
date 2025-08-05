@@ -66,8 +66,10 @@ function PlanCard({ plan, isCurrent, isPopular }: { plan: any, isCurrent?: boole
                 </ul>
             </CardContent>
             <CardFooter>
-                 <Button className="w-full" disabled={isCurrent}>
-                    {isCurrent ? 'Plan Actual' : 'Mejorar Plan'}
+                 <Button asChild className="w-full" disabled={isCurrent}>
+                    <Link href={`/admin/checkout?plan=${plan.slug}`}>
+                      {isCurrent ? 'Plan Actual' : 'Mejorar Plan'}
+                    </Link>
                  </Button>
             </CardFooter>
         </Card>
