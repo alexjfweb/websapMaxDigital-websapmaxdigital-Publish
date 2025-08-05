@@ -1,13 +1,13 @@
 
 "use client";
 
-import { Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { usePublicLandingPlans } from '@/hooks/use-plans';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Check, AlertCircle, ArrowLeft, Gem, CreditCard, Banknote, HelpCircle } from 'lucide-react';
+import { Check, AlertCircle, ArrowLeft, Gem, CreditCard, Banknote, HelpCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
@@ -15,6 +15,7 @@ import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { companyService } from '@/services/company-service';
 import { useSession } from '@/contexts/session-context';
+import MercadoPagoIcon from '@/components/icons/mercadopago-icon';
 
 function CheckoutSkeleton() {
     return (
@@ -36,11 +37,14 @@ function CheckoutSkeleton() {
 }
 
 function CheckoutContent() {
+    const router = useRouter();
     const searchParams = useSearchParams();
     const planSlug = searchParams.get('plan');
     const { plans, isLoading, error } = usePublicLandingPlans();
     const { toast } = useToast();
     const { currentUser } = useSession();
+    const [isProcessingPayment, setIsProcessingPayment] = useState<null | 'stripe' | 'mercadopago'>(null);
+
 
     if (isLoading) {
         return <CheckoutSkeleton />;
@@ -74,14 +78,13 @@ function CheckoutContent() {
         );
     }
     
-    const handleConfirmPayment = async () => {
+    const handleConfirmManualPayment = async () => {
         if (!currentUser || !currentUser.companyId) {
             toast({ title: "Error", description: "No se pudo identificar tu empresa.", variant: "destructive"});
             return;
         }
         
         try {
-            // Este es el flujo manual. Cambiamos el estado para que el superadmin verifique.
             await companyService.updateCompany(currentUser.companyId, {
                 subscriptionStatus: 'pending_payment',
                 planId: selectedPlan.id
@@ -91,11 +94,47 @@ function CheckoutContent() {
                 title: "¡Confirmación Enviada!",
                 description: "Hemos notificado al administrador. Tu plan será activado una vez se verifique el pago.",
             });
-            // En un futuro, aquí se redirigiría a una página de "pago pendiente".
-            // Por ahora, lo dejamos en la misma página.
             
         } catch(e: any) {
              toast({ title: "Error", description: `No se pudo actualizar el estado de la suscripción: ${e.message}`, variant: "destructive"});
+        }
+    };
+    
+    const handleAutomaticPayment = async (provider: 'stripe' | 'mercadopago') => {
+        if (!currentUser?.companyId) {
+            toast({ title: "Error", description: "No se pudo identificar tu empresa.", variant: "destructive"});
+            return;
+        }
+        
+        setIsProcessingPayment(provider);
+        
+        try {
+            const response = await fetch('/api/payments/create-checkout-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    planId: selectedPlan.id,
+                    companyId: currentUser.companyId,
+                    provider: provider
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || `Error con ${provider}`);
+            }
+
+            // Redirigir al cliente a la URL de pago
+            router.push(data.url);
+
+        } catch (err: any) {
+            toast({
+                title: 'Error de Pago',
+                description: err.message || 'No se pudo iniciar el proceso de pago. Por favor, intente de nuevo.',
+                variant: 'destructive',
+            });
+            setIsProcessingPayment(null);
         }
     };
 
@@ -129,7 +168,7 @@ function CheckoutContent() {
                                 </div>
                                 <div className="text-right">
                                     <p className="text-2xl font-bold">${selectedPlan.price}</p>
-                                    <p className="text-sm text-muted-foreground">/ {selectedPlan.period === 'monthly' ? 'mes' : 'año'}</p>
+                                    <p className="text-sm text-muted-foreground">/mes</p>
                                 </div>
                             </div>
                             <ul className="space-y-2 text-sm">
@@ -148,10 +187,9 @@ function CheckoutContent() {
                             <CardTitle className="flex items-center gap-2"><HelpCircle className="h-5 w-5"/>¿Cómo funciona?</CardTitle>
                         </CardHeader>
                         <CardContent className="text-sm text-muted-foreground space-y-2">
-                           <p>1. <strong>Elige tu método de pago</strong> y sigue las instrucciones que se muestran.</p>
-                           <p>2. <strong>Realiza el pago</strong> desde tu aplicación bancaria o plataforma preferida.</p>
-                           <p>3. <strong>Confirma tu pago</strong> haciendo clic en el botón "He realizado el pago".</p>
-                           <p>4. Nuestro equipo verificará la transacción y <strong>activará tu nuevo plan</strong> en un plazo máximo de 24 horas.</p>
+                           <p>1. <strong>Elige tu método de pago</strong>: automático (con tarjeta) o manual (con QR).</p>
+                           <p>2. <strong>Pago automático:</strong> Serás redirigido a una pasarela segura. La activación de tu plan es instantánea.</p>
+                           <p>3. <strong>Pago manual:</strong> Sigue las instrucciones, realiza el pago y haz clic en "He realizado el pago". Tu plan será activado en un plazo máximo de 24 horas tras la verificación.</p>
                         </CardContent>
                     </Card>
 
@@ -160,34 +198,47 @@ function CheckoutContent() {
                 <div className="md:col-span-2">
                     <Card className="sticky top-6">
                         <CardHeader>
-                            <CardTitle>Instrucciones de Pago</CardTitle>
+                            <CardTitle>Métodos de Pago</CardTitle>
                              <CardDescription>Elige un método para continuar.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <Accordion type="single" collapsible className="w-full">
-                                {/* Aquí iría la lógica para mostrar los métodos de pago configurados por el superadmin */}
-                                <AccordionItem value="bancolombia_qr">
-                                    <AccordionTrigger className="font-semibold flex items-center gap-2"><Banknote className="h-5 w-5" /> Bancolombia QR</AccordionTrigger>
-                                    <AccordionContent className="text-center space-y-2">
-                                        <p className="text-sm">Escanea el código QR desde la App Bancolombia para realizar el pago.</p>
-                                        <Image src="https://placehold.co/200x200.png?text=QR+Bancolombia" alt="QR Bancolombia" width={150} height={150} className="mx-auto rounded-md border" />
-                                        <p className="text-xs text-muted-foreground">Titular: Websapmax SAS <br/> NIT: 900.123.456-7</p>
+                             <Accordion type="single" collapsible className="w-full" defaultValue="automatic">
+                                 <AccordionItem value="automatic">
+                                    <AccordionTrigger className="font-semibold text-base">Pago Automático (Recomendado)</AccordionTrigger>
+                                    <AccordionContent className="space-y-3 pt-3">
+                                        <Button 
+                                            className="w-full"
+                                            onClick={() => handleAutomaticPayment('stripe')}
+                                            disabled={isProcessingPayment === 'stripe'}
+                                        >
+                                             {isProcessingPayment === 'stripe' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CreditCard className="mr-2 h-4 w-4" />}
+                                             {isProcessingPayment === 'stripe' ? 'Procesando...' : 'Pagar con Tarjeta (Stripe)'}
+                                        </Button>
+                                        <Button 
+                                            className="w-full"
+                                            onClick={() => handleAutomaticPayment('mercadopago')}
+                                            disabled={isProcessingPayment === 'mercadopago'}
+                                        >
+                                            {isProcessingPayment === 'mercadopago' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <MercadoPagoIcon className="mr-2 h-4 w-4"/>}
+                                            {isProcessingPayment === 'mercadopago' ? 'Procesando...' : 'Pagar con Mercado Pago'}
+                                        </Button>
                                     </AccordionContent>
                                 </AccordionItem>
-                                <AccordionItem value="stripe">
-                                    <AccordionTrigger className="font-semibold flex items-center gap-2"><CreditCard className="h-5 w-5"/> Tarjeta con Stripe</AccordionTrigger>
-                                     <AccordionContent className="space-y-4">
-                                        <p className="text-sm">Paga de forma segura con tu tarjeta de crédito o débito. La activación es automática.</p>
-                                        <Button className="w-full" disabled>Pagar con Stripe (Próximamente)</Button>
+                                 <AccordionItem value="manual">
+                                    <AccordionTrigger className="font-semibold text-base">Pago Manual (QR)</AccordionTrigger>
+                                     <AccordionContent className="space-y-4 pt-3">
+                                        <div className="text-center space-y-2">
+                                            <p className="text-sm">Escanea el código QR desde la App Bancolombia para realizar el pago.</p>
+                                            <Image src="https://placehold.co/200x200.png?text=QR+Bancolombia" alt="QR Bancolombia" width={150} height={150} className="mx-auto rounded-md border" />
+                                            <p className="text-xs text-muted-foreground">Titular: Websapmax SAS <br/> NIT: 900.123.456-7</p>
+                                        </div>
+                                         <Button className="w-full" size="lg" onClick={handleConfirmManualPayment}>
+                                            He realizado el pago
+                                        </Button>
                                     </AccordionContent>
                                 </AccordionItem>
                             </Accordion>
                         </CardContent>
-                        <CardFooter>
-                            <Button className="w-full" size="lg" onClick={handleConfirmPayment}>
-                                He realizado el pago
-                            </Button>
-                        </CardFooter>
                     </Card>
                 </div>
             </div>
