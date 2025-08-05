@@ -39,20 +39,24 @@ export async function POST(request: NextRequest) {
     }
     const company = companySnap.data() as Company;
 
-    // 2. Obtener las credenciales de la pasarela de pago (almacenadas de forma segura en el superadmin)
-    // ESTO ES UNA SIMULACIÓN. En producción, estas claves se obtendrían de una configuración segura.
-    const paymentConfigSnap = await getDoc(doc(db, 'payment_methods', 'superadmin_config'));
-    const paymentConfig = paymentConfigSnap.exists() ? paymentConfigSnap.data() : {};
+    // 2. Obtener las credenciales de la pasarela de pago desde la configuración del Superadministrador
+    const paymentMethodsDocRef = doc(db, 'payment_methods', 'superadmin_config');
+    const paymentMethodsSnap = await getDoc(paymentMethodsDocRef);
+    const paymentMethodsConfig = paymentMethodsSnap.exists() ? paymentMethodsSnap.data() : {};
     
-    const baseUrl = getBaseUrl();
+    // Asumimos una estructura como: paymentMethodsConfig.básico.stripe.secretKey
+    const planSlug = plan.slug.split('-')[1] || 'básico'; // 'plan-basico' -> 'basico'
+    const planConfig = paymentMethodsConfig[planSlug] || {};
 
+
+    const baseUrl = getBaseUrl();
     let checkoutUrl = '';
 
     // 3. Generar la sesión de pago según el proveedor
     if (provider === 'stripe') {
-      const stripeSecretKey = process.env.STRIPE_SECRET_KEY || paymentConfig.stripe?.secretKey;
+      const stripeSecretKey = planConfig.stripe?.secretKey || process.env.STRIPE_SECRET_KEY;
       if (!stripeSecretKey) {
-          throw new Error('La clave secreta de Stripe no está configurada.');
+          throw new Error('La clave secreta de Stripe no está configurada para este plan.');
       }
       const stripe = new Stripe(stripeSecretKey, { apiVersion: '2024-06-20' });
 
@@ -82,9 +86,9 @@ export async function POST(request: NextRequest) {
       checkoutUrl = session.url!;
 
     } else if (provider === 'mercadopago') {
-      const mpAccessToken = process.env.MERCADOPAGO_ACCESS_TOKEN || paymentConfig.mercadopago?.accessToken;
+      const mpAccessToken = planConfig.mercadoPago?.accessToken || process.env.MERCADOPAGO_ACCESS_TOKEN;
       if (!mpAccessToken) {
-          throw new Error('El Access Token de Mercado Pago no está configurado.');
+          throw new Error('El Access Token de Mercado Pago no está configurado para este plan.');
       }
       const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
       const preference = new Preference(client);
@@ -96,7 +100,7 @@ export async function POST(request: NextRequest) {
             title: `Plan ${plan.name}`,
             quantity: 1,
             unit_price: plan.price,
-            currency_id: 'COP', // Cambiar a la moneda correcta si es necesario
+            currency_id: plan.currency || 'USD',
             description: plan.description,
           }],
           payer: {
