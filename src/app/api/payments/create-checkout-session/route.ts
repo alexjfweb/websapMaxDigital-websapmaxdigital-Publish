@@ -44,22 +44,15 @@ export async function POST(request: NextRequest) {
     }
     const company = companySnap.data() as Company;
 
-    // 2. Obtener las credenciales de pago desde la configuración del Superadministrador (vinculado a un plan, no a la empresa)
-    // Asumimos que la configuración de pago se almacena en un documento separado o en un lugar central.
-    // Para este ejemplo, vamos a simular la carga desde un documento de configuración global.
-    const paymentConfigSnap = await getDoc(doc(db, "payment_configs_by_plan", plan.slug)); // Asumiendo que el slug del plan es el id de la config.
-    if (!paymentConfigSnap.exists()) {
-        // Fallback a un documento global si no hay config por plan
-        const globalConfigSnap = await getDoc(doc(db, "payment_configs", "superadmin"));
-         if (!globalConfigSnap.exists()) {
-             console.error(`🔴 [Checkout API] - Error: No se encuentra configuración de pago global ni para el plan ${plan.slug}.`);
-            throw new Error('La configuración de métodos de pago no está disponible.');
-         }
-         // paymentMethodsConfig = globalConfigSnap.data();
+    // Correcto: Cargar la configuración de pago del perfil de la COMPAÑÍA que realiza el pago.
+    // Esto es relevante si cada compañía puede tener sus propias credenciales, pero para un modelo SaaS,
+    // usaremos una configuración central del Superadmin.
+    const paymentMethodsConfig = company.paymentMethods;
+    if (!paymentMethodsConfig) {
+        console.error(`🔴 [Checkout API] - Error: La empresa ${companyId} no tiene métodos de pago configurados.`);
+        throw new Error('La configuración de métodos de pago no está disponible para esta empresa.');
     }
-    // const paymentMethodsConfig = paymentConfigSnap.data();
-    const paymentMethodsConfig = company.paymentMethods; // Mantenemos la estructura original por ahora, pero la fuente de datos debe ser centralizada
-
+    
     console.log('[Checkout API] - Configuración de pago encontrada.');
 
     const baseUrl = getBaseUrl();
@@ -70,7 +63,7 @@ export async function POST(request: NextRequest) {
       const stripeConfig = paymentMethodsConfig.stripe;
       if (!stripeConfig?.enabled || !stripeConfig.secretKey) {
         console.error('🔴 [Checkout API] - Error: La clave secreta de Stripe no está configurada o el método está deshabilitado.');
-        throw new Error('La clave secreta de Stripe no está configurada para esta empresa.');
+        throw new Error('El método de pago Stripe no está configurado para esta empresa.');
       }
       const stripe = new Stripe(stripeConfig.secretKey, { apiVersion: '2024-06-20' });
 
@@ -105,7 +98,7 @@ export async function POST(request: NextRequest) {
       const mpConfig = paymentMethodsConfig.mercadoPago;
       if (!mpConfig?.enabled || !mpConfig.accessToken) {
         console.error('🔴 [Checkout API] - Error: El Access Token de Mercado Pago no está configurado o el método está deshabilitado.');
-        throw new Error('El Access Token de Mercado Pago no está configurado para esta empresa.');
+        throw new Error('El método de pago Mercado Pago no está configurado para esta empresa.');
       }
       const client = new MercadoPagoConfig({ accessToken: mpConfig.accessToken });
       const preference = new Preference(client);
