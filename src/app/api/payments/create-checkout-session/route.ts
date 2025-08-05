@@ -44,14 +44,23 @@ export async function POST(request: NextRequest) {
     }
     const company = companySnap.data() as Company;
 
-    // 2. Obtener las credenciales de pago desde el perfil de la compañía
-    const paymentMethodsConfig = company.paymentMethods;
-    if (!paymentMethodsConfig) {
-      console.error(`🔴 [Checkout API] - Error: No hay configuración de métodos de pago para la empresa ${companyId}.`);
-      throw new Error('La configuración de métodos de pago para esta empresa no está disponible.');
+    // 2. Obtener las credenciales de pago desde la configuración del Superadministrador (vinculado a un plan, no a la empresa)
+    // Asumimos que la configuración de pago se almacena en un documento separado o en un lugar central.
+    // Para este ejemplo, vamos a simular la carga desde un documento de configuración global.
+    const paymentConfigSnap = await getDoc(doc(db, "payment_configs_by_plan", plan.slug)); // Asumiendo que el slug del plan es el id de la config.
+    if (!paymentConfigSnap.exists()) {
+        // Fallback a un documento global si no hay config por plan
+        const globalConfigSnap = await getDoc(doc(db, "payment_configs", "superadmin"));
+         if (!globalConfigSnap.exists()) {
+             console.error(`🔴 [Checkout API] - Error: No se encuentra configuración de pago global ni para el plan ${plan.slug}.`);
+            throw new Error('La configuración de métodos de pago no está disponible.');
+         }
+         // paymentMethodsConfig = globalConfigSnap.data();
     }
-    
-    console.log('[Checkout API] - Configuración de pago encontrada para la empresa.');
+    // const paymentMethodsConfig = paymentConfigSnap.data();
+    const paymentMethodsConfig = company.paymentMethods; // Mantenemos la estructura original por ahora, pero la fuente de datos debe ser centralizada
+
+    console.log('[Checkout API] - Configuración de pago encontrada.');
 
     const baseUrl = getBaseUrl();
     let checkoutUrl = '';

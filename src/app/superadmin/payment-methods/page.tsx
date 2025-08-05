@@ -2,12 +2,12 @@
 "use client";
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from "@/hooks/use-toast";
 import { Save, CreditCard, DollarSign, UploadCloud, Image as ImageIcon } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
@@ -96,6 +96,14 @@ const initialConfig: Record<PlanName, PlanPaymentConfig> = {
     },
   },
   estándar: {
+    bancolombiaQr: {
+        enabled: true,
+        qrImageUrl: '',
+        accountNumber: '',
+        accountHolder: '',
+        identityDocument: '',
+        instructions: 'Escanea el código QR desde la App Bancolombia. Sube el comprobante para que podamos verificar y activar tu plan.',
+    },
     stripe: {
       enabled: true,
       publicKey: '',
@@ -113,6 +121,14 @@ const initialConfig: Record<PlanName, PlanPaymentConfig> = {
     },
   },
   premium: {
+     bancolombiaQr: {
+        enabled: true,
+        qrImageUrl: '',
+        accountNumber: '',
+        accountHolder: '',
+        identityDocument: '',
+        instructions: 'Escanea el código QR desde la App Bancolombia. Sube el comprobante para que podamos verificar y activar tu plan.',
+    },
     stripe: {
       enabled: true,
       publicKey: '',
