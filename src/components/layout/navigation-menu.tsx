@@ -7,9 +7,6 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import {
   ShoppingBag,
@@ -20,7 +17,6 @@ import {
   ShieldCheck,
   LayoutDashboard,
   Utensils,
-  Newspaper,
   Share2,
   UserCog,
   Server,
@@ -44,23 +40,19 @@ import {
 import { usePathname } from 'next/navigation';
 import { useNavigationConfig } from '@/hooks/use-navigation-config';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { NavItemConfig } from '@/services/navigation-service';
 
-interface NavItem {
+
+interface BaseNavItem {
+  id: string;
   href: string;
   labelKey: string;
   icon: React.ElementType;
   allowedRoles: string[];
-  subItems?: NavItem[];
   tooltipKey?: string;
-  id: string; // ID único para la configuración
 }
 
-// Configuración base de la navegación. Esta será la referencia si no hay config en DB.
-const baseNavItems: NavItem[] = [
-  // Rutas públicas/invitado
-  { id: 'login', href: '/login', labelKey: 'Iniciar sesión', icon: LogIn, allowedRoles: ['guest'], tooltipKey: 'Iniciar sesión' },
-  { id: 'register', href: '/register', labelKey: 'Registrarse', icon: UserPlus, allowedRoles: ['guest'], tooltipKey: 'Crear cuenta' },
-
+const baseSidebarItems: BaseNavItem[] = [
   // Superadmin
   { id: 'sa-dashboard', href: '/superadmin/dashboard', labelKey: 'Panel', icon: ShieldCheck, allowedRoles: ['superadmin'], tooltipKey: 'Panel de superadministrador' },
   { id: 'sa-analytics', href: '/superadmin/analytics', labelKey: 'Analítica', icon: BarChart3, allowedRoles: ['superadmin'], tooltipKey: 'Analítica global' },
@@ -96,15 +88,31 @@ const baseNavItems: NavItem[] = [
   { id: 'emp-promote', href: '/employee/promote', labelKey: 'Promocionar', icon: Megaphone, allowedRoles: ['employee'], tooltipKey: 'Promocionar menú' },
 ];
 
+const baseFooterItems: BaseNavItem[] = [
+  // Common for admin and employee
+  { id: 'footer-dashboard', href: '/admin/dashboard', labelKey: 'Panel', icon: LayoutDashboard, allowedRoles: ['admin', 'employee'], tooltipKey: 'Panel' },
+  { id: 'footer-orders', href: '/admin/orders', labelKey: 'Pedidos', icon: ShoppingBag, allowedRoles: ['admin', 'employee'], tooltipKey: 'Pedidos' },
+  { id: 'footer-reservations', href: '/admin/reservations', labelKey: 'Reservas', icon: BookUser, allowedRoles: ['admin', 'employee'], tooltipKey: 'Reservas' },
+  { id: 'footer-tables', href: '/admin/tables', labelKey: 'Mesas', icon: ClipboardList, allowedRoles: ['admin', 'employee'], tooltipKey: 'Mesas' },
+  { id: 'footer-share', href: '/admin/share-menu', labelKey: 'Compartir', icon: Share2, allowedRoles: ['admin', 'employee'], tooltipKey: 'Compartir Menú' },
+];
+
+
+const iconMap: { [key: string]: React.ElementType } = {
+  ShoppingBag, Users, Settings, ClipboardList, BookUser, ShieldCheck, LayoutDashboard, Utensils,
+  Share2, UserCog, Server, History, CalendarCheck, Megaphone, LogIn, UserPlus, Store, BarChart3,
+  Wrench, Database, Gem, BellRing, Palette, Archive, CreditCard, Rocket, Navigation
+};
+
 interface NavigationMenuProps {
   role: string;
 }
 
 export default function NavigationMenu({ role }: NavigationMenuProps) {
   const pathname = usePathname();
-  const { navConfig, isLoading, isError } = useNavigationConfig(baseNavItems);
+  const { navConfig, isLoading, isError } = useNavigationConfig(baseSidebarItems, baseFooterItems);
 
-  const renderNavItems = (items: NavItem[], isSubMenu = false) => {
+  const renderNavItems = (items: NavItemConfig[]) => {
     if (isLoading) {
       return Array.from({ length: 5 }).map((_, i) => (
          <div key={i} className="flex items-center gap-2 p-2">
@@ -121,51 +129,24 @@ export default function NavigationMenu({ role }: NavigationMenuProps) {
     return items
       .filter(item => {
         const userRole = role ? role.toLowerCase() : 'guest';
-        // Buscamos el item en la configuración traída de la DB
-        const configItem = navConfig.find(c => c.id === item.id);
-        // Si no se encuentra en la config, no se muestra.
-        if (!configItem) return false;
-        // Se muestra si el rol está permitido Y está visible en la config.
-        return configItem.roles.includes(userRole) && configItem.visible;
+        return item.roles.includes(userRole) && item.visible;
       })
       .map((item) => {
-        const Icon = item.icon;
+        const Icon = iconMap[item.icon as string] || LayoutDashboard;
         const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
-        const configItem = navConfig.find(c => c.id === item.id);
-        const translatedLabel = configItem?.label || item.labelKey;
-        const translatedTooltip = configItem?.tooltip || translatedLabel;
         
-        const content = item.subItems && item.subItems.length > 0 ? (
-          <SidebarMenuSub>
-            {renderNavItems(item.subItems, true)}
-          </SidebarMenuSub>
-        ) : null;
-
-        if (isSubMenu) {
-          return (
-            <SidebarMenuSubItem key={item.href}>
-              <Link href={item.href} legacyBehavior passHref>
-                <SidebarMenuSubButton asChild isActive={isActive}>
-                  <a>{translatedLabel}</a>
-                </SidebarMenuSubButton>
-              </Link>
-            </SidebarMenuSubItem>
-          );
-        }
-
         return (
-          <SidebarMenuItem key={item.href}>
-            <SidebarMenuButton asChild isActive={isActive} tooltip={translatedTooltip}>
+          <SidebarMenuItem key={item.id}>
+            <SidebarMenuButton asChild isActive={isActive} tooltip={item.tooltip}>
               <Link href={item.href}>
                 <Icon />
-                <span>{translatedLabel}</span>
+                <span>{item.label}</span>
               </Link>
             </SidebarMenuButton>
-            {content}
           </SidebarMenuItem>
         );
       });
   };
 
-  return <SidebarMenu>{renderNavItems(baseNavItems)}</SidebarMenu>;
+  return <SidebarMenu>{renderNavItems(navConfig.sidebarItems)}</SidebarMenu>;
 }

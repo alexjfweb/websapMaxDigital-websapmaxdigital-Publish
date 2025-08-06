@@ -1,62 +1,124 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useToast } from '@/hooks/use-toast';
 import { Save, GripVertical } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useNavigationConfig } from '@/hooks/use-navigation-config';
+import { useNavigationConfig, NavConfig } from '@/hooks/use-navigation-config';
+import type { NavItemConfig } from '@/services/navigation-service';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-// Base items structure to provide context if config is loading/missing
-const baseNavItems = [
-  // Superadmin
-  { id: 'sa-dashboard', label: 'Panel (SA)', role: 'superadmin' },
-  { id: 'sa-companies', label: 'Empresas', role: 'superadmin' },
-  // ... add all other base items if needed for a complete skeleton
-];
+
+interface DraggableNavTableProps {
+  items: NavItemConfig[];
+  onDragEnd: (result: DropResult) => void;
+  onFieldChange: (id: string, field: 'label' | 'tooltip' | 'visible', value: string | boolean) => void;
+  droppableId: string;
+}
+
+const DraggableNavTable: React.FC<DraggableNavTableProps> = ({ items, onDragEnd, onFieldChange, droppableId }) => {
+  return (
+    <DragDropContext onDragEnd={onDragEnd}>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-10"></TableHead>
+            <TableHead>Etiqueta del Menú</TableHead>
+            <TableHead>Rol</TableHead>
+            <TableHead className="text-center">Visible</TableHead>
+          </TableRow>
+        </TableHeader>
+        <Droppable droppableId={droppableId}>
+          {(provided) => (
+            <TableBody {...provided.droppableProps} ref={provided.innerRef}>
+              {items.map((item, index) => (
+                <Draggable key={item.id} draggableId={item.id} index={index}>
+                  {(provided) => (
+                    <TableRow ref={provided.innerRef} {...provided.draggableProps} className="bg-card hover:bg-muted/50">
+                      <TableCell {...provided.dragHandleProps} className="cursor-grab">
+                        <GripVertical className="h-5 w-5 text-muted-foreground" />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={item.label}
+                          onChange={(e) => onFieldChange(item.id, 'label', e.target.value)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm capitalize text-muted-foreground">{item.roles.join(', ')}</span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Switch
+                          checked={item.visible}
+                          onCheckedChange={(checked) => onFieldChange(item.id, 'visible', checked)}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+            </TableBody>
+          )}
+        </Droppable>
+      </Table>
+    </DragDropContext>
+  );
+};
+
 
 export default function NavigationSettingsPage() {
   const { navConfig, isLoading, isError, updateConfig } = useNavigationConfig();
-  const [localNavConfig, setLocalNavConfig] = useState(navConfig);
+  const [localSidebarConfig, setLocalSidebarConfig] = useState<NavItemConfig[]>([]);
+  const [localFooterConfig, setLocalFooterConfig] = useState<NavItemConfig[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Sync local state when fetched config changes
-    setLocalNavConfig(navConfig);
+    if (navConfig) {
+      setLocalSidebarConfig(navConfig.sidebarItems);
+      setLocalFooterConfig(navConfig.footerItems);
+    }
   }, [navConfig]);
   
-  const handleDragEnd = (result: DropResult) => {
+  const handleDragEnd = useCallback((result: DropResult, type: 'sidebar' | 'footer') => {
     if (!result.destination) return;
+    
+    const config = type === 'sidebar' ? localSidebarConfig : localFooterConfig;
+    const setConfig = type === 'sidebar' ? setLocalSidebarConfig : setLocalFooterConfig;
 
-    const items = Array.from(localNavConfig);
+    const items = Array.from(config);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
 
-    // Update order property
     const updatedItems = items.map((item, index) => ({ ...item, order: index }));
     
-    setLocalNavConfig(updatedItems);
-  };
+    setConfig(updatedItems);
+  }, [localSidebarConfig, localFooterConfig]);
 
-  const handleFieldChange = (id: string, field: 'label' | 'tooltip' | 'visible', value: string | boolean) => {
-    const updatedItems = localNavConfig.map(item => 
+  const handleFieldChange = useCallback((id: string, field: 'label' | 'tooltip' | 'visible', value: string | boolean, type: 'sidebar' | 'footer') => {
+    const setConfig = type === 'sidebar' ? setLocalSidebarConfig : setLocalFooterConfig;
+
+    setConfig(prevItems => prevItems.map(item => 
       item.id === id ? { ...item, [field]: value } : item
-    );
-    setLocalNavConfig(updatedItems);
-  };
+    ));
+  }, []);
 
   const handleSaveChanges = async () => {
     setIsSaving(true);
     try {
-      await updateConfig(localNavConfig);
+      const newConfig: NavConfig = {
+        sidebarItems: localSidebarConfig,
+        footerItems: localFooterConfig
+      };
+      await updateConfig(newConfig);
       toast({
         title: '¡Éxito!',
         description: 'La configuración de navegación ha sido guardada.',
@@ -103,7 +165,7 @@ export default function NavigationSettingsPage() {
             <div>
               <CardTitle>Editor de Navegación</CardTitle>
               <CardDescription>
-                Personaliza las etiquetas, el orden y la visibilidad de los elementos del menú principal.
+                Personaliza las etiquetas, el orden y la visibilidad de los menús de la aplicación.
               </CardDescription>
             </div>
             <Button onClick={handleSaveChanges} disabled={isSaving || isLoading}>
@@ -114,51 +176,28 @@ export default function NavigationSettingsPage() {
         </CardHeader>
         <CardContent>
             {isLoading ? renderSkeleton() : isError ? <p className="text-destructive">Error al cargar la configuración.</p> : (
-          <DragDropContext onDragEnd={handleDragEnd}>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-10"></TableHead>
-                  <TableHead>Etiqueta del Menú</TableHead>
-                  <TableHead>Rol</TableHead>
-                  <TableHead className="text-center">Visible</TableHead>
-                </TableRow>
-              </TableHeader>
-              <Droppable droppableId="navigationItems">
-                {(provided) => (
-                  <TableBody {...provided.droppableProps} ref={provided.innerRef}>
-                    {localNavConfig.map((item, index) => (
-                      <Draggable key={item.id} draggableId={item.id} index={index}>
-                        {(provided) => (
-                          <TableRow ref={provided.innerRef} {...provided.draggableProps} className="bg-card hover:bg-muted/50">
-                            <TableCell {...provided.dragHandleProps} className="cursor-grab">
-                              <GripVertical className="h-5 w-5 text-muted-foreground" />
-                            </TableCell>
-                            <TableCell>
-                              <Input
-                                value={item.label}
-                                onChange={(e) => handleFieldChange(item.id, 'label', e.target.value)}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <span className="text-sm capitalize text-muted-foreground">{item.roles.join(', ')}</span>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Switch
-                                checked={item.visible}
-                                onCheckedChange={(checked) => handleFieldChange(item.id, 'visible', checked)}
-                              />
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </TableBody>
-                )}
-              </Droppable>
-            </Table>
-          </DragDropContext>
+            <Tabs defaultValue="sidebar" className="w-full">
+              <TabsList>
+                <TabsTrigger value="sidebar">Navegación Lateral (Principal)</TabsTrigger>
+                <TabsTrigger value="footer">Navegación Inferior (Móvil)</TabsTrigger>
+              </TabsList>
+              <TabsContent value="sidebar" className="mt-4">
+                 <DraggableNavTable 
+                    items={localSidebarConfig}
+                    onDragEnd={(result) => handleDragEnd(result, 'sidebar')}
+                    onFieldChange={(id, field, value) => handleFieldChange(id, field, value, 'sidebar')}
+                    droppableId="sidebarItems"
+                 />
+              </TabsContent>
+              <TabsContent value="footer" className="mt-4">
+                 <DraggableNavTable 
+                    items={localFooterConfig}
+                    onDragEnd={(result) => handleDragEnd(result, 'footer')}
+                    onFieldChange={(id, field, value) => handleFieldChange(id, field, value, 'footer')}
+                    droppableId="footerItems"
+                 />
+              </TabsContent>
+            </Tabs>
           )}
         </CardContent>
       </Card>

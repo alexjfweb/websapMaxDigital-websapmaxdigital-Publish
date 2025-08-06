@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/sidebar';
 import AppHeader from '@/components/layout/header';
 import NavigationMenu from '@/components/layout/navigation-menu';
+import FooterNavigation from '@/components/layout/footer-navigation'; // Importar el nuevo componente
 import { Button } from '@/components/ui/button';
 import { LogOut, Settings, UserCircle, LoaderCircle, ArrowLeft, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
@@ -33,33 +34,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   
   const isPublicPage = ['/login', '/register', '/'].includes(pathname) || pathname.startsWith('/menu/');
 
-  // Función para manejar el botón "Volver"
   const handleGoBack = () => {
     if (pathname === '/login') {
-      router.push('/'); // Ir al home público
+      router.push('/');
     } else if (pathname === '/register') {
-      router.push('/login'); // Volver al login
+      router.push('/login');
     } else {
-      router.back(); // Usar historial del navegador
+      router.back();
     }
   };
 
-  // Función para manejar el botón "Siguiente"
   const handleGoNext = () => {
     if (pathname === '/login') {
-      router.push('/register'); // Ir al registro
+      router.push('/register');
     } else if (pathname === '/register') {
-      router.push('/login'); // Volver al login (o podría ir a una guía)
+      router.push('/login');
     } else if (pathname === '/') {
-      router.push('/login'); // Ir al login desde home
+      router.push('/login');
     } else {
-      // Para otras páginas, podría mostrar una guía o ir al siguiente paso lógico
       router.push('/login');
     }
   };
   
   const showNavigationButtons = ['/login', '/register', '/'].includes(pathname);
-
 
   if (isLoading) {
     return (
@@ -70,8 +67,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Si no está autenticado y no es una página pública, el SessionProvider ya lo redirige.
-  // Aquí podemos simplemente mostrar un loader o null para evitar flashes de contenido.
   if (currentUser.role === 'guest' && !isPublicPage) {
     return (
         <div className="flex min-h-svh w-full items-center justify-center bg-background">
@@ -180,9 +175,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <SidebarRail />
           <SidebarInset className="flex flex-col">
             <AppHeader currentUser={currentUser} handleLogout={handleLogout} showSidebarRelatedUI={true} />
-            <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background">
+            <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background pb-20 md:pb-8">
               {children}
             </main>
+             <FooterNavigation role={currentUser.role} />
           </SidebarInset>
         </SidebarProvider>
       )}

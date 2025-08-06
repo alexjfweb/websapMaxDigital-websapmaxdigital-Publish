@@ -3,13 +3,19 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export interface NavItemConfig {
-  id: string;          // Unique identifier (e.g., 'sa-dashboard')
-  label: string;       // The text displayed in the menu
-  tooltip: string;     // Text for the tooltip in collapsed mode
-  visible: boolean;    // Whether the item is rendered
-  order: number;       // The display order
-  roles: string[];     // Roles that can see this item (e.g., ['superadmin'])
-  href: string;        // The link URL
+  id: string;
+  label: string;
+  tooltip: string;
+  visible: boolean;
+  order: number;
+  roles: string[];
+  href: string;
+  icon?: string; // Icon name as string
+}
+
+export interface NavConfig {
+  sidebarItems: NavItemConfig[];
+  footerItems: NavItemConfig[];
 }
 
 const CONFIG_COLLECTION = 'configuration';
@@ -23,10 +29,11 @@ class NavigationService {
 
   /**
    * Initializes the default navigation config in Firestore if it doesn't exist.
-   * @param baseNavItems The default navigation items from the source code.
+   * @param baseSidebarItems The default sidebar navigation items.
+   * @param baseFooterItems The default footer navigation items.
    */
-  async initializeDefaultConfig(baseNavItems: any[]): Promise<void> {
-    const defaultConfig: NavItemConfig[] = baseNavItems.map((item, index) => ({
+  async initializeDefaultConfig(baseSidebarItems: any[], baseFooterItems: any[]): Promise<void> {
+    const defaultSidebarConfig: NavItemConfig[] = baseSidebarItems.map((item, index) => ({
       id: item.id,
       label: item.labelKey,
       tooltip: item.tooltipKey || item.labelKey,
@@ -34,10 +41,27 @@ class NavigationService {
       order: index,
       roles: item.allowedRoles,
       href: item.href,
+      icon: item.icon.displayName || item.icon.name, // Storing icon name
     }));
 
+    const defaultFooterConfig: NavItemConfig[] = baseFooterItems.map((item, index) => ({
+      id: item.id,
+      label: item.labelKey,
+      tooltip: item.tooltipKey || item.labelKey,
+      visible: true,
+      order: index,
+      roles: item.allowedRoles,
+      href: item.href,
+      icon: item.icon.displayName || item.icon.name,
+    }));
+    
+    const fullConfig: NavConfig = {
+        sidebarItems: defaultSidebarConfig,
+        footerItems: defaultFooterConfig,
+    };
+
     try {
-      await this.updateNavigationConfig(defaultConfig);
+      await this.updateNavigationConfig(fullConfig);
       console.log("Default navigation configuration initialized successfully.");
     } catch (error) {
       console.error("Error initializing default navigation config:", error);
@@ -46,19 +70,22 @@ class NavigationService {
 
   /**
    * Fetches the navigation configuration from Firestore.
-   * If it doesn't exist, it creates and returns a default configuration.
-   * @returns A promise that resolves to an array of NavItemConfig.
+   * If it doesn't exist, it returns a default (empty) configuration object.
+   * @returns A promise that resolves to an object containing sidebar and footer items.
    */
-  async getNavigationConfig(): Promise<NavItemConfig[]> {
+  async getNavigationConfig(): Promise<NavConfig> {
+    const defaultConfig: NavConfig = { sidebarItems: [], footerItems: [] };
     try {
       const docSnap = await getDoc(this.navConfigDocRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
         // Ensure data is sorted by order
-        return data.items.sort((a: NavItemConfig, b: NavItemConfig) => a.order - b.order);
+        const sidebarItems = (data.sidebarItems || []).sort((a: NavItemConfig, b: NavItemConfig) => a.order - b.order);
+        const footerItems = (data.footerItems || []).sort((a: NavItemConfig, b: NavItemConfig) => a.order - b.order);
+        return { sidebarItems, footerItems };
       } else {
-        // If no config exists, return an empty array. The hook will initialize it.
-        return [];
+        // If no config exists, return an empty config. The hook will initialize it.
+        return defaultConfig;
       }
     } catch (error) {
       console.error("Error fetching navigation config:", error);
@@ -68,12 +95,12 @@ class NavigationService {
 
   /**
    * Updates the entire navigation configuration in Firestore.
-   * @param config The new array of navigation items.
+   * @param config The new configuration object containing sidebar and footer items.
    */
-  async updateNavigationConfig(config: NavItemConfig[]): Promise<void> {
+  async updateNavigationConfig(config: NavConfig): Promise<void> {
     try {
       await setDoc(this.navConfigDocRef, {
-        items: config,
+        ...config,
         updatedAt: serverTimestamp(),
       });
     } catch (error) {
