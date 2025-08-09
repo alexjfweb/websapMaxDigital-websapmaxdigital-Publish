@@ -19,9 +19,9 @@ import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
 import { UserPlus, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createUserWithEmailAndPassword, getAuth, User as FirebaseUser, signOut, signInWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, getAuth, User as FirebaseUser, signOut, deleteUser } from "firebase/auth";
 import { getFirebaseApp, db } from "@/lib/firebase"; 
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import type { UserRole, User, Company } from "@/types";
 import React, { Suspense, useState } from "react";
 import { companyService } from "@/services/company-service";
@@ -85,14 +85,9 @@ function RegisterForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       firebaseUser = userCredential.user;
 
-      // 2. 🔥 CERRAR SESIÓN INMEDIATAMENTE para evitar race condition con SessionProvider
-      await signOut(auth);
-      console.log('🔵 Sesión cerrada temporalmente para evitar race condition.');
-
-      // 3. Crear compañía (si aplica) y obtener su ID
-      let companyId: string | undefined = undefined;
-      const isSuperAdmin = values.email.toLowerCase() === SUPERADMIN_EMAIL;
-      const role: UserRole = isSuperAdmin ? 'superadmin' : 'admin';
+      // 2. Crear compañía (si aplica) y obtener su ID
+      let companyId: string | null = null;
+      const role: UserRole = isSuperAdminFlow ? 'superadmin' : 'admin';
       
       if (role === 'admin') {
         if (!values.businessName || !values.ruc) {
@@ -110,13 +105,11 @@ function RegisterForm() {
             location: '',
         };
         
-        console.log("📝 Intentando crear compañía con datos:", companyData);
         const createdCompany = await companyService.createCompany(companyData, { uid: firebaseUser.uid, email: firebaseUser.email! });
         companyId = createdCompany.id;
-        console.log(`✅ Compañía creada con ID: ${companyId}`);
       }
       
-      // 4. Crear el documento del usuario en Firestore con TODOS los datos listos
+      // 3. Crear el documento del usuario en Firestore AHORA que tenemos todos los datos
       const userData: Omit<User, 'id'> = {
         uid: firebaseUser.uid,
         email: firebaseUser.email || values.email,
@@ -124,7 +117,7 @@ function RegisterForm() {
         firstName: values.name,
         lastName: values.lastName,
         role: role,
-        companyId: companyId || null, // Usar null en lugar de undefined
+        companyId: companyId, // Se asigna el ID de la compañía o null
         businessName: values.businessName || '',
         status: 'active',
         registrationDate: new Date().toISOString(),
@@ -135,16 +128,13 @@ function RegisterForm() {
       console.log("📝 Guardando usuario en Firestore:", userData);
       await setDoc(doc(db, "users", firebaseUser.uid), userData);
       console.log("✅ Usuario guardado exitosamente en Firestore");
-
-      // 5. ✅ INICIAR SESIÓN DE NUEVO ahora que todo está listo
-      await signInWithEmailAndPassword(auth, values.email, values.password);
-      console.log('✅ Sesión re-iniciada. Proceso de registro completo.');
       
       toast({
         title: '¡Registro Exitoso!',
         description: `Serás redirigido para continuar.`,
       });
 
+      // La redirección ahora se maneja en el SessionProvider
       if (planId) {
           router.push(`/admin/checkout?plan=${planId}`);
       } else {
@@ -152,8 +142,18 @@ function RegisterForm() {
       }
 
     } catch (error) {
-      // Si algo falla, el usuario ya está deslogueado, por lo que no hay que revertir el auth.
       console.error("Error detallado en el registro:", error);
+      
+      // Si el usuario de Auth se creó pero algo más falló, lo revertimos.
+      if (firebaseUser) {
+        try {
+          await deleteUser(firebaseUser);
+          console.log("↩️ Usuario de Auth revertido exitosamente debido a un error en el flujo de registro posterior.");
+        } catch (revertError) {
+          console.error("🔴 Error CRÍTICO al revertir la creación del usuario de Auth:", revertError);
+        }
+      }
+
       const err = error as { code?: string; message?: string };
       let errorMessage = err.message || 'Hubo un error al crear la cuenta.';
       

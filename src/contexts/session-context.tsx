@@ -54,30 +54,34 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       console.log("🔵 Auth state changed. Firebase user:", firebaseUser?.uid || 'Ninguno');
       if (firebaseUser) {
-        const userDocRef = doc(db, "users", firebaseUser.uid);
-        try {
-          const userDocSnap = await getDoc(userDocRef);
-
+        // Retry logic to handle Firestore replication delay
+        let userDocSnap;
+        let attempts = 0;
+        while(attempts < 3) {
+            const userDocRef = doc(db, "users", firebaseUser.uid);
+            userDocSnap = await getDoc(userDocRef);
             if (userDocSnap.exists()) {
-              const userData = userDocSnap.data() as Omit<User, 'id'>;
-              // Aseguramos que el companyId del documento de usuario se asigne correctamente.
-              const userWithId: User = {
-                  id: firebaseUser.uid,
-                  uid: firebaseUser.uid,
-                  ...userData,
-                  companyId: userData.companyId, // Asignación explícita y correcta
-              };
-
-              setCurrentUser(userWithId);
-              localStorage.setItem('currentUser', JSON.stringify(userWithId));
-              console.log(`✅ Sesión iniciada para ${userWithId.email} con companyId: ${userWithId.companyId}`);
-            } else {
-              console.error(`🔴 Usuario ${firebaseUser.uid} existe en Auth pero no en Firestore. Cerrando sesión forzosa.`);
-              await auth.signOut();
+                break;
             }
-        } catch(e) {
-            console.error("🔴 Error crítico al obtener documento del usuario:", e);
-            await auth.signOut();
+            attempts++;
+            await new Promise(res => setTimeout(res, 500)); // wait 500ms
+        }
+        
+        if (userDocSnap && userDocSnap.exists()) {
+          const userData = userDocSnap.data() as Omit<User, 'id'>;
+          const userWithId: User = {
+              id: firebaseUser.uid,
+              uid: firebaseUser.uid,
+              ...userData,
+              companyId: userData.companyId || undefined,
+          };
+
+          setCurrentUser(userWithId);
+          localStorage.setItem('currentUser', JSON.stringify(userWithId));
+          console.log(`✅ Sesión iniciada para ${userWithId.email} con companyId: ${userWithId.companyId}`);
+        } else {
+          console.error(`🔴 Usuario ${firebaseUser.uid} existe en Auth pero no en Firestore. Cerrando sesión forzosa.`);
+          await auth.signOut();
         }
       } else {
         console.log("🟡 No hay usuario de Firebase. Estableciendo sesión de invitado.");
@@ -120,7 +124,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     if (isProtected && currentUser.role === 'guest') {
         console.log(`🔵 Redirigiendo: Página protegida (${pathname}) y usuario no autenticado.`);
         router.push('/login');
-    } else if (pathname === '/login' && currentUser.role !== 'guest') {
+    } else if ((pathname === '/login' || pathname === '/register') && currentUser.role !== 'guest') {
         const targetDashboard = `/${currentUser.role}/dashboard`;
         console.log(`🔵 Redirigiendo: Usuario ya logueado. Enviando a ${targetDashboard}.`);
         router.push(targetDashboard);
