@@ -106,12 +106,6 @@ class CompanyService {
     if (!companyData.name || !companyData.ruc) {
       throw new Error("El nombre de la empresa y el RUC son obligatorios.");
     }
-
-    const companyToCreate = {
-      ...companyData,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
     
     const docRef = await addDoc(coll, {
       ...companyData,
@@ -122,7 +116,7 @@ class CompanyService {
     const newCompanyData: Company = {
       id: docRef.id,
       ...companyData,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(), // Use ISO string for consistency
       updatedAt: new Date().toISOString(),
     };
     

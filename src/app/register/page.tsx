@@ -19,7 +19,7 @@ import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
 import { UserPlus, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createUserWithEmailAndPassword, getAuth, User as FirebaseUser, signOut, deleteUser } from "firebase/auth";
+import { createUserWithEmailAndPassword, getAuth, User as FirebaseUser, deleteUser } from "firebase/auth";
 import { getFirebaseApp, db } from "@/lib/firebase"; 
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import type { UserRole, User, Company } from "@/types";
@@ -105,6 +105,7 @@ function RegisterForm() {
             location: '',
         };
         
+        // El usuario que realiza la acción es el propio usuario recién creado
         const createdCompany = await companyService.createCompany(companyData, { uid: firebaseUser.uid, email: firebaseUser.email! });
         companyId = createdCompany.id;
       }
@@ -117,7 +118,7 @@ function RegisterForm() {
         firstName: values.name,
         lastName: values.lastName,
         role: role,
-        companyId: companyId, // Se asigna el ID de la compañía o null
+        companyId: companyId || undefined, // Asigna el ID de la compañía o undefined
         businessName: values.businessName || '',
         status: 'active',
         registrationDate: new Date().toISOString(),
@@ -125,16 +126,14 @@ function RegisterForm() {
         avatarUrl: `https://placehold.co/100x100.png?text=${values.name.charAt(0)}`,
       };
       
-      console.log("📝 Guardando usuario en Firestore:", userData);
       await setDoc(doc(db, "users", firebaseUser.uid), userData);
-      console.log("✅ Usuario guardado exitosamente en Firestore");
       
       toast({
         title: '¡Registro Exitoso!',
         description: `Serás redirigido para continuar.`,
       });
 
-      // La redirección ahora se maneja en el SessionProvider
+      // Redirigir según si hay un plan seleccionado o no
       if (planId) {
           router.push(`/admin/checkout?plan=${planId}`);
       } else {
