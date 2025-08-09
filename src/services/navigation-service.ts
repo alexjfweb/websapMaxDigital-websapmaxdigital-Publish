@@ -101,29 +101,52 @@ class NavigationService {
   }
 
   /**
-   * Merges stored navigation items with base items, adding new ones from base.
+   * Merges stored navigation items with base items, adding new ones from base
+   * and ensuring that labels for existing items are updated if they changed in the code.
    */
   private mergeItems(storedItems: NavItemConfig[], baseItems: any[]): NavItemConfig[] {
-    const storedIds = new Set(storedItems.map(item => item.id));
-    const newItems: NavItemConfig[] = [];
+    const baseItemsMap = new Map(baseItems.map(item => [item.id, item]));
+    const storedItemsMap = new Map(storedItems.map(item => [item.id, item]));
 
-    baseItems.forEach(baseItem => {
-      if (!storedIds.has(baseItem.id)) {
-        newItems.push({
-          id: baseItem.id,
-          label: baseItem.labelKey,
-          tooltip: baseItem.tooltipKey || baseItem.labelKey,
-          visible: true,
-          order: baseItem.order ?? storedItems.length + newItems.length,
-          roles: baseItem.allowedRoles,
-          href: baseItem.href,
-          icon: baseItem.icon.displayName || baseItem.icon.name,
-        });
-      }
+    const mergedItems: NavItemConfig[] = [];
+
+    // First, iterate over stored items to maintain their order and saved properties (like `visible`)
+    storedItems.forEach(storedItem => {
+        const baseItem = baseItemsMap.get(storedItem.id);
+        if (baseItem) {
+            // If item exists in both, use stored item but update label/tooltip from base if needed.
+            mergedItems.push({
+                ...storedItem,
+                label: baseItem.labelKey, // Always take the latest label from code
+                tooltip: baseItem.tooltipKey || baseItem.labelKey, // And the latest tooltip
+                icon: baseItem.icon.displayName || baseItem.icon.name, // And icon
+                roles: baseItem.allowedRoles, // And roles
+                href: baseItem.href, // and href
+            });
+        }
+        // If an item is in stored but not in base, it's considered "orphaned" and we drop it.
     });
 
-    return [...storedItems, ...newItems];
+    // Second, add any new items from baseItems that are not in storedItems
+    baseItems.forEach(baseItem => {
+        if (!storedItemsMap.has(baseItem.id)) {
+            mergedItems.push({
+                id: baseItem.id,
+                label: baseItem.labelKey,
+                tooltip: baseItem.tooltipKey || baseItem.labelKey,
+                visible: true, // Default to visible
+                order: mergedItems.length, // Add to the end
+                roles: baseItem.allowedRoles,
+                href: baseItem.href,
+                icon: baseItem.icon.displayName || baseItem.icon.name,
+            });
+        }
+    });
+
+    // Recalculate order to ensure it's sequential
+    return mergedItems.map((item, index) => ({ ...item, order: index }));
   }
+
 
   /**
    * Updates the entire navigation configuration in Firestore.
