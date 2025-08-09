@@ -19,6 +19,7 @@ import MercadoPagoIcon from '@/components/icons/mercadopago-icon';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { LandingPlan } from '@/services/landing-plans-service';
+import SuccessModal from '@/components/ui/success-modal';
 
 function CheckoutSkeleton() {
     return (
@@ -85,6 +86,7 @@ function CheckoutContent() {
     const { currentUser } = useSession();
     const [isProcessingPayment, setIsProcessingPayment] = useState<null | 'stripe' | 'mercadopago'>(null);
     const [availablePayments, setAvailablePayments] = useState<AvailablePayments | null>(null);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
     
     const selectedPlan = plans.find(p => p.slug === planSlug);
     
@@ -137,10 +139,7 @@ function CheckoutContent() {
                 planId: selectedPlan.id
             }, currentUser);
             
-            toast({
-                title: "¡Confirmación Enviada!",
-                description: "Hemos notificado al administrador. Tu plan será activado una vez se verifique el pago.",
-            });
+            setShowSuccessModal(true);
             
         } catch(e: any) {
              toast({ title: "Error", description: `No se pudo actualizar el estado de la suscripción: ${e.message}`, variant: "destructive"});
@@ -186,119 +185,127 @@ function CheckoutContent() {
     };
 
     return (
-        <div className="max-w-4xl mx-auto py-12 px-4">
-            <div className="mb-8">
-                 <Button variant="ghost" asChild className="mb-4">
-                    <Link href="/admin/subscription">
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Volver a los planes
-                    </Link>
-                </Button>
-                <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
-                    <Gem className="h-8 w-8" />
-                    Confirmar Cambio de Plan
-                </h1>
-                <p className="text-lg text-muted-foreground mt-1">Estás a punto de mejorar tu suscripción. Revisa los detalles y confirma.</p>
-            </div>
-
-            <div className="grid md:grid-cols-5 gap-10">
-                <div className="md:col-span-3 space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Resumen de tu Nuevo Plan</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex justify-between items-center mb-4">
-                                <div>
-                                    <Badge className={`${selectedPlan.isPopular ? 'bg-yellow-400 text-yellow-900' : ''}`}>{selectedPlan.name}</Badge>
-                                    <p className="text-muted-foreground">{selectedPlan.description}</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-2xl font-bold">${selectedPlan.price}</p>
-                                    <p className="text-sm text-muted-foreground">/mes</p>
-                                </div>
-                            </div>
-                            <ul className="space-y-2 text-sm">
-                                {selectedPlan.features.map((feature: string, index: number) => (
-                                    <li key={index} className="flex items-center">
-                                        <Check className="h-4 w-4 mr-2 text-green-500" />
-                                        {feature}
-                                    </li>
-                                ))}
-                            </ul>
-                        </CardContent>
-                    </Card>
-
-                     <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><HelpCircle className="h-5 w-5"/>¿Cómo funciona?</CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-sm text-muted-foreground space-y-2">
-                           <p>1. <strong>Elige tu método de pago</strong>: automático (con tarjeta) o manual (con QR).</p>
-                           <p>2. <strong>Pago automático:</strong> Serás redirigido a una pasarela segura. La activación de tu plan es instantánea.</p>
-                           <p>3. <strong>Pago manual:</strong> Sigue las instrucciones, realiza el pago y haz clic en "He realizado el pago". Tu plan será activado en un plazo máximo de 24 horas tras la verificación.</p>
-                        </CardContent>
-                    </Card>
-
+        <>
+            <SuccessModal
+                isOpen={showSuccessModal}
+                onClose={() => setShowSuccessModal(false)}
+                title="¡Confirmación Enviada!"
+                message="Hemos notificado al administrador. Tu plan será activado una vez se verifique el pago."
+            />
+            <div className="max-w-4xl mx-auto py-12 px-4">
+                <div className="mb-8">
+                     <Button variant="ghost" asChild className="mb-4">
+                        <Link href="/admin/subscription">
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Volver a los planes
+                        </Link>
+                    </Button>
+                    <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
+                        <Gem className="h-8 w-8" />
+                        Confirmar Cambio de Plan
+                    </h1>
+                    <p className="text-lg text-muted-foreground mt-1">Estás a punto de mejorar tu suscripción. Revisa los detalles y confirma.</p>
                 </div>
 
-                <div className="md:col-span-2">
-                    <Card className="sticky top-6">
-                        <CardHeader>
-                            <CardTitle>Métodos de Pago</CardTitle>
-                             <CardDescription>Elige un método para continuar.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             <Accordion type="single" collapsible className="w-full" defaultValue="automatic">
-                                 <AccordionItem value="automatic">
-                                    <AccordionTrigger className="font-semibold text-base">Pago Automático (Recomendado)</AccordionTrigger>
-                                    <AccordionContent className="space-y-3 pt-3">
-                                        {availablePayments.stripe && (
-                                            <Button 
-                                                className="w-full"
-                                                onClick={() => handleAutomaticPayment('stripe')}
-                                                disabled={isProcessingPayment === 'stripe'}
-                                            >
-                                                 {isProcessingPayment === 'stripe' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CreditCard className="mr-2 h-4 w-4" />}
-                                                 {isProcessingPayment === 'stripe' ? 'Procesando...' : 'Pagar con Tarjeta (Stripe)'}
-                                            </Button>
-                                        )}
-                                        {availablePayments.mercadopago && (
-                                            <Button 
-                                                className="w-full"
-                                                onClick={() => handleAutomaticPayment('mercadopago')}
-                                                disabled={isProcessingPayment === 'mercadopago'}
-                                            >
-                                                {isProcessingPayment === 'mercadopago' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <MercadoPagoIcon className="mr-2 h-4 w-4"/>}
-                                                {isProcessingPayment === 'mercadopago' ? 'Procesando...' : 'Pagar con Mercado Pago'}
-                                            </Button>
-                                        )}
-                                        {!availablePayments.stripe && !availablePayments.mercadopago && (
-                                            <p className="text-sm text-muted-foreground text-center">No hay métodos de pago automáticos habilitados para este plan.</p>
-                                        )}
-                                    </AccordionContent>
-                                </AccordionItem>
-                                 {availablePayments.manual && (
-                                    <AccordionItem value="manual">
-                                        <AccordionTrigger className="font-semibold text-base">Pago Manual (QR)</AccordionTrigger>
-                                         <AccordionContent className="space-y-4 pt-3">
-                                            <div className="text-center space-y-2">
-                                                <p className="text-sm">Escanea el código QR desde la App Bancolombia para realizar el pago.</p>
-                                                <Image src={availablePayments.qrUrl || ''} alt="QR Bancolombia" width={150} height={150} className="mx-auto rounded-md border" />
-                                                <p className="text-xs text-muted-foreground">Titular: Websapmax SAS <br/> NIT: 900.123.456-7</p>
-                                            </div>
-                                             <Button className="w-full" size="lg" onClick={handleConfirmManualPayment}>
-                                                He realizado el pago
-                                            </Button>
+                <div className="grid md:grid-cols-5 gap-10">
+                    <div className="md:col-span-3 space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Resumen de tu Nuevo Plan</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex justify-between items-center mb-4">
+                                    <div>
+                                        <Badge className={`${selectedPlan.isPopular ? 'bg-yellow-400 text-yellow-900' : ''}`}>{selectedPlan.name}</Badge>
+                                        <p className="text-muted-foreground">{selectedPlan.description}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-2xl font-bold">${selectedPlan.price}</p>
+                                        <p className="text-sm text-muted-foreground">/mes</p>
+                                    </div>
+                                </div>
+                                <ul className="space-y-2 text-sm">
+                                    {selectedPlan.features.map((feature: string, index: number) => (
+                                        <li key={index} className="flex items-center">
+                                            <Check className="h-4 w-4 mr-2 text-green-500" />
+                                            {feature}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </CardContent>
+                        </Card>
+
+                         <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2"><HelpCircle className="h-5 w-5"/>¿Cómo funciona?</CardTitle>
+                            </CardHeader>
+                            <CardContent className="text-sm text-muted-foreground space-y-2">
+                               <p>1. <strong>Elige tu método de pago</strong>: automático (con tarjeta) o manual (con QR).</p>
+                               <p>2. <strong>Pago automático:</strong> Serás redirigido a una pasarela segura. La activación de tu plan es instantánea.</p>
+                               <p>3. <strong>Pago manual:</strong> Sigue las instrucciones, realiza el pago y haz clic en "He realizado el pago". Tu plan será activado en un plazo máximo de 24 horas tras la verificación.</p>
+                            </CardContent>
+                        </Card>
+
+                    </div>
+
+                    <div className="md:col-span-2">
+                        <Card className="sticky top-6">
+                            <CardHeader>
+                                <CardTitle>Métodos de Pago</CardTitle>
+                                 <CardDescription>Elige un método para continuar.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                 <Accordion type="single" collapsible className="w-full" defaultValue="automatic">
+                                     <AccordionItem value="automatic">
+                                        <AccordionTrigger className="font-semibold text-base">Pago Automático (Recomendado)</AccordionTrigger>
+                                        <AccordionContent className="space-y-3 pt-3">
+                                            {availablePayments.stripe && (
+                                                <Button 
+                                                    className="w-full"
+                                                    onClick={() => handleAutomaticPayment('stripe')}
+                                                    disabled={isProcessingPayment === 'stripe'}
+                                                >
+                                                     {isProcessingPayment === 'stripe' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CreditCard className="mr-2 h-4 w-4" />}
+                                                     {isProcessingPayment === 'stripe' ? 'Procesando...' : 'Pagar con Tarjeta (Stripe)'}
+                                                </Button>
+                                            )}
+                                            {availablePayments.mercadopago && (
+                                                <Button 
+                                                    className="w-full"
+                                                    onClick={() => handleAutomaticPayment('mercadopago')}
+                                                    disabled={isProcessingPayment === 'mercadopago'}
+                                                >
+                                                    {isProcessingPayment === 'mercadopago' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <MercadoPagoIcon className="mr-2 h-4 w-4"/>}
+                                                    {isProcessingPayment === 'mercadopago' ? 'Procesando...' : 'Pagar con Mercado Pago'}
+                                                </Button>
+                                            )}
+                                            {!availablePayments.stripe && !availablePayments.mercadopago && (
+                                                <p className="text-sm text-muted-foreground text-center">No hay métodos de pago automáticos habilitados para este plan.</p>
+                                            )}
                                         </AccordionContent>
                                     </AccordionItem>
-                                 )}
-                            </Accordion>
-                        </CardContent>
-                    </Card>
+                                     {availablePayments.manual && (
+                                        <AccordionItem value="manual">
+                                            <AccordionTrigger className="font-semibold text-base">Pago Manual (QR)</AccordionTrigger>
+                                             <AccordionContent className="space-y-4 pt-3">
+                                                <div className="text-center space-y-2">
+                                                    <p className="text-sm">Escanea el código QR desde la App Bancolombia para realizar el pago.</p>
+                                                    <Image src={availablePayments.qrUrl || ''} alt="QR Bancolombia" width={150} height={150} className="mx-auto rounded-md border" />
+                                                    <p className="text-xs text-muted-foreground">Titular: Websapmax SAS <br/> NIT: 900.123.456-7</p>
+                                                </div>
+                                                 <Button className="w-full" size="lg" onClick={handleConfirmManualPayment}>
+                                                    He realizado el pago
+                                                </Button>
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                     )}
+                                </Accordion>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 }
 
