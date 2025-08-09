@@ -85,62 +85,79 @@ function RegisterForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       firebaseUser = userCredential.user;
       
-      const isSuperAdmin = values.email.toLowerCase() === SUPERADMIN_EMAIL;
-      const role: UserRole = isSuperAdmin ? 'superadmin' : 'admin';
-      let companyId: string | undefined = undefined;
+      // A partir de aquí, si algo falla, debemos borrar el firebaseUser
+      try {
+        const isSuperAdmin = values.email.toLowerCase() === SUPERADMIN_EMAIL;
+        const role: UserRole = isSuperAdmin ? 'superadmin' : 'admin';
+        let companyId: string | undefined = undefined;
 
-      if (role === 'admin') {
-        if (!values.businessName || !values.ruc) {
-            throw new Error("El nombre de la empresa y el RUC son necesarios para el registro de administradores.");
+        if (role === 'admin') {
+          if (!values.businessName || !values.ruc) {
+              throw new Error("El nombre de la empresa y el RUC son necesarios para el registro de administradores.");
+          }
+          
+          const companyData: Omit<Company, 'id' | 'createdAt' | 'updatedAt'> = {
+              name: values.businessName,
+              email: values.email,
+              ruc: values.ruc,
+              status: 'active',
+              registrationDate: new Date().toISOString(),
+              planId: planId || 'plan-gratuito',
+              subscriptionStatus: planId ? 'pending_payment' : 'trialing',
+              location: '',
+          };
+          
+          console.log("Intentando crear compañía con datos:", companyData);
+          const createdCompany = await companyService.createCompany(companyData, { uid: firebaseUser.uid, email: firebaseUser.email! });
+          companyId = createdCompany.id;
+          console.log("Compañía creada con ID:", companyId);
         }
-        
-        const companyData: Omit<Company, 'id' | 'createdAt' | 'updatedAt'> = {
-            name: values.businessName,
-            email: values.email,
-            ruc: values.ruc,
-            status: 'active',
-            registrationDate: new Date().toISOString(),
-            planId: planId || 'plan-gratuito',
-            subscriptionStatus: planId ? 'pending_payment' : 'trialing',
-            location: '',
+
+        const userData: Omit<User, 'id'> = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email || values.email,
+          username: values.email.split('@')[0],
+          firstName: values.name,
+          lastName: values.lastName,
+          role: role,
+          companyId: companyId,
+          businessName: values.businessName || '',
+          status: 'active',
+          registrationDate: new Date().toISOString(),
+          isActive: true,
+          avatarUrl: `https://placehold.co/100x100.png?text=${values.name.charAt(0)}`,
         };
         
-        console.log("Intentando crear compañía con datos:", companyData);
-        const createdCompany = await companyService.createCompany(companyData, { uid: firebaseUser.uid, email: firebaseUser.email! });
-        companyId = createdCompany.id;
-        console.log("Compañía creada con ID:", companyId);
+        await setDoc(doc(db, "users", firebaseUser.uid), userData);
+        
+        toast({
+          title: '¡Registro Exitoso!',
+          description: `Serás redirigido a la página de pago para completar tu suscripción.`,
+        });
+
+        // Redirigir a la página de checkout si se seleccionó un plan
+        if (planId) {
+            router.push(`/admin/checkout?plan=${planId}`);
+        } else {
+            router.push('/login');
+        }
+
+      } catch (firestoreError) {
+          // Si algo falla aquí (crear compañía, crear usuario en Firestore), borramos el usuario de Auth
+          if (firebaseUser) {
+              await firebaseUser.delete();
+              console.log("Usuario de Auth revertido exitosamente debido a un error en el flujo de registro posterior.");
+          }
+          // Y lanzamos el error para que sea capturado por el catch exterior.
+          throw firestoreError;
       }
-
-      const userData: Omit<User, 'id'> = {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email || values.email,
-        username: values.email.split('@')[0],
-        firstName: values.name,
-        lastName: values.lastName,
-        role: role,
-        companyId: companyId,
-        businessName: values.businessName || '',
-        status: 'active',
-        registrationDate: new Date().toISOString(),
-        isActive: true,
-        avatarUrl: `https://placehold.co/100x100.png?text=${values.name.charAt(0)}`,
-      };
-      
-      await setDoc(doc(db, "users", firebaseUser.uid), userData);
-      
-      toast({
-        title: '¡Registro Exitoso!',
-        description: isSuperAdmin ? 'Cuenta de Superadministrador creada.' : `La empresa "${values.businessName}" y su administrador han sido creados. Serás redirigido para iniciar sesión.`,
-      });
-
-      router.push('/login');
 
     } catch (error) {
       const err = error as { code?: string; message?: string };
       let errorMessage = err.message || 'Hubo un error al crear la cuenta.';
       
       if (err.code === 'auth/email-already-in-use') {
-        errorMessage = "El correo electrónico que ingresaste ya está asociado con otra cuenta. Por favor, intenta con otro correo o inicia sesión si ya tienes una cuenta.";
+        errorMessage = "El correo electrónico que ingresaste ya está en uso. Por favor, intenta con otro o inicia sesión si ya tienes una cuenta.";
       }
       
       setErrorState({
@@ -148,14 +165,6 @@ function RegisterForm() {
             message: errorMessage,
       });
       
-      if (firebaseUser) {
-        try {
-          await firebaseUser.delete();
-          console.log("Usuario de Auth revertido exitosamente debido a un error en el flujo de registro.");
-        } catch (rollbackError) {
-          console.error("Falló el rollback del usuario de Auth:", rollbackError);
-        }
-      }
     } finally {
       setIsSubmitting(false);
     }
