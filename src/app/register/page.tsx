@@ -21,12 +21,11 @@ import { UserPlus, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createUserWithEmailAndPassword, getAuth, User as FirebaseUser } from "firebase/auth";
 import { getFirebaseApp, db } from "@/lib/firebase"; 
-import { doc, setDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import type { UserRole, User, Company } from "@/types";
 import React, { Suspense, useState } from "react";
-import { dishService } from "@/services/dish-service";
-import ErrorModal from "@/components/ui/error-modal";
 import { companyService } from "@/services/company-service";
+import ErrorModal from "@/components/ui/error-modal";
 
 const SUPERADMIN_EMAIL = 'alexjfweb@gmail.com';
 
@@ -34,6 +33,7 @@ const registerFormSchema = z.object({
   name: z.string().min(2, { message: "El nombre es obligatorio." }),
   lastName: z.string().min(2, { message: "El apellido es obligatorio." }),
   businessName: z.string().optional(),
+  ruc: z.string().optional(),
   email: z.string().email({ message: "Por favor, ingrese un correo electrónico válido." }),
   password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
   confirmPassword: z.string(),
@@ -41,14 +41,16 @@ const registerFormSchema = z.object({
   message: "Las contraseñas no coinciden",
   path: ["confirmPassword"],
 }).refine(data => {
+  // Si no es el superadmin, el nombre del negocio y el RUC son obligatorios
   if (data.email.toLowerCase() !== SUPERADMIN_EMAIL) {
-    return data.businessName && data.businessName.length >= 3;
+    return data.businessName && data.businessName.length >= 3 && data.ruc && data.ruc.length >= 3;
   }
   return true;
 }, {
-  message: "El nombre del negocio es obligatorio.",
-  path: ["businessName"],
+  message: "El nombre de la empresa y el RUC son obligatorios.",
+  path: ["businessName"], // Puedes asociar el error a un campo general o al primero que falla
 });
+
 
 function RegisterForm() {
   const router = useRouter();
@@ -64,6 +66,7 @@ function RegisterForm() {
       name: "",
       lastName: "",
       businessName: "",
+      ruc: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -89,22 +92,21 @@ function RegisterForm() {
       const role: UserRole = isSuperAdmin ? 'superadmin' : 'admin';
       let companyId: string | undefined = undefined;
 
-      if (role === 'admin' && values.businessName) {
-        const companyData = {
+      if (role === 'admin' && values.businessName && values.ruc) {
+        const companyData: Omit<Company, 'id' | 'createdAt' | 'updatedAt'> = {
             name: values.businessName,
             email: values.email,
+            ruc: values.ruc,
             status: 'active',
             registrationDate: new Date().toISOString(),
-            planId: planId || 'plan-gratuito-7-das',
+            planId: planId || 'plan-gratuito',
             subscriptionStatus: planId ? 'pending_payment' : 'trialing',
-            ruc: '', 
-            location: '',
+            location: '', // Otros campos se pueden llenar después
         };
         
-        const createdCompany = await companyService.createCompany(companyData as any, { uid: firebaseUser.uid, email: firebaseUser.email! });
+        const createdCompany = await companyService.createCompany(companyData, { uid: firebaseUser.uid, email: firebaseUser.email! });
         companyId = createdCompany.id;
 
-        await dishService.createSampleDishesForCompany(companyId);
       }
 
       const userData: Omit<User, 'id'> = {
@@ -114,7 +116,7 @@ function RegisterForm() {
         firstName: values.name,
         lastName: values.lastName,
         role: role,
-        companyId: companyId, // Se asigna el companyId generado
+        companyId: companyId,
         businessName: values.businessName || '',
         status: 'active',
         registrationDate: new Date().toISOString(),
@@ -164,7 +166,7 @@ function RegisterForm() {
         message={errorState?.message || ""}
         onClose={() => setErrorState(null)}
     />
-    <div className="flex items-center justify-center min-h-[calc(100vh-theme(spacing.16))] bg-gradient-to-br from-background to-accent/10 p-4">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background to-accent/10 p-4">
       <Card className="w-full max-w-lg shadow-2xl">
          <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
@@ -222,19 +224,34 @@ function RegisterForm() {
               />
 
               {!isSuperAdminFlow && (
-                 <FormField
-                    control={form.control}
-                    name="businessName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nombre del Negocio</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ej. Restaurante Sabor Único" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                 <>
+                  <FormField
+                      control={form.control}
+                      name="businessName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nombre del Negocio</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ej. Restaurante Sabor Único" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="ruc"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>RUC / ID Fiscal</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ej. 123456789-0" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                 </>
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -293,3 +310,5 @@ export default function RegisterPage() {
     </Suspense>
   );
 }
+
+    

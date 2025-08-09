@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -79,7 +80,7 @@ class CompanyService {
    * @param user - Información del usuario que realiza la acción.
    * @returns La empresa recién creada con su ID.
    */
-  async createCompany(companyData: CreateCompanyInput, user: { uid: string; email: string }): Promise<Company> {
+  async createCompany(companyData: Omit<Company, 'id' | 'createdAt' | 'updatedAt'>, user: { uid: string; email: string }): Promise<Company> {
     const coll = this.companiesCollection;
     if (!coll) throw new Error("La base de datos no está disponible.");
 
@@ -94,7 +95,14 @@ class CompanyService {
     };
     
     const docRef = await addDoc(coll, companyToCreate);
-    const newCompany: Company = { ...companyData, id: docRef.id, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    
+    // Construir el objeto completo de la nueva compañía para el log y el retorno
+    const newCompany: Company = {
+      id: docRef.id,
+      ...companyData,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
     
     await auditService.log({
       entity: 'companies',
@@ -106,6 +114,7 @@ class CompanyService {
     
     return newCompany;
   }
+
 
   /**
    * Actualiza una empresa existente en Firestore.
@@ -146,3 +155,5 @@ class CompanyService {
 }
 
 export const companyService = new CompanyService();
+
+    
