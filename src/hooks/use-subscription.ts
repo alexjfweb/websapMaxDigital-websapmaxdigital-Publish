@@ -58,9 +58,9 @@ export function useSubscription() {
 
   const permissions = {
     // La gestión de empleados está disponible en planes 'estándar', 'premium' y 'profesional'.
-    canManageEmployees: ['plan-estandar', 'plan-premium', 'plan-profesional'].includes(plan?.slug || ''),
+    canManageEmployees: ['estandar', 'premium', 'profesional'].includes(plan?.slug?.split('-')[1] || ''),
     // Ejemplo: Analíticas avanzadas solo para premium y superior.
-    canUseAdvancedAnalytics: ['plan-premium', 'plan-profesional'].includes(plan?.slug || ''),
+    canUseAdvancedAnalytics: ['premium', 'profesional'].includes(plan?.slug?.split('-')[1] || ''),
     // Ejemplo: Personalización de marca solo para planes de pago.
     canCustomizeBranding: !!plan && plan.price > 0,
   };

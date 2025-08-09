@@ -88,6 +88,19 @@ export default function SubscriptionPage() {
     const isLoading = isLoadingSubscription || isLoadingPlans || isLoadingEmployees;
     const error = errorSubscription || errorPlans;
 
+    const getStatusInfo = (status: Company['subscriptionStatus']) => {
+        const statusMap: Record<string, { text: string; className: string }> = {
+            trialing: { text: "En Prueba", className: "bg-blue-500" },
+            active: { text: "Activo", className: "bg-green-500" },
+            pending_payment: { text: "Pago Pendiente", className: "bg-yellow-500" },
+            past_due: { text: "Vencido", className: "bg-red-500" },
+            canceled: { text: "Cancelado", className: "bg-gray-500" },
+            default: { text: status || "Desconocido", className: "bg-gray-500" }
+        };
+        return statusMap[status || 'default'] || statusMap.default;
+    };
+
+
     if (isLoading) {
        return <SubscriptionSkeleton />;
     }
@@ -103,6 +116,7 @@ export default function SubscriptionPage() {
     }
 
     const { company, plan } = subscription || {};
+    const statusInfo = company ? getStatusInfo(company.subscriptionStatus) : null;
     
     const otherPlans = (plans || []).filter(p => p.id !== plan?.id);
 
@@ -141,11 +155,13 @@ export default function SubscriptionPage() {
                                         <div className="space-y-3 text-sm">
                                             <div className="flex justify-between">
                                                 <span className="text-muted-foreground">Estado:</span>
-                                                <Badge variant={company.subscriptionStatus === 'active' || company.subscriptionStatus === 'trialing' ? 'default' : 'destructive'} className={company.subscriptionStatus === 'active' || company.subscriptionStatus === 'trialing' ? 'bg-green-500' : ''}>
-                                                    {company.subscriptionStatus === 'trialing' ? 'En Prueba' : company.subscriptionStatus === 'active' ? 'Activo' : 'Vencido'}
-                                                </Badge>
+                                                {statusInfo && (
+                                                     <Badge variant="default" className={statusInfo.className}>
+                                                        {statusInfo.text}
+                                                    </Badge>
+                                                )}
                                             </div>
-                                             {company.trialEndsAt && (
+                                             {company.trialEndsAt && new Date(company.trialEndsAt) > new Date() && (
                                                 <div className="flex justify-between">
                                                     <span className="text-muted-foreground">Prueba termina en:</span>
                                                     <span className="font-medium">{new Date(company.trialEndsAt).toLocaleDateString()}</span>
@@ -180,5 +196,3 @@ export default function SubscriptionPage() {
         </>
     )
 }
-
-    
