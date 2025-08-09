@@ -108,13 +108,14 @@ export default function SubscriptionPage() {
 
     return (
         <>
-            {company && plan && (
+            {/* Renderiza el diálogo si la compañía existe, incluso si el plan no. */}
+            {company && (
                 <SupportRequestDialog
                     isOpen={isSupportDialogOpen}
                     onClose={() => setIsSupportDialogOpen(false)}
                     companyId={company.id}
                     companyName={company.name}
-                    planName={plan.name}
+                    planName={plan?.name || 'No Asignado'}
                 />
             )}
             <div className="space-y-8">
@@ -179,3 +180,5 @@ export default function SubscriptionPage() {
         </>
     )
 }
+
+    
