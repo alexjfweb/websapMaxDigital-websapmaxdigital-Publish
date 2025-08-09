@@ -8,10 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, Star, ArrowRight, AlertCircle, XCircle } from 'lucide-react';
+import { Check, Star, ArrowRight, AlertCircle, XCircle, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import SupportRequestDialog from '@/components/support/SupportRequestDialog';
+import type { Company } from '@/types';
+
 
 function SubscriptionSkeleton() {
     return (
@@ -92,7 +94,7 @@ export default function SubscriptionPage() {
         const statusMap: Record<string, { text: string; className: string }> = {
             trialing: { text: "En Prueba", className: "bg-blue-500" },
             active: { text: "Activo", className: "bg-green-500" },
-            pending_payment: { text: "Pago Pendiente", className: "bg-yellow-500" },
+            pending_payment: { text: "Pago Pendiente", className: "bg-yellow-500 text-yellow-900" },
             past_due: { text: "Vencido", className: "bg-red-500" },
             canceled: { text: "Cancelado", className: "bg-gray-500" },
             default: { text: status || "Desconocido", className: "bg-gray-500" }
@@ -122,7 +124,6 @@ export default function SubscriptionPage() {
 
     return (
         <>
-            {/* Renderiza el diálogo si la compañía existe, incluso si el plan no. */}
             {company && (
                 <SupportRequestDialog
                     isOpen={isSupportDialogOpen}
@@ -145,7 +146,7 @@ export default function SubscriptionPage() {
                                 <CardTitle>Tu Plan Actual</CardTitle>
                                 <CardDescription>Este es el plan que tu empresa tiene actualmente.</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-6">
+                            <CardContent className="space-y-4">
                                 {plan && company ? (
                                     <>
                                         <div className="text-center p-6 bg-muted rounded-lg">
@@ -172,11 +173,19 @@ export default function SubscriptionPage() {
                                                 <span className="font-medium">{employees.length} / {plan.maxUsers === -1 ? 'Ilimitados' : plan.maxUsers}</span>
                                             </div>
                                         </div>
+                                         {company.subscriptionStatus === 'pending_payment' && (
+                                            <Button asChild className="w-full bg-primary hover:bg-primary/90">
+                                                <Link href={`/admin/checkout?plan=${plan.slug}`}>
+                                                    <CreditCard className="mr-2 h-4 w-4"/>
+                                                    Realizar Pago
+                                                </Link>
+                                            </Button>
+                                        )}
                                     </>
                                 ) : (
                                     <p className="text-muted-foreground text-center py-4">No tienes un plan o empresa asignada.</p>
                                 )}
-                                 <Button className="w-full" onClick={() => setIsSupportDialogOpen(true)}>
+                                 <Button className="w-full" variant="outline" onClick={() => setIsSupportDialogOpen(true)}>
                                     Contactar a Soporte
                                 </Button>
                             </CardContent>
