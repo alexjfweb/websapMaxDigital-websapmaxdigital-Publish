@@ -74,10 +74,26 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     mutate();
   }, [mutate]);
 
-  // Si no hay companyId, no hay nada que renderizar o procesar aún
+  // Si no hay companyId, los componentes hijos no deben intentar usar el contexto que depende de él.
+  // Renderizamos los children, pero el valor del contexto reflejará que no hay datos.
+  // El Dashboard y otros componentes deben manejar el estado de carga.
   if (!shouldFetch && currentUser.role !== 'guest') {
-    return <>{children}</>;
+    // Proporcionar un contexto "vacío" mientras se espera companyId, para evitar el error.
+    const emptyContextValue: OrderContextType = {
+      orders: [],
+      addOrder: async () => '',
+      updateOrder: async () => {},
+      loading: true, // Se considera cargando hasta que haya un companyId
+      error: null,
+      refreshOrders: () => {},
+    };
+    return (
+       <OrderContext.Provider value={emptyContextValue}>
+            {children}
+        </OrderContext.Provider>
+    );
   }
+
 
   return (
     <OrderContext.Provider value={{ orders, addOrder, updateOrder, loading: isLoading, error, refreshOrders: mutate }}>
