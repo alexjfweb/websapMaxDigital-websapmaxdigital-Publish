@@ -71,17 +71,24 @@ class NavigationService {
   /**
    * Fetches the navigation configuration from Firestore.
    * If it doesn't exist, it returns a default (empty) configuration object.
+   * It also merges new items from the base config if they are missing in the stored config.
    * @returns A promise that resolves to an object containing sidebar and footer items.
    */
-  async getNavigationConfig(): Promise<NavConfig> {
+  async getNavigationConfig(baseItems: { sidebarItems: any[], footerItems: any[] } = { sidebarItems: [], footerItems: [] }): Promise<NavConfig> {
     const defaultConfig: NavConfig = { sidebarItems: [], footerItems: [] };
     try {
       const docSnap = await getDoc(this.navConfigDocRef);
       if (docSnap.exists()) {
-        const data = docSnap.data();
-        // Ensure data is sorted by order
-        const sidebarItems = (data.sidebarItems || []).sort((a: NavItemConfig, b: NavItemConfig) => a.order - b.order);
-        const footerItems = (data.footerItems || []).sort((a: NavItemConfig, b: NavItemConfig) => a.order - b.order);
+        const storedConfig = docSnap.data() as NavConfig;
+        
+        // Merge stored config with base config to add new items
+        const mergedSidebar = this.mergeItems(storedConfig.sidebarItems || [], baseItems.sidebarItems);
+        const mergedFooter = this.mergeItems(storedConfig.footerItems || [], baseItems.footerItems);
+
+        // Sort items by order property
+        const sidebarItems = mergedSidebar.sort((a, b) => a.order - b.order);
+        const footerItems = mergedFooter.sort((a, b) => a.order - b.order);
+        
         return { sidebarItems, footerItems };
       } else {
         // If no config exists, return an empty config. The hook will initialize it.
@@ -91,6 +98,31 @@ class NavigationService {
       console.error("Error fetching navigation config:", error);
       throw error;
     }
+  }
+
+  /**
+   * Merges stored navigation items with base items, adding new ones from base.
+   */
+  private mergeItems(storedItems: NavItemConfig[], baseItems: any[]): NavItemConfig[] {
+    const storedIds = new Set(storedItems.map(item => item.id));
+    const newItems: NavItemConfig[] = [];
+
+    baseItems.forEach(baseItem => {
+      if (!storedIds.has(baseItem.id)) {
+        newItems.push({
+          id: baseItem.id,
+          label: baseItem.labelKey,
+          tooltip: baseItem.tooltipKey || baseItem.labelKey,
+          visible: true,
+          order: baseItem.order ?? storedItems.length + newItems.length,
+          roles: baseItem.allowedRoles,
+          href: baseItem.href,
+          icon: baseItem.icon.displayName || baseItem.icon.name,
+        });
+      }
+    });
+
+    return [...storedItems, ...newItems];
   }
 
   /**

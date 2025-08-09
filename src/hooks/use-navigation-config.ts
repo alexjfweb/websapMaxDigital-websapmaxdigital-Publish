@@ -2,40 +2,36 @@
 "use client";
 
 import useSWR from 'swr';
-import { navigationService, NavItemConfig } from '@/services/navigation-service';
-
-export interface NavConfig {
-  sidebarItems: NavItemConfig[];
-  footerItems: NavItemConfig[];
-}
+import { navigationService, NavItemConfig, NavConfig } from '@/services/navigation-service';
 
 // Key for SWR to cache the navigation config
 const SWR_KEY = 'navigation-config';
-
-// Fetcher function that SWR will use
-const fetcher = (key: string): Promise<NavConfig> => {
-    if (key === SWR_KEY) {
-        return navigationService.getNavigationConfig();
-    }
-    throw new Error('Invalid key for navigation config fetcher');
-};
 
 /**
  * Hook to get and manage the application's navigation configuration.
  * It fetches the config from Firestore, provides loading/error states,
  * and includes a function to update the configuration.
  * 
- * @param baseNavItems The default navigation structure, used if no config is found in the DB.
+ * @param baseSidebarItems The default sidebar navigation structure.
+ * @param baseFooterItems The default footer navigation structure.
  * @returns An object with the navigation config, loading state, error state, and an update function.
  */
-export function useNavigationConfig(baseNavItems?: any[], baseFooterItems?: any[]) {
+export function useNavigationConfig(baseSidebarItems: any[] = [], baseFooterItems: any[] = []) {
+  // Fetcher function that SWR will use, passing base items to it.
+  const fetcher = (key: string): Promise<NavConfig> => {
+      if (key === SWR_KEY) {
+          return navigationService.getNavigationConfig({ sidebarItems: baseSidebarItems, footerItems: baseFooterItems });
+      }
+      throw new Error('Invalid key for navigation config fetcher');
+  };
+  
   const { data, error, isLoading, mutate } = useSWR(SWR_KEY, fetcher, {
     revalidateOnFocus: false, // Avoid re-fetching on window focus
     onSuccess: (data) => {
-        if (!data || data.sidebarItems.length === 0 || data.footerItems.length === 0) {
-            // If DB is empty or incomplete, initialize it with the base items
-            console.log("No/incomplete navigation config found, initializing with defaults.");
-            navigationService.initializeDefaultConfig(baseNavItems || [], baseFooterItems || []);
+        if (!data || data.sidebarItems.length === 0) {
+            // If DB is empty, initialize it with the base items
+            console.log("No navigation config found, initializing with defaults.");
+            navigationService.initializeDefaultConfig(baseSidebarItems, baseFooterItems);
         }
     }
   });
@@ -62,7 +58,10 @@ export function useNavigationConfig(baseNavItems?: any[], baseFooterItems?: any[
     }
   };
 
-  const defaultConfig = { sidebarItems: [], footerItems: [] };
+  const defaultConfig: NavConfig = { 
+    sidebarItems: baseSidebarItems.map((item, index) => ({ ...item, order: index, id: item.id || `temp-${index}` })), 
+    footerItems: baseFooterItems.map((item, index) => ({ ...item, order: index, id: item.id || `temp-footer-${index}` })) 
+  };
 
   return {
     navConfig: data || defaultConfig,

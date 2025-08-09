@@ -133,6 +133,7 @@ export default function NavigationMenu({ role }: NavigationMenuProps) {
         const userRole = role ? role.toLowerCase() : 'guest';
         return item.roles.includes(userRole) && item.visible;
       })
+      .sort((a, b) => a.order - b.order) // Ensure sorting is applied
       .map((item) => {
         const Icon = iconMap[item.icon as string] || LayoutDashboard;
         const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
