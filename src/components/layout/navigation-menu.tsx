@@ -60,7 +60,7 @@ const baseSidebarItems: BaseNavItem[] = [
   { id: 'sa-companies', href: '/superadmin/companies', labelKey: 'Empresas', icon: Store, allowedRoles: ['superadmin'], tooltipKey: 'Gestión de empresas' },
   { id: 'sa-users', href: '/superadmin/users', labelKey: 'Usuarios', icon: Users, allowedRoles: ['superadmin'], tooltipKey: 'Gestión de usuarios' },
   { id: 'sa-plans', href: '/superadmin/subscription-plans', labelKey: 'Planes', icon: Gem, allowedRoles: ['superadmin'], tooltipKey: 'Gestionar planes' },
-  { id: 'sa-payments', href: '/superadmin/payments', labelKey: 'Pagos', icon: CreditCard, allowedRoles: ['superadmin'], tooltipKey: 'Gestionar pagos pendientes' },
+  { id: 'sa-payments', href: '/superadmin/payments', labelKey: 'Pagos Pendientes', icon: CreditCard, allowedRoles: ['superadmin'], tooltipKey: 'Gestionar pagos pendientes' },
   { id: 'sa-navigation', href: '/superadmin/navigation', labelKey: 'Navegación', icon: Navigation, allowedRoles: ['superadmin'], tooltipKey: 'Configurar navegación' },
   { id: 'sa-reminders', href: '/superadmin/reminders', labelKey: 'Recordatorios', icon: BellRing, allowedRoles: ['superadmin'], tooltipKey: 'Recordatorios de pago' },
   { id: 'sa-support', href: '/superadmin/support', labelKey: 'Soporte', icon: LifeBuoy, allowedRoles: ['superadmin'], tooltipKey: 'Gestión de Soporte' },
