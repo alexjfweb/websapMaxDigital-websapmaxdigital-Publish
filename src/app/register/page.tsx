@@ -19,9 +19,9 @@ import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
 import { UserPlus, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createUserWithEmailAndPassword, getAuth, User as FirebaseUser } from "firebase/auth";
+import { createUserWithEmailAndPassword, getAuth, User as FirebaseUser, updateProfile } from "firebase/auth";
 import { getFirebaseApp, db } from "@/lib/firebase"; 
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, updateDoc } from "firebase/firestore";
 import type { UserRole, User, Company } from "@/types";
 import React, { Suspense, useState } from "react";
 import { companyService } from "@/services/company-service";
@@ -79,7 +79,6 @@ function RegisterForm() {
     let firebaseUser: FirebaseUser | null = null;
     
     try {
-      // --- PASO 1: Crear usuario en Firebase Auth ---
       const app = getFirebaseApp();
       const auth = getAuth(app);
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
@@ -89,26 +88,7 @@ function RegisterForm() {
       const role: UserRole = isSuperAdmin ? 'superadmin' : 'admin';
       let companyId: string | undefined = undefined;
 
-      // --- PASO 2: Crear el documento de usuario en Firestore (Operación crítica) ---
-      // Si esto falla, el `catch` inferior se encargará de borrar el usuario de Auth.
-      const userData: Omit<User, 'id'> = {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email || values.email,
-        username: values.email.split('@')[0],
-        firstName: values.name,
-        lastName: values.lastName,
-        role: role,
-        companyId: undefined, // Se asignará después si aplica
-        businessName: values.businessName || '',
-        status: 'active',
-        registrationDate: new Date().toISOString(),
-        isActive: true,
-        avatarUrl: `https://placehold.co/100x100.png?text=${values.name.charAt(0)}`,
-      };
-      
-      await setDoc(doc(db, "users", firebaseUser.uid), userData);
-
-      // --- PASO 3: Si es admin, crear la compañía y vincularla ---
+      // --- PASO 1: Si es admin, crear la compañía PRIMERO para obtener el ID ---
       if (role === 'admin') {
         if (!values.businessName || !values.ruc) {
             throw new Error("El nombre de la empresa y el RUC son necesarios para el registro de administradores.");
@@ -126,15 +106,29 @@ function RegisterForm() {
         };
         
         console.log("Intentando crear compañía con datos:", companyData);
-        // Pasamos la info del usuario para la auditoría
         const createdCompany = await companyService.createCompany(companyData, { uid: firebaseUser.uid, email: firebaseUser.email! });
         companyId = createdCompany.id;
-        
-        // Actualizar el documento del usuario con el ID de la compañía
-        await updateDoc(doc(db, "users", firebaseUser.uid), { companyId: companyId });
       }
-
-      // --- PASO 4: Éxito total, notificar y redirigir ---
+      
+      // --- PASO 2: Crear el documento de usuario en Firestore con TODOS los datos listos ---
+      const userData: Omit<User, 'id'> = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email || values.email,
+        username: values.email.split('@')[0],
+        firstName: values.name,
+        lastName: values.lastName,
+        role: role,
+        companyId: companyId, // AHORA sí tenemos el ID o es undefined para superadmin, lo cual es correcto.
+        businessName: values.businessName || '',
+        status: 'active',
+        registrationDate: new Date().toISOString(),
+        isActive: true,
+        avatarUrl: `https://placehold.co/100x100.png?text=${values.name.charAt(0)}`,
+      };
+      
+      await setDoc(doc(db, "users", firebaseUser.uid), userData);
+      
+      // --- PASO 3: Éxito total, notificar y redirigir ---
       toast({
         title: '¡Registro Exitoso!',
         description: `Serás redirigido para continuar.`,
@@ -147,10 +141,7 @@ function RegisterForm() {
       }
 
     } catch (error) {
-      // --- MANEJO DE ERRORES Y ROLLBACK ---
       if (firebaseUser) {
-        // Si la creación del usuario en Auth fue exitosa pero algo más falló,
-        // lo eliminamos para evitar cuentas huérfanas.
         await firebaseUser.delete();
         console.log("Usuario de Auth revertido exitosamente debido a un error en el flujo de registro posterior.");
       }
