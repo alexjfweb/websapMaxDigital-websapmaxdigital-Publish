@@ -96,13 +96,9 @@ class CompanyService {
     
     const docRef = await addDoc(coll, companyToCreate);
     
-    // Construir el objeto completo de la nueva compañía para el log y el retorno
-    const newCompany: Company = {
-      id: docRef.id,
-      ...companyData,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    // Obtenemos el documento recién creado para obtener los timestamps resueltos
+    const newDocSnap = await getDoc(docRef);
+    const newCompany = { id: newDocSnap.id, ...newDocSnap.data() } as Company;
     
     await auditService.log({
       entity: 'companies',
@@ -155,5 +151,3 @@ class CompanyService {
 }
 
 export const companyService = new CompanyService();
-
-    

@@ -92,7 +92,11 @@ function RegisterForm() {
       const role: UserRole = isSuperAdmin ? 'superadmin' : 'admin';
       let companyId: string | undefined = undefined;
 
-      if (role === 'admin' && values.businessName && values.ruc) {
+      if (role === 'admin') {
+        if (!values.businessName || !values.ruc) {
+            throw new Error("El nombre de la empresa y el RUC son necesarios para el registro de administradores.");
+        }
+        
         const companyData: Omit<Company, 'id' | 'createdAt' | 'updatedAt'> = {
             name: values.businessName,
             email: values.email,
@@ -104,9 +108,15 @@ function RegisterForm() {
             location: '', // Otros campos se pueden llenar después
         };
         
-        const createdCompany = await companyService.createCompany(companyData, { uid: firebaseUser.uid, email: firebaseUser.email! });
-        companyId = createdCompany.id;
-
+        try {
+            console.log("Intentando crear compañía con datos:", companyData);
+            const createdCompany = await companyService.createCompany(companyData, { uid: firebaseUser.uid, email: firebaseUser.email! });
+            companyId = createdCompany.id;
+            console.log("Compañía creada con ID:", companyId);
+        } catch (companyError) {
+            console.error("Error al crear la compañía:", companyError);
+            throw new Error("No se pudo registrar la compañía. Por favor, verifique los datos.");
+        }
       }
 
       const userData: Omit<User, 'id'> = {
@@ -138,17 +148,18 @@ function RegisterForm() {
       let errorMessage = err.message || 'Hubo un error al crear la cuenta.';
       
       if (err.code === 'auth/email-already-in-use') {
-        setErrorState({
-            title: "Error de Registro",
-            message: "El correo electrónico que ingresaste ya está asociado con otra cuenta. Por favor, intenta con otro correo o inicia sesión si ya tienes una cuenta.",
-        });
-      } else {
-        toast({ title: 'Error de Registro', description: errorMessage, variant: "destructive" });
+        errorMessage = "El correo electrónico que ingresaste ya está asociado con otra cuenta. Por favor, intenta con otro correo o inicia sesión si ya tienes una cuenta.";
       }
+      
+      setErrorState({
+            title: "Error de Registro",
+            message: errorMessage,
+      });
       
       if (firebaseUser) {
         try {
           await firebaseUser.delete();
+          console.log("Usuario de Auth revertido exitosamente debido a un error en el flujo de registro.");
         } catch (rollbackError) {
           console.error("Falló el rollback del usuario de Auth:", rollbackError);
         }
@@ -310,5 +321,3 @@ export default function RegisterPage() {
     </Suspense>
   );
 }
-
-    
