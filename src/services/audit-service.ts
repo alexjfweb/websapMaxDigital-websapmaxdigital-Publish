@@ -36,6 +36,10 @@ class AuditService {
       return obj;
     }
 
+    if (obj instanceof Timestamp || obj instanceof Date) {
+        return obj;
+    }
+
     if (Array.isArray(obj)) {
       return obj.map(item => this.cleanupObject(item));
     }
