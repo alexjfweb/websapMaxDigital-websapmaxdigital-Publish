@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card'; 
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 
 const PlanSkeleton = () => (
   <motion.section
@@ -190,7 +191,7 @@ export default function LandingPage() {
                     <Card key={sub.id} className="text-left bg-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out hover:scale-105">
                       {sub.imageUrl && (
                         <CardHeader className="p-0">
-                          <img src={sub.imageUrl} alt={sub.title} className="w-full h-40 object-cover rounded-t-lg" />
+                          <Image src={sub.imageUrl} alt={sub.title} className="w-full h-40 object-cover rounded-t-lg" width={400} height={200} />
                         </CardHeader>
                       )}
                       <CardContent className="p-6">

@@ -90,13 +90,7 @@ function RegisterForm() {
       let companyId: string | undefined = undefined;
 
       if (role === 'admin' && values.businessName) {
-        
-        // Se crea la compañía primero para obtener su ID
-        const companyDocRef = doc(collection(db, "companies"));
-        companyId = companyDocRef.id;
-
-        const companyData: Omit<Company, 'createdAt'|'updatedAt'> = {
-            id: companyId,
+        const companyData = {
             name: values.businessName,
             email: values.email,
             status: 'active',
@@ -107,7 +101,8 @@ function RegisterForm() {
             location: '',
         };
         
-        await setDoc(companyDocRef, { ...companyData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+        const createdCompany = await companyService.createCompany(companyData as any, { uid: firebaseUser.uid, email: firebaseUser.email! });
+        companyId = createdCompany.id;
 
         await dishService.createSampleDishesForCompany(companyId);
       }
