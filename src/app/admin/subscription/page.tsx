@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Check, Star, ArrowRight, AlertCircle, XCircle } from 'lucide-react';
 import Link from 'next/link';
+import { useState } from 'react';
+import SupportRequestDialog from '@/components/support/SupportRequestDialog';
 
 function SubscriptionSkeleton() {
     return (
@@ -80,9 +82,8 @@ function PlanCard({ plan, isCurrent, isPopular }: { plan: any, isCurrent?: boole
 export default function SubscriptionPage() {
     const { subscription, isLoading: isLoadingSubscription, error: errorSubscription } = useSubscription();
     const { plans, isLoading: isLoadingPlans, error: errorPlans } = usePublicLandingPlans();
-    
-    // El hook de empleados ahora se puede llamar sin miedo a errores si no hay ID de compañía
     const { employees, isLoading: isLoadingEmployees } = useEmployees(subscription?.company?.id);
+    const [isSupportDialogOpen, setIsSupportDialogOpen] = useState(false);
 
     const isLoading = isLoadingSubscription || isLoadingPlans || isLoadingEmployees;
     const error = errorSubscription || errorPlans;
@@ -101,73 +102,80 @@ export default function SubscriptionPage() {
         )
     }
 
-    // Aseguramos que subscription y company no sean nulos para evitar errores
     const { company, plan } = subscription || {};
     
-    // Filtramos los planes para no mostrar el plan actual en la lista de "otros planes"
     const otherPlans = (plans || []).filter(p => p.id !== plan?.id);
 
     return (
-        <div className="space-y-8">
-            <div>
-                <h1 className="text-3xl font-bold text-primary">Gestiona tu Suscripción</h1>
-                <p className="text-lg text-muted-foreground">Consulta tu plan actual y explora otras opciones para crecer.</p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                <div className="lg:col-span-1">
-                    <Card className="sticky top-6">
-                        <CardHeader>
-                            <CardTitle>Tu Plan Actual</CardTitle>
-                            <CardDescription>Este es el plan que tu empresa tiene actualmente.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            {plan && company ? (
-                                <>
-                                    <div className="text-center p-6 bg-muted rounded-lg">
-                                        <h3 className="text-3xl font-bold text-primary">{plan.name}</h3>
-                                        <p className="text-4xl font-extrabold mt-2">${plan.price}<span className="text-base font-normal text-muted-foreground">/mes</span></p>
-                                    </div>
-                                    <div className="space-y-3 text-sm">
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Estado:</span>
-                                            <Badge variant={company.subscriptionStatus === 'active' || company.subscriptionStatus === 'trialing' ? 'default' : 'destructive'} className={company.subscriptionStatus === 'active' || company.subscriptionStatus === 'trialing' ? 'bg-green-500' : ''}>
-                                                {company.subscriptionStatus === 'trialing' ? 'En Prueba' : company.subscriptionStatus === 'active' ? 'Activo' : 'Vencido'}
-                                            </Badge>
-                                        </div>
-                                         {company.trialEndsAt && (
-                                            <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Prueba termina en:</span>
-                                                <span className="font-medium">{new Date(company.trialEndsAt).toLocaleDateString()}</span>
-                                            </div>
-                                        )}
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Límite de empleados:</span>
-                                            <span className="font-medium">{employees.length} / {plan.maxUsers === -1 ? 'Ilimitados' : plan.maxUsers}</span>
-                                        </div>
-                                    </div>
-                                </>
-                            ) : (
-                                <p className="text-muted-foreground text-center py-4">No tienes un plan o empresa asignada.</p>
-                            )}
-                             <Button className="w-full" asChild>
-                                <Link href="#">
-                                    Contactar a Soporte
-                                </Link>
-                            </Button>
-                        </CardContent>
-                    </Card>
+        <>
+            {company && plan && (
+                <SupportRequestDialog
+                    isOpen={isSupportDialogOpen}
+                    onClose={() => setIsSupportDialogOpen(false)}
+                    companyId={company.id}
+                    companyName={company.name}
+                    planName={plan.name}
+                />
+            )}
+            <div className="space-y-8">
+                <div>
+                    <h1 className="text-3xl font-bold text-primary">Gestiona tu Suscripción</h1>
+                    <p className="text-lg text-muted-foreground">Consulta tu plan actual y explora otras opciones para crecer.</p>
                 </div>
 
-                <div className="lg:col-span-2">
-                    <h2 className="text-2xl font-bold mb-6">Explora otros planes</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {otherPlans.map(p => (
-                            <PlanCard key={p.id} plan={p} isPopular={p.isPopular}/>
-                        ))}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                    <div className="lg:col-span-1">
+                        <Card className="sticky top-6">
+                            <CardHeader>
+                                <CardTitle>Tu Plan Actual</CardTitle>
+                                <CardDescription>Este es el plan que tu empresa tiene actualmente.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {plan && company ? (
+                                    <>
+                                        <div className="text-center p-6 bg-muted rounded-lg">
+                                            <h3 className="text-3xl font-bold text-primary">{plan.name}</h3>
+                                            <p className="text-4xl font-extrabold mt-2">${plan.price}<span className="text-base font-normal text-muted-foreground">/mes</span></p>
+                                        </div>
+                                        <div className="space-y-3 text-sm">
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Estado:</span>
+                                                <Badge variant={company.subscriptionStatus === 'active' || company.subscriptionStatus === 'trialing' ? 'default' : 'destructive'} className={company.subscriptionStatus === 'active' || company.subscriptionStatus === 'trialing' ? 'bg-green-500' : ''}>
+                                                    {company.subscriptionStatus === 'trialing' ? 'En Prueba' : company.subscriptionStatus === 'active' ? 'Activo' : 'Vencido'}
+                                                </Badge>
+                                            </div>
+                                             {company.trialEndsAt && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-muted-foreground">Prueba termina en:</span>
+                                                    <span className="font-medium">{new Date(company.trialEndsAt).toLocaleDateString()}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Límite de empleados:</span>
+                                                <span className="font-medium">{employees.length} / {plan.maxUsers === -1 ? 'Ilimitados' : plan.maxUsers}</span>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <p className="text-muted-foreground text-center py-4">No tienes un plan o empresa asignada.</p>
+                                )}
+                                 <Button className="w-full" onClick={() => setIsSupportDialogOpen(true)}>
+                                    Contactar a Soporte
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    <div className="lg:col-span-2">
+                        <h2 className="text-2xl font-bold mb-6">Explora otros planes</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {otherPlans.map(p => (
+                                <PlanCard key={p.id} plan={p} isPopular={p.isPopular}/>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     )
 }

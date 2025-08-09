@@ -277,3 +277,34 @@ export interface AuditLog {
   ipAddress?: string;
   userAgent?: string;
 }
+
+
+// Nuevo tipo para Tickets de Soporte
+export interface SupportTicket {
+  id: string;
+  companyId: string;
+  companyName: string;
+  planName: string;
+  userId: string;
+  userEmail: string;
+  subject: string;
+  message: string;
+  status: 'open' | 'in_progress' | 'closed';
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  replies?: {
+    userId: string;
+    message: string;
+    createdAt: Timestamp;
+  }[];
+}
+
+export interface CreateSupportTicket {
+  companyId: string;
+  companyName: string;
+  planName: string;
+  userId: string;
+  userEmail: string;
+  subject: string;
+  message: string;
+}

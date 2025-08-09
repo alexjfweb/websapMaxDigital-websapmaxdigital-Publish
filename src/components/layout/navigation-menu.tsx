@@ -35,7 +35,8 @@ import {
   Archive,
   CreditCard,
   Rocket,
-  Navigation
+  Navigation,
+  LifeBuoy
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useNavigationConfig } from '@/hooks/use-navigation-config';
@@ -62,6 +63,7 @@ const baseSidebarItems: BaseNavItem[] = [
   { id: 'sa-navigation', href: '/superadmin/navigation', labelKey: 'Navegación', icon: Navigation, allowedRoles: ['superadmin'], tooltipKey: 'Configurar navegación' },
   { id: 'sa-reminders', href: '/superadmin/reminders', labelKey: 'Recordatorios', icon: BellRing, allowedRoles: ['superadmin'], tooltipKey: 'Recordatorios de pago' },
   { id: 'sa-users', href: '/superadmin/users', labelKey: 'Usuarios', icon: Users, allowedRoles: ['superadmin'], tooltipKey: 'Gestión de usuarios' },
+  { id: 'sa-support', href: '/superadmin/support', labelKey: 'Soporte', icon: LifeBuoy, allowedRoles: ['superadmin'], tooltipKey: 'Gestión de Soporte' },
   { id: 'sa-audit', href: '/superadmin/audit', labelKey: 'Auditoría', icon: Archive, allowedRoles: ['superadmin'], tooltipKey: 'Registros de auditoría' },
   { id: 'sa-maintenance', href: '/superadmin/maintenance', labelKey: 'Mantenimiento', icon: Wrench, allowedRoles: ['superadmin'], tooltipKey: 'Mantenimiento' },
   { id: 'sa-database', href: '/superadmin/database', labelKey: 'Base de datos', icon: Database, allowedRoles: ['superadmin'], tooltipKey: 'Estado de la base de datos' },
@@ -101,7 +103,7 @@ const baseFooterItems: BaseNavItem[] = [
 const iconMap: { [key: string]: React.ElementType } = {
   ShoppingBag, Users, Settings, ClipboardList, BookUser, ShieldCheck, LayoutDashboard, Utensils,
   Share2, UserCog, Server, History, CalendarCheck, Megaphone, LogIn, UserPlus, Store, BarChart3,
-  Wrench, Database, Gem, BellRing, Palette, Archive, CreditCard, Rocket, Navigation
+  Wrench, Database, Gem, BellRing, Palette, Archive, CreditCard, Rocket, Navigation, LifeBuoy
 };
 
 interface NavigationMenuProps {
