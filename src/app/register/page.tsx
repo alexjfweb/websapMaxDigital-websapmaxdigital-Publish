@@ -19,9 +19,9 @@ import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
 import { UserPlus, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createUserWithEmailAndPassword, getAuth, User as FirebaseUser, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, getAuth, User as FirebaseUser, signOut, signInWithEmailAndPassword } from "firebase/auth";
 import { getFirebaseApp, db } from "@/lib/firebase"; 
-import { doc, setDoc, updateDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import type { UserRole, User, Company } from "@/types";
 import React, { Suspense, useState } from "react";
 import { companyService } from "@/services/company-service";
@@ -76,22 +76,27 @@ function RegisterForm() {
   async function onSubmit(values: z.infer<typeof registerFormSchema>) {
     setIsSubmitting(true);
     setErrorState(null);
+    const app = getFirebaseApp();
+    const auth = getAuth(app);
     let firebaseUser: FirebaseUser | null = null;
     
     try {
-      const app = getFirebaseApp();
-      const auth = getAuth(app);
+      // 1. Crear usuario en Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       firebaseUser = userCredential.user;
-      
+
+      // 2. 🔥 CERRAR SESIÓN INMEDIATAMENTE para evitar race condition con SessionProvider
+      await signOut(auth);
+      console.log('🔵 Sesión cerrada temporalmente para evitar race condition.');
+
+      // 3. Crear compañía (si aplica) y obtener su ID
+      let companyId: string | undefined = undefined;
       const isSuperAdmin = values.email.toLowerCase() === SUPERADMIN_EMAIL;
       const role: UserRole = isSuperAdmin ? 'superadmin' : 'admin';
-      let companyId: string | undefined = undefined;
-
-      // --- PASO 1: Si es admin, crear la compañía PRIMERO para obtener el ID ---
+      
       if (role === 'admin') {
         if (!values.businessName || !values.ruc) {
-            throw new Error("El nombre de la empresa y el RUC son necesarios para el registro de administradores.");
+            throw new Error("El nombre de la empresa y el RUC son necesarios para administradores.");
         }
         
         const companyData: Omit<Company, 'id' | 'createdAt' | 'updatedAt'> = {
@@ -105,12 +110,13 @@ function RegisterForm() {
             location: '',
         };
         
-        console.log("Intentando crear compañía con datos:", companyData);
+        console.log("📝 Intentando crear compañía con datos:", companyData);
         const createdCompany = await companyService.createCompany(companyData, { uid: firebaseUser.uid, email: firebaseUser.email! });
         companyId = createdCompany.id;
+        console.log(`✅ Compañía creada con ID: ${companyId}`);
       }
       
-      // --- PASO 2: Crear el documento de usuario en Firestore con TODOS los datos listos ---
+      // 4. Crear el documento del usuario en Firestore con TODOS los datos listos
       const userData: Omit<User, 'id'> = {
         uid: firebaseUser.uid,
         email: firebaseUser.email || values.email,
@@ -118,7 +124,7 @@ function RegisterForm() {
         firstName: values.name,
         lastName: values.lastName,
         role: role,
-        companyId: companyId, // AHORA sí tenemos el ID o es undefined para superadmin, lo cual es correcto.
+        companyId: companyId || null, // Usar null en lugar de undefined
         businessName: values.businessName || '',
         status: 'active',
         registrationDate: new Date().toISOString(),
@@ -126,9 +132,14 @@ function RegisterForm() {
         avatarUrl: `https://placehold.co/100x100.png?text=${values.name.charAt(0)}`,
       };
       
+      console.log("📝 Guardando usuario en Firestore:", userData);
       await setDoc(doc(db, "users", firebaseUser.uid), userData);
+      console.log("✅ Usuario guardado exitosamente en Firestore");
+
+      // 5. ✅ INICIAR SESIÓN DE NUEVO ahora que todo está listo
+      await signInWithEmailAndPassword(auth, values.email, values.password);
+      console.log('✅ Sesión re-iniciada. Proceso de registro completo.');
       
-      // --- PASO 3: Éxito total, notificar y redirigir ---
       toast({
         title: '¡Registro Exitoso!',
         description: `Serás redirigido para continuar.`,
@@ -141,18 +152,13 @@ function RegisterForm() {
       }
 
     } catch (error) {
-      if (firebaseUser) {
-        await firebaseUser.delete();
-        console.log("Usuario de Auth revertido exitosamente debido a un error en el flujo de registro posterior.");
-      }
-
+      // Si algo falla, el usuario ya está deslogueado, por lo que no hay que revertir el auth.
+      console.error("Error detallado en el registro:", error);
       const err = error as { code?: string; message?: string };
       let errorMessage = err.message || 'Hubo un error al crear la cuenta.';
       
       if (err.code === 'auth/email-already-in-use') {
         errorMessage = "El correo electrónico que ingresaste ya está en uso. Por favor, intenta con otro o inicia sesión si ya tienes una cuenta.";
-      } else {
-        console.error("Error detallado en el registro:", error);
       }
       
       setErrorState({
