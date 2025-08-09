@@ -10,7 +10,9 @@ import {
   where,
   serverTimestamp,
   Timestamp,
-  addDoc
+  addDoc,
+  WriteBatch,
+  writeBatch
 } from 'firebase/firestore';
 import type { Company } from '@/types';
 import { auditService } from './audit-service';
@@ -90,13 +92,17 @@ class CompanyService {
 
     const companyToCreate = {
       ...companyData,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
     
-    const docRef = await addDoc(coll, companyToCreate);
+    const docRef = await addDoc(coll, {
+      ...companyData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
     
-    const newCompanyData = {
+    const newCompanyData: Company = {
       id: docRef.id,
       ...companyData,
       createdAt: new Date().toISOString(),

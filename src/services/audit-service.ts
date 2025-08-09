@@ -62,18 +62,21 @@ class AuditService {
    */
   async log(data: LogInput): Promise<string> {
     try {
+      // Limpiar el objeto de datos antes de enviarlo a Firestore
+      const cleanedData = this.cleanupObject(data);
+
       const logData = {
-        ...data,
+        ...cleanedData,
         timestamp: serverTimestamp(),
       };
-
-      const cleanedLogData = this.cleanupObject(logData);
-
-      const docRef = await addDoc(collection(db, this.AUDIT_COLLECTION), cleanedLogData);
+      
+      const docRef = await addDoc(collection(db, this.AUDIT_COLLECTION), logData);
       return docRef.id;
     } catch (error) {
       console.error("Error al registrar el log de auditoría:", error);
-      throw error; // Relanzar el error para que el flujo que lo llama sepa que falló.
+      // No relanzar el error para no interrumpir el flujo principal si solo falla la auditoría.
+      // En un sistema crítico, se podría manejar con una cola de reintentos.
+      return 'log-failed';
     }
   }
 
@@ -82,7 +85,7 @@ class AuditService {
    */
   async getLogs(options: { entity?: string; action?: string; limit?: number } = {}): Promise<AuditLog[]> {
     const coll = collection(db, this.AUDIT_COLLECTION);
-    const queryConstraints = [orderBy('timestamp', 'desc')];
+    const queryConstraints: any[] = [orderBy('timestamp', 'desc')];
     
     if (options.entity) {
       queryConstraints.push(where('entity', '==', options.entity));
