@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, serverTimestamp, where, orderBy, limit } from 'firebase/firestore';
 import type { Timestamp } from 'firebase/firestore';
@@ -66,15 +67,13 @@ class AuditService {
         timestamp: serverTimestamp(),
       };
 
-      // Limpiar cualquier propiedad 'undefined' antes de enviar a Firestore
       const cleanedLogData = this.cleanupObject(logData);
 
       const docRef = await addDoc(collection(db, this.AUDIT_COLLECTION), cleanedLogData);
       return docRef.id;
     } catch (error) {
       console.error("Error al registrar el log de auditoría:", error);
-      // No relanzar el error para no interrumpir flujos críticos como el registro
-      return '';
+      throw error; // Relanzar el error para que el flujo que lo llama sepa que falló.
     }
   }
 

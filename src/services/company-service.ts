@@ -88,7 +88,6 @@ class CompanyService {
       throw new Error("El nombre de la empresa y el RUC son obligatorios.");
     }
 
-    // Objeto para guardar en Firestore, usando serverTimestamp
     const companyToCreate = {
       ...companyData,
       createdAt: serverTimestamp(),
@@ -97,8 +96,7 @@ class CompanyService {
     
     const docRef = await addDoc(coll, companyToCreate);
     
-    // Objeto para auditoría y retorno, usando una fecha ISO estándar
-    const newCompanyForAudit: Company = {
+    const newCompanyData = {
       id: docRef.id,
       ...companyData,
       createdAt: new Date().toISOString(),
@@ -110,10 +108,10 @@ class CompanyService {
       entityId: docRef.id,
       action: 'created',
       performedBy: user,
-      newData: newCompanyForAudit, // Usamos el objeto con la fecha estandarizada
+      newData: newCompanyData,
     });
     
-    return newCompanyForAudit;
+    return newCompanyData;
   }
 
 

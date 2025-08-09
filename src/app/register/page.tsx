@@ -41,16 +41,14 @@ const registerFormSchema = z.object({
   message: "Las contraseñas no coinciden",
   path: ["confirmPassword"],
 }).refine(data => {
-  // Si no es el superadmin, el nombre del negocio y el RUC son obligatorios
   if (data.email.toLowerCase() !== SUPERADMIN_EMAIL) {
-    return data.businessName && data.businessName.length >= 3 && data.ruc && data.ruc.length >= 3;
+    return data.businessName && data.businessName.trim().length >= 3 && data.ruc && data.ruc.trim().length >= 3;
   }
   return true;
 }, {
   message: "El nombre de la empresa y el RUC son obligatorios.",
-  path: ["businessName"], // Puedes asociar el error a un campo general o al primero que falla
+  path: ["businessName"],
 });
-
 
 function RegisterForm() {
   const router = useRouter();
@@ -58,7 +56,6 @@ function RegisterForm() {
   const planId = searchParams.get('plan');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorState, setErrorState] = useState<{ title: string; message: string } | null>(null);
-
 
   const form = useForm<z.infer<typeof registerFormSchema>>({
     resolver: zodResolver(registerFormSchema),
@@ -105,18 +102,13 @@ function RegisterForm() {
             registrationDate: new Date().toISOString(),
             planId: planId || 'plan-gratuito',
             subscriptionStatus: planId ? 'pending_payment' : 'trialing',
-            location: '', // Otros campos se pueden llenar después
+            location: '',
         };
         
-        try {
-            console.log("Intentando crear compañía con datos:", companyData);
-            const createdCompany = await companyService.createCompany(companyData, { uid: firebaseUser.uid, email: firebaseUser.email! });
-            companyId = createdCompany.id;
-            console.log("Compañía creada con ID:", companyId);
-        } catch (companyError) {
-            console.error("Error al crear la compañía:", companyError);
-            throw new Error("No se pudo registrar la compañía. Por favor, verifique los datos.");
-        }
+        console.log("Intentando crear compañía con datos:", companyData);
+        const createdCompany = await companyService.createCompany(companyData, { uid: firebaseUser.uid, email: firebaseUser.email! });
+        companyId = createdCompany.id;
+        console.log("Compañía creada con ID:", companyId);
       }
 
       const userData: Omit<User, 'id'> = {
@@ -138,7 +130,7 @@ function RegisterForm() {
       
       toast({
         title: '¡Registro Exitoso!',
-        description: isSuperAdmin ? `Cuenta de Superadministrador creada.` : `La empresa "${values.businessName}" y su administrador han sido creados.`,
+        description: isSuperAdmin ? 'Cuenta de Superadministrador creada.' : `La empresa "${values.businessName}" y su administrador han sido creados. Serás redirigido para iniciar sesión.`,
       });
 
       router.push('/login');
