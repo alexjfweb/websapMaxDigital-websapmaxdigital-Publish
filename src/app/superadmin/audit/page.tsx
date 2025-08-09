@@ -100,19 +100,26 @@ export default function SuperAdminAuditPage() {
         </TableRow>
       );
     }
-    return filteredLogs.map(log => (
-      <TableRow key={log.id}>
-        <TableCell>{format(log.timestamp.toDate(), "dd/MM/yyyy HH:mm:ss", { locale: es })}</TableCell>
-        <TableCell>{getEntityText(log.entity)}</TableCell>
-        <TableCell>{getActionBadge(log.action)}</TableCell>
-        <TableCell>{log.performedBy.email}</TableCell>
-        <TableCell className="text-right">
-          <Button variant="ghost" size="icon" onClick={() => { setSelectedLog(log); setIsDetailModalOpen(true); }}>
-            <Eye className="h-4 w-4"/>
-          </Button>
-        </TableCell>
-      </TableRow>
-    ));
+    return filteredLogs.map(log => {
+      // Safely convert timestamp to Date object
+      const dateObject = log.timestamp && typeof (log.timestamp as any).toDate === 'function' 
+        ? (log.timestamp as any).toDate() 
+        : new Date(log.timestamp as any);
+
+      return (
+        <TableRow key={log.id}>
+          <TableCell>{format(dateObject, "dd/MM/yyyy HH:mm:ss", { locale: es })}</TableCell>
+          <TableCell>{getEntityText(log.entity)}</TableCell>
+          <TableCell>{getActionBadge(log.action)}</TableCell>
+          <TableCell>{log.performedBy.email}</TableCell>
+          <TableCell className="text-right">
+            <Button variant="ghost" size="icon" onClick={() => { setSelectedLog(log); setIsDetailModalOpen(true); }}>
+              <Eye className="h-4 w-4"/>
+            </Button>
+          </TableCell>
+        </TableRow>
+      );
+    });
   }
 
 
@@ -185,7 +192,7 @@ export default function SuperAdminAuditPage() {
                         <p><strong>ID de Entidad:</strong> {selectedLog.entityId}</p>
                         <p><strong>Acción:</strong> {getActionBadge(selectedLog.action)}</p>
                         <p><strong>Usuario:</strong> {selectedLog.performedBy.email}</p>
-                        <p><strong>Fecha:</strong> {format(selectedLog.timestamp.toDate(), "PPPp", { locale: es })}</p>
+                        <p><strong>Fecha:</strong> {format(new Date(selectedLog.timestamp as any), "PPPp", { locale: es })}</p>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
