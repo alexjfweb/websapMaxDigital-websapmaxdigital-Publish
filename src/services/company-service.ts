@@ -28,6 +28,13 @@ class CompanyService {
     return collection(db, 'companies');
   }
 
+  private parseTimestamp(timestamp: any): string {
+    if (!timestamp) return new Date().toISOString();
+    if (timestamp instanceof Timestamp) return timestamp.toDate().toISOString();
+    if (timestamp.seconds) return new Date(timestamp.seconds * 1000).toISOString();
+    return new Date(timestamp).toISOString();
+  }
+
   /**
    * Obtiene todas las empresas activas de Firestore.
    */
@@ -49,7 +56,10 @@ class CompanyService {
 
         companies.push({
           id: doc.id,
-          ...data
+          ...data,
+          createdAt: this.parseTimestamp(data.createdAt),
+          updatedAt: this.parseTimestamp(data.updatedAt),
+          registrationDate: this.parseTimestamp(data.registrationDate),
         } as Company);
       });
       
@@ -73,7 +83,14 @@ class CompanyService {
     if (!docSnap.exists()) {
       return null;
     }
-    return { id: docSnap.id, ...docSnap.data() } as Company;
+    const data = docSnap.data();
+    return { 
+        id: docSnap.id, 
+        ...data,
+        createdAt: this.parseTimestamp(data.createdAt),
+        updatedAt: this.parseTimestamp(data.updatedAt),
+        registrationDate: this.parseTimestamp(data.registrationDate),
+    } as Company;
   }
   
   /**

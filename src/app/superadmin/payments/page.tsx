@@ -184,9 +184,9 @@ export default function SuperAdminPaymentsPage() {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction 
               onClick={() => {
-                if (actionToConfirm?.action === 'activate') {
+                if (actionToConfirm?.action === 'activate' && actionToConfirm.company) {
                   handleActivatePlan(actionToConfirm.company);
-                } else if (actionToConfirm?.action === 'reject') {
+                } else if (actionToConfirm?.action === 'reject' && actionToConfirm.company) {
                   handleRejectPayment(actionToConfirm.company);
                 }
               }}
