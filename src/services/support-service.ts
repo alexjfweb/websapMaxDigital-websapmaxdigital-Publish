@@ -28,6 +28,8 @@ class SupportService {
       status: 'open' as const,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
+      // Asegurarse de que el campo attachmentUrl esté presente si existe, si no, no se añade.
+      ...(ticketData.attachmentUrl && { attachmentUrl: ticketData.attachmentUrl }),
     };
 
     const docRef = await addDoc(this.ticketsCollection, ticketDoc);

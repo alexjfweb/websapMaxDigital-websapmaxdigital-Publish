@@ -50,9 +50,9 @@ export interface RestaurantProfile {
       accountNumber?: string;
     };
     mercadoPago?: {
-      enabled: boolean;
-      publicKey?: string;
-      accessToken?: string;
+        enabled: boolean;
+        publicKey?: string;
+        accessToken?: string;
     };
   };
 }
@@ -289,6 +289,7 @@ export interface SupportTicket {
   userEmail: string;
   subject: string;
   message: string;
+  attachmentUrl?: string; // URL a la imagen adjunta
   status: 'open' | 'in_progress' | 'closed';
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -307,4 +308,5 @@ export interface CreateSupportTicket {
   userEmail: string;
   subject: string;
   message: string;
+  attachmentUrl?: string; // URL a la imagen adjunta
 }
