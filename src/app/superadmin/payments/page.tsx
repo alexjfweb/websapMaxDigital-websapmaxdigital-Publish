@@ -175,9 +175,9 @@ export default function SuperAdminPaymentsPage() {
                 Confirmar Acción
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {actionToConfirm?.action === 'activate' 
-                ? `¿Estás seguro de que quieres activar el plan para la empresa "${actionToConfirm.company.name}"? Esta acción no se puede deshacer.`
-                : `¿Estás seguro de que quieres rechazar el pago para la empresa "${actionToConfirm.company.name}"?`}
+              {actionToConfirm?.action === 'activate'
+                ? `¿Estás seguro de que quieres activar el plan para la empresa "${actionToConfirm?.company?.name}"? Esta acción no se puede deshacer.`
+                : `¿Estás seguro de que quieres rechazar el pago para la empresa "${actionToConfirm?.company?.name}"?`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
