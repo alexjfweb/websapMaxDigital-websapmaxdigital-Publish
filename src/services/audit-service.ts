@@ -13,7 +13,7 @@ export interface AuditLog {
     uid: string;
     email: string;
   };
-  timestamp: Timestamp;
+  timestamp: Date; // Cambiado a Date para consistencia
   previousData?: any;
   newData?: any;
   diff?: Record<string, { from: any, to: any }>;
@@ -56,6 +56,35 @@ class AuditService {
     }
     return cleanedObj;
   }
+  
+  /**
+   * Convierte de forma segura varios formatos de timestamp a un objeto Date.
+   */
+  private parseTimestamp(timestamp: any): Date {
+    if (!timestamp) {
+      return new Date();
+    }
+    if (timestamp instanceof Timestamp) {
+      return timestamp.toDate();
+    }
+    if (timestamp instanceof Date) {
+      return timestamp;
+    }
+    // Para objetos como { seconds: ..., nanoseconds: ... }
+    if (typeof timestamp === 'object' && timestamp !== null && 'seconds' in timestamp) {
+        return new Date(timestamp.seconds * 1000);
+    }
+    // Para cadenas de fecha ISO o números
+    if (typeof timestamp === 'string' || typeof timestamp === 'number') {
+        const date = new Date(timestamp);
+        if (!isNaN(date.getTime())) {
+            return date;
+        }
+    }
+    console.warn("Formato de fecha no reconocido, devolviendo fecha actual:", timestamp);
+    return new Date(); // Fallback
+  }
+
 
   /**
    * Registra una nueva entrada de auditoría.
@@ -100,7 +129,14 @@ class AuditService {
     const q = query(coll, ...queryConstraints);
     const snapshot = await getDocs(q);
 
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AuditLog));
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return { 
+            id: doc.id,
+            ...data,
+            timestamp: this.parseTimestamp(data.timestamp), // Conversión centralizada
+        } as AuditLog;
+    });
   }
 }
 
