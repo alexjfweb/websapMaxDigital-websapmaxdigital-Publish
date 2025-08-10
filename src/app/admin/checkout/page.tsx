@@ -95,6 +95,19 @@ function CheckoutContent() {
             fetchAvailablePayments(selectedPlan).then(setAvailablePayments);
         }
     }, [selectedPlan]);
+    
+    useEffect(() => {
+        const paymentStatus = searchParams.get('payment');
+        if (paymentStatus === 'cancelled' || paymentStatus === 'failure') {
+            toast({
+                title: 'Pago Cancelado o Fallido',
+                description: 'El proceso de pago no se completó. Por favor, intenta de nuevo.',
+                variant: 'destructive'
+            });
+            // Opcional: limpiar los parámetros de la URL para que el toast no vuelva a aparecer si se recarga la página.
+            router.replace(`/admin/checkout?plan=${planSlug}`, { scroll: false });
+        }
+    }, [searchParams, toast, router, planSlug]);
 
 
     if (isLoading || availablePayments === null) {
