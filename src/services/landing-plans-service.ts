@@ -206,7 +206,6 @@ class LandingPlansService {
    */
   async getPlans(): Promise<LandingPlan[]> {
     try {
-      // Revertido a la consulta original que no causa errores de índice.
       const q = query(
         collection(db, this.COLLECTION_NAME), 
         orderBy('order', 'asc')
