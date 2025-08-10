@@ -42,3 +42,13 @@ Este directorio contiene scripts útiles para poblar la base de datos con datos 
     2.  Abre la consola del navegador.
     3.  Ejecuta `testSystem.runAllTests()`.
     4.  Para limpiar los datos de prueba, ejecuta `testSystem.cleanupTestData()`.
+
+## Automatización (Cron Jobs)
+
+La aplicación incluye un endpoint de API diseñado para ser llamado por un servicio de tareas programadas (como Vercel Cron Jobs, GitHub Actions Scheduler o un servicio externo como `cron-job.org`).
+
+- **Endpoint**: `GET /api/cron`
+- **Propósito**: Ejecuta tareas de mantenimiento críticas:
+    1.  **Degradación de Suscripciones**: Busca pruebas o planes expirados y los cambia automáticamente al "Plan Gratis Lite".
+    2.  **Limpieza de Datos**: Elimina datos no esenciales (pedidos, reservas) de las cuentas que se encuentran en el "Plan Gratis Lite".
+- **Configuración Recomendada**: Programar una llamada a este endpoint cada 24 horas para mantener el sistema actualizado y limpio. Por seguridad, se recomienda proteger el endpoint con un token secreto.
