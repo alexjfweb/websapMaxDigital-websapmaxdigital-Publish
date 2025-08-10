@@ -2,7 +2,7 @@
 "use client";
 
 import useSWR from 'swr';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { LandingPlan } from '@/services/landing-plans-service';
 
 // Función fetcher mejorada para SWR
@@ -40,6 +40,11 @@ export function usePublicLandingPlans() {
     }
   );
 
+  const publicPlans = useMemo(() => {
+    // Filtra aquí para asegurar que solo los planes públicos se muestren
+    return (data || []).filter(plan => plan.isPublic);
+  }, [data]);
+
   // Logs para depuración en la consola del navegador
   useEffect(() => {
     if (isLoading) {
@@ -49,16 +54,16 @@ export function usePublicLandingPlans() {
       console.log('🔄 [usePublicLandingPlans] Revalidando datos...');
     }
     if (data) {
-      console.log(`✅ [usePublicLandingPlans] Datos de planes actualizados. Se encontraron ${data.length} planes.`);
+      console.log(`✅ [usePublicLandingPlans] Datos de planes recibidos. ${publicPlans.length} de ${data.length} planes son públicos.`);
     }
     if (error) {
       console.error('❌ [usePublicLandingPlans] Error al obtener datos:', error);
     }
-  }, [data, error, isLoading, isValidating]);
+  }, [data, publicPlans, error, isLoading, isValidating]);
 
   return {
-    plans: data || [],
-    isLoading: isLoading, // Devuelve el estado de carga inicial
+    plans: publicPlans, // Devuelve solo los planes filtrados
+    isLoading: isLoading,
     isError: !!error,
     error: error,
   };

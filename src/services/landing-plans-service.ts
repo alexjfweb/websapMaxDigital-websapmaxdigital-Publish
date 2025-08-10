@@ -206,10 +206,10 @@ class LandingPlansService {
    */
   async getPlans(): Promise<LandingPlan[]> {
     try {
+      // **REVERTIDO:** Volvemos a la consulta original que es más segura.
       const q = query(
         collection(db, this.COLLECTION_NAME), 
         where('isActive', '==', true),
-        where('isPublic', '==', true),
         orderBy('order', 'asc')
       );
       const snapshot = await getDocs(q);
