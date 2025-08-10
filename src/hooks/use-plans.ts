@@ -42,6 +42,7 @@ export function usePublicLandingPlans() {
 
   const publicPlans = useMemo(() => {
     // Filtra aquí para asegurar que solo los planes públicos se muestren
+    // El servicio ya filtra por `isActive`, aquí aseguramos el `isPublic`
     return (data || []).filter(plan => plan.isPublic);
   }, [data]);
 
