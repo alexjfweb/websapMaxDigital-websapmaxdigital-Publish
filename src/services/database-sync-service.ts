@@ -7,6 +7,39 @@ import { landingPlansService } from './landing-plans-service';
 // Datos de ejemplo para los planes de la landing page
 const examplePlans = [
   {
+    id: 'plan_gratis_lite',
+    name: 'Plan Gratis Lite',
+    description: 'Funcionalidad limitada para mantener el acceso básico. Los datos no esenciales se limpian periódicamente.',
+    price: 0,
+    currency: 'USD',
+    period: 'monthly',
+    features: [
+      'Hasta 3 platos',
+      'Hasta 2 pedidos diarios',
+      'Hasta 1 reserva diaria',
+      '1 empleado',
+      'Sin personalización de logo/colores',
+      'Sin reportes'
+    ],
+    isActive: true,
+    isPublic: false, // No se muestra en la UI de planes
+    isPopular: false,
+    order: 0, // El orden más bajo
+    icon: 'zap',
+    color: 'gray',
+    maxUsers: 1,
+    maxProjects: 1,
+    ctaText: 'Plan de Contingencia',
+    // Nuevos campos para límites
+    maxDishes: 3,
+    maxOrders: 2,
+    maxReservations: 1,
+    allowLogo: false,
+    allowColors: false,
+    allowReports: false,
+    autoCleanup: true,
+  },
+  {
     slug: 'plan-gratuito',
     name: 'Prueba Gratuita (7 días)',
     description: 'Prueba las funciones del Plan Estándar durante 7 días sin compromiso. No se requiere tarjeta de crédito.',
@@ -152,16 +185,23 @@ class DatabaseSyncService {
       const existingPlansSnapshot = await getDocs(plansCollection);
 
       if (!existingPlansSnapshot.empty) {
-        console.log('✅ Los planes ya existen. No se requiere sincronización.');
-        return 'Los planes ya existen. No se requiere ninguna acción.';
+        // Verificar si el plan 'plan_gratis_lite' ya existe
+        const litePlanExists = existingPlansSnapshot.docs.some(doc => doc.id === 'plan_gratis_lite' || doc.data().slug === 'plan_gratis_lite');
+        if (litePlanExists) {
+            console.log('✅ Los planes, incluyendo el Plan Gratis Lite, ya existen. No se requiere sincronización.');
+            return 'Los planes ya existen. No se requiere ninguna acción.';
+        }
       }
 
-      console.log('📝 No se encontraron planes. Creando datos de ejemplo...');
+      console.log('📝 No se encontraron todos los planes. Creando o actualizando datos de ejemplo...');
 
       const batch = writeBatch(db);
       
       for (const planData of examplePlans) {
-        const docRef = doc(collection(db, 'landingPlans'));
+        // Usamos el `id` o el `slug` como identificador único del documento para evitar duplicados.
+        const docId = planData.id || planData.slug;
+        const docRef = doc(db, 'landingPlans', docId);
+
         const fullPlanData = {
           ...planData,
           createdAt: serverTimestamp(),
@@ -169,7 +209,8 @@ class DatabaseSyncService {
           createdBy: userId,
           updatedBy: userId,
         };
-        batch.set(docRef, fullPlanData);
+        // set con merge:true para crear o actualizar sin sobreescribir campos existentes no definidos en `fullPlanData`.
+        batch.set(docRef, fullPlanData, { merge: true });
       }
       
       await batch.commit();
@@ -180,11 +221,11 @@ class DatabaseSyncService {
         'created',
         userId,
         userEmail,
-        { details: `Creación masiva de ${examplePlans.length} planes de ejemplo mediante sincronización.` }
+        { details: `Sincronización de ${examplePlans.length} planes de ejemplo.` }
       );
 
-      console.log(`🎉 Sincronización completada. Se crearon ${examplePlans.length} planes.`);
-      return `Sincronización completada. Se crearon ${examplePlans.length} planes.`;
+      console.log(`🎉 Sincronización completada. Se crearon o actualizaron ${examplePlans.length} planes.`);
+      return `Sincronización completada. Se crearon o actualizaron ${examplePlans.length} planes.`;
 
     } catch (error) {
       console.error('❌ Error durante la sincronización de la base de datos:', error);
