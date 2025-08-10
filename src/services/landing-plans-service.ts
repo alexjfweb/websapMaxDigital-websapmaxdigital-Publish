@@ -208,8 +208,6 @@ class LandingPlansService {
     try {
       const q = query(
         collection(db, this.COLLECTION_NAME), 
-        where('isActive', '==', true),
-        where('isPublic', '==', true),
         orderBy('order', 'asc')
       );
       const snapshot = await getDocs(q);
