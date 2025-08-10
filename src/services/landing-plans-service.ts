@@ -206,10 +206,9 @@ class LandingPlansService {
    */
   async getPlans(): Promise<LandingPlan[]> {
     try {
-      // Revertido a la versión más simple y segura que trae solo los activos
+      // Revertido a la consulta original que no causa errores de índice.
       const q = query(
         collection(db, this.COLLECTION_NAME), 
-        where('isActive', '==', true),
         orderBy('order', 'asc')
       );
       const snapshot = await getDocs(q);
