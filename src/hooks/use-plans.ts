@@ -24,8 +24,8 @@ const fetcher = async (url: string): Promise<LandingPlan[]> => {
   }
   const data = await response.json();
   console.log('[Fetcher] Datos recibidos y parseados:', data);
-  // La API puede devolver un objeto con una propiedad 'data' o el array directamente
-  return Array.isArray(data) ? data : data.data || [];
+  // La API ahora devuelve el array directamente
+  return data || [];
 };
 
 // Hook principal para obtener planes de la landing
@@ -40,11 +40,6 @@ export function usePublicLandingPlans() {
     }
   );
 
-  const publicPlans = useMemo(() => {
-    // El filtrado ahora sucede en la API, pero mantenemos esto como una segunda capa de seguridad.
-    return (data || []).filter(plan => plan.isPublic);
-  }, [data]);
-
   // Logs para depuración en la consola del navegador
   useEffect(() => {
     if (isLoading) {
@@ -54,15 +49,15 @@ export function usePublicLandingPlans() {
       console.log('🔄 [usePublicLandingPlans] Revalidando datos...');
     }
     if (data) {
-      console.log(`✅ [usePublicLandingPlans] Datos de planes recibidos. ${publicPlans.length} de ${data.length} planes son públicos.`);
+      console.log(`✅ [usePublicLandingPlans] Datos de planes recibidos: ${data.length} planes.`);
     }
     if (error) {
       console.error('❌ [usePublicLandingPlans] Error al obtener datos:', error);
     }
-  }, [data, publicPlans, error, isLoading, isValidating]);
+  }, [data, error, isLoading, isValidating]);
 
   return {
-    plans: data || [], // Devuelve todos los datos que la API (ya filtrada) entrega.
+    plans: data || [], 
     isLoading: isLoading,
     isError: !!error,
     error: error,

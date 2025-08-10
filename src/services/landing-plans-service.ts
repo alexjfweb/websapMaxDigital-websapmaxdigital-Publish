@@ -202,12 +202,14 @@ class LandingPlansService {
   }
 
   /**
-   * Obtiene todos los planes activos ordenados
+   * Obtiene todos los planes activos y públicos ordenados
    */
   async getPlans(): Promise<LandingPlan[]> {
     try {
       const q = query(
         collection(db, this.COLLECTION_NAME), 
+        where('isActive', '==', true),
+        where('isPublic', '==', true),
         orderBy('order', 'asc')
       );
       const snapshot = await getDocs(q);
@@ -246,9 +248,10 @@ class LandingPlansService {
       return plans;
     } catch (error) {
       console.error('Error getting plans:', error);
-      throw new Error('Error al obtener los planes');
+      throw new Error('Error al obtener los planes. Es posible que se requiera un índice en Firestore.');
     }
   }
+
 
   /**
    * Suscripción en tiempo real a los planes públicos
