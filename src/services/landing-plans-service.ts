@@ -202,11 +202,11 @@ class LandingPlansService {
   }
 
   /**
-   * Obtiene todos los planes públicos y activos ordenados
+   * Obtiene todos los planes activos ordenados
    */
   async getPlans(): Promise<LandingPlan[]> {
     try {
-      // **REVERTIDO:** Volvemos a la consulta original que es más segura.
+      // Revertido a la versión más simple y segura que trae solo los activos
       const q = query(
         collection(db, this.COLLECTION_NAME), 
         where('isActive', '==', true),

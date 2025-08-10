@@ -6,13 +6,17 @@ export async function GET(request: NextRequest) {
   try {
     console.log('📝 [API] GET /api/landing-plans - Iniciando solicitud');
     
-    const plans = await landingPlansService.getPlans();
+    // Obtenemos todos los planes activos desde el servicio.
+    const allActivePlans = await landingPlansService.getPlans();
     
-    console.log(`✅ [API] GET /api/landing-plans - ${plans.length} planes obtenidos`);
+    // Filtramos para devolver SOLO los que son públicos.
+    // Esta es la corrección clave para que "Plan Gratis Lite" no aparezca.
+    const publicPlans = allActivePlans.filter(plan => plan.isPublic);
     
-    // CORRECCIÓN: Devolver directamente el array de planes.
-    // El frontend espera un array, no un objeto { data: [...] }.
-    return NextResponse.json(plans);
+    console.log(`✅ [API] GET /api/landing-plans - ${publicPlans.length} planes públicos obtenidos`);
+    
+    // Devolvemos el array de planes directamente, que es lo que el frontend espera.
+    return NextResponse.json(publicPlans);
 
   } catch (error: any) {
     console.error('❌ [API] GET /api/landing-plans - Error:', error);

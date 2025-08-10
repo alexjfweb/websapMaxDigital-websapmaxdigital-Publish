@@ -41,8 +41,7 @@ export function usePublicLandingPlans() {
   );
 
   const publicPlans = useMemo(() => {
-    // Filtra aquí para asegurar que solo los planes públicos se muestren
-    // El servicio ya filtra por `isActive`, aquí aseguramos el `isPublic`
+    // El filtrado ahora sucede en la API, pero mantenemos esto como una segunda capa de seguridad.
     return (data || []).filter(plan => plan.isPublic);
   }, [data]);
 
@@ -63,7 +62,7 @@ export function usePublicLandingPlans() {
   }, [data, publicPlans, error, isLoading, isValidating]);
 
   return {
-    plans: publicPlans, // Devuelve solo los planes filtrados
+    plans: data || [], // Devuelve todos los datos que la API (ya filtrada) entrega.
     isLoading: isLoading,
     isError: !!error,
     error: error,
