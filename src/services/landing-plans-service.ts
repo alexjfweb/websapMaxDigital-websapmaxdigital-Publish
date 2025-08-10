@@ -206,7 +206,6 @@ class LandingPlansService {
    */
   async getPlans(): Promise<LandingPlan[]> {
     try {
-      // **CORRECCIÓN:** La consulta ahora filtra directamente en Firestore
       const q = query(
         collection(db, this.COLLECTION_NAME), 
         where('isActive', '==', true),
@@ -219,7 +218,6 @@ class LandingPlansService {
       snapshot.forEach(doc => {
         const data = doc.data();
         
-        // El filtrado principal ya lo hace la consulta, esto es una doble seguridad.
         if (data.name && data.price !== undefined) {
           plans.push({
             id: doc.id,
@@ -260,8 +258,8 @@ class LandingPlansService {
   subscribeToPlans(callback: (plans: LandingPlan[]) => void, onError: (error: Error) => void): () => void {
     const q = query(
       collection(db, this.COLLECTION_NAME),
-      where('isActive', '==', true), // Filtra solo los planes activos en tiempo real
-      where('isPublic', '==', true), // **AÑADIDO:** Asegura que solo los públicos se obtengan
+      where('isActive', '==', true), 
+      where('isPublic', '==', true), 
       orderBy('order', 'asc')
     );
   

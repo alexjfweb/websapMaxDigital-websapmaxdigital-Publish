@@ -24,7 +24,8 @@ const fetcher = async (url: string): Promise<LandingPlan[]> => {
   }
   const data = await response.json();
   console.log('[Fetcher] Datos recibidos y parseados:', data);
-  return data;
+  // La API puede devolver un objeto con una propiedad 'data' o el array directamente
+  return Array.isArray(data) ? data : data.data || [];
 };
 
 // Hook principal para obtener planes de la landing
