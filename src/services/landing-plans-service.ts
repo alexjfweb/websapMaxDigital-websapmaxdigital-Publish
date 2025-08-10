@@ -206,15 +206,21 @@ class LandingPlansService {
    */
   async getPlans(): Promise<LandingPlan[]> {
     try {
-      const q = query(collection(db, this.COLLECTION_NAME), orderBy('order', 'asc'));
+      // **CORRECCIÓN:** La consulta ahora filtra directamente en Firestore
+      const q = query(
+        collection(db, this.COLLECTION_NAME), 
+        where('isActive', '==', true),
+        where('isPublic', '==', true),
+        orderBy('order', 'asc')
+      );
       const snapshot = await getDocs(q);
       const plans: LandingPlan[] = [];
   
       snapshot.forEach(doc => {
         const data = doc.data();
         
-        // Filtrado en el lado del cliente para asegurar consistencia
-        if (data.isActive === true && data.isPublic === true && data.name && data.price !== undefined) {
+        // El filtrado principal ya lo hace la consulta, esto es una doble seguridad.
+        if (data.name && data.price !== undefined) {
           plans.push({
             id: doc.id,
             slug: data.slug,
@@ -255,6 +261,7 @@ class LandingPlansService {
     const q = query(
       collection(db, this.COLLECTION_NAME),
       where('isActive', '==', true), // Filtra solo los planes activos en tiempo real
+      where('isPublic', '==', true), // **AÑADIDO:** Asegura que solo los públicos se obtengan
       orderBy('order', 'asc')
     );
   
@@ -262,6 +269,7 @@ class LandingPlansService {
       const plans: LandingPlan[] = [];
       snapshot.forEach(doc => {
         const data = doc.data();
+        // El filtro de la consulta ya lo hace, pero lo mantenemos por seguridad
         if (data.isPublic !== false) {
             plans.push({
               id: doc.id,
