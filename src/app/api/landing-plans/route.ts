@@ -6,12 +6,11 @@ export async function GET(request: NextRequest) {
   try {
     console.log('📝 [API] GET /api/landing-plans - Iniciando solicitud');
     
-    // Obtenemos todos los planes activos desde el servicio.
-    const allActivePlans = await landingPlansService.getPlans();
+    // Obtenemos todos los planes desde el servicio.
+    const allPlans = await landingPlansService.getPlans();
     
-    // Filtramos para devolver SOLO los que son públicos.
-    // Esta es la corrección clave para que "Plan Gratis Lite" no aparezca.
-    const publicPlans = allActivePlans.filter(plan => plan.isPublic);
+    // Filtramos aquí, en la API, para devolver SOLO los que son públicos y activos.
+    const publicPlans = allPlans.filter(plan => plan.isPublic && plan.isActive);
     
     console.log(`✅ [API] GET /api/landing-plans - ${publicPlans.length} planes públicos obtenidos`);
     

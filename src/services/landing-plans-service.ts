@@ -209,7 +209,6 @@ class LandingPlansService {
       // Revertido a la versión más simple y segura que trae solo los activos
       const q = query(
         collection(db, this.COLLECTION_NAME), 
-        where('isActive', '==', true),
         orderBy('order', 'asc')
       );
       const snapshot = await getDocs(q);
