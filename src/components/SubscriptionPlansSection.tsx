@@ -58,6 +58,10 @@ interface SubscriptionPlansSectionProps {
 }
 
 export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSectionProps) {
+  
+  // CORRECCIÓN: Filtrar los planes para mostrar solo los que son públicos.
+  const publicPlans = plans.filter(plan => plan.isPublic);
+
   return (
     <motion.section
       key="planes-loaded"
@@ -72,7 +76,7 @@ export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSec
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
-        {plans.map((plan) => {
+        {publicPlans.map((plan) => {
           const IconComponent = getPlanIcon(plan.icon);
           const colorClass = getPlanColorClass(plan.color, 'bg');
           const borderColorClass = getPlanColorClass(plan.color, 'border');
