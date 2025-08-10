@@ -10,7 +10,10 @@ export async function GET(request: NextRequest) {
     
     console.log(`✅ [API] GET /api/landing-plans - ${plans.length} planes obtenidos`);
     
+    // CORRECCIÓN: Devolver directamente el array de planes.
+    // El frontend espera un array, no un objeto { data: [...] }.
     return NextResponse.json(plans);
+
   } catch (error: any) {
     console.error('❌ [API] GET /api/landing-plans - Error:', error);
     return NextResponse.json(
@@ -108,4 +111,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}
