@@ -61,8 +61,8 @@ export function useSubscription() {
     canManageEmployees: ['estandar', 'premium', 'profesional'].includes(plan?.slug?.split('-')[1] || ''),
     // Ejemplo: Analíticas avanzadas solo para premium y superior.
     canUseAdvancedAnalytics: ['premium', 'profesional'].includes(plan?.slug?.split('-')[1] || ''),
-    // Ejemplo: Personalización de marca solo para planes de pago.
-    canCustomizeBranding: !!plan && plan.price > 0,
+    // La personalización de marca está disponible en cualquier plan con un precio > 0.
+    canCustomizeBranding: !!plan && plan.price > 0 && plan.slug !== 'plan-gratis-lite',
   };
 
   return {

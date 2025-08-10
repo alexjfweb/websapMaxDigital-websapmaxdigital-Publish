@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/hooks/use-subscription';
 import UpgradePlanCard from '@/components/UpgradePlanCard';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useSession } from '@/contexts/session-context';
 
 const defaultStyles = {
   primary_color: '#FF6600',
@@ -41,9 +42,10 @@ const layoutOptions = [
   { label: 'Galería visual', value: 'gallery' },
 ];
 
-const RESTAURANT_ID = 'websapmax';
-
 export default function PersonalizacionMenuPage() {
+  const { currentUser } = useSession();
+  const companyId = currentUser.companyId;
+
   const [styles, setStyles] = useState(defaultStyles);
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [loading, setLoading] = useState(true);
@@ -52,10 +54,14 @@ export default function PersonalizacionMenuPage() {
 
   // Cargar configuración al montar
   useEffect(() => {
+    if (!companyId) {
+        setLoading(false);
+        return;
+    };
     const fetchStyles = async () => {
       setLoading(true);
       try {
-        const ref = doc(db, 'menu_styles', RESTAURANT_ID);
+        const ref = doc(db, 'menu_styles', companyId);
         const snap = await getDoc(ref);
         if (snap.exists()) {
           setStyles({ ...defaultStyles, ...snap.data() });
@@ -67,8 +73,7 @@ export default function PersonalizacionMenuPage() {
       }
     };
     fetchStyles();
-    // eslint-disable-next-line
-  }, []);
+  }, [companyId, toast]);
 
   const handleChange = (key: string, value: any) => {
     setStyles(prev => ({ ...prev, [key]: value }));
@@ -79,10 +84,11 @@ export default function PersonalizacionMenuPage() {
   };
 
   const handleSave = async () => {
+    if (!companyId) return;
     setLoading(true);
     try {
-      const ref = doc(db, 'menu_styles', RESTAURANT_ID);
-      await setDoc(ref, { ...styles, restaurant_id: RESTAURANT_ID });
+      const ref = doc(db, 'menu_styles', companyId);
+      await setDoc(ref, { ...styles, restaurant_id: companyId });
       toast({ title: '¡Personalización guardada!', description: 'Los cambios se aplicaron correctamente.' });
     } catch (e) {
       toast({ title: 'Error al guardar', description: 'Intenta de nuevo.', variant: 'destructive' });
