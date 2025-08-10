@@ -60,7 +60,7 @@ interface SubscriptionPlansSectionProps {
 export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSectionProps) {
   
   // CORRECCIÓN: Filtrar los planes para mostrar solo los que son públicos.
-  const publicPlans = plans.filter(plan => plan.isPublic);
+  const publicPlans = plans.filter(plan => plan.isPublic === true);
 
   return (
     <motion.section
