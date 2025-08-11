@@ -107,34 +107,3 @@
     @apply bg-background text-foreground;
   }
 }
-
-/* === OCULTAR PLAN GRATIS LITE - SOLUCIÓN ROBUSTA === */
-/* Por data-plan-slug (ambas variaciones) */
-[data-plan-slug="plan_gratis_lite"],
-[data-plan-slug="plan-gratis-lite"] {
-    display: none !important;
-}
-
-/* Por ID (ambas variaciones) */
-#plan_gratis_lite,
-#plan-gratis-lite {
-    display: none !important;
-}
-
-/* Por clases que contengan el nombre del plan */
-[class*="plan-gratis-lite"],
-[class*="plan_gratis_lite"] {
-    display: none !important;
-}
-
-/* Por posición (si es el cuarto elemento en el grid) */
-.pricing-grid > :nth-child(4),
-.pricing-container > :nth-child(4) {
-    display: none !important;
-}
-
-/* Por data-testid (si existe) */
-[data-testid*="plan-gratis-lite"],
-[data-testid*="plan_gratis_lite"] {
-    display: none !important;
-}
