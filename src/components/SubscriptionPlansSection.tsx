@@ -59,6 +59,7 @@ interface SubscriptionPlansSectionProps {
 
 export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSectionProps) {
   
+  // SOLUCIÓN: Filtrar los planes para mostrar solo los que son públicos.
   const publicPlans = plans.filter(plan => plan.isPublic === true);
 
   return (
@@ -79,6 +80,9 @@ export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSec
           const IconComponent = getPlanIcon(plan.icon);
           const colorClass = getPlanColorClass(plan.color, 'bg');
           const borderColorClass = getPlanColorClass(plan.color, 'border');
+
+          // Corrección: El plan de prueba gratuito tiene el slug 'plan-gratuito'
+          const isGratuito = plan.slug === 'plan-gratuito';
 
           return (
             <Card key={plan.id} data-plan-slug={plan.slug} className={`relative overflow-hidden transition-all duration-300 hover:shadow-xl flex flex-col ${plan.isPopular ? 'border-2 ' + borderColorClass : ''}`}>
@@ -118,7 +122,7 @@ export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSec
                   asChild
                   className={`w-full ${colorClass} hover:${colorClass.replace('bg-', 'bg-opacity-90-')} text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200`} 
                   size="lg"
-                  disabled={plan.slug === 'plan_gratis_lite'}
+                  disabled={isGratuito} // SOLUCIÓN: Deshabilitar botón para el plan gratuito
                 >
                   <Link href={`/register?plan=${plan.slug}`}>
                     {plan.ctaText || 'Comenzar Prueba Gratuita'}
