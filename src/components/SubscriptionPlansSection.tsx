@@ -1,4 +1,3 @@
-
 "use client";
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -81,7 +80,7 @@ export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSec
           const borderColorClass = getPlanColorClass(plan.color, 'border');
 
           return (
-            <Card key={plan.id} className={`relative overflow-hidden transition-all duration-300 hover:shadow-xl flex flex-col ${plan.isPopular ? 'border-2 ' + borderColorClass : ''}`}>
+            <Card key={plan.id} data-plan-slug={plan.id} className={`relative overflow-hidden transition-all duration-300 hover:shadow-xl flex flex-col ${plan.isPopular ? 'border-2 ' + borderColorClass : ''}`}>
               {plan.isPopular && <Badge className="absolute top-4 right-4 bg-yellow-400 text-yellow-900">Popular</Badge>}
 
               <CardHeader className="text-center pb-4">

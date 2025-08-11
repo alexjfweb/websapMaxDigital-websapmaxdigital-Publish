@@ -107,3 +107,7 @@
     @apply bg-background text-foreground;
   }
 }
+
+[data-plan-slug="plan_gratis_lite"] {
+  display: none;
+}
