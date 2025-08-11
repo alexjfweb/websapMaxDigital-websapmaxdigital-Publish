@@ -114,7 +114,12 @@ export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSec
                 </div>
               </CardContent>
               <div className="px-6 pb-6 mt-auto">
-                <Button asChild className={`w-full ${colorClass} hover:${colorClass.replace('bg-', 'bg-opacity-90-')} text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200`} size="lg">
+                <Button 
+                  asChild
+                  className={`w-full ${colorClass} hover:${colorClass.replace('bg-', 'bg-opacity-90-')} text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200`} 
+                  size="lg"
+                  disabled={plan.slug === 'plan-gratuito'}
+                >
                   <Link href={`/register?plan=${plan.slug}`}>
                     {plan.ctaText || 'Comenzar Prueba Gratuita'}
                   </Link>
