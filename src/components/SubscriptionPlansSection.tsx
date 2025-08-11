@@ -118,7 +118,7 @@ export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSec
                   asChild
                   className={`w-full ${colorClass} hover:${colorClass.replace('bg-', 'bg-opacity-90-')} text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200`} 
                   size="lg"
-                  disabled={plan.slug === 'plan-gratuito'}
+                  disabled={plan.slug === 'plan_gratis_lite'}
                 >
                   <Link href={`/register?plan=${plan.slug}`}>
                     {plan.ctaText || 'Comenzar Prueba Gratuita'}
