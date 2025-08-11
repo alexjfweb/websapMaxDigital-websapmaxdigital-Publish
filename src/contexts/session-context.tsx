@@ -54,20 +54,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       console.log("🔵 Auth state changed. Firebase user:", firebaseUser?.uid || 'Ninguno');
       if (firebaseUser) {
-        // Retry logic to handle Firestore replication delay
-        let userDocSnap;
-        let attempts = 0;
-        while(attempts < 3) {
-            const userDocRef = doc(db, "users", firebaseUser.uid);
-            userDocSnap = await getDoc(userDocRef);
-            if (userDocSnap.exists()) {
-                break;
-            }
-            attempts++;
-            await new Promise(res => setTimeout(res, 500)); // wait 500ms
-        }
+        const userDocRef = doc(db, "users", firebaseUser.uid);
+        const userDocSnap = await getDoc(userDocRef);
         
-        if (userDocSnap && userDocSnap.exists()) {
+        if (userDocSnap.exists()) {
           const userData = userDocSnap.data() as Omit<User, 'id'>;
           const userWithId: User = {
               id: firebaseUser.uid,
