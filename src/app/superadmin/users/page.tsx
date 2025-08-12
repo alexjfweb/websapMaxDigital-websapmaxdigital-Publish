@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,27 +9,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { User, UserRole } from "@/types"; 
-import Link from "next/link"; // Importado Link
+import Link from "next/link";
 import { format } from "date-fns";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useRouter } from 'next/navigation';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-
-// Mock Data for Users
-const mockUsers: User[] = [
-  { id: "usr-sa1", username: "super.admin", email: "sa@websapmax.com", role: "superadmin", status: "active", registrationDate: "2022-01-01T00:00:00Z", avatarUrl: "https://placehold.co/40x40.png?text=SA" },
-  { id: "usr-ad1", username: "restaurant.owner", email: "owner@example.com", role: "admin", status: "active", registrationDate: "2023-02-10T00:00:00Z", avatarUrl: "https://placehold.co/40x40.png?text=RO" },
-  { id: "usr-em1", username: "chef.john", email: "chef.john@example.com", role: "employee", status: "active", registrationDate: "2023-03-15T00:00:00Z", contact: "555-1234" },
-  { id: "usr-ad2", username: "another.admin", email: "admin2@example.com", role: "admin", status: "pending", registrationDate: "2024-01-20T00:00:00Z" },
-  { id: "usr-em2", username: "waiter.jane", email: "waiter.jane@example.com", role: "employee", status: "inactive", registrationDate: "2023-04-01T00:00:00Z", contact: "555-5678" },
-];
+import { useUsers } from "@/hooks/use-users"; // Importar el nuevo hook
 
 export default function SuperAdminUsersPage() {
-  const [isClient, setIsClient] = useState(false);
-  const users = mockUsers;
+  const { users, isLoading, error } = useUsers(); // Usar el hook para obtener datos reales
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [openDetail, setOpenDetail] = useState(false);
   const [openStatus, setOpenStatus] = useState(false);
@@ -38,11 +30,6 @@ export default function SuperAdminUsersPage() {
   const [selectedRole, setSelectedRole] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  // Opciones de roles y estados traducidas
   const roleOptions = [
     { value: "all", label: "Todos los roles" },
     { value: "superadmin", label: "Superadmin" },
@@ -56,14 +43,15 @@ export default function SuperAdminUsersPage() {
     { value: "pending", label: "Pendiente" },
   ];
 
-  // Filtrado de usuarios
-  const filteredUsers = users.filter(user =>
-    (selectedRole === "all" || user.role === selectedRole) &&
-    (selectedStatus === "all" || user.status === selectedStatus)
-  );
+  const filteredUsers = useMemo(() => {
+    return users.filter(user =>
+      (selectedRole === "all" || user.role === selectedRole) &&
+      (selectedStatus === "all" || user.status === selectedStatus)
+    );
+  }, [users, selectedRole, selectedStatus]);
+
 
   const getRoleBadge = (role: UserRole) => {
-    // Traducciones directas en español
     const roleTranslations: { [key in UserRole]: string } = {
       superadmin: "Superadmin",
       admin: "Admin", 
@@ -86,7 +74,6 @@ export default function SuperAdminUsersPage() {
   };
 
   const getStatusBadge = (status: User["status"]) => {
-    // Traducciones directas en español
     const statusTranslations: { [key in User['status']]: string } = {
       active: "Activo",
       inactive: "Inactivo", 
@@ -112,7 +99,7 @@ export default function SuperAdminUsersPage() {
   const handleOpenDelete = (user: User) => { setSelectedUser(user); setOpenDelete(true); };
   const handleCloseModals = () => { setOpenDetail(false); setOpenStatus(false); setOpenDelete(false); setSelectedUser(null); };
 
-  if (!isClient) {
+  if (isLoading) {
     return (
       <div className="space-y-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -151,6 +138,10 @@ export default function SuperAdminUsersPage() {
         </Card>
       </div>
     );
+  }
+  
+  if (error) {
+      return <div>Error al cargar los usuarios: {error.message}</div>
   }
 
   return (
@@ -216,7 +207,7 @@ export default function SuperAdminUsersPage() {
                 <TableRow key={user.id}>
                   <TableCell className="hidden lg:table-cell">
                     <Avatar>
-                      <AvatarImage src={user.avatarUrl || `https://placehold.co/40x40.png?text=${user.username.substring(0,1).toUpperCase()}`} alt={user.username} data-ai-hint="user avatar"/>
+                      <AvatarImage src={user.avatarUrl || `https://placehold.co/40x40.png?text=${user.username.substring(0,1).toUpperCase()}`} alt={user.username} data-ai-hint="user avatar" />
                       <AvatarFallback>{user.username.substring(0,2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                   </TableCell>
