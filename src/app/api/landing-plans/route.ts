@@ -10,7 +10,12 @@ export async function GET(request: NextRequest) {
     const allPlans = await landingPlansService.getPlans();
     
     // Filtramos en la API para asegurarnos de que solo los planes públicos y activos se envíen al cliente
-    const publicPlans = allPlans.filter(plan => plan.isPublic === true && plan.isActive === true);
+    const publicPlans = allPlans.filter(plan => 
+      plan.isPublic === true && 
+      plan.isActive === true && 
+      plan.id !== 'plan_gratis_lite' && 
+      plan.id !== 'plan-gratis-lite'
+    );
     
     console.log(`✅ [API] GET /api/landing-plans - ${publicPlans.length} planes públicos obtenidos y filtrados`);
     
