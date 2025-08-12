@@ -1,5 +1,6 @@
 
 
+
 import type { Timestamp } from 'firebase/firestore';
 
 
@@ -146,6 +147,7 @@ export interface Company {
   createdAt: string; // ISO Date String
   updatedAt: string; // ISO Date String
   planId?: string;
+  planName?: string; // Campo añadido para mostrar el nombre del plan
   subscriptionStatus?: 'trialing' | 'active' | 'past_due' | 'canceled' | 'pending_payment';
   trialEndsAt?: string;
   socialLinks?: {

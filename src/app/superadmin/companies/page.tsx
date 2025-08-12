@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -174,6 +175,7 @@ export default function SuperAdminCompaniesPage() {
           <TableCell><Skeleton className="h-4 w-24" /></TableCell>
           <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-32" /></TableCell>
           <TableCell className="text-center"><Skeleton className="h-6 w-20 mx-auto rounded-full" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-28" /></TableCell>
           <TableCell className="hidden md:table-cell text-center"><Skeleton className="h-4 w-24" /></TableCell>
           <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
         </TableRow>
@@ -183,7 +185,7 @@ export default function SuperAdminCompaniesPage() {
     if (error) {
       return (
         <TableRow>
-          <TableCell colSpan={6} className="text-center text-red-500">
+          <TableCell colSpan={7} className="text-center text-red-500">
             Error al cargar las empresas. Por favor, intente de nuevo más tarde.
           </TableCell>
         </TableRow>
@@ -193,7 +195,7 @@ export default function SuperAdminCompaniesPage() {
     if (filteredCompanies.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={6} className="text-center text-muted-foreground">
+          <TableCell colSpan={7} className="text-center text-muted-foreground">
             No se encontraron empresas que coincidan con los filtros.
           </TableCell>
         </TableRow>
@@ -206,6 +208,7 @@ export default function SuperAdminCompaniesPage() {
         <TableCell>{company.ruc}</TableCell>
         <TableCell className="hidden sm:table-cell">{company.email || 'N/A'}</TableCell>
         <TableCell className="text-center">{getStatusBadge(company.status)}</TableCell>
+        <TableCell><Badge variant="outline">{company.planName}</Badge></TableCell>
         <TableCell className="hidden md:table-cell text-center text-xs text-muted-foreground">
           {company.registrationDate ? format(new Date(company.registrationDate), "P") : 'N/A'}
         </TableCell>
@@ -346,6 +349,7 @@ export default function SuperAdminCompaniesPage() {
                 <TableHead>RUC</TableHead>
                 <TableHead className="hidden sm:table-cell">Email</TableHead>
                 <TableHead className="text-center">Estado</TableHead>
+                <TableHead>Plan</TableHead>
                 <TableHead className="hidden md:table-cell text-center">Registrado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
@@ -373,6 +377,7 @@ export default function SuperAdminCompaniesPage() {
                 <p><strong>Teléfono Móvil:</strong> {selectedCompany.phone || 'N/A'}</p>
                 <p><strong>Dirección:</strong> {`${selectedCompany.addressStreet || ''}, ${selectedCompany.addressNeighborhood || ''}, ${selectedCompany.location}, ${selectedCompany.addressState || ''}, ${selectedCompany.addressPostalCode || ''}`}</p>
                 <p><strong>Estado:</strong> {statusTranslations[selectedCompany.status]}</p>
+                <p><strong>Plan:</strong> {(selectedCompany as any).planName || 'N/A'}</p>
                 <p><strong>Registrado:</strong> {selectedCompany.registrationDate ? format(new Date(selectedCompany.registrationDate), "P") : 'N/A'}</p>
               </div>
             )}
