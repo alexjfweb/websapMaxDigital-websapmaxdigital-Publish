@@ -25,6 +25,7 @@ const fetchCompany = async (companyId: string): Promise<Company | null> => {
 };
 
 const fetchPlan = async (planId: string): Promise<LandingPlan | null> => {
+    // Corregido: Busca directamente por ID de documento
     const docRef = doc(db, 'landingPlans', planId);
     const docSnap = await getDoc(docRef);
     if (!docSnap.exists()) return null;
@@ -32,8 +33,9 @@ const fetchPlan = async (planId: string): Promise<LandingPlan | null> => {
     return {
         id: docSnap.id,
         ...data,
-        createdAt: data.createdAt?.toDate(),
-        updatedAt: data.updatedAt?.toDate(),
+        // Asegurarse de que los Timestamps se conviertan a Date si existen
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
     } as LandingPlan;
 };
 
