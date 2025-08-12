@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { Stripe } from 'stripe';
-import { MercadoPagoConfig, Preference } from 'mercadopago';
+import { MercadoPagoConfig, PreApproval } from 'mercadopago';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { LandingPlan } from '@/services/landing-plans-service';
@@ -82,7 +82,20 @@ export async function POST(request: NextRequest) {
       }
       const stripe = new Stripe(stripeConfig.secretKey, { apiVersion: '2024-06-20' });
 
-      console.log('[Checkout API] - Creando sesión de Stripe...');
+      // Busca o crea un cliente en Stripe
+      let customerId = company.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: company.email,
+          name: company.name,
+          metadata: { companyId },
+        });
+        customerId = customer.id;
+        // Actualiza el company document con el nuevo customerId
+        await updateDoc(doc(db, 'companies', companyId), { stripeCustomerId: customerId });
+      }
+
+      console.log('[Checkout API] - Creando sesión de Stripe para suscripción...');
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [{
@@ -90,24 +103,24 @@ export async function POST(request: NextRequest) {
             currency: 'usd',
             product_data: {
               name: `Plan ${plan.name} - ${company.name}`,
-              description: plan.description,
             },
             unit_amount: Math.round(plan.price * 100),
+            recurring: { interval: 'month' },
           },
           quantity: 1,
         }],
-        mode: 'payment',
-        success_url: `${baseUrl}/admin/subscription?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+        mode: 'subscription',
+        customer: customerId,
+        success_url: `${baseUrl}/admin/subscription?payment=success&provider=stripe`,
         cancel_url: `${baseUrl}/admin/checkout?plan=${plan.slug}&payment=cancelled`,
         metadata: {
           companyId,
           planId,
-          userId: company.email || 'N/A',
         },
       });
 
       checkoutUrl = session.url!;
-      console.log('✅ [Checkout API] - Sesión de Stripe creada exitosamente.');
+      console.log('✅ [Checkout API] - Sesión de Stripe (suscripción) creada exitosamente.');
 
     } else if (provider === 'mercadopago') {
       const mpConfig = paymentMethodsConfig.mercadoPago;
@@ -118,42 +131,29 @@ export async function POST(request: NextRequest) {
         console.error('🔴 [Checkout API] - Error: El Access Token de Mercado Pago no está configurado.');
         return NextResponse.json({ error: 'El método de pago Mercado Pago no está configurado.' }, { status: 400 });
       }
-
-      if (plan.price <= 0) {
-        console.error('🔴 [Checkout API] - Error: El precio del plan debe ser mayor a 0 para Mercado Pago.');
-        return NextResponse.json({ error: 'El precio del plan debe ser mayor a 0 para pagos con Mercado Pago.' }, { status: 400 });
+      
+      const mpPreapprovalPlanId = (plan as any).mp_preapproval_plan_id;
+      if (!mpPreapprovalPlanId) {
+        console.error(`🔴 [Checkout API] - Error: El plan ${plan.name} no tiene un 'preapproval_plan_id' de Mercado Pago configurado.`);
+        return NextResponse.json({ error: 'Configuración de suscripción para este plan está incompleta.' }, { status: 500 });
       }
 
       const client = new MercadoPagoConfig({ accessToken: mpConfig.accessToken });
-      const preference = new Preference(client);
+      const preapproval = new PreApproval(client);
 
-      console.log('[Checkout API] - Creando preferencia de Mercado Pago...');
-      const result = await preference.create({
+      console.log('[Checkout API] - Creando suscripción de Mercado Pago...');
+      const result = await preapproval.create({
         body: {
-            items: [{
-                id: plan.id,
-                title: `Plan ${plan.name}`,
-                quantity: 1,
-                unit_price: plan.price,
-                currency_id: plan.currency || 'USD',
-                description: plan.description,
-            }],
-            payer: {
-                email: company.email || undefined,
-                name: company.name,
-            },
+            preapproval_plan_id: mpPreapprovalPlanId,
+            payer_email: company.email,
+            back_url: `${baseUrl}/admin/subscription?payment=success&provider=mercadopago`,
+            reason: `Suscripción al Plan ${plan.name} para ${company.name}`,
             external_reference: `${companyId}|${planId}`,
         },
-        back_urls: {
-            success: `${baseUrl}/admin/subscription?payment=success&status=approved`,
-            failure: `${baseUrl}/admin/checkout?plan=${plan.slug}&payment=failure`,
-            pending: `${baseUrl}/admin/checkout?plan=${plan.slug}&payment=pending`,
-        },
-        auto_return: 'approved',
       });
 
       checkoutUrl = result.init_point!;
-      console.log('✅ [Checkout API] - Preferencia de Mercado Pago creada exitosamente.');
+      console.log('✅ [Checkout API] - Suscripción de Mercado Pago creada exitosamente.');
 
     } else {
       console.error(`🔴 [Checkout API] - Error: Proveedor de pago no soportado: ${provider}.`);
