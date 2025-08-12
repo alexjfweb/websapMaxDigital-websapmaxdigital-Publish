@@ -18,8 +18,8 @@ export default function SuperAdminMaintenancePage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-primary">Mantenimiento</h1>
-      <p className="text-lg text-muted-foreground">Descripción del mantenimiento</p>
+      <h1 className="text-3xl font-bold text-primary">Mantenimiento del Sistema</h1>
+      <p className="text-lg text-muted-foreground">Herramientas y tareas para asegurar el correcto funcionamiento de la plataforma.</p>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* Cache Management Card */}
@@ -27,12 +27,12 @@ export default function SuperAdminMaintenancePage() {
           <CardHeader>
             <div className="flex items-center gap-3">
               <HardDriveDownload className="h-8 w-8 text-primary" />
-              <CardTitle>Título de la tarjeta de caché</CardTitle>
+              <CardTitle>Gestión de Caché</CardTitle>
             </div>
-            <CardDescription>Descripción de la tarjeta de caché</CardDescription>
+            <CardDescription>Limpia la caché de la aplicación para reflejar cambios inmediatos.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full" onClick={() => handleAction('Accionar la caché')}>
+            <Button className="w-full" onClick={() => handleAction('Limpiar caché')}>
               <PlayCircle className="mr-2 h-5 w-5" />
               Limpiar caché
             </Button>
@@ -44,9 +44,9 @@ export default function SuperAdminMaintenancePage() {
           <CardHeader>
              <div className="flex items-center gap-3">
               <DatabaseZap className="h-8 w-8 text-primary" />
-              <CardTitle>Título de la tarjeta de mantenimiento de la base de datos</CardTitle>
+              <CardTitle>Mantenimiento de BD</CardTitle>
             </div>
-            <CardDescription>Descripción de la tarjeta de mantenimiento de la base de datos</CardDescription>
+            <CardDescription>Ejecuta tareas como reindexar para optimizar el rendimiento.</CardDescription>
           </CardHeader>
           <CardContent>
             <Button className="w-full" variant="outline" onClick={() => handleAction('Reindexar la base de datos')}>
@@ -61,14 +61,14 @@ export default function SuperAdminMaintenancePage() {
           <CardHeader>
              <div className="flex items-center gap-3">
               <Wrench className="h-8 w-8 text-primary" />
-              <CardTitle>Título de la tarjeta de diagnóstico del sistema</CardTitle>
+              <CardTitle>Diagnóstico del Sistema</CardTitle>
             </div>
-            <CardDescription>Descripción de la tarjeta de diagnóstico del sistema</CardDescription>
+            <CardDescription>Ejecuta pruebas para verificar la salud y estado del sistema.</CardDescription>
           </CardHeader>
           <CardContent>
             <Button className="w-full" variant="outline" onClick={() => handleAction('Ejecutar diagnóstico del sistema')}>
               <PlayCircle className="mr-2 h-5 w-5" />
-              Ejecutar diagnóstico del sistema
+              Ejecutar diagnóstico
             </Button>
           </CardContent>
         </Card>
@@ -79,9 +79,9 @@ export default function SuperAdminMaintenancePage() {
         <CardHeader>
           <div className="flex items-center gap-3">
               <ShieldAlert className="h-8 w-8 text-destructive" />
-              <CardTitle>Título de la tarjeta de modo de mantenimiento</CardTitle>
+              <CardTitle>Modo de Mantenimiento</CardTitle>
             </div>
-          <CardDescription>Descripción de la tarjeta de modo de mantenimiento</CardDescription>
+          <CardDescription>Activa una página de "en mantenimiento" para todos los usuarios no administradores.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center space-x-4 rounded-md border p-4">
@@ -90,7 +90,7 @@ export default function SuperAdminMaintenancePage() {
                 Habilitar modo de mantenimiento
               </p>
               <p className="text-xs text-muted-foreground">
-                Descripción del modo de mantenimiento
+                Al activar, solo los superadministradores podrán acceder al sistema.
               </p>
             </div>
             <Switch id="maintenance-mode" aria-label="Label del switch de mantenimiento" />
