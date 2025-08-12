@@ -59,8 +59,13 @@ interface SubscriptionPlansSectionProps {
 
 export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSectionProps) {
   
-  // SOLUCIÓN: Filtrar los planes para mostrar solo los que son públicos y activos.
-  const publicPlans = plans.filter(plan => plan.isPublic === true && plan.isActive === true);
+  // SOLUCIÓN: Filtrar los planes para mostrar solo los que son públicos y activos, y excluir explícitamente el plan gratuito.
+  const publicPlans = plans.filter(plan => 
+    plan.isPublic === true && 
+    plan.isActive === true && 
+    plan.id !== 'plan_gratis_lite' && 
+    plan.name !== 'Plan Gratis Lite'
+  );
 
   return (
     <motion.section
