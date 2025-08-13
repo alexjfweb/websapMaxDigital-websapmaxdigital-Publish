@@ -30,13 +30,12 @@ const fetcher = async (url: string): Promise<LandingPlan[]> => {
 
 // Hook principal para obtener planes de la landing
 export function usePublicLandingPlans() {
-  const { data, error, isLoading, isValidating } = useSWR<LandingPlan[], Error>(
+  const { data, error, isLoading, isValidating, mutate } = useSWR<LandingPlan[], Error>(
     '/api/landing-plans',
     fetcher,
     {
-      revalidateOnFocus: true, // Revalidar al enfocar para mantener datos frescos
-      shouldRetryOnError: true,
-      errorRetryCount: 3,
+      revalidateOnFocus: false, // Se cambia a false para evitar revalidaciones excesivas
+      shouldRetryOnError: false, // Se desactiva el reintento para controlar el flujo
     }
   );
 
@@ -61,5 +60,6 @@ export function usePublicLandingPlans() {
     isLoading: isLoading,
     isError: !!error,
     error: error,
+    refreshPlans: mutate, // Exponer la función de revalidación
   };
 }

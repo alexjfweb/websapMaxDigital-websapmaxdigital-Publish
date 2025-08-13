@@ -10,10 +10,19 @@ import { getAuth, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth
 import { doc, getDoc } from 'firebase/firestore';
 
 interface SessionContextType {
-  currentUser: User;
+  currentUser: User | null;
   isLoading: boolean;
-  login: (user: User) => void;
   logout: () => void;
+}
+
+const SessionContext = createContext<SessionContextType | undefined>(undefined);
+
+export function useSession() {
+  const context = useContext(SessionContext);
+  if (!context) {
+    throw new Error('useSession must be used within a SessionProvider');
+  }
+  return context;
 }
 
 const guestUser: User = {
@@ -29,18 +38,9 @@ const guestUser: User = {
   companyId: undefined,
 };
 
-const SessionContext = createContext<SessionContextType | undefined>(undefined);
-
-export function useSession() {
-  const context = useContext(SessionContext);
-  if (!context) {
-    throw new Error('useSession must be used within a SessionProvider');
-  }
-  return context;
-}
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<User>(guestUser);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const router = useRouter();
@@ -67,16 +67,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           };
 
           setCurrentUser(userWithId);
-          localStorage.setItem('currentUser', JSON.stringify(userWithId));
           console.log(`✅ Sesión iniciada para ${userWithId.email} con companyId: ${userWithId.companyId}`);
         } else {
           console.error(`🔴 Usuario ${firebaseUser.uid} existe en Auth pero no en Firestore. Cerrando sesión forzosa.`);
           await auth.signOut();
+          setCurrentUser(guestUser);
         }
       } else {
         console.log("🟡 No hay usuario de Firebase. Estableciendo sesión de invitado.");
         setCurrentUser(guestUser);
-        localStorage.removeItem('currentUser');
       }
       setIsLoading(false);
       console.log("🔵 SessionProvider: Carga de sesión finalizada.");
@@ -88,44 +87,53 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const login = useCallback((user: User) => {
-    localStorage.setItem('currentUser', JSON.stringify(user));
-    setCurrentUser(user);
-  }, []);
-
   const logout = useCallback(async () => {
-    setIsLoading(true);
     try {
       const app = getFirebaseApp();
       const auth = getAuth(app);
       await auth.signOut();
+      // onAuthStateChanged se encargará de setear a guest y redirigir
     } catch (error) {
       toast({ title: 'Error', description: 'No se pudo cerrar la sesión.', variant: 'destructive' });
-    } finally {
-      setIsLoading(false);
     }
   }, [toast]);
 
   useEffect(() => {
+    // **NO HACER NADA HASTA QUE TERMINE LA CARGA INICIAL**
     if (isLoading) return;
 
-    const isProtected = ['/admin', '/superadmin', '/employee'].some(route => pathname.startsWith(route));
+    const isAuthPage = ['/login', '/register'].includes(pathname);
+    const isPublicPage = isAuthPage || pathname === '/' || pathname.startsWith('/menu/');
+    const userRole = currentUser?.role || 'guest';
     
-    if (isProtected && currentUser.role === 'guest') {
+    // Si el usuario no está logueado (es guest) y intenta acceder a una página protegida
+    if (userRole === 'guest' && !isPublicPage) {
         console.log(`🔵 Redirigiendo: Página protegida (${pathname}) y usuario no autenticado.`);
         router.push('/login');
-    } else if ((pathname === '/login' || pathname === '/register') && currentUser.role !== 'guest') {
-        const targetDashboard = `/${currentUser.role}/dashboard`;
+    }
+    // Si el usuario ya está logueado y intenta acceder a login/register
+    else if (userRole !== 'guest' && isAuthPage) {
+        const targetDashboard = `/${userRole}/dashboard`;
         console.log(`🔵 Redirigiendo: Usuario ya logueado. Enviando a ${targetDashboard}.`);
         router.push(targetDashboard);
     }
   }, [isLoading, currentUser, pathname, router]);
 
+  // Si aún está cargando y no tenemos usuario, mostramos un loader genérico
+  // para evitar que se renderice el layout completo prematuramente.
+  if (isLoading || !currentUser) {
+     return (
+        <div className="flex min-h-svh w-full items-center justify-center bg-background">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2">Verificando sesión...</span>
+        </div>
+    );
+  }
+
 
   const value: SessionContextType = {
     currentUser,
     isLoading,
-    login,
     logout,
   };
 

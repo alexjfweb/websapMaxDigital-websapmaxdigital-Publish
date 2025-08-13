@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
     const publicPlans = allPlans.filter(plan => 
       plan.isPublic === true && 
       plan.isActive === true && 
-      plan.id !== 'plan_gratis_lite' && 
-      plan.id !== 'plan-gratis-lite'
+      plan.slug !== 'plan-gratuito' && // Excluir plan de prueba gratuito
+      plan.id !== 'plan_gratis_lite' // Excluir plan de contingencia
     );
     
     console.log(`✅ [API] GET /api/landing-plans - ${publicPlans.length} planes públicos obtenidos y filtrados`);

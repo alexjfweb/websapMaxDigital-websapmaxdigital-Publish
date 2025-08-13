@@ -80,32 +80,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <>
       {isPublicPage ? (
         <div className="flex flex-col min-h-svh">
-          <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-card px-4 sm:px-6 shadow-sm">
-              {showNavigationButtons && (
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleGoBack}
-                    className="flex items-center gap-1"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    <span className="hidden sm:inline">Volver</span>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleGoNext}
-                    className="flex items-center gap-1"
-                  >
-                    <span className="hidden sm:inline">Siguiente</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-              <div className="flex-1" />
-              <AppHeader currentUser={currentUser} handleLogout={handleLogout} showSidebarRelatedUI={false} />
-          </header>
+          <AppHeader currentUser={currentUser} handleLogout={handleLogout} showSidebarRelatedUI={false} />
           <main className="flex-1 bg-background">
             {children}
           </main>
