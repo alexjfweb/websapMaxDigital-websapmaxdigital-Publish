@@ -122,7 +122,7 @@ const examplePlans = [
     currency: 'USD',
     period: 'monthly',
     features: [
-      'Todo en el Plan Estándar',
+      'Todo en el Plan Premium',
       'Herramientas de Fidelización (cupones, puntos)',
       'Gestión de Empleados con Roles',
       'Integración con Redes Sociales',
