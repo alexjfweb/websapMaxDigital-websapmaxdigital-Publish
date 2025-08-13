@@ -1,7 +1,6 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { Stripe } from 'stripe';
-import { MercadoPagoConfig, PreApproval } from 'mercadopago';
+import { MercadoPagoConfig, Preference } from 'mercadopago';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { LandingPlan } from '@/services/landing-plans-service';
@@ -20,10 +19,10 @@ const CONFIG_DOC_ID = 'main_payment_methods';
 
 // Handler para la creación de sesiones de checkout
 export async function POST(request: NextRequest) {
-  console.log('🔵 [Checkout API] - Solicitud de pago recibida.');
+  console.log('🔍 === DEPURACIÓN CHECKOUT ===');
+  
   try {
     const body = await request.json();
-    console.log('🔍 === DEPURACIÓN CHECKOUT ===');
     console.log('🔍 Método:', request.method);
     console.log('🔍 Body completo:', JSON.stringify(body, null, 2));
     console.log('🔍 Plan ID recibido:', body.planId);
@@ -40,7 +39,9 @@ export async function POST(request: NextRequest) {
     // Mapeo temporal para corregir IDs inconsistentes como 'bsico'
     const planIdMap: Record<string, string> = {
       'bsico': 'plan-basico',
-      'basico': 'plan-basico'
+      'basico': 'plan-basico',
+      'estndar': 'plan-estandar',
+      'premium': 'plan-premium'
     };
 
     const planId = planIdMap[rawPlanId] || rawPlanId;
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
     
     let planSnap = planQuerySnap.docs[0];
 
-    // Fallback: si el slug es incorrecto (ej. "bsico"), busca por un nombre que contenga el slug
+    // Fallback: si el slug es incorrecto, busca por un nombre que contenga el slug
     if (!planSnap) {
         console.warn(`[Checkout API] - No se encontró el plan con slug '${planId}'. Intentando búsqueda por nombre...`);
         const allPlansSnap = await getDocs(collection(db, 'landingPlans'));
@@ -84,6 +85,7 @@ export async function POST(request: NextRequest) {
     }
     
     const allPlansConfig = paymentMethodsDoc.data();
+    // Extraer el nombre clave del plan desde el slug, ej: 'plan-basico' -> 'básico'
     const planNameKey = plan.slug?.split('-')[1] as 'básico' | 'estándar' | 'premium' || 'básico';
     const paymentMethodsConfig = allPlansConfig[planNameKey];
 
@@ -155,27 +157,38 @@ export async function POST(request: NextRequest) {
         console.error('🔴 [Checkout API] - Error: El Access Token de Mercado Pago no está configurado.');
         return NextResponse.json({ error: 'El método de pago Mercado Pago no está configurado.' }, { status: 400 });
       }
-      if (!plan.mp_preapproval_plan_id) {
-          console.error(`🔴 [Checkout API] - Error: El 'mp_preapproval_plan_id' de Mercado Pago no está configurado para el plan ${plan.name} en la base de datos.`);
-          return NextResponse.json({ error: `Configuración de suscripción para este plan está incompleta.` }, { status: 500 });
-      }
 
       const client = new MercadoPagoConfig({ accessToken: mpConfig.accessToken });
-      const preapproval = new PreApproval(client);
+      const preference = new Preference(client);
 
-      console.log('[Checkout API] - Creando Suscripción (Preapproval) de Mercado Pago...');
-      const result = await preapproval.create({
+      console.log('[Checkout API] - Creando Preferencia de Pago (único) de Mercado Pago...');
+      const result = await preference.create({
         body: {
-          preapproval_plan_id: plan.mp_preapproval_plan_id,
-          payer_email: company.email,
-          reason: `Suscripción al Plan ${plan.name} en WebSapMax`,
-          back_url: `${baseUrl}/admin/subscription?payment=success&provider=mercadopago`,
+          items: [
+            {
+              id: planSnap.id,
+              title: `Suscripción Plan ${plan.name}`,
+              quantity: 1,
+              unit_price: plan.price,
+              currency_id: 'USD', // Asegúrate que la moneda sea correcta
+            },
+          ],
+          payer: {
+            name: company.name,
+            email: company.email,
+          },
+          back_urls: {
+            success: `${baseUrl}/admin/subscription?payment=success&provider=mercadopago`,
+            failure: `${baseUrl}/admin/checkout?plan=${plan.slug}&payment=failure`,
+            pending: `${baseUrl}/admin/checkout?plan=${plan.slug}&payment=pending`,
+          },
+          auto_return: 'approved',
           external_reference: `${companyId}|${planSnap.id}`,
-        },
+        }
       });
-
+      
       checkoutUrl = result.init_point!;
-      console.log('✅ [Checkout API] - Suscripción de Mercado Pago creada exitosamente.');
+      console.log('✅ [Checkout API] - Preferencia de Mercado Pago creada exitosamente.');
 
     } else {
       console.error(`🔴 [Checkout API] - Error: Proveedor de pago no soportado: ${provider}.`);
