@@ -51,9 +51,10 @@ interface AvailablePayments {
 const CONFIG_DOC_ID = 'main_payment_methods';
 
 async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<AvailablePayments> {
-    if (!plan) return { stripe: false, mercadopago: false, manual: false };
+    if (!plan || !plan.slug) return { stripe: false, mercadopago: false, manual: false };
     
-    const planNameKey = plan.slug?.split('-')[1] as 'básico' | 'estándar' | 'premium' || 'básico';
+    // Extrae el nombre clave del plan desde el slug, ej: 'plan-basico' -> 'básico'
+    const planNameKey = plan.slug.split('-')[1] as 'básico' | 'estándar' | 'premium' || 'básico';
 
     try {
         const docRef = doc(db, "payment_methods", CONFIG_DOC_ID);
@@ -172,7 +173,7 @@ function CheckoutContent() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    planId: selectedPlan.id,
+                    planId: selectedPlan.slug, // CORRECCIÓN: Enviar el SLUG del plan, no el ID de documento
                     companyId: currentUser.companyId,
                     provider: provider
                 })
@@ -181,7 +182,9 @@ function CheckoutContent() {
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || `Error con ${provider}`);
+                // Capturar el mensaje de error de la API si está disponible
+                const errorMsg = data.error || `Error con ${provider}. Código: ${response.status}`;
+                throw new Error(errorMsg);
             }
 
             // Redirigir al cliente a la URL de pago

@@ -120,7 +120,8 @@ export default function SubscriptionPage() {
     const { company, plan } = subscription || {};
     const statusInfo = company ? getStatusInfo(company.subscriptionStatus) : null;
     
-    const otherPlans = (plans || []).filter(p => p.id !== plan?.id);
+    // El plan gratuito no debe mostrarse como una opción de mejora
+    const otherPlans = (plans || []).filter(p => p.id !== plan?.id && p.id !== 'plan-gratuito');
 
     return (
         <>
@@ -173,7 +174,7 @@ export default function SubscriptionPage() {
                                                 <span className="font-medium">{employees.length} / {plan.maxUsers === -1 ? 'Ilimitados' : plan.maxUsers}</span>
                                             </div>
                                         </div>
-                                         {company.subscriptionStatus === 'pending_payment' && (
+                                         {company.subscriptionStatus === 'pending_payment' && plan.slug && (
                                             <Button asChild className="w-full bg-primary hover:bg-primary/90">
                                                 <Link href={`/admin/checkout?plan=${plan.slug}`}>
                                                     <CreditCard className="mr-2 h-4 w-4"/>
