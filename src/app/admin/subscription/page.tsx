@@ -121,7 +121,7 @@ export default function SubscriptionPage() {
     const statusInfo = company ? getStatusInfo(company.subscriptionStatus) : null;
     
     // El plan gratuito no debe mostrarse como una opción de mejora
-    const otherPlans = (plans || []).filter(p => p.id !== plan?.id && p.id !== 'plan-gratuito');
+    const otherPlans = (plans || []).filter(p => p.id !== plan?.id && p.id !== 'plan-gratis-lite' && p.slug !== 'plan-gratuito');
 
     return (
         <>
