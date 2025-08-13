@@ -23,12 +23,23 @@ export async function POST(request: NextRequest) {
   console.log('🔵 [Checkout API] - Solicitud de pago recibida.');
   try {
     const body = await request.json();
-    const { planId, companyId, provider } = body; // planId aquí es el SLUG
+    let { planId: rawPlanId, companyId, provider } = body; // planId aquí es el SLUG
 
-    if (!planId || !companyId || !provider) {
+    if (!rawPlanId || !companyId || !provider) {
       console.error('🔴 [Checkout API] - Error: Faltan parámetros. planId, companyId y provider son requeridos.');
       return NextResponse.json({ error: 'Faltan parámetros: planId, companyId y provider son requeridos.' }, { status: 400 });
     }
+    
+    // Mapeo temporal para corregir IDs inconsistentes como 'bsico'
+    const planIdMap: Record<string, string> = {
+      'bsico': 'plan-basico',
+      'basico': 'plan-basico'
+    };
+    const planId = planIdMap[rawPlanId] || rawPlanId;
+    if (planId !== rawPlanId) {
+       console.log(`🔄 [Checkout API] Plan ID mapeado de '${rawPlanId}' a '${planId}'`);
+    }
+
 
     console.log(`[Checkout API] - Procesando para companyId: ${companyId}, planSlug: ${planId}, provider: ${provider}`);
 
@@ -50,7 +61,7 @@ export async function POST(request: NextRequest) {
       console.error(`🔴 [Checkout API] - Error: Plan con slug ${planId} no encontrado.`);
       return NextResponse.json({ error: 'Plan no encontrado.' }, { status: 404 });
     }
-    const plan = planSnap.data() as LandingPlan;
+    const plan = { id: planSnap.id, ...planSnap.data() } as LandingPlan;
 
     const companySnap = await getDoc(doc(db, 'companies', companyId));
     if (!companySnap.exists()) {

@@ -48,6 +48,8 @@ function SubscriptionSkeleton() {
 }
 
 function PlanCard({ plan, isCurrent, isPopular }: { plan: any, isCurrent?: boolean, isPopular?: boolean }) {
+    // CORRECCIÓN: Asegurarse de que el slug exista y sea válido
+    const planSlug = plan.slug || plan.name.toLowerCase().replace(/\s+/g, '-');
     return (
         <Card className={`flex flex-col ${isCurrent ? 'border-primary border-2' : ''} ${isPopular ? 'border-yellow-400' : ''}`}>
              {isPopular && <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-900">Popular</Badge>}
@@ -71,7 +73,7 @@ function PlanCard({ plan, isCurrent, isPopular }: { plan: any, isCurrent?: boole
             </CardContent>
             <CardFooter>
                  <Button asChild className="w-full" disabled={isCurrent}>
-                    <Link href={`/admin/checkout?plan=${plan.slug}`}>
+                    <Link href={`/admin/checkout?plan=${planSlug}`}>
                       {isCurrent ? 'Plan Actual' : 'Mejorar Plan'}
                     </Link>
                  </Button>
