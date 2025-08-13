@@ -8,6 +8,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { getFirebaseApp, db } from '@/lib/firebase';
 import { getAuth, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
+import { Loader2 } from 'lucide-react';
 
 interface SessionContextType {
   currentUser: User | null;
