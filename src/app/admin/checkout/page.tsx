@@ -165,7 +165,6 @@ function CheckoutContent() {
             toast({ title: "Error", description: "No se pudo identificar tu empresa.", variant: "destructive"});
             return;
         }
-        // CORRECCIÓN CLAVE: Usar el slug del plan seleccionado en el estado, no de la URL.
         if (!selectedPlan?.slug) {
             toast({ title: "Error", description: "No se pudo identificar el plan para el pago.", variant: "destructive"});
             return;
@@ -178,7 +177,7 @@ function CheckoutContent() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    planId: selectedPlan.slug, // CORRECCIÓN: Enviar el SLUG correcto del plan
+                    planId: selectedPlan.slug,
                     companyId: currentUser.companyId,
                     provider: provider
                 })
@@ -187,12 +186,10 @@ function CheckoutContent() {
             const data = await response.json();
 
             if (!response.ok) {
-                // Capturar el mensaje de error de la API si está disponible
                 const errorMsg = data.error || `Error con ${provider}. Código: ${response.status}`;
                 throw new Error(errorMsg);
             }
 
-            // Redirigir al cliente a la URL de pago
             router.push(data.url);
 
         } catch (err: any) {
@@ -276,8 +273,9 @@ function CheckoutContent() {
                                  <CardDescription>Elige un método para continuar.</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                 <Accordion type="single" collapsible className="w-full" defaultValue="automatic">
-                                     <AccordionItem value="automatic">
+                                <Accordion type="single" collapsible className="w-full" defaultValue="automatic">
+                                    {availablePayments.stripe || availablePayments.mercadopago ? (
+                                    <AccordionItem value="automatic">
                                         <AccordionTrigger className="font-semibold text-base">Pago Automático (Recomendado)</AccordionTrigger>
                                         <AccordionContent className="space-y-3 pt-3">
                                             {availablePayments.stripe && (
@@ -300,11 +298,11 @@ function CheckoutContent() {
                                                     {isProcessingPayment === 'mercadopago' ? 'Procesando...' : 'Pagar con Mercado Pago'}
                                                 </Button>
                                             )}
-                                            {!availablePayments.stripe && !availablePayments.mercadopago && (
-                                                <p className="text-sm text-muted-foreground text-center">No hay métodos de pago automáticos habilitados para este plan.</p>
-                                            )}
                                         </AccordionContent>
                                     </AccordionItem>
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground text-center py-4">No hay métodos de pago automáticos habilitados para este plan.</p>
+                                    )}
                                      {availablePayments.manual && (
                                         <AccordionItem value="manual">
                                             <AccordionTrigger className="font-semibold text-base">Pago Manual (QR)</AccordionTrigger>
@@ -338,3 +336,5 @@ export default function CheckoutPage() {
         </Suspense>
     );
 }
+
+    
