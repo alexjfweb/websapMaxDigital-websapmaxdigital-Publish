@@ -165,6 +165,11 @@ function CheckoutContent() {
             toast({ title: "Error", description: "No se pudo identificar tu empresa.", variant: "destructive"});
             return;
         }
+        // CORRECCIÓN CLAVE: Usar el slug del plan seleccionado en el estado, no de la URL.
+        if (!selectedPlan?.slug) {
+            toast({ title: "Error", description: "No se pudo identificar el plan para el pago.", variant: "destructive"});
+            return;
+        }
         
         setIsProcessingPayment(provider);
         
@@ -173,7 +178,7 @@ function CheckoutContent() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    planId: selectedPlan.slug, // CORRECCIÓN: Enviar el SLUG del plan, no el ID de documento
+                    planId: selectedPlan.slug, // CORRECCIÓN: Enviar el SLUG correcto del plan
                     companyId: currentUser.companyId,
                     provider: provider
                 })

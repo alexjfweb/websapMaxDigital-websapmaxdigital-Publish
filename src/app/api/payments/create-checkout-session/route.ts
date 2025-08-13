@@ -20,6 +20,7 @@ const CONFIG_DOC_ID = 'main_payment_methods';
 
 // Handler para la creación de sesiones de checkout
 export async function POST(request: NextRequest) {
+  console.log('🚀🚀🚀 API ROUTE HIT - POST /api/payments/create-checkout-session');
   console.log('🔍 === DEPURACIÓN CHECKOUT ===');
   
   try {
@@ -42,6 +43,7 @@ export async function POST(request: NextRequest) {
       'bsico': 'plan-basico',
       'basico': 'plan-basico',
       'estndar': 'plan-estandar',
+      'estandar': 'plan-estandar',
       'premium': 'plan-premium'
     };
 
@@ -188,5 +190,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }
-
-    
