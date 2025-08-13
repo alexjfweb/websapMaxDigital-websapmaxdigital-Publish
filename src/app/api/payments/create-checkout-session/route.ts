@@ -23,7 +23,14 @@ export async function POST(request: NextRequest) {
   console.log('🔵 [Checkout API] - Solicitud de pago recibida.');
   try {
     const body = await request.json();
-    let { planId: rawPlanId, companyId, provider } = body; // planId aquí es el SLUG
+    console.log('🔍 === DEPURACIÓN CHECKOUT ===');
+    console.log('🔍 Método:', request.method);
+    console.log('🔍 Body completo:', JSON.stringify(body, null, 2));
+    console.log('🔍 Plan ID recibido:', body.planId);
+    console.log('🔍 Tipo de planId:', typeof body.planId);
+
+    let { companyId, provider } = body;
+    let rawPlanId = body.planId;
 
     if (!rawPlanId || !companyId || !provider) {
       console.error('🔴 [Checkout API] - Error: Faltan parámetros. planId, companyId y provider son requeridos.');
@@ -35,11 +42,11 @@ export async function POST(request: NextRequest) {
       'bsico': 'plan-basico',
       'basico': 'plan-basico'
     };
+
     const planId = planIdMap[rawPlanId] || rawPlanId;
     if (planId !== rawPlanId) {
-       console.log(`🔄 [Checkout API] Plan ID mapeado de '${rawPlanId}' a '${planId}'`);
+       console.log(`🔄 Plan ID mapeado de '${rawPlanId}' a '${planId}'`);
     }
-
 
     console.log(`[Checkout API] - Procesando para companyId: ${companyId}, planSlug: ${planId}, provider: ${provider}`);
 
