@@ -1,6 +1,7 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { Stripe } from 'stripe';
-import { MercadoPagoConfig, Preference } from 'mercadopago';
+import { MercadoPagoConfig, PreApproval } from 'mercadopago';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { LandingPlan } from '@/services/landing-plans-service';
@@ -58,16 +59,9 @@ export async function POST(request: NextRequest) {
     
     let planSnap = planQuerySnap.docs[0];
 
-    // Fallback: si el slug es incorrecto, busca por un nombre que contenga el slug
     if (!planSnap) {
-        console.warn(`[Checkout API] - No se encontró el plan con slug '${planId}'. Intentando búsqueda por nombre...`);
-        const allPlansSnap = await getDocs(collection(db, 'landingPlans'));
-        planSnap = allPlansSnap.docs.find(doc => doc.data().name.toLowerCase().includes(planId.toLowerCase()));
-    }
-
-    if (!planSnap || !planSnap.exists()) {
-      console.error(`🔴 [Checkout API] - Error: Plan con slug ${planId} no encontrado.`);
-      return NextResponse.json({ error: 'Plan no encontrado.' }, { status: 404 });
+        console.warn(`[Checkout API] - No se encontró el plan con slug '${planId}'.`);
+        return NextResponse.json({ error: `Plan con slug '${planId}' no encontrado o inactivo.` }, { status: 404 });
     }
     const plan = { id: planSnap.id, ...planSnap.data() } as LandingPlan;
 
@@ -80,8 +74,8 @@ export async function POST(request: NextRequest) {
 
     const paymentMethodsDoc = await getDoc(doc(db, "payment_methods", CONFIG_DOC_ID));
     if (!paymentMethodsDoc.exists()) {
-        console.error(`🔴 [Checkout API] - Error: El documento de configuración de métodos de pago ('${CONFIG_DOC_ID}') no existe.`);
-        throw new Error('La configuración de métodos de pago no está disponible.');
+        console.error(`🔴 [Checkout API] - Error: El documento de configuración de métodos de pago ('${CONFIG_DOC_ID}') no existe. Por favor, configúrelo desde el panel de superadministrador.`);
+        throw new Error('La configuración de métodos de pago no está disponible. Contacte al administrador.');
     }
     
     const allPlansConfig = paymentMethodsDoc.data();
@@ -159,36 +153,27 @@ export async function POST(request: NextRequest) {
       }
 
       const client = new MercadoPagoConfig({ accessToken: mpConfig.accessToken });
-      const preference = new Preference(client);
+      const preapproval = new PreApproval(client);
 
-      console.log('[Checkout API] - Creando Preferencia de Pago (único) de Mercado Pago...');
-      const result = await preference.create({
-        body: {
-          items: [
-            {
-              id: planSnap.id,
-              title: `Suscripción Plan ${plan.name}`,
-              quantity: 1,
-              unit_price: plan.price,
-              currency_id: 'USD', // Asegúrate que la moneda sea correcta
-            },
-          ],
-          payer: {
-            name: company.name,
-            email: company.email,
-          },
-          back_urls: {
-            success: `${baseUrl}/admin/subscription?payment=success&provider=mercadopago`,
-            failure: `${baseUrl}/admin/checkout?plan=${plan.slug}&payment=failure`,
-            pending: `${baseUrl}/admin/checkout?plan=${plan.slug}&payment=pending`,
-          },
-          auto_return: 'approved',
-          external_reference: `${companyId}|${planSnap.id}`,
-        }
+      if (!plan.mp_preapproval_plan_id) {
+          console.error(`🔴 [Checkout API] - Error: El plan ${plan.name} (${plan.id}) no tiene un 'mp_preapproval_plan_id' configurado.`);
+          return NextResponse.json({ error: `Configuración de suscripción para este plan está incompleta.` }, { status: 500 });
+      }
+      
+      console.log(`[Checkout API] - Creando suscripción de Mercado Pago con preapproval_plan_id: ${plan.mp_preapproval_plan_id}`);
+      
+      const result = await preapproval.create({
+          body: {
+            preapproval_plan_id: plan.mp_preapproval_plan_id,
+            payer_email: company.email,
+            back_url: `${baseUrl}/admin/subscription?payment=success`,
+            reason: `Suscripción al Plan ${plan.name} de WebSapMax`,
+            external_reference: `${companyId}|${planSnap.id}`,
+          }
       });
       
       checkoutUrl = result.init_point!;
-      console.log('✅ [Checkout API] - Preferencia de Mercado Pago creada exitosamente.');
+      console.log('✅ [Checkout API] - URL de suscripción de Mercado Pago creada exitosamente.');
 
     } else {
       console.error(`🔴 [Checkout API] - Error: Proveedor de pago no soportado: ${provider}.`);
@@ -203,3 +188,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }
+
+    

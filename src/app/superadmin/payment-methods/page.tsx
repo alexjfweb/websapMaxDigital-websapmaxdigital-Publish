@@ -147,7 +147,6 @@ export default function SuperAdminPaymentMethodsPage() {
         const docRef = doc(db, "payment_methods", CONFIG_DOC_ID);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-          // Fusionar la configuración guardada con la inicial para asegurar que todos los campos existan
           const dbConfig = docSnap.data() as Record<PlanName, PlanPaymentConfig>;
           const mergedConfig = { ...initialConfig };
           for (const plan of Object.keys(mergedConfig) as PlanName[]) {
@@ -157,8 +156,11 @@ export default function SuperAdminPaymentMethodsPage() {
           }
           setConfig(mergedConfig);
         } else {
-          // Si no existe, usamos la configuración inicial
+          // Si no existe, lo creamos con la configuración inicial
+          console.log("El documento de configuración de pagos no existe. Creando uno por defecto...");
+          await setDoc(docRef, { ...initialConfig, createdAt: serverTimestamp() });
           setConfig(initialConfig);
+          toast({ title: "Configuración Inicial Creada", description: "Se ha creado un archivo de configuración de pagos por defecto."});
         }
       } catch (error) {
         toast({ title: "Error", description: "No se pudo cargar la configuración de pagos.", variant: "destructive" });
@@ -188,7 +190,7 @@ export default function SuperAdminPaymentMethodsPage() {
     setIsSaving(true);
     try {
         const docRef = doc(db, "payment_methods", CONFIG_DOC_ID);
-        await setDoc(docRef, { ...config, lastUpdated: serverTimestamp() });
+        await setDoc(docRef, { ...config, lastUpdated: serverTimestamp() }, { merge: true });
         toast({
             title: "Configuración guardada",
             description: "Los métodos de pago han sido actualizados.",
@@ -214,7 +216,6 @@ export default function SuperAdminPaymentMethodsPage() {
       const reader = new FileReader();
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
-        // Actualizar la vista previa local
         setQrPreviews(prev => ({
             ...prev,
             [plan]: {
@@ -222,9 +223,6 @@ export default function SuperAdminPaymentMethodsPage() {
                 [method]: dataUrl,
             }
         }));
-        // Actualizar el estado principal con la nueva URL (que será la URL de GCS después de guardar)
-        // Por ahora, usamos el dataUrl para la vista previa, pero al guardar, esto debería ser reemplazado por la URL de Firebase Storage.
-        // **NOTA:** Para una implementación real, aquí se subiría a Storage y se guardaría la URL.
         handleConfigChange(plan, method, { qrImageUrl: dataUrl }); 
       };
       reader.readAsDataURL(file);
@@ -422,3 +420,5 @@ export default function SuperAdminPaymentMethodsPage() {
     </div>
   );
 }
+
+    
