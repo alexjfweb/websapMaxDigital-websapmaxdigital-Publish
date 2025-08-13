@@ -43,6 +43,7 @@ export interface LandingPlan {
   updatedAt: Date;
   createdBy: string;
   updatedBy: string;
+  mp_preapproval_plan_id?: string; // ID del plan de suscripción en Mercado Pago
 }
 
 export interface CreatePlanRequest {
@@ -61,6 +62,7 @@ export interface CreatePlanRequest {
   maxUsers?: number;
   maxProjects?: number;
   ctaText?: string;
+  mp_preapproval_plan_id?: string;
 }
 
 export interface UpdatePlanRequest extends Partial<CreatePlanRequest> {
@@ -238,7 +240,8 @@ class LandingPlansService {
             createdAt: this.parseTimestamp(data.createdAt),
             updatedAt: this.parseTimestamp(data.updatedAt),
             createdBy: data.createdBy,
-            updatedBy: data.updatedBy
+            updatedBy: data.updatedBy,
+            mp_preapproval_plan_id: data.mp_preapproval_plan_id,
           });
         }
       });
@@ -289,7 +292,8 @@ class LandingPlansService {
               createdAt: this.parseTimestamp(data.createdAt),
               updatedAt: this.parseTimestamp(data.updatedAt),
               createdBy: data.createdBy,
-              updatedBy: data.updatedBy
+              updatedBy: data.updatedBy,
+              mp_preapproval_plan_id: data.mp_preapproval_plan_id,
             });
         }
       });
@@ -336,7 +340,8 @@ class LandingPlansService {
         createdAt: this.parseTimestamp(data.createdAt),
         updatedAt: this.parseTimestamp(data.updatedAt),
         createdBy: data.createdBy,
-        updatedBy: data.updatedBy
+        updatedBy: data.updatedBy,
+        mp_preapproval_plan_id: data.mp_preapproval_plan_id,
       };
     } catch (error) {
       console.error('Error getting plan by ID:', error);
@@ -391,6 +396,7 @@ class LandingPlansService {
         maxUsers: data.maxUsers,
         maxProjects: data.maxProjects,
         ctaText: data.ctaText || 'Comenzar Prueba Gratuita',
+        mp_preapproval_plan_id: data.mp_preapproval_plan_id,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         createdBy: userId,

@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { Stripe } from 'stripe';
-import { MercadoPagoConfig, PreApproval, Preference } from 'mercadopago';
+import { MercadoPagoConfig, PreApproval } from 'mercadopago';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { LandingPlan } from '@/services/landing-plans-service';
@@ -124,45 +124,35 @@ export async function POST(request: NextRequest) {
 
     } else if (provider === 'mercadopago') {
       const mpConfig = paymentMethodsConfig.mercadoPago;
-       if (!mpConfig?.enabled) {
+      if (!mpConfig?.enabled) {
         return NextResponse.json({ error: 'El método de pago Mercado Pago no está habilitado para este plan.' }, { status: 400 });
       }
       if (!mpConfig.accessToken) {
         console.error('🔴 [Checkout API] - Error: El Access Token de Mercado Pago no está configurado.');
         return NextResponse.json({ error: 'El método de pago Mercado Pago no está configurado.' }, { status: 400 });
       }
-      
-      const client = new MercadoPagoConfig({ accessToken: mpConfig.accessToken });
-      const preference = new Preference(client);
+      // VALIDACIÓN CLAVE: Verificar que el plan tenga el `preapproval_plan_id` de MP.
+      if (!plan.mp_preapproval_plan_id) {
+          console.error(`🔴 [Checkout API] - Error: El 'mp_preapproval_plan_id' de Mercado Pago no está configurado para el plan ${plan.name} en la base de datos.`);
+          return NextResponse.json({ error: `Configuración de suscripción para este plan está incompleta.` }, { status: 500 });
+      }
 
-      console.log('[Checkout API] - Creando Preferencia de Mercado Pago para pago único...');
-      const result = await preference.create({
+      const client = new MercadoPagoConfig({ accessToken: mpConfig.accessToken });
+      const preapproval = new PreApproval(client);
+
+      console.log('[Checkout API] - Creando Suscripción (Preapproval) de Mercado Pago...');
+      const result = await preapproval.create({
         body: {
-            items: [
-                {
-                    id: planId,
-                    title: `Plan ${plan.name} - ${company.name}`,
-                    quantity: 1,
-                    unit_price: plan.price,
-                    currency_id: 'USD', // Ajustar si se usan otras monedas
-                }
-            ],
-            payer: {
-                email: company.email,
-                name: company.name,
-            },
-            back_urls: {
-                success: `${baseUrl}/admin/subscription?payment=success&provider=mercadopago`,
-                failure: `${baseUrl}/admin/checkout?plan=${plan.slug}&payment=failure`,
-                pending: `${baseUrl}/admin/subscription?payment=pending&provider=mercadopago`,
-            },
-            auto_return: 'approved',
-            external_reference: `${companyId}|${planId}`,
+          preapproval_plan_id: plan.mp_preapproval_plan_id,
+          payer_email: company.email,
+          reason: `Suscripción al Plan ${plan.name} en WebSapMax`,
+          back_url: `${baseUrl}/admin/subscription?payment=success&provider=mercadopago`,
+          external_reference: `${companyId}|${planId}`,
         },
       });
 
       checkoutUrl = result.init_point!;
-      console.log('✅ [Checkout API] - Preferencia de Mercado Pago creada exitosamente.');
+      console.log('✅ [Checkout API] - Suscripción de Mercado Pago creada exitosamente.');
 
     } else {
       console.error(`🔴 [Checkout API] - Error: Proveedor de pago no soportado: ${provider}.`);

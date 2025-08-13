@@ -86,6 +86,7 @@ const examplePlans = [
     maxUsers: 3,
     maxProjects: 1,
     ctaText: 'Elegir Plan Básico',
+    mp_preapproval_plan_id: '8308fa1a6dbe41fdab0e56a54b1a93c0',
   },
   {
     slug: 'plan-estandar',
@@ -111,6 +112,7 @@ const examplePlans = [
     maxUsers: 10,
     maxProjects: 1,
     ctaText: 'Actualizar a Estándar',
+    mp_preapproval_plan_id: 'ec01918cf4e54dcf9839841f19a4bdbb',
   },
   {
     slug: 'plan-premium',
@@ -136,6 +138,7 @@ const examplePlans = [
     maxUsers: -1, // Ilimitado
     maxProjects: 1,
     ctaText: 'Obtener Premium',
+    mp_preapproval_plan_id: 'f50350617bce4132a5d4ced1a55d240e',
   },
   {
     slug: 'plan-profesional',
@@ -207,7 +210,7 @@ class DatabaseSyncService {
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           createdBy: userId,
-          updatedBy: userId,
+          updatedBy: userEmail,
         };
         // set con merge:true para crear o actualizar sin sobreescribir campos existentes no definidos en `fullPlanData`.
         batch.set(docRef, fullPlanData, { merge: true });

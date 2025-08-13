@@ -186,6 +186,7 @@ export interface Company {
   };
   customShareMessage?: string;
   customShareImageUrl?: string;
+  stripeCustomerId?: string; // Nuevo campo
 }
 // Sistema de Gestión de Mesas
 export interface Table {
