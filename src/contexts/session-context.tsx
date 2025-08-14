@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import type { User, UserRole } from '@/types';
+import type { User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, usePathname } from 'next/navigation';
 import { getFirebaseApp, db } from '@/lib/firebase';
@@ -47,37 +47,48 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    console.log("🔵 SessionProvider: Montado. Configurando listener de Auth...");
     const app = getFirebaseApp();
     const auth = getAuth(app);
     
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-      console.log("🔵 Auth state changed. Firebase user:", firebaseUser?.uid || 'Ninguno');
+      let finalUser: User = guestUser;
+      
       if (firebaseUser) {
         const userDocRef = doc(db, "users", firebaseUser.uid);
         const userDocSnap = await getDoc(userDocRef);
         
         if (userDocSnap.exists()) {
-          const userData = userDocSnap.data() as Omit<User, 'id'>;
-          setCurrentUser({ id: firebaseUser.uid, ...userData } as User);
-          console.log(`✅ Sesión iniciada para ${userData.email} con companyId: ${userData.companyId}`);
+          finalUser = { id: firebaseUser.uid, ...userDocSnap.data() } as User;
         } else {
-          console.error(`🔴 Usuario ${firebaseUser.uid} existe en Auth pero no en Firestore. Cerrando sesión forzosa.`);
+          console.error(`Usuario ${firebaseUser.uid} no encontrado en Firestore. Cerrando sesión.`);
           await auth.signOut();
-          setCurrentUser(guestUser);
         }
-      } else {
-        console.log("🟡 No hay usuario de Firebase. Estableciendo sesión de invitado.");
-        setCurrentUser(guestUser);
       }
+      
+      setCurrentUser(finalUser);
       setIsLoading(false);
-      console.log("🔵 SessionProvider: Carga de sesión finalizada.");
+      
+      // --- LÓGICA DE REDIRECCIÓN CENTRALIZADA ---
+      // Se ejecuta DESPUÉS de determinar el estado final del usuario.
+      const isAuthPage = ['/login', '/register'].includes(pathname);
+      const isPublicPage = isAuthPage || pathname === '/' || pathname.startsWith('/menu/');
+      const userRole = finalUser.role;
+
+      if (userRole === 'guest' && !isPublicPage) {
+        console.log(`[Redirect Logic] Usuario invitado en página protegida (${pathname}). Redirigiendo a /login.`);
+        router.push('/login');
+      } else if (userRole !== 'guest' && isAuthPage) {
+        const targetDashboard = `/${userRole}/dashboard`;
+        console.log(`[Redirect Logic] Usuario logueado en página de auth. Redirigiendo a ${targetDashboard}.`);
+        router.push(targetDashboard);
+      }
+      // Si ninguna de las condiciones se cumple, el usuario puede permanecer en la página actual.
+      // --- FIN DE LA LÓGICA DE REDIRECCIÓN ---
     });
 
-    return () => {
-      console.log("🔵 SessionProvider: Desmontado. Limpiando listener de Auth.");
-      unsubscribe();
-    };
+    return () => unsubscribe();
+    // La dependencia de `pathname` y `router` se elimina para evitar el bucle.
+    // La lógica ahora está autocontenida en el callback del listener.
   }, []);
 
   const logout = useCallback(async () => {
@@ -85,34 +96,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const app = getFirebaseApp();
       const auth = getAuth(app);
       await auth.signOut();
-      // onAuthStateChanged se encargará de setear a guest.
-      // Redirigir explícitamente a login para una mejor UX
       router.push('/login');
     } catch (error) {
       toast({ title: 'Error', description: 'No se pudo cerrar la sesión.', variant: 'destructive' });
     }
   }, [toast, router]);
-
-  useEffect(() => {
-    // **NO HACER NADA HASTA QUE TERMINE LA CARGA INICIAL**
-    if (isLoading) return;
-
-    const isAuthPage = ['/login', '/register'].includes(pathname);
-    const isPublicPage = isAuthPage || pathname === '/' || pathname.startsWith('/menu/');
-    const userRole = currentUser?.role || 'guest';
-    
-    // Si el usuario no está logueado (es guest) y intenta acceder a una página protegida
-    if (userRole === 'guest' && !isPublicPage) {
-        console.log(`🔵 Redirigiendo: Página protegida (${pathname}) y usuario no autenticado.`);
-        router.push('/login');
-    }
-    // Si el usuario ya está logueado y intenta acceder a login/register
-    else if (userRole !== 'guest' && isAuthPage) {
-        const targetDashboard = `/${userRole}/dashboard`;
-        console.log(`🔵 Redirigiendo: Usuario ya logueado. Enviando a ${targetDashboard}.`);
-        router.push(targetDashboard);
-    }
-  }, [isLoading, currentUser, pathname, router]);
 
   if (isLoading) {
      return (

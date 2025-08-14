@@ -59,9 +59,9 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
       updatedAt: serverTimestamp(),
     };
     const docRef = await addDoc(collection(db, 'orders'), orderWithTimestamp);
-    mutate(); 
+    if(shouldFetch) mutate(); 
     return docRef.id;
-  }, [mutate]);
+  }, [mutate, shouldFetch]);
 
   const updateOrder = useCallback(async (id: string, updates: Partial<Order>) => {
      if (!db) {
@@ -71,14 +71,14 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     const updatePayload: any = { ...updates };
     
     await updateDoc(orderRef, { ...updatePayload, updatedAt: serverTimestamp() });
-    mutate();
-  }, [mutate]);
+    if(shouldFetch) mutate();
+  }, [mutate, shouldFetch]);
   
   const finalLoadingState = isSessionLoading || (shouldFetch && isLoading);
 
 
   return (
-    <OrderContext.Provider value={{ orders, addOrder, updateOrder, loading: finalLoadingState, error, refreshOrders: mutate }}>
+    <OrderContext.Provider value={{ orders, addOrder, updateOrder, loading: finalLoadingState, error, refreshOrders: () => {if(shouldFetch) mutate();} }}>
       {children}
     </OrderContext.Provider>
   );
