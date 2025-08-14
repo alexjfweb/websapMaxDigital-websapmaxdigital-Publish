@@ -6,18 +6,13 @@ export async function GET(request: NextRequest) {
   try {
     console.log('📝 [API] GET /api/landing-plans - Iniciando solicitud');
     
-    // El servicio ahora se encarga de obtener los planes
-    const allPlans = await landingPlansService.getPlans();
+    // El servicio ya se encarga de obtener los planes y ordenarlos.
+    const plans = await landingPlansService.getPlans();
     
-    // Filtramos en la API para asegurarnos de que solo los planes públicos y activos se envíen al cliente
-    const publicPlans = allPlans.filter(plan => 
-      plan.isPublic === true && 
-      plan.isActive === true && 
-      plan.slug !== 'plan-gratuito' && // Excluir plan de prueba gratuito
-      plan.id !== 'plan_gratis_lite' // Excluir plan de contingencia
-    );
-    
-    console.log(`✅ [API] GET /api/landing-plans - ${publicPlans.length} planes públicos obtenidos y filtrados`);
+    // Filtrar solo los planes que son públicos y activos.
+    const publicPlans = plans.filter(plan => plan.isPublic && plan.isActive);
+
+    console.log(`✅ [API] GET /api/landing-plans - Se obtuvieron y filtraron ${publicPlans.length} planes públicos.`);
     
     return NextResponse.json(publicPlans);
 
