@@ -204,21 +204,19 @@ class LandingPlansService {
   }
 
   /**
-   * Obtiene todos los planes activos y públicos ordenados
+   * Obtiene todos los planes, los filtra y ordena en el código.
    */
   async getPlans(): Promise<LandingPlan[]> {
     try {
+      // 1. CONSULTA SIMPLE: Obtener todos los documentos de la colección sin filtros ni orden.
       const plansCollection = collection(db, this.COLLECTION_NAME);
-      // **SOLUCIÓN:** Se elimina la consulta compleja. Se obtienen todos los documentos.
       const snapshot = await getDocs(plansCollection);
-      const plans: LandingPlan[] = [];
+      const allPlans: LandingPlan[] = [];
   
       snapshot.forEach(doc => {
         const data = doc.data();
-        
-        // El filtrado se hace ahora en el código.
-        if (data.isActive && data.isPublic && data.name && data.price !== undefined) {
-          plans.push({
+        // Mapeo inicial de datos, sin filtrar aún
+        allPlans.push({
             id: doc.id,
             slug: data.slug,
             name: data.name,
@@ -241,20 +239,19 @@ class LandingPlansService {
             createdBy: data.createdBy,
             updatedBy: data.updatedBy,
             mp_preapproval_plan_id: data.mp_preapproval_plan_id,
-          });
-        }
+        });
       });
       
-      // El ordenamiento se hace ahora en el código.
-      return plans.sort((a, b) => a.order - b.order);
+      // 2. FILTRADO Y ORDENAMIENTO EN EL CÓDIGO: Aplicar la lógica aquí.
+      const filteredAndSortedPlans = allPlans
+        .filter(plan => plan.isActive && plan.isPublic)
+        .sort((a, b) => a.order - b.order);
+
+      return filteredAndSortedPlans;
 
     } catch (error) {
       console.error('Error getting plans:', error);
-      // No relanzar el error de índice, sino un error genérico si algo más falla.
-      if ((error as any).code === 'failed-precondition') {
-          throw new Error('Error de configuración de Firestore. Contacte a soporte.');
-      }
-      throw new Error('No se pudieron obtener los planes.');
+      throw new Error('No se pudieron obtener los planes. Hubo un problema con la conexión a la base de datos.');
     }
   }
 
