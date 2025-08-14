@@ -6,17 +6,18 @@ import useSWR from 'swr';
 import { useEffect, useMemo } from 'react';
 import { landingPlansService, type LandingPlan } from '@/services/landing-plans-service';
 
-// Función fetcher que ahora llama directamente al servicio en lugar de a una API
+// **SOLUCIÓN:** El fetcher ahora llama directamente al servicio en lugar de a una API.
+// Esto evita la capa de red del backend de Next.js que estaba fallando.
 const fetcher = async (): Promise<LandingPlan[]> => {
   console.log(`[Fetcher] Obteniendo planes directamente desde landingPlansService...`);
   try {
     const plans = await landingPlansService.getPlans();
-    console.log(`[Fetcher] Datos recibidos y parseados: ${plans.length} planes.`);
+    console.log(`[Fetcher] Datos recibidos: ${plans.length} planes.`);
     return plans;
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Fetcher] Error al obtener los planes desde el servicio:', error);
     // Relanzar el error para que SWR lo capture
-    throw new Error('Error al obtener los planes. Es posible que se requiera un índice en Firestore.');
+    throw new Error(error.message || 'Error al obtener los planes desde el servicio.');
   }
 };
 
@@ -27,7 +28,8 @@ export function usePublicLandingPlans() {
     fetcher,
     {
       revalidateOnFocus: false, 
-      shouldRetryOnError: false, // Previene bucles infinitos en caso de error
+      // **SOLUCIÓN:** Prevenir reintentos en caso de error para no causar bucles infinitos.
+      shouldRetryOnError: false, 
     }
   );
 
@@ -46,11 +48,9 @@ export function usePublicLandingPlans() {
       console.error(`❌ [usePublicLandingPlans] Error al obtener datos: ${error.message}`);
     }
   }, [data, error, isLoading, isValidating]);
-
-  // Se filtran los planes aquí por si el servicio devuelve planes no públicos/inactivos
-  const publicPlans = useMemo(() => {
-    return (data || []).filter(plan => plan.isPublic && plan.isActive);
-  }, [data]);
+  
+  // El filtrado y ordenamiento ya se hace en el servicio. No es necesario aquí.
+  const publicPlans = data || [];
 
 
   return {

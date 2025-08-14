@@ -209,20 +209,15 @@ class LandingPlansService {
   async getPlans(): Promise<LandingPlan[]> {
     try {
       const plansCollection = collection(db, this.COLLECTION_NAME);
-      // RESTAURADO: Se vuelve a la consulta que requiere índice para un rendimiento óptimo.
-      const q = query(
-        plansCollection,
-        where('isActive', '==', true),
-        where('isPublic', '==', true),
-        orderBy('order', 'asc')
-      );
-      const snapshot = await getDocs(q);
+      // **SOLUCIÓN:** Se elimina la consulta compleja. Se obtienen todos los documentos.
+      const snapshot = await getDocs(plansCollection);
       const plans: LandingPlan[] = [];
   
       snapshot.forEach(doc => {
         const data = doc.data();
         
-        if (data.name && data.price !== undefined) {
+        // El filtrado se hace ahora en el código.
+        if (data.isActive && data.isPublic && data.name && data.price !== undefined) {
           plans.push({
             id: doc.id,
             slug: data.slug,
@@ -250,10 +245,16 @@ class LandingPlansService {
         }
       });
       
-      return plans;
+      // El ordenamiento se hace ahora en el código.
+      return plans.sort((a, b) => a.order - b.order);
+
     } catch (error) {
       console.error('Error getting plans:', error);
-      throw new Error('Error al obtener los planes. Es posible que se requiera un índice en Firestore.');
+      // No relanzar el error de índice, sino un error genérico si algo más falla.
+      if ((error as any).code === 'failed-precondition') {
+          throw new Error('Error de configuración de Firestore. Contacte a soporte.');
+      }
+      throw new Error('No se pudieron obtener los planes.');
     }
   }
 
@@ -262,44 +263,42 @@ class LandingPlansService {
    * Suscripción en tiempo real a los planes públicos
    */
   subscribeToPlans(callback: (plans: LandingPlan[]) => void, onError: (error: Error) => void): () => void {
-    // RESTAURADO: Se vuelve a la consulta que requiere índice.
-    const q = query(
-      collection(db, this.COLLECTION_NAME),
-      where('isActive', '==', true),
-      where('isPublic', '==', true),
-      orderBy('order', 'asc')
-    );
+    // **SOLUCIÓN:** Se elimina la consulta compleja. Se obtienen todos los documentos.
+    const q = query(collection(db, this.COLLECTION_NAME));
   
     const unsubscribe = onSnapshot(q, (snapshot) => {
       let plans: LandingPlan[] = [];
       snapshot.forEach(doc => {
         const data = doc.data();
-        plans.push({
-          id: doc.id,
-          slug: data.slug,
-          name: data.name,
-          description: data.description,
-          price: data.price || 0,
-          currency: data.currency || 'USD',
-          period: data.period,
-          features: data.features || [],
-          isActive: data.isActive,
-          isPublic: data.isPublic,
-          isPopular: data.isPopular || false,
-          order: data.order || 0,
-          icon: data.icon,
-          color: data.color,
-          maxUsers: data.maxUsers,
-          maxProjects: data.maxProjects,
-          ctaText: data.ctaText || 'Comenzar Prueba Gratuita',
-          createdAt: this.parseTimestamp(data.createdAt),
-          updatedAt: this.parseTimestamp(data.updatedAt),
-          createdBy: data.createdBy,
-          updatedBy: data.updatedBy,
-          mp_preapproval_plan_id: data.mp_preapproval_plan_id,
-        });
+        // Filtrado y ordenamiento en el código
+        if (data.isActive && data.isPublic) {
+            plans.push({
+                id: doc.id,
+                slug: data.slug,
+                name: data.name,
+                description: data.description,
+                price: data.price || 0,
+                currency: data.currency || 'USD',
+                period: data.period,
+                features: data.features || [],
+                isActive: data.isActive,
+                isPublic: data.isPublic,
+                isPopular: data.isPopular || false,
+                order: data.order || 0,
+                icon: data.icon,
+                color: data.color,
+                maxUsers: data.maxUsers,
+                maxProjects: data.maxProjects,
+                ctaText: data.ctaText || 'Comenzar Prueba Gratuita',
+                createdAt: this.parseTimestamp(data.createdAt),
+                updatedAt: this.parseTimestamp(data.updatedAt),
+                createdBy: data.createdBy,
+                updatedBy: data.updatedBy,
+                mp_preapproval_plan_id: data.mp_preapproval_plan_id,
+            });
+        }
       });
-      callback(plans);
+      callback(plans.sort((a, b) => a.order - b.order));
     }, (error) => {
       console.error("Error en la suscripción a los planes:", error);
       onError(error);
