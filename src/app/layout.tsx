@@ -17,15 +17,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   
-  React.useEffect(() => {
-    // La lógica de inicialización y verificación de datos se ha movido
-    // a componentes más específicos o a flujos de usuario para evitar
-    // errores de conexión durante la carga inicial de la aplicación.
-    console.log("RootLayout montado. La conexión a Firebase es manejada por los servicios y hooks individuales.");
-  }, []);
-
   return (
-    <html lang="es" suppressHydrationWarning={true}>
+    <html lang="es">
       <body className={inter.className}>
         <ClientProviders>{children}</ClientProviders>
       </body>
