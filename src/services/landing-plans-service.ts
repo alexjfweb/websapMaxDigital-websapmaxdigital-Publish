@@ -248,8 +248,7 @@ class LandingPlansService {
       return plans.sort((a, b) => a.order - b.order);
     } catch (error) {
       console.error('Error getting plans:', error);
-      // El mensaje de error ahora es más genérico, ya que el problema del índice se ha resuelto.
-      throw new Error('Error al obtener los planes desde la base de datos.');
+      throw new Error('Error al obtener los planes. Es posible que se requiera un índice en Firestore.');
     }
   }
 
@@ -674,9 +673,3 @@ class LandingPlansService {
 
 // Instancia singleton
 export const landingPlansService = new LandingPlansService();
-
-
-
-
-
-

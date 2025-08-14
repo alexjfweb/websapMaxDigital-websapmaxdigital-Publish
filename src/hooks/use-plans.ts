@@ -26,7 +26,7 @@ const fetcher = async (url: string): Promise<LandingPlan[]> => {
   }
   const data = await response.json();
   console.log('[Fetcher] Datos recibidos y parseados:', data);
-  // **CORRECCIÓN:** La API ahora devuelve el array directamente, así que no se necesita `.data`.
+  // La API ahora devuelve el array directamente, no un objeto { data: [...] }
   return data || [];
 };
 
@@ -37,7 +37,7 @@ export function usePublicLandingPlans() {
     fetcher,
     {
       revalidateOnFocus: false, 
-      shouldRetryOnError: false, 
+      shouldRetryOnError: false, // Previene el bucle infinito en caso de error 500
     }
   );
 
@@ -53,7 +53,7 @@ export function usePublicLandingPlans() {
       console.log(`✅ [usePublicLandingPlans] Datos de planes recibidos: ${data.length} planes.`);
     }
     if (error) {
-      console.error(`❌ [usePublicLandingPlans] Error al obtener datos: ${error}`);
+      console.error(`❌ [usePublicLandingPlans] Error al obtener datos: ${error.message}`);
     }
   }, [data, error, isLoading, isValidating]);
 
