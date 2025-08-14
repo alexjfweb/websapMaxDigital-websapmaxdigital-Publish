@@ -58,9 +58,6 @@ interface SubscriptionPlansSectionProps {
 }
 
 export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSectionProps) {
-  
-  // SOLUCIÓN: El filtrado ahora se hace en la API, pero mantenemos una comprobación por si acaso.
-  const publicPlans = plans.filter(plan => plan.isPublic && plan.isActive);
 
   return (
     <motion.section
@@ -76,7 +73,7 @@ export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSec
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
-        {publicPlans.map((plan) => {
+        {plans.map((plan) => {
           const IconComponent = getPlanIcon(plan.icon);
           const colorClass = getPlanColorClass(plan.color, 'bg');
           const borderColorClass = getPlanColorClass(plan.color, 'border');

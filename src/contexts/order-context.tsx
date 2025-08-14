@@ -73,9 +73,12 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     await updateDoc(orderRef, { ...updatePayload, updatedAt: serverTimestamp() });
     mutate();
   }, [mutate]);
+  
+  const finalLoadingState = isSessionLoading || (shouldFetch && isLoading);
+
 
   return (
-    <OrderContext.Provider value={{ orders, addOrder, updateOrder, loading: isSessionLoading || isLoading, error, refreshOrders: mutate }}>
+    <OrderContext.Provider value={{ orders, addOrder, updateOrder, loading: finalLoadingState, error, refreshOrders: mutate }}>
       {children}
     </OrderContext.Provider>
   );

@@ -86,10 +86,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const auth = getAuth(app);
       await auth.signOut();
       // onAuthStateChanged se encargará de setear a guest.
+      // Redirigir explícitamente a login para una mejor UX
+      router.push('/login');
     } catch (error) {
       toast({ title: 'Error', description: 'No se pudo cerrar la sesión.', variant: 'destructive' });
     }
-  }, [toast]);
+  }, [toast, router]);
 
   useEffect(() => {
     // **NO HACER NADA HASTA QUE TERMINE LA CARGA INICIAL**

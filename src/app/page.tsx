@@ -1,15 +1,14 @@
 
-"use client";
-import React from 'react';
+import { Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Head from "next/head";
 import SubscriptionPlansSection from '@/components/SubscriptionPlansSection';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import { usePublicLandingPlans } from '@/hooks/use-plans';
-import { useLandingConfig } from '@/hooks/use-landing-config';
+import { landingConfigService, LandingConfig } from '@/services/landing-config-service';
+import { landingPlansService, LandingPlan } from '@/services/landing-plans-service';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle } from 'lucide-react';
-import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card'; 
+import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 
@@ -77,71 +76,12 @@ const ErrorDisplay = ({ error }: { error: Error | null }) => (
 );
 
 
-export default function LandingPage() {
-  const { plans, isLoading: isLoadingPlans, isError: isErrorPlans, error: errorPlans } = usePublicLandingPlans();
-  const { config, isLoading: isLoadingConfig, isError: isErrorConfig, error: errorConfig } = useLandingConfig();
-  
-  const isLoading = isLoadingPlans || isLoadingConfig;
-  const isError = isErrorPlans || isErrorConfig;
-  const error = errorPlans || errorConfig;
-
-  // Componente para renderizar la sección de planes
-  const renderPlansSection = () => {
-    if (isLoadingPlans) {
-      return <PlanSkeleton />;
-    }
-    if (isErrorPlans) {
-      return <ErrorDisplay error={errorPlans} />;
-    }
-    // Asegurarse de no mostrar la sección si no hay planes, incluso después de cargar
-    if (!isLoadingPlans && plans.length === 0) {
-        return (
-          <motion.section
-            key="planes-empty"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full max-w-6xl py-16 flex justify-center"
-          >
-            <div className="col-span-full text-gray-600 text-center bg-gray-50 p-8 rounded-lg shadow-sm border">
-              <h3 className="text-xl font-semibold">No hay planes disponibles</h3>
-              <p>Actualmente no hay planes de suscripción para mostrar. Por favor, vuelve más tarde.</p>
-            </div>
-          </motion.section>
-        );
-    }
-    return <SubscriptionPlansSection plans={plans} />;
-  };
-
-  if (isLoading) {
+async function LandingData() {
+  try {
+    const config = await landingConfigService.getLandingConfig();
+    const plans = await landingPlansService.getPlans();
+    
     return (
-      <main className="min-h-screen w-full flex flex-col items-center">
-        {/* Skeleton for Hero */}
-        <section className="w-full py-20 flex flex-col items-center bg-background">
-          <Skeleton className="h-12 w-3/4 md:w-1/2 mb-4" />
-          <Skeleton className="h-6 w-2/3 md:w-1/3 mb-8" />
-          <Skeleton className="h-12 w-48 rounded-full" />
-        </section>
-        {/* Skeleton for Sections */}
-        <section className="w-full max-w-6xl py-16">
-          <Skeleton className="h-96 w-full" />
-        </section>
-        {/* Skeleton for Plans */}
-        <PlanSkeleton />
-      </main>
-    );
-  }
-
-  if (isError) {
-    return <ErrorDisplay error={error} />;
-  }
-
-  return (
-    <>
-      <Head>
-        <title>{config?.seo?.title || "WebSapMaxDigital - Bienvenido"}</title>
-        <meta name="description" content={config?.seo?.description || "Tu solución digital definitiva para menús de restaurante"} />
-        <meta name="keywords" content={config?.seo?.keywords.join(', ') || ''} />
-      </Head>
       <main className="min-h-screen w-full flex flex-col items-center">
         {/* Hero Section Dinámico */}
         <motion.section
@@ -151,22 +91,22 @@ export default function LandingPage() {
           className="w-full py-20 flex flex-col items-center"
           style={{ backgroundColor: config?.heroBackgroundColor, color: config?.heroTextColor }}
         >
-            <h1
-              className="text-5xl font-extrabold mb-4 text-center"
-              style={{ color: config?.heroTextColor }}
-            >
-              {config?.heroTitle}
-            </h1>
-            <p className="text-xl mb-8 text-center">
-              {config?.heroSubtitle}
-            </p>
-            <Button
-              asChild
-              className="text-lg font-semibold shadow-lg hover:scale-105 transition py-3 px-8 rounded-full"
-              style={{ backgroundColor: config?.heroButtonColor, color: '#ffffff' }}
-            >
-              <a href={config?.heroButtonUrl}>{config?.heroButtonText}</a>
-            </Button>
+          <h1
+            className="text-5xl font-extrabold mb-4 text-center"
+            style={{ color: config?.heroTextColor }}
+          >
+            {config?.heroTitle}
+          </h1>
+          <p className="text-xl mb-8 text-center">
+            {config?.heroSubtitle}
+          </p>
+          <Button
+            asChild
+            className="text-lg font-semibold shadow-lg hover:scale-105 transition py-3 px-8 rounded-full"
+            style={{ backgroundColor: config?.heroButtonColor, color: '#ffffff' }}
+          >
+            <a href={config?.heroButtonUrl}>{config?.heroButtonText}</a>
+          </Button>
         </motion.section>
 
         {/* Secciones Dinámicas */}
@@ -184,7 +124,6 @@ export default function LandingPage() {
               <p className="text-lg text-muted-foreground mb-8 max-w-3xl mx-auto">{section.subtitle}</p>
               <p className="mb-8">{section.content}</p>
               
-              {/* Renderizado de Subsecciones */}
               {section.subsections && section.subsections.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
                   {section.subsections.map(sub => (
@@ -211,12 +150,41 @@ export default function LandingPage() {
             </div>
           </motion.section>
         ))}
-
-        {/* Renderizado seguro del lado del cliente para la sección de planes */}
-        <ErrorBoundary fallback={<ErrorDisplay error={new Error('Error en el componente de planes')} />}>
-          {renderPlansSection()}
-        </ErrorBoundary>
+        
+        {plans.length > 0 ? (
+            <SubscriptionPlansSection plans={plans} />
+        ) : (
+             <motion.section
+                key="planes-empty"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="w-full max-w-6xl py-16 flex justify-center"
+              >
+                <div className="col-span-full text-gray-600 text-center bg-gray-50 p-8 rounded-lg shadow-sm border">
+                  <h3 className="text-xl font-semibold">No hay planes disponibles</h3>
+                  <p>Actualmente no hay planes de suscripción para mostrar. Por favor, vuelve más tarde.</p>
+                </div>
+              </motion.section>
+        )}
       </main>
+    );
+  } catch (error: any) {
+    return <ErrorDisplay error={error} />;
+  }
+}
+
+export default function LandingPage() {
+  return (
+    <>
+      <Head>
+        <title>WebSapMaxDigital - Bienvenido</title>
+        <meta name="description" content="Tu solución digital definitiva para menús de restaurante" />
+      </Head>
+      <ErrorBoundary fallback={<ErrorDisplay error={new Error("Error al renderizar los datos de la landing.")} />}>
+        <Suspense fallback={<PlanSkeleton />}>
+          <LandingData />
+        </Suspense>
+      </ErrorBoundary>
     </>
   );
 }
