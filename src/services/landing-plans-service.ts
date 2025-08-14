@@ -208,11 +208,8 @@ class LandingPlansService {
    */
   async getPlans(): Promise<LandingPlan[]> {
     try {
-      const q = query(
-        collection(db, this.COLLECTION_NAME), 
-        orderBy('order', 'asc')
-      );
-      const snapshot = await getDocs(q);
+      const plansCollection = collection(db, this.COLLECTION_NAME);
+      const snapshot = await getDocs(plansCollection);
       const plans: LandingPlan[] = [];
   
       snapshot.forEach(doc => {
@@ -246,7 +243,8 @@ class LandingPlansService {
         }
       });
       
-      return plans;
+      // Ordenar los planes en el lado del cliente
+      return plans.sort((a, b) => a.order - b.order);
     } catch (error) {
       console.error('Error getting plans:', error);
       throw new Error('Error al obtener los planes. Es posible que se requiera un índice en Firestore.');
