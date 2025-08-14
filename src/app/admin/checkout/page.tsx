@@ -82,6 +82,8 @@ function CheckoutContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const planSlug = searchParams.get('plan');
+    const paymentStatus = searchParams.get('payment');
+    
     const { plans, isLoading, error } = usePublicLandingPlans();
     const { toast } = useToast();
     const { currentUser } = useSession();
@@ -98,17 +100,17 @@ function CheckoutContent() {
     }, [selectedPlan]);
     
     useEffect(() => {
-        const paymentStatus = searchParams.get('payment');
+        // CORRECCIÓN: Solo mostrar el toast y limpiar la URL si los parámetros de pago están presentes.
         if (paymentStatus === 'cancelled' || paymentStatus === 'failure') {
             toast({
                 title: 'Pago Cancelado o Fallido',
                 description: 'El proceso de pago no se completó. Por favor, intenta de nuevo.',
                 variant: 'destructive'
             });
-            // Opcional: limpiar los parámetros de la URL para que el toast no vuelva a aparecer si se recarga la página.
+            // Elimina solo los parámetros de pago, manteniendo el plan, para evitar el bucle.
             router.replace(`/admin/checkout?plan=${planSlug}`, { scroll: false });
         }
-    }, [searchParams, toast, router, planSlug]);
+    }, [paymentStatus, router, planSlug, toast]);
 
 
     if (isLoading || availablePayments === null) {
@@ -119,8 +121,8 @@ function CheckoutContent() {
         return (
             <div className="text-center py-10">
                 <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
-                <h2 className="mt-4 text-lg font-medium">No se pudo cargar el plan</h2>
-                <p className="mt-2 text-sm text-muted-foreground">{error?.message || 'El plan solicitado no es válido.'}</p>
+                <h2 className="mt-4 text-lg font-medium">No se pudo cargar la página de pago</h2>
+                <p className="mt-2 text-sm text-muted-foreground">{error?.message || 'El plan solicitado no es válido o hubo un problema de conexión.'}</p>
                  <Button asChild className="mt-6">
                     <Link href="/admin/subscription">Volver a Suscripciones</Link>
                 </Button>
@@ -133,7 +135,7 @@ function CheckoutContent() {
              <div className="text-center py-10">
                 <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
                 <h2 className="mt-4 text-lg font-medium">Plan no encontrado</h2>
-                <p className="mt-2 text-sm text-muted-foreground">El plan seleccionado no existe o no está disponible.</p>
+                <p className="mt-2 text-sm text-muted-foreground">El plan seleccionado ({planSlug}) no existe o no está disponible. Por favor, vuelve y elige otro plan.</p>
                 <Button asChild className="mt-6">
                     <Link href="/admin/subscription">Volver a Suscripciones</Link>
                 </Button>
@@ -336,5 +338,3 @@ export default function CheckoutPage() {
         </Suspense>
     );
 }
-
-    
