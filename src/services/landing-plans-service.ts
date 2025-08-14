@@ -209,7 +209,6 @@ class LandingPlansService {
   async getPlans(): Promise<LandingPlan[]> {
     try {
       const plansCollection = collection(db, this.COLLECTION_NAME);
-      // Consulta simplificada para evitar la necesidad de un índice compuesto
       const snapshot = await getDocs(plansCollection);
       const plans: LandingPlan[] = [];
   
@@ -257,7 +256,6 @@ class LandingPlansService {
    * Suscripción en tiempo real a los planes públicos
    */
   subscribeToPlans(callback: (plans: LandingPlan[]) => void, onError: (error: Error) => void): () => void {
-    // Consulta simplificada para evitar la necesidad de un índice compuesto
     const q = query(collection(db, this.COLLECTION_NAME));
   
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -674,5 +672,6 @@ class LandingPlansService {
 
 // Instancia singleton
 export const landingPlansService = new LandingPlansService();
+
 
 
