@@ -11,25 +11,27 @@ import { landingPlansService, type LandingPlan } from '@/services/landing-plans-
 const fetcher = async (): Promise<LandingPlan[]> => {
   console.log(`[Fetcher] Obteniendo planes directamente desde landingPlansService...`);
   try {
+    // Aquí se llama al servicio que consulta Firestore directamente.
     const plans = await landingPlansService.getPlans();
-    console.log(`[Fetcher] Datos recibidos: ${plans.length} planes.`);
+    console.log(`[Fetcher] Datos recibidos del servicio: ${plans.length} planes.`);
     return plans;
   } catch (error: any) {
     console.error('[Fetcher] Error al obtener los planes desde el servicio:', error);
-    // Relanzar el error para que SWR lo capture
-    throw new Error(error.message || 'Error al obtener los planes desde el servicio.');
+    // Relanzar el error para que SWR lo capture y lo muestre.
+    // Usamos el mensaje del error original para dar más contexto.
+    throw new Error(error.message || 'Error al obtener los planes directamente desde el servicio.');
   }
 };
 
 // Hook principal para obtener planes de la landing
 export function usePublicLandingPlans() {
   const { data, error, isLoading, isValidating, mutate } = useSWR<LandingPlan[], Error>(
-    'landing-plans', // Clave única para SWR
+    'landing-plans-direct', // Clave única y descriptiva para SWR
     fetcher,
     {
-      revalidateOnFocus: false, 
+      revalidateOnFocus: false,
       // **SOLUCIÓN:** Prevenir reintentos en caso de error para no causar bucles infinitos.
-      shouldRetryOnError: false, 
+      shouldRetryOnError: false,
     }
   );
 
@@ -49,9 +51,8 @@ export function usePublicLandingPlans() {
     }
   }, [data, error, isLoading, isValidating]);
   
-  // El filtrado y ordenamiento ya se hace en el servicio. No es necesario aquí.
+  // El servicio ya se encarga de filtrar y ordenar.
   const publicPlans = data || [];
-
 
   return {
     plans: publicPlans, 

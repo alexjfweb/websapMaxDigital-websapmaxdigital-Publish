@@ -209,6 +209,7 @@ class LandingPlansService {
   async getPlans(): Promise<LandingPlan[]> {
     try {
       // 1. CONSULTA SIMPLE: Obtener todos los documentos de la colección sin filtros ni orden.
+      // Esto garantiza que nunca se requiera un índice.
       const plansCollection = collection(db, this.COLLECTION_NAME);
       const snapshot = await getDocs(plansCollection);
       const allPlans: LandingPlan[] = [];
