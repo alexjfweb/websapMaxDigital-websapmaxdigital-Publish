@@ -9,7 +9,8 @@ export async function GET(request: NextRequest) {
     // El servicio ya se encarga de obtener los planes y ordenarlos.
     const plans = await landingPlansService.getPlans();
     
-    // Filtrar solo los planes que son públicos y activos.
+    // La lógica de filtrado ahora se maneja en el servicio `subscribeToPlans`, 
+    // pero para `getPlans` que obtiene todos, filtramos aquí para asegurar consistencia
     const publicPlans = plans.filter(plan => plan.isPublic && plan.isActive);
 
     console.log(`✅ [API] GET /api/landing-plans - Se obtuvieron y filtraron ${publicPlans.length} planes públicos.`);
