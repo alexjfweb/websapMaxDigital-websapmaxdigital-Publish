@@ -4,42 +4,30 @@
 
 import useSWR from 'swr';
 import { useEffect, useMemo } from 'react';
-import type { LandingPlan } from '@/services/landing-plans-service';
+import { landingPlansService, type LandingPlan } from '@/services/landing-plans-service';
 
-// Función fetcher mejorada para SWR
-const fetcher = async (url: string): Promise<LandingPlan[]> => {
-  console.log(`[Fetcher] Obteniendo datos de: ${url}`);
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    let errorInfo = 'Error en la solicitud a la API';
-    try {
-      const errorData = await response.json();
-      console.error('[Fetcher] Error en la respuesta de la API:', errorData);
-      errorInfo = errorData.error || errorData.message || JSON.stringify(errorData);
-    } catch (e) {
-      console.error('[Fetcher] No se pudo parsear el error JSON:', response.statusText);
-      errorInfo = response.statusText;
-    }
-    // **CORRECCIÓN:** Se lanza el error con el mensaje de la API para que SWR lo capture.
-    throw new Error(errorInfo);
+// Función fetcher que ahora llama directamente al servicio en lugar de a una API
+const fetcher = async (): Promise<LandingPlan[]> => {
+  console.log(`[Fetcher] Obteniendo datos directamente desde landingPlansService...`);
+  try {
+    const plans = await landingPlansService.getPlans();
+    console.log(`[Fetcher] Datos recibidos y parseados: ${plans.length} planes.`);
+    return plans;
+  } catch (error) {
+    console.error('[Fetcher] Error al obtener los planes desde el servicio:', error);
+    // Relanzar el error para que SWR lo capture
+    throw new Error('Error al obtener los planes. Es posible que se requiera un índice en Firestore.');
   }
-  
-  // La API correcta ahora devuelve un objeto { data: [...] }
-  const result = await response.json();
-  console.log('[Fetcher] Datos recibidos y parseados:', result);
-  return result.data || [];
 };
 
 // Hook principal para obtener planes de la landing
 export function usePublicLandingPlans() {
   const { data, error, isLoading, isValidating, mutate } = useSWR<LandingPlan[], Error>(
-    // CORRECCIÓN: Apuntar al endpoint correcto
-    '/api/plans',
+    'landing-plans', // Clave única para SWR
     fetcher,
     {
       revalidateOnFocus: false, 
-      shouldRetryOnError: false, // Previene el bucle infinito en caso de error 500
+      shouldRetryOnError: false, // Previene bucles infinitos en caso de error
     }
   );
 
