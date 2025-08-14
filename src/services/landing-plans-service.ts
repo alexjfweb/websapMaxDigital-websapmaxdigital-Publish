@@ -209,6 +209,7 @@ class LandingPlansService {
   async getPlans(): Promise<LandingPlan[]> {
     try {
       const plansCollection = collection(db, this.COLLECTION_NAME);
+      // Consulta simplificada para evitar la necesidad de un índice compuesto
       const snapshot = await getDocs(plansCollection);
       const plans: LandingPlan[] = [];
   
@@ -256,46 +257,44 @@ class LandingPlansService {
    * Suscripción en tiempo real a los planes públicos
    */
   subscribeToPlans(callback: (plans: LandingPlan[]) => void, onError: (error: Error) => void): () => void {
-    const q = query(
-      collection(db, this.COLLECTION_NAME),
-      where('isActive', '==', true), 
-      where('isPublic', '==', true), 
-      orderBy('order', 'asc')
-    );
+    // Consulta simplificada para evitar la necesidad de un índice compuesto
+    const q = query(collection(db, this.COLLECTION_NAME));
   
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const plans: LandingPlan[] = [];
+      let plans: LandingPlan[] = [];
       snapshot.forEach(doc => {
         const data = doc.data();
-        // El filtro de la consulta ya lo hace, pero lo mantenemos por seguridad
-        if (data.isPublic !== false) {
-            plans.push({
-              id: doc.id,
-              slug: data.slug,
-              name: data.name,
-              description: data.description,
-              price: data.price || 0,
-              currency: data.currency || 'USD',
-              period: data.period,
-              features: data.features || [],
-              isActive: data.isActive,
-              isPublic: data.isPublic,
-              isPopular: data.isPopular || false,
-              order: data.order || 0,
-              icon: data.icon,
-              color: data.color,
-              maxUsers: data.maxUsers,
-              maxProjects: data.maxProjects,
-              ctaText: data.ctaText || 'Comenzar Prueba Gratuita',
-              createdAt: this.parseTimestamp(data.createdAt),
-              updatedAt: this.parseTimestamp(data.updatedAt),
-              createdBy: data.createdBy,
-              updatedBy: data.updatedBy,
-              mp_preapproval_plan_id: data.mp_preapproval_plan_id,
-            });
-        }
+        plans.push({
+          id: doc.id,
+          slug: data.slug,
+          name: data.name,
+          description: data.description,
+          price: data.price || 0,
+          currency: data.currency || 'USD',
+          period: data.period,
+          features: data.features || [],
+          isActive: data.isActive,
+          isPublic: data.isPublic,
+          isPopular: data.isPopular || false,
+          order: data.order || 0,
+          icon: data.icon,
+          color: data.color,
+          maxUsers: data.maxUsers,
+          maxProjects: data.maxProjects,
+          ctaText: data.ctaText || 'Comenzar Prueba Gratuita',
+          createdAt: this.parseTimestamp(data.createdAt),
+          updatedAt: this.parseTimestamp(data.updatedAt),
+          createdBy: data.createdBy,
+          updatedBy: data.updatedBy,
+          mp_preapproval_plan_id: data.mp_preapproval_plan_id,
+        });
       });
-      callback(plans);
+      // Filtrar y ordenar en el lado del cliente
+      const publicPlans = plans
+        .filter(p => p.isActive && p.isPublic)
+        .sort((a, b) => a.order - b.order);
+        
+      callback(publicPlans);
     }, (error) => {
       console.error("Error en la suscripción a los planes:", error);
       onError(error);
@@ -675,3 +674,4 @@ class LandingPlansService {
 
 // Instancia singleton
 export const landingPlansService = new LandingPlansService();
+
