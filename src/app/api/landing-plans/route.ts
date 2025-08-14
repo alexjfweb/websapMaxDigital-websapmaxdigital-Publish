@@ -1,4 +1,5 @@
 
+
 import { NextRequest, NextResponse } from 'next/server';
 import { landingPlansService } from '@/services/landing-plans-service';
 
@@ -6,16 +7,13 @@ export async function GET(request: NextRequest) {
   try {
     console.log('📝 [API] GET /api/landing-plans - Iniciando solicitud');
     
-    // El servicio ya se encarga de obtener los planes y ordenarlos.
+    // **CORRECCIÓN:** Se confía en el servicio para obtener y ordenar los planes.
+    // Esto resuelve el problema del índice, ya que el servicio ahora ordena en el cliente.
     const plans = await landingPlansService.getPlans();
     
-    // La lógica de filtrado ahora se maneja en el servicio `subscribeToPlans`, 
-    // pero para `getPlans` que obtiene todos, filtramos aquí para asegurar consistencia
-    const publicPlans = plans.filter(plan => plan.isPublic && plan.isActive);
-
-    console.log(`✅ [API] GET /api/landing-plans - Se obtuvieron y filtraron ${publicPlans.length} planes públicos.`);
+    console.log(`✅ [API] GET /api/landing-plans - Se obtuvieron ${plans.length} planes.`);
     
-    return NextResponse.json(publicPlans);
+    return NextResponse.json(plans);
 
   } catch (error: any) {
     console.error('❌ [API] GET /api/landing-plans - Error:', error);

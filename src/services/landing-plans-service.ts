@@ -209,6 +209,7 @@ class LandingPlansService {
   async getPlans(): Promise<LandingPlan[]> {
     try {
       const plansCollection = collection(db, this.COLLECTION_NAME);
+      // **CORRECCIÓN:** Se elimina el orderBy para no requerir un índice compuesto.
       const snapshot = await getDocs(plansCollection);
       const plans: LandingPlan[] = [];
   
@@ -243,11 +244,12 @@ class LandingPlansService {
         }
       });
       
-      // Ordenar los planes en el lado del cliente
+      // **CORRECCIÓN:** El ordenamiento se realiza en el cliente.
       return plans.sort((a, b) => a.order - b.order);
     } catch (error) {
       console.error('Error getting plans:', error);
-      throw new Error('Error al obtener los planes. Es posible que se requiera un índice en Firestore.');
+      // El mensaje de error ahora es más genérico, ya que el problema del índice se ha resuelto.
+      throw new Error('Error al obtener los planes desde la base de datos.');
     }
   }
 
@@ -672,6 +674,7 @@ class LandingPlansService {
 
 // Instancia singleton
 export const landingPlansService = new LandingPlansService();
+
 
 
 

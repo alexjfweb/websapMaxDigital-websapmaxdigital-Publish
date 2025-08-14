@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import useSWR from 'swr';
@@ -20,11 +21,12 @@ const fetcher = async (url: string): Promise<LandingPlan[]> => {
       console.error('[Fetcher] No se pudo parsear el error JSON:', response.statusText);
       errorInfo = response.statusText;
     }
+    // **CORRECCIÓN:** Se lanza el error con el mensaje de la API para que SWR lo capture.
     throw new Error(errorInfo);
   }
   const data = await response.json();
   console.log('[Fetcher] Datos recibidos y parseados:', data);
-  // La API ahora devuelve el array directamente
+  // **CORRECCIÓN:** La API ahora devuelve el array directamente, así que no se necesita `.data`.
   return data || [];
 };
 
@@ -34,8 +36,8 @@ export function usePublicLandingPlans() {
     '/api/landing-plans',
     fetcher,
     {
-      revalidateOnFocus: false, // Se cambia a false para evitar revalidaciones excesivas
-      shouldRetryOnError: false, // Se desactiva el reintento para controlar el flujo
+      revalidateOnFocus: false, 
+      shouldRetryOnError: false, 
     }
   );
 
@@ -51,7 +53,7 @@ export function usePublicLandingPlans() {
       console.log(`✅ [usePublicLandingPlans] Datos de planes recibidos: ${data.length} planes.`);
     }
     if (error) {
-      console.error('❌ [usePublicLandingPlans] Error al obtener datos:', error);
+      console.error(`❌ [usePublicLandingPlans] Error al obtener datos: ${error}`);
     }
   }, [data, error, isLoading, isValidating]);
 
@@ -60,6 +62,6 @@ export function usePublicLandingPlans() {
     isLoading: isLoading,
     isError: !!error,
     error: error,
-    refreshPlans: mutate, // Exponer la función de revalidación
+    refreshPlans: mutate, 
   };
 }
