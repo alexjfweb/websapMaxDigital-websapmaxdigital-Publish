@@ -24,16 +24,18 @@ const fetcher = async (url: string): Promise<LandingPlan[]> => {
     // **CORRECCIÓN:** Se lanza el error con el mensaje de la API para que SWR lo capture.
     throw new Error(errorInfo);
   }
-  const data = await response.json();
-  console.log('[Fetcher] Datos recibidos y parseados:', data);
-  // La API ahora devuelve el array directamente, no un objeto { data: [...] }
-  return data || [];
+  
+  // La API correcta ahora devuelve un objeto { data: [...] }
+  const result = await response.json();
+  console.log('[Fetcher] Datos recibidos y parseados:', result);
+  return result.data || [];
 };
 
 // Hook principal para obtener planes de la landing
 export function usePublicLandingPlans() {
   const { data, error, isLoading, isValidating, mutate } = useSWR<LandingPlan[], Error>(
-    '/api/landing-plans',
+    // CORRECCIÓN: Apuntar al endpoint correcto
+    '/api/plans',
     fetcher,
     {
       revalidateOnFocus: false, 
