@@ -209,8 +209,14 @@ class LandingPlansService {
   async getPlans(): Promise<LandingPlan[]> {
     try {
       const plansCollection = collection(db, this.COLLECTION_NAME);
-      // **CORRECCIÓN:** Se elimina el orderBy para no requerir un índice compuesto.
-      const snapshot = await getDocs(plansCollection);
+      // RESTAURADO: Se vuelve a la consulta que requiere índice para un rendimiento óptimo.
+      const q = query(
+        plansCollection,
+        where('isActive', '==', true),
+        where('isPublic', '==', true),
+        orderBy('order', 'asc')
+      );
+      const snapshot = await getDocs(q);
       const plans: LandingPlan[] = [];
   
       snapshot.forEach(doc => {
@@ -244,8 +250,7 @@ class LandingPlansService {
         }
       });
       
-      // **CORRECCIÓN:** El ordenamiento se realiza en el cliente.
-      return plans.sort((a, b) => a.order - b.order);
+      return plans;
     } catch (error) {
       console.error('Error getting plans:', error);
       throw new Error('Error al obtener los planes. Es posible que se requiera un índice en Firestore.');
@@ -257,7 +262,13 @@ class LandingPlansService {
    * Suscripción en tiempo real a los planes públicos
    */
   subscribeToPlans(callback: (plans: LandingPlan[]) => void, onError: (error: Error) => void): () => void {
-    const q = query(collection(db, this.COLLECTION_NAME));
+    // RESTAURADO: Se vuelve a la consulta que requiere índice.
+    const q = query(
+      collection(db, this.COLLECTION_NAME),
+      where('isActive', '==', true),
+      where('isPublic', '==', true),
+      orderBy('order', 'asc')
+    );
   
     const unsubscribe = onSnapshot(q, (snapshot) => {
       let plans: LandingPlan[] = [];
@@ -288,12 +299,7 @@ class LandingPlansService {
           mp_preapproval_plan_id: data.mp_preapproval_plan_id,
         });
       });
-      // Filtrar y ordenar en el lado del cliente
-      const publicPlans = plans
-        .filter(p => p.isActive && p.isPublic)
-        .sort((a, b) => a.order - b.order);
-        
-      callback(publicPlans);
+      callback(plans);
     }, (error) => {
       console.error("Error en la suscripción a los planes:", error);
       onError(error);

@@ -8,7 +8,7 @@ import { landingPlansService, type LandingPlan } from '@/services/landing-plans-
 
 // Función fetcher que ahora llama directamente al servicio en lugar de a una API
 const fetcher = async (): Promise<LandingPlan[]> => {
-  console.log(`[Fetcher] Obteniendo datos directamente desde landingPlansService...`);
+  console.log(`[Fetcher] Obteniendo planes directamente desde landingPlansService...`);
   try {
     const plans = await landingPlansService.getPlans();
     console.log(`[Fetcher] Datos recibidos y parseados: ${plans.length} planes.`);
@@ -47,8 +47,14 @@ export function usePublicLandingPlans() {
     }
   }, [data, error, isLoading, isValidating]);
 
+  // Se filtran los planes aquí por si el servicio devuelve planes no públicos/inactivos
+  const publicPlans = useMemo(() => {
+    return (data || []).filter(plan => plan.isPublic && plan.isActive);
+  }, [data]);
+
+
   return {
-    plans: data || [], 
+    plans: publicPlans, 
     isLoading: isLoading,
     isError: !!error,
     error: error,
