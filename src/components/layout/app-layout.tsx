@@ -34,44 +34,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   
   const isPublicPage = ['/login', '/register', '/'].includes(pathname) || pathname.startsWith('/menu/');
 
-  const handleGoBack = () => {
-    if (pathname === '/login') {
-      router.push('/');
-    } else if (pathname === '/register') {
-      router.push('/login');
-    } else {
-      router.back();
-    }
-  };
-
-  const handleGoNext = () => {
-    if (pathname === '/login') {
-      router.push('/register');
-    } else if (pathname === '/register') {
-      router.push('/login');
-    } else if (pathname === '/') {
-      router.push('/login');
-    } else {
-      router.push('/login');
-    }
-  };
-  
-  const showNavigationButtons = ['/login', '/register', '/'].includes(pathname);
-
   if (isLoading) {
     return (
         <div className="flex min-h-svh w-full items-center justify-center bg-background">
             <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
             <span className="ml-2">Verificando sesión...</span>
-        </div>
-    );
-  }
-
-  if (currentUser.role === 'guest' && !isPublicPage) {
-    return (
-        <div className="flex min-h-svh w-full items-center justify-center bg-background">
-            <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
-            <span className="ml-2">Redirigiendo...</span>
         </div>
     );
   }

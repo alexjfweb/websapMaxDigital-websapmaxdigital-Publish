@@ -11,19 +11,9 @@ import { doc, getDoc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 
 interface SessionContextType {
-  currentUser: User | null;
+  currentUser: User; // Cambiado para que nunca sea null
   isLoading: boolean;
   logout: () => void;
-}
-
-const SessionContext = createContext<SessionContextType | undefined>(undefined);
-
-export function useSession() {
-  const context = useContext(SessionContext);
-  if (!context) {
-    throw new Error('useSession must be used within a SessionProvider');
-  }
-  return context;
 }
 
 const guestUser: User = {
@@ -39,9 +29,18 @@ const guestUser: User = {
   companyId: undefined,
 };
 
+const SessionContext = createContext<SessionContextType | undefined>(undefined);
+
+export function useSession() {
+  const context = useContext(SessionContext);
+  if (!context) {
+    throw new Error('useSession must be used within a SessionProvider');
+  }
+  return context;
+}
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User>(guestUser);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const router = useRouter();
@@ -60,15 +59,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         
         if (userDocSnap.exists()) {
           const userData = userDocSnap.data() as Omit<User, 'id'>;
-          const userWithId: User = {
-              id: firebaseUser.uid,
-              uid: firebaseUser.uid,
-              ...userData,
-              companyId: userData.companyId || undefined,
-          };
-
-          setCurrentUser(userWithId);
-          console.log(`✅ Sesión iniciada para ${userWithId.email} con companyId: ${userWithId.companyId}`);
+          setCurrentUser({ id: firebaseUser.uid, ...userData } as User);
+          console.log(`✅ Sesión iniciada para ${userData.email} con companyId: ${userData.companyId}`);
         } else {
           console.error(`🔴 Usuario ${firebaseUser.uid} existe en Auth pero no en Firestore. Cerrando sesión forzosa.`);
           await auth.signOut();
@@ -93,7 +85,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const app = getFirebaseApp();
       const auth = getAuth(app);
       await auth.signOut();
-      // onAuthStateChanged se encargará de setear a guest y redirigir
+      // onAuthStateChanged se encargará de setear a guest.
     } catch (error) {
       toast({ title: 'Error', description: 'No se pudo cerrar la sesión.', variant: 'destructive' });
     }
@@ -120,9 +112,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, [isLoading, currentUser, pathname, router]);
 
-  // Si aún está cargando y no tenemos usuario, mostramos un loader genérico
-  // para evitar que se renderice el layout completo prematuramente.
-  if (isLoading || !currentUser) {
+  if (isLoading) {
      return (
         <div className="flex min-h-svh w-full items-center justify-center bg-background">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -130,7 +120,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         </div>
     );
   }
-
 
   const value: SessionContextType = {
     currentUser,

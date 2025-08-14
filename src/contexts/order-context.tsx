@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback } from "react";
 import useSWR from 'swr';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, updateDoc, doc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, Timestamp, serverTimestamp } from 'firebase/firestore';
 import type { Order } from '@/types'; 
 import { useSession } from "./session-context";
 
@@ -34,11 +34,11 @@ const fetcher = async (url: string): Promise<Order[]> => {
 };
 
 export const OrderProvider = ({ children }: { children: ReactNode }) => {
-  const { currentUser } = useSession();
-  const companyId = currentUser.companyId;
+  const { currentUser, isLoading: isSessionLoading } = useSession();
+  const companyId = currentUser?.companyId;
 
-  // Solo intentar hacer fetch si hay un companyId
-  const shouldFetch = !!companyId;
+  // Solo intentar hacer fetch si la sesión ha cargado Y hay un companyId
+  const shouldFetch = !isSessionLoading && !!companyId;
 
   const { data: orders = [], error, isLoading, mutate } = useSWR<Order[], Error>(
     shouldFetch ? `/api/companies/${companyId}/orders` : null,
@@ -74,29 +74,8 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     mutate();
   }, [mutate]);
 
-  // Si no hay companyId, los componentes hijos no deben intentar usar el contexto que depende de él.
-  // Renderizamos los children, pero el valor del contexto reflejará que no hay datos.
-  // El Dashboard y otros componentes deben manejar el estado de carga.
-  if (!shouldFetch && currentUser.role !== 'guest') {
-    // Proporcionar un contexto "vacío" mientras se espera companyId, para evitar el error.
-    const emptyContextValue: OrderContextType = {
-      orders: [],
-      addOrder: async () => '',
-      updateOrder: async () => {},
-      loading: true, // Se considera cargando hasta que haya un companyId
-      error: null,
-      refreshOrders: () => {},
-    };
-    return (
-       <OrderContext.Provider value={emptyContextValue}>
-            {children}
-        </OrderContext.Provider>
-    );
-  }
-
-
   return (
-    <OrderContext.Provider value={{ orders, addOrder, updateOrder, loading: isLoading, error, refreshOrders: mutate }}>
+    <OrderContext.Provider value={{ orders, addOrder, updateOrder, loading: isSessionLoading || isLoading, error, refreshOrders: mutate }}>
       {children}
     </OrderContext.Provider>
   );
