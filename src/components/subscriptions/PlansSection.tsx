@@ -1,8 +1,8 @@
+
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
 
 interface Plan {
   id?: string;
@@ -25,12 +25,8 @@ export default function PlansSection({ plans }: { plans: Plan[] }) {
       <h3 className="text-2xl font-bold text-center mb-8">Planes de Suscripción</h3>
       <div className="flex flex-wrap justify-center gap-6">
         {plans.map((plan, idx) => (
-          <motion.div
+          <div
             key={plan.id || idx}
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.6, delay: idx * 0.15 }}
             className="bg-white rounded-lg shadow-md p-6 w-80 flex flex-col items-center border-t-4 border-orange-500"
           >
             <div className="font-bold text-xl mb-2 text-orange-600">{plan.name || 'Sin nombre'}</div>
@@ -39,9 +35,9 @@ export default function PlansSection({ plans }: { plans: Plan[] }) {
               {(plan.features || []).map((f, i) => <li key={i} className="flex items-center gap-2"><span className="text-green-600">✔</span>{f}</li>)}
             </ul>
             <Button className="mt-auto bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded shadow transition-colors">Ver detalles</Button>
-          </motion.div>
+          </div>
         ))}
       </div>
     </section>
   );
-} 
+}
