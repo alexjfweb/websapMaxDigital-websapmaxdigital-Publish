@@ -3,7 +3,7 @@
 
 import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { usePublicLandingPlans } from '@/hooks/use-plans';
+import { useLandingPlans } from '@/hooks/use-landing-plans';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -84,7 +84,7 @@ function CheckoutContent() {
     const planSlug = searchParams.get('plan');
     const paymentStatus = searchParams.get('payment');
     
-    const { plans, isLoading, error } = usePublicLandingPlans();
+    const { plans, isLoading, error } = useLandingPlans();
     const { toast } = useToast();
     const { currentUser } = useSession();
     const [isProcessingPayment, setIsProcessingPayment] = useState<null | 'stripe' | 'mercadopago'>(null);
