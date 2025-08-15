@@ -2,17 +2,12 @@
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { auditService } from './audit-service';
+import type { LandingConfig, LandingSection, LandingSEO } from '@/types/landing';
 
-// --- INTERFACES (sin cambios) ---
-export interface LandingSEO { /* ... */ }
-export interface LandingSection { /* ... */ }
-export interface LandingConfig { /* ... */ }
-
-// --- FUNCIÓN DE SERIALIZACIÓN ---
+// Función de serialización para asegurar que los datos sean seguros para el cliente
 const serializeLandingConfig = (data: any): LandingConfig => {
   const serializedData = { ...data };
   
-  // Serializa los timestamps de nivel superior si existen
   if (serializedData.createdAt && serializedData.createdAt instanceof Timestamp) {
     serializedData.createdAt = serializedData.createdAt.toDate().toISOString();
   }
@@ -20,26 +15,40 @@ const serializeLandingConfig = (data: any): LandingConfig => {
     serializedData.updatedAt = serializedData.updatedAt.toDate().toISOString();
   }
 
-  // Asegura que las secciones y subsecciones sean arrays
-  if (Array.isArray(serializedData.sections)) {
-    serializedData.sections = serializedData.sections.map((section: any) => ({
-      ...section,
-      subsections: section.subsections || [],
-    }));
-  } else {
-    serializedData.sections = [];
-  }
+  // Asegura que las secciones y subsecciones sean arrays, incluso si no existen
+  serializedData.sections = (serializedData.sections || []).map((section: any) => ({
+    ...section,
+    subsections: section.subsections || [],
+  }));
   
   return serializedData as LandingConfig;
 };
-
 
 class LandingConfigService {
   private readonly COLLECTION_NAME = 'landing_configs';
   private readonly CONFIG_ID = "main";
   
   getDefaultConfig(): LandingConfig {
-    // ... (El contenido de esta función no cambia)
+    return {
+        title: 'WebSapMax - Tu Menú Digital Inteligente',
+        description: 'La solución definitiva para digitalizar el menú de tu restaurante, gestionar pedidos y reservas de forma eficiente.',
+        heroTitle: 'Transforma la Experiencia de tu Restaurante',
+        heroSubtitle: 'Digitaliza tu menú, optimiza tus pedidos y fideliza a tus clientes con nuestra plataforma todo en uno.',
+        heroButtonText: 'Ver Planes',
+        heroButtonUrl: '#plans',
+        heroBackgroundColor: '#FFF2E6',
+        heroTextColor: '#222222',
+        heroButtonColor: '#FF4500',
+        heroAnimation: 'fadeIn',
+        sections: [],
+        seo: {
+            title: 'WebSapMax | Menús Digitales y Gestión de Restaurantes',
+            description: 'Ofrece a tus clientes una experiencia moderna con menús digitales interactivos, QR, gestión de pedidos y reservas. ¡Comienza hoy!',
+            keywords: ['menú digital', 'restaurante', 'QR', 'gestión de pedidos', 'reservas online'],
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    };
   }
 
   async getLandingConfig(): Promise<LandingConfig> {
@@ -56,7 +65,6 @@ class LandingConfigService {
         seo: { ...defaultConfig.seo, ...dbData.seo },
       };
 
-      // **LA SOLUCIÓN DEFINITIVA**
       return serializeLandingConfig(mergedData);
 
     } else {
@@ -66,9 +74,25 @@ class LandingConfigService {
         createdAt: serverTimestamp(), 
         updatedAt: serverTimestamp() 
       });
-      // Devuelve la versión por defecto que ya es serializable
-      return defaultConfig;
+      return defaultConfig; // Ya es serializable
     }
+  }
+
+  async createLandingConfig(configData: LandingConfig, userId: string, userEmail: string): Promise<void> {
+    const docRef = doc(db, this.COLLECTION_NAME, this.CONFIG_ID);
+    await setDoc(docRef, {
+      ...configData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    await auditService.log({
+      entity: 'landing_configs',
+      entityId: this.CONFIG_ID,
+      action: 'created',
+      performedBy: { uid: userId, email: userEmail },
+      newData: configData,
+    });
   }
 
   async updateLandingConfig(configData: Partial<LandingConfig>, userId: string, userEmail: string): Promise<void> {
@@ -85,66 +109,10 @@ class LandingConfigService {
       entityId: this.CONFIG_ID,
       action: 'updated',
       performedBy: { uid: userId, email: userEmail },
-      previousData: currentConfig, // ya está serializado
+      previousData: currentConfig,
       newData: { ...currentConfig, ...configData },
     });
   }
 }
 
 export const landingConfigService = new LandingConfigService();
-// Pegar las interfaces aquí si estaban fuera de la clase
-export interface LandingSEO {
-  title: string;
-  description: string;
-  keywords: string[];
-  ogTitle?: string;
-  ogDescription?: string;
-  ogImage?: string;
-}
-
-export interface LandingSection {
-  id: string;
-  type: 'hero' | 'features' | 'testimonials' | 'contact' | 'about' | 'services';
-  title: string;
-  subtitle: string;
-  content: string;
-  backgroundColor: string;
-  textColor: string;
-  buttonColor: string;
-  buttonText: string;
-  buttonUrl: string;
-  imageUrl?: string;
-  order: number;
-  isActive: boolean;
-  animation?: 'fadeIn' | 'slideUp' | 'slideLeft' | 'slideRight' | 'zoomIn' | 'none';
-  seoTitle?: string;
-  seoDescription?: string;
-  seoKeywords?: string[];
-  subsections?: {
-    id: string;
-    title: string;
-    content: string;
-    imageUrl?: string;
-  }[];
-  mediaType?: 'none' | 'image' | 'video';
-  mediaUrl?: string;
-  mediaPosition?: 'left' | 'right' | 'top';
-}
-
-export interface LandingConfig {
-  id?: string;
-  title: string;
-  description: string;
-  heroTitle: string;
-  heroSubtitle: string;
-  heroButtonText: string;
-  heroButtonUrl: string;
-  heroBackgroundColor: string;
-  heroTextColor: string;
-  heroButtonColor: string;
-  heroAnimation: 'fadeIn' | 'slideUp' | 'slideLeft' | 'slideRight' | 'zoomIn' | 'none';
-  sections: LandingSection[];
-  seo: LandingSEO;
-  createdAt?: string; // Aseguramos que sea string
-  updatedAt?: string; // Aseguramos que sea string
-}
