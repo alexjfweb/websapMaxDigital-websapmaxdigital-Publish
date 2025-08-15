@@ -143,4 +143,3 @@ export default function CartSummary({ cart, restaurantPhone }: CartSummaryProps)
     </Card>
   );
 }
-
