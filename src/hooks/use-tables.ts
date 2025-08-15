@@ -17,7 +17,7 @@ const fetcher = async (url: string): Promise<Table[]> => {
 export function useTables(companyId?: string | null) {
   const { currentUser, isLoading: isSessionLoading } = useSession();
 
-  const effectiveCompanyId = companyId || currentUser.companyId;
+  const effectiveCompanyId = companyId || currentUser?.companyId;
 
   const shouldFetch = effectiveCompanyId && !isSessionLoading;
 

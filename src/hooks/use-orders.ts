@@ -27,7 +27,7 @@ const fetcher = async (url: string): Promise<Order[]> => {
 export function useOrders(companyId?: string | null) {
   const { currentUser, isLoading: isSessionLoading } = useSession();
 
-  const effectiveCompanyId = companyId || currentUser.companyId;
+  const effectiveCompanyId = companyId || currentUser?.companyId;
 
   const shouldFetch = effectiveCompanyId && !isSessionLoading;
 
