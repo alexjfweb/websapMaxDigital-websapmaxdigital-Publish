@@ -32,6 +32,7 @@ interface FormState {
   bancolombiaQRUrl?: string;
   nequiNumber: string;
   nequiQRUrl?: string;
+  daviplataQRUrl?: string;
   mercadopagoEmail: string;
   stripePublic: string;
   stripeSecret: string;

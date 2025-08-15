@@ -2,7 +2,7 @@
 "use client";
 
 import { useSubscription } from "@/hooks/use-subscription";
-import { usePublicLandingPlans } from "@/hooks/use-plans";
+import { useLandingPlans } from "@/hooks/use-landing-plans";
 import { useEmployees } from "@/hooks/use-employees";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -85,7 +85,7 @@ function PlanCard({ plan, isCurrent, isPopular }: { plan: any, isCurrent?: boole
 
 export default function SubscriptionPage() {
     const { subscription, isLoading: isLoadingSubscription, error: errorSubscription } = useSubscription();
-    const { plans, isLoading: isLoadingPlans, error: errorPlans } = usePublicLandingPlans();
+    const { plans, isLoading: isLoadingPlans, error: errorPlans } = useLandingPlans();
     const { employees, isLoading: isLoadingEmployees } = useEmployees(subscription?.company?.id);
     const [isSupportDialogOpen, setIsSupportDialogOpen] = useState(false);
 
