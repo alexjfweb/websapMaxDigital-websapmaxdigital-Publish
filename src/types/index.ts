@@ -148,7 +148,7 @@ export interface Company {
   planId?: string;
   planName?: string; // Campo añadido para mostrar el nombre del plan
   subscriptionStatus?: 'trialing' | 'active' | 'past_due' | 'canceled' | 'pending_payment';
-  trialEndsAt?: string;
+  trialEndsAt?: string | null;
   socialLinks?: {
     website?: string;
     menuShareLink?: string;
@@ -272,7 +272,7 @@ export interface AuditLog {
     uid: string;
     email: string;
   };
-  timestamp: Timestamp;
+  timestamp: string; // Changed to string for serialization
   diff?: Record<string, { from: any; to: any }>;
   previousData?: any;
   newData?: any;
