@@ -16,6 +16,7 @@ import {
 } from 'firebase/firestore';
 import type { Company } from '@/types';
 import { auditService } from './audit-service';
+import { dishService } from './dish-service'; // Importar dishService
 
 export type CreateCompanyInput = Omit<Company, 'id' | 'createdAt' | 'updatedAt'>;
 
@@ -112,6 +113,9 @@ class CompanyService {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
+    
+    // Después de crear la empresa, crear platos de ejemplo
+    await dishService.createSampleDishesForCompany(docRef.id);
     
     const newCompanyData: Company = {
       id: docRef.id,
