@@ -16,24 +16,32 @@ import type { Company } from '@/types';
 import { auditService } from './audit-service';
 import { dishService } from './dish-service';
 
-const serializeDate = (date: any): string => {
+const serializeDate = (date: any): string | null => {
+  if (!date) return null;
   if (date instanceof Timestamp) return date.toDate().toISOString();
   if (date instanceof Date) return date.toISOString();
-  if (typeof date === 'string') return new Date(date).toISOString();
-  if (date && typeof date === 'object' && date.seconds) {
+  if (typeof date === 'string') {
+      const parsedDate = new Date(date);
+      if (!isNaN(parsedDate.getTime())) {
+          return parsedDate.toISOString();
+      }
+  }
+  if (date && typeof date.seconds === 'number') {
     return new Date(date.seconds * 1000).toISOString();
   }
-  return new Date().toISOString();
+  // Return as is if it's already a serialized string or null
+  return (typeof date === 'string') ? date : null;
 };
 
 const serializeCompany = (id: string, data: any): Company => {
   const companyData = data as Partial<Company>;
   return {
-    id,
     ...companyData,
-    createdAt: serializeDate(companyData.createdAt),
-    updatedAt: serializeDate(companyData.updatedAt),
-    registrationDate: serializeDate(companyData.registrationDate),
+    id,
+    createdAt: serializeDate(companyData.createdAt) || new Date().toISOString(),
+    updatedAt: serializeDate(companyData.updatedAt) || new Date().toISOString(),
+    registrationDate: serializeDate(companyData.registrationDate) || new Date().toISOString(),
+    trialEndsAt: serializeDate(companyData.trialEndsAt),
   } as Company;
 };
 

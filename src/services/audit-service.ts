@@ -13,7 +13,7 @@ export interface AuditLog {
     uid: string;
     email: string;
   };
-  timestamp: Date; // Cambiado a Date para consistencia
+  timestamp: string; // Cambiado a string para consistencia
   previousData?: any;
   newData?: any;
   diff?: Record<string, { from: any, to: any }>;
@@ -58,31 +58,21 @@ class AuditService {
   }
   
   /**
-   * Convierte de forma segura varios formatos de timestamp a un objeto Date.
+   * Convierte de forma segura varios formatos de timestamp a un string ISO.
    */
-  private parseTimestamp(timestamp: any): Date {
-    if (!timestamp) {
-      return new Date();
-    }
-    if (timestamp instanceof Timestamp) {
-      return timestamp.toDate();
-    }
-    if (timestamp instanceof Date) {
-      return timestamp;
-    }
-    // Para objetos como { seconds: ..., nanoseconds: ... }
+  private parseTimestamp(timestamp: any): string {
+    if (!timestamp) return new Date().toISOString();
+    if (timestamp instanceof Timestamp) return timestamp.toDate().toISOString();
+    if (timestamp instanceof Date) return timestamp.toISOString();
     if (typeof timestamp === 'object' && timestamp !== null && 'seconds' in timestamp) {
-        return new Date(timestamp.seconds * 1000);
+        return new Date(timestamp.seconds * 1000).toISOString();
     }
-    // Para cadenas de fecha ISO o números
-    if (typeof timestamp === 'string' || typeof timestamp === 'number') {
+    if (typeof timestamp === 'string') {
         const date = new Date(timestamp);
-        if (!isNaN(date.getTime())) {
-            return date;
-        }
+        if (!isNaN(date.getTime())) return date.toISOString();
     }
     console.warn("Formato de fecha no reconocido, devolviendo fecha actual:", timestamp);
-    return new Date(); // Fallback
+    return new Date().toISOString(); // Fallback
   }
 
 
