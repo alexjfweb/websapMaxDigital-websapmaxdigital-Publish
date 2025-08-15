@@ -18,6 +18,16 @@ type CreateReservationInput = Omit<Reservation, 'id' | 'createdAt' | 'updatedAt'
     restaurantId: string;
 };
 
+// Función robusta para convertir cualquier formato de fecha a ISO string
+const serializeDate = (date: any): string => {
+  if (!date) return new Date().toISOString();
+  if (date instanceof Timestamp) return date.toDate().toISOString();
+  if (date instanceof Date) return date.toISOString();
+  if (typeof date === 'string') return new Date(date).toISOString();
+  if (typeof date === 'object' && date.seconds) return new Date(date.seconds * 1000).toISOString();
+  return new Date().toISOString();
+};
+
 class ReservationService {
   private get reservationsCollection() {
     if (!db) {
@@ -37,16 +47,14 @@ class ReservationService {
         throw new Error("El ID del restaurante es obligatorio para crear una reserva.");
     }
 
-    // Estandarización: Siempre guardar con el campo 'restaurantId'.
     const reservationDoc = {
       ...data,
-      restaurantId: restaurantId, // Asegura que el campo siempre se llame así
+      restaurantId: restaurantId,
       status: 'pending',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
     
-    // Eliminamos cualquier posible campo 'companyId' para evitar duplicados
     delete (reservationDoc as any).companyId;
 
     const docRef = await addDoc(coll, reservationDoc);
@@ -69,7 +77,7 @@ class ReservationService {
       const q = query(
         coll,
         where('restaurantId', '==', companyId),
-        orderBy('dateTime', 'desc') // Re-añadido para ordenar. Requiere el índice.
+        orderBy('dateTime', 'desc')
       );
 
       const querySnapshot = await getDocs(q);
@@ -78,16 +86,14 @@ class ReservationService {
       
       const reservations: Reservation[] = querySnapshot.docs.map(doc => {
           const data = doc.data();
-          const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : new Date().toISOString();
-          const updatedAt = data.updatedAt instanceof Timestamp ? data.updatedAt.toDate().toISOString() : new Date().toISOString();
-          const dateTime = data.dateTime instanceof Timestamp ? data.dateTime.toDate().toISOString() : data.dateTime;
           
+          // Usamos la nueva función segura para serializar las fechas
           return {
-              id: doc.id,
               ...data,
-              createdAt,
-              updatedAt,
-              dateTime,
+              id: doc.id,
+              createdAt: serializeDate(data.createdAt),
+              updatedAt: serializeDate(data.updatedAt),
+              dateTime: serializeDate(data.dateTime),
           } as Reservation;
       });
 
@@ -96,12 +102,11 @@ class ReservationService {
 
     } catch (error: any) {
       console.error(`[ReservationService] Error al obtener las reservas para ${companyId}:`, error);
-      // Devuelve un error claro si es un problema de índice
       if (error.code === 'failed-precondition') {
           console.error("Firestore requiere un índice para esta consulta. Por favor, crea uno desde el enlace en el mensaje de error de la consola.");
-          throw new Error("Firestore requiere un índice para esta consulta. Por favor, crea uno desde el enlace en el mensaje de error de la consola.");
+          throw new Error("Firestore requiere un índice para esta consulta.");
       }
-      throw new Error("No se pudieron obtener las reservas. Verifica la consola para más detalles.");
+      throw new Error("No se pudieron obtener las reservas.");
     }
   }
   

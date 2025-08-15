@@ -10,155 +10,100 @@ import {
   where,
   serverTimestamp,
   Timestamp,
-  addDoc,
-  WriteBatch,
-  writeBatch
+  addDoc
 } from 'firebase/firestore';
 import type { Company } from '@/types';
 import { auditService } from './audit-service';
-import { dishService } from './dish-service'; // Importar dishService
+import { dishService } from './dish-service';
 
-export type CreateCompanyInput = Omit<Company, 'id' | 'createdAt' | 'updatedAt'>;
+const serializeDate = (date: any): string => {
+  if (date instanceof Timestamp) return date.toDate().toISOString();
+  if (date instanceof Date) return date.toISOString();
+  if (typeof date === 'string') return new Date(date).toISOString();
+  if (date && typeof date === 'object' && date.seconds) {
+    return new Date(date.seconds * 1000).toISOString();
+  }
+  return new Date().toISOString();
+};
+
+const serializeCompany = (id: string, data: any): Company => {
+  const companyData = data as Partial<Company>;
+  return {
+    id,
+    ...companyData,
+    createdAt: serializeDate(companyData.createdAt),
+    updatedAt: serializeDate(companyData.updatedAt),
+    registrationDate: serializeDate(companyData.registrationDate),
+  } as Company;
+};
 
 class CompanyService {
   private get companiesCollection() {
-    if (!db) {
-      console.error("Firebase no está inicializado. No se puede acceder a la colección 'companies'.");
-      throw new Error("La base de datos no está disponible.");
-    }
+    if (!db) throw new Error("Database not available");
     return collection(db, 'companies');
   }
 
-  private parseTimestamp(timestamp: any): string {
-    if (!timestamp) return new Date().toISOString();
-    if (timestamp instanceof Timestamp) return timestamp.toDate().toISOString();
-    if (timestamp.seconds) return new Date(timestamp.seconds * 1000).toISOString();
-    return new Date(timestamp).toISOString();
-  }
-
-  /**
-   * Obtiene todas las empresas activas de Firestore.
-   */
   async getCompanies(): Promise<Company[]> {
-    const coll = this.companiesCollection;
-    if (!coll) return [];
-
+    const q = query(this.companiesCollection, where("status", "in", ["active", "pending", "inactive"]));
     try {
-      const q = query(coll, where("status", "in", ["active", "pending", "inactive"]));
       const querySnapshot = await getDocs(q);
-      const companies: Company[] = [];
-      
-      querySnapshot.forEach(doc => {
-        const data = doc.data();
-        if (!data.name) {
-          console.warn(`[WARN] Documento de empresa ${doc.id} omitido por falta de nombre.`);
-          return;
-        }
-
-        companies.push({
-          id: doc.id,
-          ...data,
-          createdAt: this.parseTimestamp(data.createdAt),
-          updatedAt: this.parseTimestamp(data.updatedAt),
-          registrationDate: this.parseTimestamp(data.registrationDate),
-        } as Company);
-      });
-      
-      console.log(`✅ Se obtuvieron ${companies.length} empresas de Firestore.`);
-      return companies;
+      return querySnapshot.docs.map(doc => serializeCompany(doc.id, doc.data()));
     } catch (error) {
-      console.error('❌ Error al obtener las empresas de Firestore:', error);
-      throw new Error('No se pudieron obtener las empresas.');
+      console.error('Error fetching companies:', error);
+      return [];
     }
   }
 
-  /**
-   * Obtiene una empresa por su ID.
-   */
   async getCompanyById(id: string): Promise<Company | null> {
-    const coll = this.companiesCollection;
-    if (!coll) return null;
-    
-    const docRef = doc(coll, id);
+    if (!id) return null;
+    const docRef = doc(this.companiesCollection, id);
     const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) {
-      return null;
-    }
-    const data = docSnap.data();
-    return { 
-        id: docSnap.id, 
-        ...data,
-        createdAt: this.parseTimestamp(data.createdAt),
-        updatedAt: this.parseTimestamp(data.updatedAt),
-        registrationDate: this.parseTimestamp(data.registrationDate),
-    } as Company;
+    return docSnap.exists() ? serializeCompany(docSnap.id, docSnap.data()) : null;
   }
   
-  /**
-   * Crea una nueva empresa en Firestore.
-   * @param companyData - Datos de la nueva empresa.
-   * @param user - Información del usuario que realiza la acción.
-   * @returns La empresa recién creada con su ID.
-   */
   async createCompany(companyData: Omit<Company, 'id' | 'createdAt' | 'updatedAt'>, user: { uid: string; email: string }): Promise<Company> {
-    const coll = this.companiesCollection;
-    if (!coll) throw new Error("La base de datos no está disponible.");
-
     if (!companyData.name || !companyData.ruc) {
-      throw new Error("El nombre de la empresa y el RUC son obligatorios.");
+      throw new Error("Company name and RUC are required.");
     }
     
-    const docRef = await addDoc(coll, {
+    const timestamp = serverTimestamp();
+    const docRef = await addDoc(this.companiesCollection, {
       ...companyData,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      registrationDate: timestamp,
     });
     
-    // Después de crear la empresa, crear platos de ejemplo
     await dishService.createSampleDishesForCompany(docRef.id);
     
-    const newCompanyData: Company = {
-      id: docRef.id,
-      ...companyData,
-      createdAt: new Date().toISOString(), // Use ISO string for consistency
-      updatedAt: new Date().toISOString(),
-    };
+    const newCompany = await this.getCompanyById(docRef.id);
+    if (!newCompany) throw new Error("Failed to retrieve newly created company.");
     
     await auditService.log({
       entity: 'companies',
       entityId: docRef.id,
       action: 'created',
       performedBy: user,
-      newData: newCompanyData,
+      newData: newCompany,
     });
     
-    return newCompanyData;
+    return newCompany;
   }
 
-
-  /**
-   * Actualiza una empresa existente en Firestore.
-   */
   async updateCompany(companyId: string, companyData: Partial<Company>, user: { uid: string; email: string }): Promise<Company> {
-    const coll = this.companiesCollection;
-    if (!coll) throw new Error("La base de datos no está disponible.");
-
-    const docRef = doc(coll, companyId);
+    const docRef = doc(this.companiesCollection, companyId);
     const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) {
-      throw new Error("La empresa no existe.");
-    }
+    if (!docSnap.exists()) throw new Error("Company does not exist.");
     
-    const previousData = { id: docSnap.id, ...docSnap.data() } as Company;
+    const previousData = serializeCompany(docSnap.id, docSnap.data());
     
-    const updatePayload = {
+    await updateDoc(docRef, {
       ...companyData,
-      updatedAt: new Date().toISOString(),
-    };
-    await updateDoc(docRef, updatePayload);
-    const updatedDoc = await getDoc(docRef);
+      updatedAt: serverTimestamp(),
+    });
 
-    const newData = { id: updatedDoc.id, ...updatedDoc.data() } as Company;
+    const updatedCompany = await this.getCompanyById(companyId);
+    if (!updatedCompany) throw new Error("Failed to retrieve company after update.");
 
     await auditService.log({
       entity: 'companies',
@@ -166,11 +111,10 @@ class CompanyService {
       action: 'updated',
       performedBy: user,
       previousData,
-      newData,
+      newData: updatedCompany,
     });
 
-    console.log(`✅ Empresa actualizada con éxito en Firestore. ID: ${companyId}`);
-    return newData;
+    return updatedCompany;
   }
 }
 

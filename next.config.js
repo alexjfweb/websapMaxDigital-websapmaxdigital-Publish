@@ -1,6 +1,7 @@
 
 /** @type {import('next').NextConfig} */
 module.exports = {
+  transpilePackages: ['framer-motion'],
   eslint: {
     ignoreDuringBuilds: true,
   },

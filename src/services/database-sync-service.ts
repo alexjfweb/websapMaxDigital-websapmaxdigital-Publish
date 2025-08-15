@@ -4,7 +4,6 @@ import { collection, getDocs, writeBatch, doc, serverTimestamp } from 'firebase/
 import { db } from '@/lib/firebase';
 import { landingPlansService } from './landing-plans-service';
 
-// Datos de ejemplo para los planes de la landing page
 const examplePlans = [
   {
     id: 'plan_gratis_lite',
@@ -19,18 +18,17 @@ const examplePlans = [
       'Hasta 1 reserva diaria',
       '1 empleado',
       'Sin personalización de logo/colores',
-      'Sin reportes'
+      'Sin reportes',
     ],
     isActive: true,
-    isPublic: false, // No se muestra en la UI de planes
+    isPublic: false,
     isPopular: false,
-    order: 0, // El orden más bajo
+    order: 0,
     icon: 'zap',
     color: 'gray',
     maxUsers: 1,
     maxProjects: 1,
     ctaText: 'Plan de Contingencia',
-    // Nuevos campos para límites
     maxDishes: 3,
     maxOrders: 2,
     maxReservations: 1,
@@ -51,7 +49,7 @@ const examplePlans = [
       'Gestión de Pedidos Online',
       'Sistema de Reservas Web',
       'Hasta 5 usuarios',
-      'Soporte por email durante la prueba'
+      'Soporte por email durante la prueba',
     ],
     isActive: true,
     isPublic: true,
@@ -60,7 +58,7 @@ const examplePlans = [
     icon: 'zap',
     color: 'gray',
     maxUsers: 5,
-    maxProjects: 1, // Representa el número de "restaurantes" o "sucursales"
+    maxProjects: 1,
     ctaText: 'Comenzar Prueba Gratuita',
   },
   {
@@ -75,7 +73,7 @@ const examplePlans = [
       'Gestión de Platos Ilimitada',
       'Pedidos para consumo en el local',
       'Reportes de Ventas Simples',
-      'Soporte por email (respuesta en 48h)'
+      'Soporte por email (respuesta en 48h)',
     ],
     isActive: true,
     isPublic: true,
@@ -101,7 +99,7 @@ const examplePlans = [
       'Sistema de Reservas integrable en web',
       'Personalización de Logo y Colores',
       'Reportes Avanzados (platos más vendidos)',
-      'Soporte por Chat (respuesta en 24h)'
+      'Soporte por Chat (respuesta en 24h)',
     ],
     isActive: true,
     isPublic: true,
@@ -127,7 +125,7 @@ const examplePlans = [
       'Gestión de Empleados con Roles',
       'Integración con Redes Sociales',
       'Automatización de Marketing por Email',
-      'Soporte Prioritario por Chat'
+      'Soporte Prioritario por Chat',
     ],
     isActive: true,
     isPublic: true,
@@ -135,7 +133,7 @@ const examplePlans = [
     order: 4,
     icon: 'users',
     color: 'green',
-    maxUsers: -1, // Ilimitado
+    maxUsers: -1,
     maxProjects: 1,
     ctaText: 'Obtener Premium',
     mp_preapproval_plan_id: 'f50350617bce4132a5d4ced1a55d240e',
@@ -153,7 +151,7 @@ const examplePlans = [
       'Control Avanzado de Roles y Permisos',
       'Acceso a la API para Integraciones Propias',
       'Reportes Consolidados por Cadena',
-      'Soporte Dedicado y Onboarding Personalizado'
+      'Soporte Dedicado y Onboarding Personalizado',
     ],
     isActive: true,
     isPublic: true,
@@ -161,50 +159,34 @@ const examplePlans = [
     order: 5,
     icon: 'calendar',
     color: 'indigo',
-    maxUsers: -1, // Ilimitado
-    maxProjects: -1, // Ilimitado
+    maxUsers: -1,
+    maxProjects: -1,
     ctaText: 'Contactar a Ventas',
   }
 ];
 
 class DatabaseSyncService {
-  /**
-   * Sincroniza los planes de la landing page, creando los de ejemplo si no existen.
-   * @param userId El ID del usuario que ejecuta la acción (puede ser 'system').
-   * @param userEmail El email del usuario.
-   * @returns Un mensaje indicando el resultado de la operación.
-   */
   async syncLandingPlans(userId: string, userEmail: string): Promise<string> {
     if (!db) {
-        const errorMsg = "La base de datos no está disponible. La sincronización falló.";
-        console.error(`❌ ${errorMsg}`);
-        throw new Error(errorMsg);
+      throw new Error("La base de datos no está disponible. La sincronización falló.");
     }
-      
+    
     try {
-      console.log('🔄 Iniciando verificación de sincronización de planes...');
-
       const plansCollection = collection(db, 'landingPlans');
       const existingPlansSnapshot = await getDocs(plansCollection);
 
       if (!existingPlansSnapshot.empty) {
-        // Verificar si el plan 'plan_gratis_lite' ya existe
-        const litePlanExists = existingPlansSnapshot.docs.some(doc => doc.id === 'plan_gratis_lite' || doc.data().slug === 'plan_gratis_lite');
+        const litePlanExists = existingPlansSnapshot.docs.some(doc => doc.id === 'plan_gratis_lite');
         if (litePlanExists) {
-            console.log('✅ Los planes, incluyendo el Plan Gratis Lite, ya existen. No se requiere sincronización.');
-            return 'Los planes ya existen. No se requiere ninguna acción.';
+          return 'Los planes ya existen. No se requiere ninguna acción.';
         }
       }
-
-      console.log('📝 No se encontraron todos los planes. Creando o actualizando datos de ejemplo...');
 
       const batch = writeBatch(db);
       
       for (const planData of examplePlans) {
-        // Usamos el `id` o el `slug` como identificador único del documento para evitar duplicados.
         const docId = planData.id || planData.slug;
         const docRef = doc(db, 'landingPlans', docId);
-
         const fullPlanData = {
           ...planData,
           createdAt: serverTimestamp(),
@@ -212,13 +194,11 @@ class DatabaseSyncService {
           createdBy: userId,
           updatedBy: userEmail,
         };
-        // set con merge:true para crear o actualizar sin sobreescribir campos existentes no definidos en `fullPlanData`.
         batch.set(docRef, fullPlanData, { merge: true });
       }
       
       await batch.commit();
 
-      // Log de auditoría para la operación masiva
       await landingPlansService.logAudit(
         'system-sync',
         'created',
@@ -227,11 +207,9 @@ class DatabaseSyncService {
         { details: `Sincronización de ${examplePlans.length} planes de ejemplo.` }
       );
 
-      console.log(`🎉 Sincronización completada. Se crearon o actualizaron ${examplePlans.length} planes.`);
       return `Sincronización completada. Se crearon o actualizaron ${examplePlans.length} planes.`;
-
     } catch (error) {
-      console.error('❌ Error durante la sincronización de la base de datos:', error);
+      console.error('Error durante la sincronización de la base de datos:', error);
       throw new Error('No se pudo completar la sincronización de la base de datos.');
     }
   }

@@ -1,39 +1,41 @@
-
 "use client";
 
 import useSWR from 'swr';
 import type { Reservation } from '@/types';
 import { useSession } from '@/contexts/session-context';
-import { reservationService } from '@/services/reservation-service';
 
-// El "fetcher" ahora será la llamada directa al servicio de Firestore.
-// La clave SWR ('swrKey') contendrá el ID de la compañía para asegurar que SWR
-// vuelva a buscar los datos solo si el ID de la compañía cambia.
-const fetcher = ([_, companyId]: [string, string]): Promise<Reservation[]> => {
-  return reservationService.getReservationsByCompany(companyId);
+// Fetcher estándar para obtener datos de una URL.
+const fetcher = async (url: string): Promise<Reservation[]> => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Error al obtener las reservaciones.');
+  }
+  return response.json();
 };
 
 export function useReservations(companyId?: string) {
   const { currentUser, isLoading: isSessionLoading } = useSession();
 
-  // Determina el ID de compañía a usar, priorizando el que se pasa como argumento.
-  const effectiveCompanyId = companyId || currentUser.companyId;
+  // Determina el ID de compañía a usar.
+  const effectiveCompanyId = companyId || currentUser?.companyId;
 
-  // La clave para SWR. Si no hay ID de compañía, la clave es null y SWR no se ejecutará.
-  const swrKey = effectiveCompanyId ? ['reservations', effectiveCompanyId] : null;
+  // La URL de la API que SWR usará como clave. Si no hay ID, la clave es null.
+  const apiUrl = effectiveCompanyId ? `/api/companies/${effectiveCompanyId}/reservations` : null;
 
   const { data, error, isLoading, mutate } = useSWR<Reservation[], Error>(
-    swrKey,
-    fetcher, // SWR llamará a esta función con `swrKey` como argumento.
+    apiUrl, // La clave ahora es la URL de la API.
+    fetcher,
     {
-      revalidateOnFocus: true, // Recarga los datos cuando el usuario vuelve a la pestaña.
-      shouldRetryOnError: false // Evita reintentos automáticos en caso de error.
+      revalidateOnFocus: true,
+      shouldRetryOnError: false
     }
   );
 
   return {
     reservations: data || [],
-    isLoading: isSessionLoading || isLoading,
+    // El estado de carga incluye tanto la sesión como la obtención de datos.
+    isLoading: isSessionLoading || (!!apiUrl && isLoading),
     error,
     refreshReservations: mutate,
   };

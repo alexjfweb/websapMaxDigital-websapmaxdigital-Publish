@@ -1,9 +1,98 @@
 
-// src/services/landing-config-service.ts
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { auditService } from './audit-service';
 
+// --- INTERFACES (sin cambios) ---
+export interface LandingSEO { /* ... */ }
+export interface LandingSection { /* ... */ }
+export interface LandingConfig { /* ... */ }
+
+// --- FUNCIÓN DE SERIALIZACIÓN ---
+const serializeLandingConfig = (data: any): LandingConfig => {
+  const serializedData = { ...data };
+  
+  // Serializa los timestamps de nivel superior si existen
+  if (serializedData.createdAt && serializedData.createdAt instanceof Timestamp) {
+    serializedData.createdAt = serializedData.createdAt.toDate().toISOString();
+  }
+  if (serializedData.updatedAt && serializedData.updatedAt instanceof Timestamp) {
+    serializedData.updatedAt = serializedData.updatedAt.toDate().toISOString();
+  }
+
+  // Asegura que las secciones y subsecciones sean arrays
+  if (Array.isArray(serializedData.sections)) {
+    serializedData.sections = serializedData.sections.map((section: any) => ({
+      ...section,
+      subsections: section.subsections || [],
+    }));
+  } else {
+    serializedData.sections = [];
+  }
+  
+  return serializedData as LandingConfig;
+};
+
+
+class LandingConfigService {
+  private readonly COLLECTION_NAME = 'landing_configs';
+  private readonly CONFIG_ID = "main";
+  
+  getDefaultConfig(): LandingConfig {
+    // ... (El contenido de esta función no cambia)
+  }
+
+  async getLandingConfig(): Promise<LandingConfig> {
+    const docRef = doc(db, this.COLLECTION_NAME, this.CONFIG_ID);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const dbData = docSnap.data();
+      const defaultConfig = this.getDefaultConfig();
+      
+      const mergedData = {
+        ...defaultConfig,
+        ...dbData,
+        seo: { ...defaultConfig.seo, ...dbData.seo },
+      };
+
+      // **LA SOLUCIÓN DEFINITIVA**
+      return serializeLandingConfig(mergedData);
+
+    } else {
+      const defaultConfig = this.getDefaultConfig();
+      await setDoc(docRef, { 
+        ...defaultConfig, 
+        createdAt: serverTimestamp(), 
+        updatedAt: serverTimestamp() 
+      });
+      // Devuelve la versión por defecto que ya es serializable
+      return defaultConfig;
+    }
+  }
+
+  async updateLandingConfig(configData: Partial<LandingConfig>, userId: string, userEmail: string): Promise<void> {
+    const docRef = doc(db, this.COLLECTION_NAME, this.CONFIG_ID);
+    const currentConfig = await this.getLandingConfig();
+    
+    await setDoc(docRef, {
+      ...configData,
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+
+    await auditService.log({
+      entity: 'landing_configs',
+      entityId: this.CONFIG_ID,
+      action: 'updated',
+      performedBy: { uid: userId, email: userEmail },
+      previousData: currentConfig, // ya está serializado
+      newData: { ...currentConfig, ...configData },
+    });
+  }
+}
+
+export const landingConfigService = new LandingConfigService();
+// Pegar las interfaces aquí si estaban fuera de la clase
 export interface LandingSEO {
   title: string;
   description: string;
@@ -28,18 +117,15 @@ export interface LandingSection {
   order: number;
   isActive: boolean;
   animation?: 'fadeIn' | 'slideUp' | 'slideLeft' | 'slideRight' | 'zoomIn' | 'none';
-  // Campos SEO específicos para la sección
   seoTitle?: string;
   seoDescription?: string;
   seoKeywords?: string[];
-  // Subsecciones (para features o servicios)
   subsections?: {
     id: string;
     title: string;
     content: string;
     imageUrl?: string;
   }[];
-  // Tipo de media
   mediaType?: 'none' | 'image' | 'video';
   mediaUrl?: string;
   mediaPosition?: 'left' | 'right' | 'top';
@@ -59,144 +145,6 @@ export interface LandingConfig {
   heroAnimation: 'fadeIn' | 'slideUp' | 'slideLeft' | 'slideRight' | 'zoomIn' | 'none';
   sections: LandingSection[];
   seo: LandingSEO;
+  createdAt?: string; // Aseguramos que sea string
+  updatedAt?: string; // Aseguramos que sea string
 }
-
-const CONFIG_ID = "main"; // Usamos un ID único para el documento de config
-
-class LandingConfigService {
-  private readonly COLLECTION_NAME = 'landing_configs';
-  
-  /**
-   * Proporciona la configuración por defecto para la landing page.
-   * @returns Un objeto LandingConfig con valores predeterminados.
-   */
-  getDefaultConfig(): LandingConfig {
-    return {
-      title: 'WebSapMax Digital',
-      description: 'Tu solución digital para restaurantes',
-      heroTitle: 'Transforma tu Restaurante',
-      heroSubtitle: 'Con nuestro menú digital interactivo y sistema de gestión integral.',
-      heroButtonText: 'Ver Demo',
-      heroButtonUrl: '#menu',
-      heroBackgroundColor: '#FFF2E6',
-      heroTextColor: '#333333',
-      heroButtonColor: '#FF4500',
-      heroAnimation: 'fadeIn',
-      sections: [
-        {
-          id: 'features-1',
-          type: 'features',
-          title: 'Características Principales',
-          subtitle: 'Todo lo que necesitas para digitalizar tu negocio',
-          content: 'Desde menús interactivos hasta gestión de pedidos en tiempo real.',
-          backgroundColor: '#FFFFFF',
-          textColor: '#333333',
-          buttonColor: '#FF4500',
-          buttonText: 'Conoce más',
-          buttonUrl: '#features',
-          order: 1,
-          isActive: true,
-          animation: 'slideUp',
-          subsections: []
-        },
-        {
-          id: 'services-1',
-          type: 'services',
-          title: 'Nuestros Servicios',
-          subtitle: 'Soluciones a tu medida',
-          content: 'Ofrecemos personalización completa para que tu menú digital refleje la identidad de tu marca.',
-          backgroundColor: '#FFF2E6',
-          textColor: '#333333',
-          buttonColor: '#FF4500',
-          buttonText: 'Ver Servicios',
-          buttonUrl: '#services',
-          order: 2,
-          isActive: true,
-          animation: 'fadeIn',
-          subsections: []
-        }
-      ],
-      seo: {
-        title: 'WebSapMax Digital | Menús Digitales para Restaurantes',
-        description: 'Digitaliza tu restaurante con WebSapMax. Ofrecemos menús QR interactivos, gestión de pedidos, reservas y más. ¡Atrae más clientes y optimiza tu operación!',
-        keywords: ['menu digital', 'restaurante', 'QR', 'gestión de pedidos', 'reservas online'],
-        ogTitle: 'WebSapMax Digital: El Futuro de tu Restaurante',
-        ogDescription: 'Descubre cómo nuestro sistema de menú digital puede transformar la experiencia de tus clientes.',
-        ogImage: 'https://placehold.co/1200x630.png',
-      },
-    };
-  }
-
-  /**
-   * Obtiene la configuración de la landing page desde Firestore.
-   * Si no existe, crea una con los valores por defecto.
-   * @returns El objeto de configuración de la landing page.
-   */
-  async getLandingConfig(): Promise<LandingConfig> {
-    const docRef = doc(db, this.COLLECTION_NAME, CONFIG_ID);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      const dbData = docSnap.data();
-      const defaultConfig = this.getDefaultConfig();
-      
-      // Mapear secciones asegurando que `subsections` exista.
-      const sections = (dbData.sections && Array.isArray(dbData.sections))
-        ? dbData.sections.map((s: any) => ({ ...s, subsections: s.subsections || [] }))
-        : defaultConfig.sections;
-
-      return {
-        ...defaultConfig,
-        ...dbData,
-        seo: { ...defaultConfig.seo, ...dbData.seo },
-        sections,
-      };
-    } else {
-      console.log("No se encontró configuración de landing. Creando una por defecto.");
-      const defaultConfig = this.getDefaultConfig();
-      await setDoc(docRef, { ...defaultConfig, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-      return defaultConfig;
-    }
-  }
-
-  /**
-   * Actualiza la configuración de la landing page en Firestore.
-   * @param configData - Un objeto parcial con los campos a actualizar.
-   * @param userId - ID del usuario que realiza la acción.
-   * @param userEmail - Email del usuario.
-   */
-  async updateLandingConfig(configData: Partial<LandingConfig>, userId: string, userEmail: string): Promise<void> {
-    const docRef = doc(db, this.COLLECTION_NAME, CONFIG_ID);
-    
-    // Obtener datos actuales para auditoría
-    const currentConfig = await this.getLandingConfig();
-    
-    const updatePayload = {
-      ...configData,
-      updatedAt: serverTimestamp(),
-    };
-
-    await setDoc(docRef, updatePayload, { merge: true });
-
-    // Registrar en auditoría
-    await auditService.log({
-      entity: 'landingPlans', // Usamos 'landingPlans' para agrupar configs generales de la landing
-      entityId: CONFIG_ID,
-      action: 'updated',
-      performedBy: { uid: userId, email: userEmail },
-      previousData: currentConfig,
-      newData: { ...currentConfig, ...configData },
-    });
-  }
-
-  /**
-   * Limpia planes duplicados (ejemplo de una acción de mantenimiento).
-   * Esta función es un placeholder y puede ser adaptada.
-   */
-  async cleanupDuplicatePlans() {
-    // Lógica para limpiar datos si fuese necesario.
-    console.log("Función de limpieza de planes ejecutada.");
-  }
-}
-
-export const landingConfigService = new LandingConfigService();

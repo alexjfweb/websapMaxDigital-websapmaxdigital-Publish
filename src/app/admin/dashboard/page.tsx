@@ -142,20 +142,30 @@ const OrdersByTypeChart = ({ orders }: { orders: Order[] }) => {
 
 const RecentActivity = ({ orders, reservations }: { orders: Order[], reservations: any[] }) => {
   const combinedActivity = useMemo(() => {
+    const toDate = (date: any) => {
+      if (!date) return new Date();
+      if (date instanceof Date) return date;
+      if (typeof date === 'string' || typeof date === 'number') return new Date(date);
+      if (date.toDate && typeof date.toDate === 'function') return date.toDate(); // Firestore Timestamp
+      return new Date();
+    };
+
     const orderActivity = orders.slice(0, 3).map(o => ({
       id: o.id,
       type: 'Pedido',
       description: `Pedido de ${o.customerName}`,
       value: `$${o.total.toFixed(2)}`,
-      date: new Date(o.date)
+      date: toDate(o.date)
     }));
+
     const reservationActivity = reservations.slice(0, 2).map(r => ({
       id: r.id,
       type: 'Reserva',
       description: `Reserva para ${r.numberOfGuests} de ${r.customerName}`,
       value: `Estado: ${r.status}`,
-      date: new Date(r.dateTime)
+      date: toDate(r.dateTime)
     }));
+
     return [...orderActivity, ...reservationActivity].sort((a,b) => b.date.getTime() - a.date.getTime()).slice(0,5);
   }, [orders, reservations]);
 
@@ -240,7 +250,7 @@ export default function AdminDashboardPage() {
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Ventas del día" value={`$${stats.salesToday.toFixed(2)}`} icon={<DollarSign className="h-5 w-5 text-green-500" />} subtext="Ingresos de pedidos completados" isLoading={isLoading} />
-        <StatCard title="Pedidos completados" value={stats.completedOrdersToday} icon={<PackageCheck className="h-5 w-5 text-blue-500" />} subtext="Pedidos finalizados hoy" isLoading={isLoading} />
+        <StatCard title="Pedidos completados" value={stats.completedOrdersToday} icon={<PackageCheck className="h-5 w--5 text-blue-500" />} subtext="Pedidos finalizados hoy" isLoading={isLoading} />
         <StatCard title="Reservas para hoy" value={stats.todayReservations} icon={<Calendar className="h-5 w-5 text-purple-500" />} subtext="Total de reservas programadas" isLoading={isLoading} />
         <StatCard title="Platos sin stock" value={stats.outOfStockDishes} icon={<AlertCircle className={`h-5 w-5 ${stats.outOfStockDishes > 0 ? 'text-destructive' : 'text-muted-foreground'}`} />} subtext="Items no disponibles en el menú" isLoading={isLoading} />
       </div>
