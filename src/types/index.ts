@@ -1,6 +1,5 @@
 
 
-
 import type { Timestamp } from 'firebase/firestore';
 
 
@@ -144,8 +143,8 @@ export interface Company {
   phone?: string; // Teléfono móvil (WhatsApp)
   phoneFixed?: string; // Teléfono fijo
   email?: string;
-  createdAt: string; // ISO Date String
-  updatedAt: string; // ISO Date String
+  createdAt?: string; // ISO Date String
+  updatedAt?: string; // ISO Date String
   planId?: string;
   planName?: string; // Campo añadido para mostrar el nombre del plan
   subscriptionStatus?: 'trialing' | 'active' | 'past_due' | 'canceled' | 'pending_payment';

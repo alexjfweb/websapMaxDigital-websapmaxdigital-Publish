@@ -17,38 +17,64 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
-import { UserPlus, Loader2 } from "lucide-react";
+import { UserPlus, Loader2, Check, X } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createUserWithEmailAndPassword, getAuth, User as FirebaseUser, deleteUser } from "firebase/auth";
 import { getFirebaseApp, db } from "@/lib/firebase"; 
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import type { UserRole, User, Company } from "@/types";
-import React, { Suspense, useState } from "react";
+import React, { Suspense, useState, useEffect } from "react";
 import { companyService } from "@/services/company-service";
 import ErrorModal from "@/components/ui/error-modal";
 
 const SUPERADMIN_EMAIL = 'alexjfweb@gmail.com';
 
+// Enhanced Zod schema for stronger validation
 const registerFormSchema = z.object({
   name: z.string().min(2, { message: "El nombre es obligatorio." }),
   lastName: z.string().min(2, { message: "El apellido es obligatorio." }),
   businessName: z.string().optional(),
   ruc: z.string().optional(),
   email: z.string().email({ message: "Por favor, ingrese un correo electrónico válido." }),
-  password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
+  password: z.string()
+    .min(8, { message: "La contraseña debe tener al menos 8 caracteres." })
+    .regex(/[a-z]/, { message: "Debe contener al menos una minúscula." })
+    .regex(/[A-Z]/, { message: "Debe contener al menos una mayúscula." })
+    .regex(/[0-9]/, { message: "Debe contener al menos un número." }),
   confirmPassword: z.string(),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Las contraseñas no coinciden",
   path: ["confirmPassword"],
 }).refine(data => {
   if (data.email.toLowerCase() !== SUPERADMIN_EMAIL) {
-    return data.businessName && data.businessName.trim().length >= 3 && data.ruc && data.ruc.trim().length >= 3;
+    return data.businessName && data.businessName.trim().length >= 3 && data.ruc && data.ruc.trim().length >= 8;
   }
   return true;
 }, {
-  message: "El nombre de la empresa y el RUC son obligatorios.",
+  message: "El nombre de la empresa y un RUC válido son obligatorios.",
   path: ["businessName"],
 });
+
+const PasswordValidationIndicator = ({ password }: { password?: string }) => {
+    if (!password) return null;
+    const checks = [
+        { label: "8+ caracteres", valid: (password?.length ?? 0) >= 8 },
+        { label: "Mayúscula", valid: /[A-Z]/.test(password) },
+        { label: "Minúscula", valid: /[a-z]/.test(password) },
+        { label: "Número", valid: /[0-9]/.test(password) },
+    ];
+    return (
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs mt-2">
+            {checks.map(c => (
+                <div key={c.label} className={`flex items-center gap-1.5 ${c.valid ? 'text-green-600' : 'text-muted-foreground'}`}>
+                    {c.valid ? <Check className="h-3 w-3" /> : <X className="h-3 w-3"/>}
+                    <span>{c.label}</span>
+                </div>
+            ))}
+        </div>
+    );
+};
+
 
 function RegisterForm() {
   const router = useRouter();
@@ -59,6 +85,7 @@ function RegisterForm() {
 
   const form = useForm<z.infer<typeof registerFormSchema>>({
     resolver: zodResolver(registerFormSchema),
+    mode: "onTouched", // Validate on blur
     defaultValues: {
       name: "",
       lastName: "",
@@ -71,7 +98,16 @@ function RegisterForm() {
   });
 
   const emailValue = form.watch("email");
+  const passwordValue = form.watch("password");
   const isSuperAdminFlow = emailValue.toLowerCase() === SUPERADMIN_EMAIL;
+
+  useEffect(() => {
+    // Si el email cambia a ser el de superadmin, limpiamos los campos de negocio
+    if (isSuperAdminFlow) {
+        form.setValue("businessName", "");
+        form.setValue("ruc", "");
+    }
+  }, [isSuperAdminFlow, form]);
 
   async function onSubmit(values: z.infer<typeof registerFormSchema>) {
     setIsSubmitting(true);
@@ -186,7 +222,7 @@ function RegisterForm() {
                   <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
               </svg>
             </div>
-          <CardTitle className="text-3xl font-bold text-primary">Crear Cuenta de Administrador</CardTitle>
+          <CardTitle className="text-3xl font-bold text-primary">Crear Cuenta</CardTitle>
           <CardDescription>Registre una nueva cuenta para gestionar su negocio.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -276,6 +312,7 @@ function RegisterForm() {
                       <FormControl>
                         <Input type="password" placeholder="••••••••" {...field} />
                       </FormControl>
+                      <PasswordValidationIndicator password={passwordValue} />
                       <FormMessage />
                     </FormItem>
                   )}

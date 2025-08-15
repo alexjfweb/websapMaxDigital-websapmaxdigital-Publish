@@ -1,14 +1,11 @@
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Share2, Copy } from "lucide-react";
+import { Share2, Copy, Facebook, Instagram, Twitter, Music } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import WhatsAppIcon from "@/components/icons/whatsapp-icon";
-import FacebookIcon from "@/components/icons/facebook-icon"; // Assuming you'll create these
-import InstagramIcon from "@/components/icons/instagram-icon";
-import XIcon from "@/components/icons/x-icon";
-import TikTokIcon from "@/components/icons/tiktok-icon";
 import React, { useEffect, useState } from 'react';
 
 export default function EmployeePromotePage() {
@@ -74,10 +71,10 @@ export default function EmployeePromotePage() {
 
   const socialPlatforms = [
     { name: 'WhatsApp', icon: <WhatsAppIcon className="h-6 w-6" />, action: () => shareOnSocialMedia('https://wa.me/?text={TEXT}'), color: 'hover:bg-[#25D366]/20 hover:text-[#25D366]' },
-    { name: 'Facebook', icon: <FacebookIcon className="h-6 w-6" />, action: () => shareOnSocialMedia('https://www.facebook.com/sharer/sharer.php?u={URL}&quote={TEXT}'), color: 'hover:bg-[#1877F2]/20 hover:text-[#1877F2]' },
-    { name: 'Instagram', icon: <InstagramIcon className="h-6 w-6" />, action: () => alert('Instagram no está disponible en este momento'), color: 'hover:bg-gradient-to-tr hover:from-pink-500/20 hover:to-yellow-400/20 hover:text-pink-500' },
-    { name: 'X', icon: <XIcon className="h-6 w-6" />, action: () => shareOnSocialMedia('https://twitter.com/intent/tweet?url={URL}&text={TEXT}'), color: 'hover:bg-black/20 hover:text-black' },
-    { name: 'TikTok', icon: <TikTokIcon className="h-6 w-6" />, action: () => alert('TikTok no está disponible en este momento'), color: 'hover:bg-black/20 hover:text-[#EE1D52]' },
+    { name: 'Facebook', icon: <Facebook className="h-6 w-6" />, action: () => shareOnSocialMedia('https://www.facebook.com/sharer/sharer.php?u={URL}&quote={TEXT}'), color: 'hover:bg-[#1877F2]/20 hover:text-[#1877F2]' },
+    { name: 'Instagram', icon: <Instagram className="h-6 w-6" />, action: () => alert('Instagram no está disponible en este momento'), color: 'hover:bg-gradient-to-tr hover:from-pink-500/20 hover:to-yellow-400/20 hover:text-pink-500' },
+    { name: 'X', icon: <Twitter className="h-6 w-6" />, action: () => shareOnSocialMedia('https://twitter.com/intent/tweet?url={URL}&text={TEXT}'), color: 'hover:bg-black/20 hover:text-black' },
+    { name: 'TikTok', icon: <Music className="h-6 w-6" />, action: () => alert('TikTok no está disponible en este momento'), color: 'hover:bg-black/20 hover:text-[#EE1D52]' },
   ];
 
   return (
@@ -134,4 +131,3 @@ export default function EmployeePromotePage() {
     </div>
   );
 }
-

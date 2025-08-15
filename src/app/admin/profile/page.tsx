@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { UploadCloud, Save, Edit, Trash2, XCircle, Clipboard, Globe, Share2, Facebook, Instagram, Twitter, MessageCircle, Loader2, CreditCard } from "lucide-react";
+import { UploadCloud, Save, Edit, Trash2, XCircle, Clipboard, Globe, Share2, Facebook, Instagram, Twitter, MessageCircle, Loader2, CreditCard, Music, MessageSquare as MessageSquareIcon } from "lucide-react";
 import React, { useState, type ChangeEvent, useEffect } from "react";
 import Image from "next/image";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,8 +14,6 @@ import { Switch } from "@/components/ui/switch";
 import NequiIcon from "@/components/icons/nequi-icon";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import TikTokIcon from "@/components/icons/tiktok-icon";
-import PinterestIcon from "@/components/icons/pinterest-icon";
 import DaviplataIcon from "@/components/icons/daviplata-icon";
 import BancolombiaIcon from "@/components/icons/bancolombia-icon";
 import MercadoPagoIcon from "@/components/icons/mercadopago-icon";
@@ -175,7 +173,7 @@ export default function AdminProfilePage() {
     setIsSaving(true);
     try {
         const docRef = doc(db, "companies", companyId);
-        await setDoc(docRef, { ...profileData, id: companyId, updatedAt: serverTimestamp() }, { merge: true });
+        await setDoc(docRef, { ...profileData, id: companyId, updatedAt: new Date().toISOString() }, { merge: true });
         
         setIsEditing(false);
         toast({ title: "¡Perfil Guardado!", description: "Tus cambios han sido guardados exitosamente." });
@@ -341,7 +339,7 @@ export default function AdminProfilePage() {
                         <div className="space-y-1 col-span-2">
                             <Label>Imagen del Código QR</Label>
                             <div className="flex items-center gap-4 mt-1">
-                                <Image src={nequiQrPreview || "https://placehold.co/100x100.png?text=QR"} alt="QR Nequi" width={96} height={96} className="h-24 w-24 rounded-md border object-cover" data-ai-hint="payment qr code"/>
+                                <Image src={nequiQrPreview || "https://placehold.co/100x100.png?text=QR"} alt="QR Nequi" width={96} height={96} className="h-24 w-24 rounded-md border object-cover" data-ai-hint="payment QR code"/>
                                 <Button variant="outline" asChild disabled={!isEditing}>
                                     <Label htmlFor="nequi-qr-upload" className="cursor-pointer">
                                         <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
@@ -411,7 +409,7 @@ export default function AdminProfilePage() {
                         <div className="space-y-1">
                             <Label>Imagen del Código QR</Label>
                             <div className="flex items-center gap-4 mt-1">
-                                <Image src={bancolombiaQrPreview || "https://placehold.co/100x100.png?text=QR"} alt="QR Bancolombia" width={96} height={96} className="h-24 w-24 rounded-md border object-cover" data-ai-hint="payment qr code"/>
+                                <Image src={bancolombiaQrPreview || "https://placehold.co/100x100.png?text=QR"} alt="QR Bancolombia" width={96} height={96} className="h-24 w-24 rounded-md border object-cover" data-ai-hint="payment QR code"/>
                                 <Button variant="outline" asChild disabled={!isEditing}>
                                     <Label htmlFor="bancolombia-qr-upload" className="cursor-pointer">
                                         <UploadCloud className="mr-2 h-4 w-4" /> Subir QR

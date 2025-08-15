@@ -4,6 +4,8 @@
 import useSWR from 'swr';
 import type { Company } from '@/types';
 import type { LandingPlan } from '@/services/landing-plans-service';
+import { landingPlansService } from '@/services/landing-plans-service';
+import { companyService } from '@/services/company-service';
 
 // Defino un tipo combinado para la respuesta del fetcher
 interface CompaniesWithPlans {
@@ -13,27 +15,18 @@ interface CompaniesWithPlans {
 
 // El fetcher ahora obtiene tanto las empresas como los planes
 const fetcher = async (): Promise<CompaniesWithPlans> => {
-  const [companiesRes, plansRes] = await Promise.all([
-    fetch('/api/companies'),
-    fetch('/api/plans'), // Usamos la API de planes que ya existe
-  ]);
+  try {
+    const [companies, plans] = await Promise.all([
+      companyService.getCompanies(),
+      landingPlansService.getPlans(),
+    ]);
 
-  if (!companiesRes.ok || !plansRes.ok) {
-    // Manejo de errores mejorado para dar más contexto
-    const companiesError = !companiesRes.ok ? await companiesRes.json().catch(() => ({})) : null;
-    const plansError = !plansRes.ok ? await plansRes.json().catch(() => ({})) : null;
-    
-    const errorMessage = `Error al obtener datos: ${companiesError ? `Empresas (${companiesRes.status})` : ''} ${plansError ? `Planes (${plansRes.status})` : ''}`;
-    throw new Error(errorMessage);
+    return { companies, plans };
+  } catch (error) {
+    console.error("Error fetching companies and plans:", error);
+    // Lanza el error para que SWR lo capture
+    throw new Error("No se pudieron obtener los datos de empresas y planes.");
   }
-
-  const companiesJson = await companiesRes.json();
-  const plansJson = await plansRes.json();
-
-  return {
-    companies: companiesJson.data || [],
-    plans: plansJson.data || [],
-  };
 };
 
 export function useCompanies() {

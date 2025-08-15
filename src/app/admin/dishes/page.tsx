@@ -166,7 +166,7 @@ export default function AdminDishesPage() {
         category: values.category,
         stock: Number(values.stock),
         imageUrl,
-        updatedAt: Timestamp.now(),
+        updatedAt: new Date().toISOString(),
       };
   
       if (isUpdating) {
@@ -179,7 +179,7 @@ export default function AdminDishesPage() {
       } else {
         dishData.likes = 0;
         dishData.available = true;
-        dishData.createdAt = Timestamp.now();
+        dishData.createdAt = new Date().toISOString();
         await addDoc(collection(db, 'dishes'), dishData);
         toast({
           title: 'Plato creado',
@@ -642,9 +642,3 @@ export default function AdminDishesPage() {
     </div>
   );
 }
-
-    
-
-    
-
-    

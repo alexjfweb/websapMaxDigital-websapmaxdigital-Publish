@@ -110,8 +110,8 @@ class CompanyService {
     
     const docRef = await addDoc(coll, {
       ...companyData,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
     
     // Después de crear la empresa, crear platos de ejemplo
@@ -153,7 +153,7 @@ class CompanyService {
     
     const updatePayload = {
       ...companyData,
-      updatedAt: serverTimestamp(),
+      updatedAt: new Date().toISOString(),
     };
     await updateDoc(docRef, updatePayload);
     const updatedDoc = await getDoc(docRef);

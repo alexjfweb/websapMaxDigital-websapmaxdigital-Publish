@@ -95,8 +95,8 @@ class DishService {
       const dishData = {
         ...dish,
         companyId: companyId,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
       return addDoc(coll, dishData);
     });
@@ -139,7 +139,7 @@ class DishService {
           return;
         }
 
-        const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date();
+        const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt);
 
         dishes.push({
           id: doc.id,
@@ -155,8 +155,8 @@ class DishService {
           companyId: data.companyId,
           available: data.available,
           createdAt: createdAt.toISOString(),
-          updatedAt: data.updatedAt?.toDate()?.toISOString() || createdAt.toISOString(),
-        } as any); // Usamos 'any' para evitar problemas de tipo con la conversión de Timestamp
+          updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate().toISOString() : new Date(data.updatedAt).toISOString(),
+        });
       });
       
       console.log(`✅ Se obtuvieron ${dishes.length} platos para la compañía ${companyId}.`);
