@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { landingPlansService } from '@/services/landing-plans-service';
+import { landingConfigService } from '@/services/landing-config-service';
 import LandingClient from './landing-client'; // Import the client component
 
 /**
@@ -11,17 +12,20 @@ import LandingClient from './landing-client'; // Import the client component
  */
 export default async function LandingPage() {
   try {
-    // Fetch all plans from the service
-    const allPlans = await landingPlansService.getPlans();
+    // Fetch all necessary data in parallel
+    const [allPlans, config] = await Promise.all([
+      landingPlansService.getPlans(),
+      landingConfigService.getLandingConfig(),
+    ]);
     
     // Filter plans to show only those marked as active and public
     const publicPlans = allPlans.filter(plan => plan.isActive && plan.isPublic);
     
     // The data is now serialized and ready to be passed to a client component.
-    return <LandingClient plans={publicPlans} />;
+    return <LandingClient plans={publicPlans} config={config} />;
 
   } catch (error) {
-    console.error("Failed to fetch landing page data (plans):", error);
+    console.error("Failed to fetch landing page data (plans or config):", error);
     // Render a simple error state if data fetching fails on the server.
     return (
         <div className="flex flex-col items-center justify-center min-h-screen text-center text-red-500">

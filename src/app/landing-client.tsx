@@ -4,54 +4,35 @@ import { motion } from 'framer-motion';
 import Head from "next/head";
 import SubscriptionPlansSection from '@/components/SubscriptionPlansSection';
 import type { LandingPlan } from '@/types/plans';
-import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
+import type { LandingConfig } from '@/services/landing-config-service';
 
 interface LandingClientProps {
   plans: LandingPlan[];
+  config: LandingConfig;
 }
 
-// Static configuration for the landing page
-const staticConfig = {
-  heroTitle: "Transforma tu Restaurante con un Menú Digital",
-  heroSubtitle: "Atrae más clientes, optimiza pedidos y mejora la experiencia.",
-  heroButtonText: "Ver Planes",
-  heroButtonUrl: "#planes",
-  heroBackgroundColor: "#FFF2E6",
-  heroTextColor: "#1f2937",
-  heroButtonColor: "#FF4500",
-  sections: [
-     {
-      id: 'section-1',
-      type: 'features',
-      title: 'Características Principales',
-      subtitle: 'Todo lo que necesitas para llevar tu restaurante al siguiente nivel.',
-      content: 'Nuestra plataforma es fácil de usar, personalizable y está diseñada para crecer contigo.',
-      backgroundColor: '#ffffff',
-      textColor: '#1f2937',
-      buttonColor: '#FF4500',
-      buttonText: 'Explorar Funciones',
-      buttonUrl: '#',
-      subsections: [
-        { id: 'sub-1-1', title: 'Menú con QR', content: 'Acceso instantáneo para tus clientes.', imageUrl: 'https://placehold.co/300x200.png?text=QR' },
-        { id: 'sub-1-2', title: 'Gestión de Pedidos', content: 'Optimiza tu cocina y servicio.', imageUrl: 'https://placehold.co/300x200.png?text=Pedidos' },
-        { id: 'sub-1-3', title: 'Reservas Online', content: 'Asegura mesas llenas.', imageUrl: 'https://placehold.co/300x200.png?text=Reservas' },
-      ]
-    },
-  ]
-};
-
-
-export default function LandingClient({ plans }: LandingClientProps) {
+export default function LandingClient({ plans, config }: LandingClientProps) {
 
   return (
     <>
       <Head>
-        <title>WebSapMaxDigital - Bienvenido</title>
-        <meta name="description" content="Tu solución digital definitiva para menús de restaurante" />
+        <title>{config.seo.title}</title>
+        <meta name="description" content={config.seo.description} />
+        <meta name="keywords" content={config.seo.keywords.join(', ')} />
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={config.seo.ogTitle} />
+        <meta property="og:description" content={config.seo.ogDescription} />
+        <meta property="og:image" content={config.seo.ogImage} />
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:title" content={config.seo.ogTitle} />
+        <meta property="twitter:description" content={config.seo.ogDescription} />
+        <meta property="twitter:image" content={config.seo.ogImage} />
       </Head>
       <main className="min-h-screen w-full flex flex-col items-center">
         {/* Hero Section */}
@@ -60,31 +41,31 @@ export default function LandingClient({ plans }: LandingClientProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7 }}
           className="w-full py-20 flex flex-col items-center"
-          style={{ backgroundColor: staticConfig.heroBackgroundColor, color: staticConfig.heroTextColor }}
+          style={{ backgroundColor: config.heroBackgroundColor, color: config.heroTextColor }}
         >
           <h1
             className="text-5xl font-extrabold mb-4 text-center"
-            style={{ color: staticConfig.heroTextColor }}
+            style={{ color: config.heroTextColor }}
           >
-            {staticConfig.heroTitle}
+            {config.heroTitle}
           </h1>
           <p className="text-xl mb-8 text-center">
-            {staticConfig.heroSubtitle}
+            {config.heroSubtitle}
           </p>
           <Button
             asChild
             className="text-lg font-semibold shadow-lg hover:scale-105 transition py-3 px-8 rounded-full"
-            style={{ backgroundColor: staticConfig.heroButtonColor, color: '#ffffff' }}
+            style={{ backgroundColor: config.heroButtonColor, color: '#ffffff' }}
           >
-            <a href={staticConfig.heroButtonUrl}>{staticConfig.heroButtonText}</a>
+            <a href={config.heroButtonUrl}>{config.heroButtonText}</a>
           </Button>
         </motion.section>
 
-        {/* Dynamic Sections from Static Config */}
-        {staticConfig.sections.map(section => (
+        {/* Dynamic Sections from Config */}
+        {config.sections.filter(s => s.isActive).map(section => (
           <motion.section
             key={section.id}
-            id="features" // Add an ID for navigation
+            id={section.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -101,7 +82,7 @@ export default function LandingClient({ plans }: LandingClientProps) {
                     <Card key={sub.id} className="text-left bg-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out hover:scale-105">
                       {sub.imageUrl && (
                         <CardHeader className="p-0">
-                          <Image src={sub.imageUrl} alt={sub.title} className="w-full h-40 object-cover rounded-t-lg" width={400} height={200} />
+                          <Image src={sub.imageUrl} alt={sub.title} className="w-full h-40 object-cover rounded-t-lg" width={400} height={200} data-ai-hint="feature icon"/>
                         </CardHeader>
                       )}
                       <CardContent className="p-6">
@@ -116,7 +97,7 @@ export default function LandingClient({ plans }: LandingClientProps) {
           </motion.section>
         ))}
         
-        {/* Subscription Plans Section - Now uses the data passed as props */}
+        {/* Subscription Plans Section - Uses the data passed as props */}
         <div id="planes">
           {plans && plans.length > 0 ? (
               <SubscriptionPlansSection plans={plans} />
