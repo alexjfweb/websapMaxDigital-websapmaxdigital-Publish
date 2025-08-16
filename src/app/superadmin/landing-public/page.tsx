@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, ChangeEvent } from 'react';
+import React, { useState, useEffect, ChangeEvent, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,22 +46,31 @@ export default function LandingPublicPage() {
   const [activeTab, setActiveTab] = useState('hero');
   const [previewMode, setPreviewMode] = useState(false);
 
+  // Memoize the default config to prevent re-renders
+  const memoizedDefaultConfig = useMemo(() => defaultConfig, [defaultConfig]);
+
   // Sincronizar con la configuración de Firebase
   useEffect(() => {
-    if (config) {
-      setFormData({
-        ...defaultConfig, // Asegura que todos los campos por defecto estén presentes
-        ...config,
-        sections: config.sections?.map(s => ({
-          ...s,
-          subsections: s.subsections || []
-        })) || [],
-        seo: { ...defaultConfig.seo, ...(config.seo || {}) }
-      });
-    } else if (!isLoading) {
-        setFormData(defaultConfig);
+    if (isLoading) return; // Wait until loading is finished
+
+    // Si no hay datos de formulario O si la configuración de la BD ha cambiado
+    if (!formData || (config && formData.id !== config.id)) {
+        if (config) {
+            setFormData({
+                ...memoizedDefaultConfig, // Asegura que todos los campos por defecto estén presentes
+                ...config,
+                sections: config.sections?.map(s => ({
+                ...s,
+                subsections: s.subsections || []
+                })) || [],
+                seo: { ...memoizedDefaultConfig.seo, ...(config.seo || {}) }
+            });
+        } else {
+            // Si no hay config en la BD (primera carga), usar la de por defecto
+            setFormData(memoizedDefaultConfig);
+        }
     }
-  }, [config, defaultConfig, isLoading]);
+  }, [config, isLoading, memoizedDefaultConfig, formData]);
 
   const handleSave = async () => {
     if (!formData) return;
