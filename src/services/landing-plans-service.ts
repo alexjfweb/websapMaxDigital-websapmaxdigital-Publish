@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -59,6 +60,28 @@ const serializePlan = (id: string, data: any): LandingPlan => ({
   updatedBy: data.updatedBy || 'system',
   mp_preapproval_plan_id: data.mp_preapproval_plan_id,
 });
+
+
+// Función para eliminar claves con valor `undefined` de forma recursiva
+const cleanupObject = (obj: any): any => {
+    if (obj === null || typeof obj !== 'object') {
+        return obj;
+    }
+    if (Array.isArray(obj)) {
+        return obj.map(item => cleanupObject(item));
+    }
+    const cleanedObj: { [key: string]: any } = {};
+    for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            const value = obj[key];
+            if (value !== undefined) {
+                cleanedObj[key] = cleanupObject(value);
+            }
+        }
+    }
+    return cleanedObj;
+};
+
 
 // --- SERVICE CLASS ---
 class LandingPlansService {
@@ -189,7 +212,7 @@ class LandingPlansService {
     });
   }
 
-  async logAudit(planId: string, action: PlanAuditLog['action'], userId: string, userEmail: string, details: Partial<PlanAuditLog>) {
+  async logAudit(planId: string, action: PlanAuditLog['action'], userId: string, userEmail: string, details: Partial<Omit<PlanAuditLog, 'id' | 'planId' | 'action' | 'userId' | 'userEmail' | 'timestamp'>>) {
     const data = {
       planId,
       action,
@@ -198,7 +221,9 @@ class LandingPlansService {
       timestamp: serverTimestamp(),
       ...details,
     };
-    await addDoc(collection(db, this.AUDIT_COLLECTION), data);
+    // Limpiar el objeto de datos antes de enviarlo a Firestore
+    const cleanedData = cleanupObject(data);
+    await addDoc(collection(db, this.AUDIT_COLLECTION), cleanedData);
   }
 }
 
