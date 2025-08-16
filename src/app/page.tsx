@@ -11,11 +11,14 @@ import LandingClient from './landing-client'; // Import the client component
  */
 export default async function LandingPage() {
   try {
-    // Now, we only fetch the plans, as the rest of the config is static.
-    const plans = await landingPlansService.getPlans();
+    // Fetch all plans from the service
+    const allPlans = await landingPlansService.getPlans();
+    
+    // Filter plans to show only those marked as active and public
+    const publicPlans = allPlans.filter(plan => plan.isActive && plan.isPublic);
     
     // The data is now serialized and ready to be passed to a client component.
-    return <LandingClient plans={plans} />;
+    return <LandingClient plans={publicPlans} />;
 
   } catch (error) {
     console.error("Failed to fetch landing page data (plans):", error);

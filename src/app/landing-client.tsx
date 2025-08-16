@@ -116,7 +116,7 @@ export default function LandingClient({ plans }: LandingClientProps) {
           </motion.section>
         ))}
         
-        {/* Subscription Plans Section */}
+        {/* Subscription Plans Section - Now uses the data passed as props */}
         <div id="planes">
           {plans && plans.length > 0 ? (
               <SubscriptionPlansSection plans={plans} />
@@ -128,6 +128,7 @@ export default function LandingClient({ plans }: LandingClientProps) {
                   className="w-full max-w-6xl py-16 flex justify-center"
                 >
                   <div className="col-span-full text-gray-600 text-center bg-gray-50 p-8 rounded-lg shadow-sm border">
+                    <AlertTriangle className="h-10 w-10 mx-auto text-yellow-500 mb-4" />
                     <h3 className="text-xl font-semibold">No hay planes disponibles</h3>
                     <p>Actualmente no hay planes de suscripción para mostrar. Por favor, vuelve más tarde.</p>
                   </div>
