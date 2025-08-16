@@ -22,7 +22,7 @@ import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Save } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
-import { app, db } from "@/lib/firebase"; // Importar app y db
+import { getFirebaseApp, db } from "@/lib/firebase"; // Importar getFirebaseApp y db
 import { doc, setDoc } from "firebase/firestore"; // Importar doc y setDoc
 import type { User, UserRole } from "@/types";
 
@@ -55,6 +55,7 @@ export default function SuperAdminCreateUserPage() {
 
   async function onSubmit(values: z.infer<typeof createUserFormSchema>) {
     try {
+      const app = getFirebaseApp(); // Obtener app
       const auth = getAuth(app); // Obtener auth de la app inicializada
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
