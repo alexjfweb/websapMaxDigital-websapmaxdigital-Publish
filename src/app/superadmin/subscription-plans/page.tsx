@@ -1,6 +1,6 @@
 
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -65,6 +65,8 @@ export default function SubscriptionPlansPage() {
   const { createPlan, updatePlan, deletePlan, reorderPlans, isLoading: isCRUDLoading } = useLandingPlansCRUD();
   const { selectedPlan, isEditing, isCreating, startEditing, startCreating, cancelEdit } = usePlanState();
   const [selectedPlanForHistory, setSelectedPlanForHistory] = useState<string | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
+
   const [formData, setFormData] = useState<Partial<CreatePlanRequest>>({
     name: '',
     description: '',
@@ -80,6 +82,13 @@ export default function SubscriptionPlansPage() {
     maxProjects: 10,
     ctaText: 'Comenzar Prueba Gratuita'
   });
+
+  const displayedPlans = useMemo(() => {
+    if (showInactive) {
+      return plans;
+    }
+    return plans.filter(plan => plan.isActive);
+  }, [plans, showInactive]);
 
   // Simular datos del usuario (en producción vendría del contexto de autenticación)
   const currentUser = {
@@ -100,7 +109,7 @@ export default function SubscriptionPlansPage() {
   const addFeature = () => {
     setFormData(prev => ({
       ...prev,
-      features: [...(prev.features || []), '']
+      features: [...(formData.features || []), '']
     }));
   };
 
@@ -281,8 +290,8 @@ export default function SubscriptionPlansPage() {
         </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      {/* Stats and Controls */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
         <Card>
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-blue-600">{plans.length}</div>
@@ -305,32 +314,39 @@ export default function SubscriptionPlansPage() {
             <div className="text-sm text-gray-600">Planes Populares</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-purple-600">
-              ${plans.reduce((sum, p) => sum + p.price, 0).toFixed(2)}
-            </div>
-            <div className="text-sm text-gray-600">Precio Total</div>
-          </CardContent>
+         <Card className="col-span-1 md:col-span-2">
+            <CardContent className="p-4 flex items-center justify-center h-full">
+                <div className="flex items-center space-x-2">
+                    <Switch
+                        id="show-inactive"
+                        checked={showInactive}
+                        onCheckedChange={setShowInactive}
+                    />
+                    <Label htmlFor="show-inactive" className="text-sm text-gray-600">
+                        Mostrar planes inactivos
+                    </Label>
+                </div>
+            </CardContent>
         </Card>
       </div>
 
       {/* Plans List */}
       <div className="space-y-4">
         <AnimatePresence>
-          {plans.map((plan, index) => {
+          {displayedPlans.map((plan, index) => {
             const IconComponent = getIconComponent(plan.icon);
             const colorClass = getColorClass(plan.color);
             
             return (
               <motion.div
                 key={plan.id}
+                layout
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
+                exit={{ opacity: 0, y: -20, transition: { duration: 0.2 } }}
                 transition={{ duration: 0.3 }}
               >
-                <Card className="hover:shadow-md transition-shadow">
+                <Card className={`hover:shadow-md transition-shadow ${!plan.isActive ? 'bg-gray-100 opacity-70' : ''}`}>
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
@@ -370,7 +386,7 @@ export default function SubscriptionPlansPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleReorder(plan.id, 'down')}
-                          disabled={index === plans.length - 1}
+                          disabled={index === displayedPlans.length - 1}
                         >
                           <ArrowDown className="w-4 h-4" />
                         </Button>
