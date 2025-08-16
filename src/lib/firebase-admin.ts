@@ -1,6 +1,9 @@
 // src/lib/firebase-admin.ts
 import * as admin from 'firebase-admin';
-import { serviceAccount } from './firebase-admin-config';
+
+// La configuración se leerá ahora de una única variable de entorno.
+// Esto es más seguro y menos propenso a errores que manejar múltiples variables.
+const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
 
 export const BUCKET_NAME = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
 
@@ -11,35 +14,47 @@ let adminStorage: admin.storage.Storage;
 
 if (admin.apps.length === 0) {
   try {
+    if (!serviceAccountJson) {
+      throw new Error('La variable de entorno FIREBASE_SERVICE_ACCOUNT no está definida. Es necesaria para el SDK de Administrador.');
+    }
+    
+    const serviceAccount = JSON.parse(serviceAccountJson);
+
+    // Validar que las propiedades esenciales existan después de parsear
+    if (!serviceAccount.project_id || !serviceAccount.private_key || !serviceAccount.client_email) {
+      throw new Error('El JSON de la cuenta de servicio es inválido o le faltan propiedades esenciales.');
+    }
+
     adminApp = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+      credential: admin.credential.cert(serviceAccount),
       storageBucket: BUCKET_NAME,
     });
     console.log('✅ Firebase Admin SDK inicializado correctamente.');
+
   } catch (error: any) {
     console.error('❌ Error al inicializar Firebase Admin SDK:', error.message);
-    console.error('🔴 Asegúrate de que las variables de entorno FIREBASE_ADMIN_* estén configuradas correctamente en tu entorno de despliegue.');
+    // Este mensaje es crucial para el debug
+    console.error('🔴 Asegúrate de que la variable de entorno FIREBASE_SERVICE_ACCOUNT contenga un JSON válido de la cuenta de servicio de Firebase.');
   }
 } else {
   adminApp = admin.app();
   console.log('🟢 Firebase Admin SDK ya estaba inicializado.');
 }
 
+// Asignar los servicios solo si la inicialización fue exitosa
 if (adminApp) {
   adminAuth = adminApp.auth();
   adminDb = adminApp.firestore();
   adminStorage = adminApp.storage();
 } else {
-  // En caso de que la inicialización falle, asignamos placeholders para evitar que la app crashee al importar.
-  // Los errores se lanzarán en tiempo de ejecución si se intentan usar.
+  // En caso de fallo, asignamos placeholders que lanzarán errores claros.
   console.error("🔴 La inicialización de Firebase Admin falló. Los servicios de admin no estarán disponibles.");
   const unavailableService = () => {
-    throw new Error("Firebase Admin SDK no está disponible debido a un error de inicialización.");
+    throw new Error("Firebase Admin SDK no está disponible debido a un error de inicialización. Revisa los logs del servidor.");
   };
   adminAuth = unavailableService as any;
   adminDb = unavailableService as any;
   adminStorage = unavailableService as any;
 }
-
 
 export { adminAuth, adminDb, adminStorage };
