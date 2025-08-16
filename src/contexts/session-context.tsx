@@ -27,14 +27,19 @@ export function useSession() {
 }
 
 const serializeUser = (firebaseUser: FirebaseUser, firestoreData: any): User => {
-  const data = { id: firebaseUser.uid, ...firestoreData };
-  for (const key in data) {
-    if (data[key] instanceof Timestamp) {
-      data[key] = data[key].toDate().toISOString();
+    const data = { id: firebaseUser.uid, ...firestoreData };
+    // Recorrer el objeto para convertir cualquier Timestamp a ISO string
+    for (const key in data) {
+        if (data[key] instanceof Timestamp) {
+            data[key] = data[key].toDate().toISOString();
+        } else if (data[key] && typeof data[key].seconds === 'number' && typeof data[key].nanoseconds === 'number') {
+            // Manejar el caso de objeto de timestamp serializado
+            data[key] = new Timestamp(data[key].seconds, data[key].nanoseconds).toDate().toISOString();
+        }
     }
-  }
-  return data as User;
+    return data as User;
 };
+
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -47,6 +52,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const app = getFirebaseApp();
     const auth = getAuth(app);
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setIsLoading(true); // Siempre empezar como cargando al cambiar el estado de auth
       if (firebaseUser) {
         try {
             const userDocRef = doc(db, "users", firebaseUser.uid);
@@ -56,6 +62,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
               const user = serializeUser(firebaseUser, userDocSnap.data());
               setCurrentUser(user);
             } else {
+              console.warn(`No user document found for UID: ${firebaseUser.uid}. Logging out.`);
               await auth.signOut();
               setCurrentUser(null);
             }
@@ -63,11 +70,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             console.error("Error fetching user data from Firestore:", error);
             await auth.signOut();
             setCurrentUser(null);
+        } finally {
+            setIsLoading(false);
         }
       } else {
         setCurrentUser(null);
+        setIsLoading(false);
       }
-      setIsLoading(false);
     });
     return () => unsubscribe();
   }, []);
@@ -98,12 +107,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [toast, router]);
 
   const value = {
-      currentUser,
+      currentUser: currentUser!, // Se usa el non-null assertion porque el contexto no se renderiza si es nulo
       isLoading,
       logout,
   };
 
-  if (isLoading && !['/', '/login', '/register'].includes(pathname)) {
+  if (isLoading && !['/', '/login', '/register'].includes(pathname) && !pathname.startsWith('/menu/')) {
     return (
       <div className="flex min-h-svh w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
