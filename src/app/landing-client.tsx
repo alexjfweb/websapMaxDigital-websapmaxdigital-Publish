@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import Head from "next/head";
 import SubscriptionPlansSection from '@/components/SubscriptionPlansSection';
 import { LandingConfig } from '@/services/landing-config-service';
-import { LandingPlan } from '@/services/landing-plans-service';
+import type { LandingPlan } from '@/types/plans';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';

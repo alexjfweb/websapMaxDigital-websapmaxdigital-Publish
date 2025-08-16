@@ -21,8 +21,8 @@ const generateSlug = (name: string): string => {
   return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 };
 
-const serializeDate = (date: any): string => {
-  if (!date) return new Date().toISOString();
+const serializeDate = (date: any): string | null => {
+  if (!date) return null;
   if (date instanceof Timestamp) return date.toDate().toISOString();
   if (date instanceof Date) return date.toISOString();
   if (typeof date === 'string') {
@@ -32,7 +32,7 @@ const serializeDate = (date: any): string => {
   if (date && typeof date.seconds === 'number') {
     return new Date(date.seconds * 1000).toISOString();
   }
-  return new Date().toISOString();
+  return null;
 };
 
 const serializePlan = (id: string, data: any): LandingPlan => ({
@@ -53,8 +53,8 @@ const serializePlan = (id: string, data: any): LandingPlan => ({
   maxUsers: data.maxUsers,
   maxProjects: data.maxProjects,
   ctaText: data.ctaText,
-  createdAt: serializeDate(data.createdAt),
-  updatedAt: serializeDate(data.updatedAt),
+  createdAt: serializeDate(data.createdAt)!,
+  updatedAt: serializeDate(data.updatedAt)!,
   createdBy: data.createdBy || 'system',
   updatedBy: data.updatedBy || 'system',
   mp_preapproval_plan_id: data.mp_preapproval_plan_id,
@@ -164,7 +164,7 @@ class LandingPlansService {
         return {
             ...data,
             id: doc.id,
-            timestamp: serializeDate(data.timestamp),
+            timestamp: serializeDate(data.timestamp)!,
         } as PlanAuditLog;
     });
   }

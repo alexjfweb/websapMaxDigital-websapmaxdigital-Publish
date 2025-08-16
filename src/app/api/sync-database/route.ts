@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       email: 'sync@websapmax.com'
     };
 
-    const resultMessage = await databaseSyncService.syncLandingPlans(user.id, user.email);
+    const resultMessage = await databaseSyncService.syncAll(user.id, user.email);
 
     console.log('✅ [API] POST /api/sync-database - Sincronización completada');
     
