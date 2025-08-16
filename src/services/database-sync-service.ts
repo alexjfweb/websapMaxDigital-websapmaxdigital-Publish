@@ -1,7 +1,6 @@
 // src/services/database-sync-service.ts
 import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, writeBatch, serverTimestamp } from 'firebase/firestore';
-import { landingPlansService } from './landing-plans-service';
 import { landingConfigService, getLandingDefaultConfig } from './landing-config-service';
 
 // Planes de ejemplo
@@ -56,56 +55,40 @@ const syncAll = async (userId: string, userEmail: string): Promise<string> => {
   }
   
   try {
-    let plansCreated = false;
-    let configCreated = false;
-    const plansCollection = collection(db, 'landingPlans');
-    const configDocRef = doc(db, 'landing_configs', 'main');
-
-    const [existingPlansSnapshot, existingConfigSnap] = await Promise.all([
-      getDocs(plansCollection),
-      getDoc(configDocRef)
-    ]);
-    
     const batch = writeBatch(db);
+    let operationsCount = 0;
 
     // 1. Sincronizar Planes
-    if (existingPlansSnapshot.empty) {
-      console.log('📝 Creando planes por defecto...');
-      for (const planData of examplePlans) {
-        const docId = planData.id || planData.slug;
-        const docRef = doc(db, 'landingPlans', docId);
-        const fullPlanData = {
-          ...planData,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-          createdBy: userId,
-          updatedBy: userEmail,
-        };
-        batch.set(docRef, fullPlanData);
-      }
-      plansCreated = true;
+    console.log('📝 Sincronizando planes por defecto...');
+    for (const planData of examplePlans) {
+      const docId = planData.id || planData.slug;
+      const docRef = doc(db, 'landingPlans', docId);
+      const fullPlanData = {
+        ...planData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        createdBy: userId,
+        updatedBy: userEmail,
+      };
+      // set con merge:true crea si no existe, y actualiza si existe
+      batch.set(docRef, fullPlanData, { merge: true });
+      operationsCount++;
     }
 
     // 2. Sincronizar Configuración de Landing
-    if (!existingConfigSnap.exists()) {
-      console.log('📝 Creando configuración de landing por defecto...');
-      const defaultConfig = getLandingDefaultConfig();
-      const { id, ...dataToSave } = defaultConfig;
-      batch.set(configDocRef, { ...dataToSave, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-      configCreated = true;
-    }
-
-    // 3. Ejecutar el batch si hay cambios
-    if (plansCreated || configCreated) {
+    console.log('📝 Sincronizando configuración de landing por defecto...');
+    const configDocRef = doc(db, 'landing_configs', 'main');
+    const defaultConfig = getLandingDefaultConfig();
+    const { id, ...dataToSave } = defaultConfig;
+    batch.set(configDocRef, { ...dataToSave, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }, { merge: true });
+    operationsCount++;
+    
+    // 3. Ejecutar el batch
+    if (operationsCount > 0) {
       await batch.commit();
-      
-      let messages: string[] = [];
-      if (plansCreated) messages.push(`Se crearon ${examplePlans.length} planes.`);
-      if (configCreated) messages.push("Se creó la configuración de landing.");
-
-      return `Sincronización completada. ${messages.join(' ')}`;
+      return `Sincronización completada. Se procesaron ${operationsCount} operaciones para asegurar que los datos por defecto existan.`;
     } else {
-      return "Los datos ya existen. No se requiere ninguna acción.";
+      return "No se realizaron operaciones. Esto puede ser un error.";
     }
 
   } catch (error) {

@@ -117,38 +117,21 @@ class LandingConfigService {
     return doc(db, CONFIG_COLLECTION_NAME, MAIN_CONFIG_DOC_ID);
   }
 
-  private async createDefaultConfig(): Promise<LandingConfig> {
-    const defaultConfig = getLandingDefaultConfig();
-    const { id, ...dataToSave } = defaultConfig;
-    const docRef = this.getConfigDocRef();
-    
-    // Usar setDoc para crear el documento con el ID 'main'
-    await setDoc(docRef, {
-      ...dataToSave,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-    
-    return defaultConfig;
-  }
-
   async getLandingConfig(): Promise<LandingConfig> {
     try {
         const docSnap = await getDoc(this.getConfigDocRef());
         if (!docSnap.exists()) {
-          console.warn("Landing config not found, creating a default one.");
-          // No llamar a createDefaultConfig desde aquí para evitar bucles. 
-          // Se debe crear en un proceso de inicialización separado o manualmente.
+          console.warn("Landing config not found. Returning a default one. Run sync script to create it.");
           return getLandingDefaultConfig();
         }
         const data = docSnap.data();
         const defaultConfig = getLandingDefaultConfig();
-        // Fusión profunda y segura
+        
         return {
           ...defaultConfig,
           ...data,
           id: docSnap.id,
-          sections: data.sections || defaultConfig.sections,
+          sections: data.sections && data.sections.length > 0 ? data.sections : defaultConfig.sections,
           seo: { ...defaultConfig.seo, ...data.seo },
         };
     } catch(error) {
