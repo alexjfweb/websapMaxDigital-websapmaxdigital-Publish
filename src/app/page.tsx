@@ -1,3 +1,4 @@
+
 // src/app/page.tsx (Server Component)
 import 'server-only';
 import React from 'react';
@@ -5,7 +6,6 @@ import LandingClient from './landing-client';
 
 // --- Imports para acceso a datos con privilegios de administrador ---
 import { adminDb } from '@/lib/firebase-admin';
-import { collection, query, where, getDocs, doc, getDoc, serverTimestamp, setDoc } from 'firebase-admin/firestore';
 import type { Timestamp } from 'firebase-admin/firestore';
 
 // --- Tipos de datos importados para mantener la consistencia ---
@@ -75,24 +75,24 @@ const getLandingDefaultConfigForServer = (): LandingConfig => ({
 });
 
 async function getPublicPlansForServer(): Promise<LandingPlan[]> {
-    const coll = collection(adminDb, 'landingPlans');
-    const q = query(coll, where('isActive', '==', true), where('isPublic', '==', true));
-    const snapshot = await getDocs(q);
+    const coll = adminDb.collection('landingPlans');
+    const q = coll.where('isActive', '==', true).where('isPublic', '==', true);
+    const snapshot = await q.get();
     return snapshot.docs
       .map(doc => serializePlan(doc.id, doc.data()))
       .sort((a, b) => a.order - b.order);
 }
 
 async function getLandingConfigForServer(): Promise<LandingConfig> {
-  const configDocRef = doc(adminDb, 'landing_configs', 'main');
+  const configDocRef = adminDb.collection('landing_configs').doc('main');
   const defaultConfig = getLandingDefaultConfigForServer();
   try {
-    const docSnap = await getDoc(configDocRef);
-    if (!docSnap.exists()) {
+    const docSnap = await configDocRef.get();
+    if (!docSnap.exists) {
       console.warn("Server: Landing config not found. A default one will be used.");
       return defaultConfig;
     }
-    const data = docSnap.data();
+    const data = docSnap.data()!;
     return {
       ...defaultConfig,
       ...data,
