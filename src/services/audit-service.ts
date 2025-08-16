@@ -64,7 +64,7 @@ class AuditService {
     if (!timestamp) return new Date().toISOString();
     if (timestamp instanceof Timestamp) return timestamp.toDate().toISOString();
     if (timestamp instanceof Date) return timestamp.toISOString();
-    if (typeof timestamp === 'object' && timestamp !== null && 'seconds' in timestamp) {
+    if (typeof timestamp === 'object' && timestamp !== null && 'seconds' in timestamp && typeof timestamp.seconds === 'number') {
         return new Date(timestamp.seconds * 1000).toISOString();
     }
     if (typeof timestamp === 'string') {
