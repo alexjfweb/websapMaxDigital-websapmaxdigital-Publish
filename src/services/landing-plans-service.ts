@@ -107,7 +107,8 @@ class LandingPlansService {
 
   async getPlans(): Promise<LandingPlan[]> {
     const coll = this.getPlansCollection();
-    const q = query(coll, orderBy('order', 'asc'));
+    // Ordenar por 'order' si existe, si no, por fecha de creación para consistencia.
+    const q = query(coll, orderBy('order', 'asc'), orderBy('createdAt', 'asc'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => serializePlan(doc.id, doc.data()));
   }
@@ -138,10 +139,13 @@ class LandingPlansService {
     }
 
     const coll = this.getPlansCollection();
+    
+    // Se elimina el cálculo de 'order' que usaba getDocs, para evitar el conflicto.
+    // El orden se manejará por fecha de creación por defecto, y luego por la función de reordenar.
     const newPlanData = {
       ...data,
       slug,
-      order: (await getDocs(coll)).size,
+      order: data.order ?? 999, // Asignar un número alto por defecto, la reordenación lo corregirá.
       isActive: data.isActive ?? true,
       isPublic: data.isPublic ?? true,
       createdAt: serverTimestamp(),
