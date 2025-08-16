@@ -47,15 +47,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     // ¡CAMBIO IMPORTANTE AQUÍ! Usamos la instancia 'auth' importada.
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        const userDocRef = doc(db, "users", firebaseUser.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        
-        if (userDocSnap.exists()) {
-          const user = serializeUser(firebaseUser, userDocSnap.data());
-          setCurrentUser(user);
-        } else {
-          await auth.signOut();
-          setCurrentUser(null);
+        try {
+            const userDocRef = doc(db, "users", firebaseUser.uid);
+            const userDocSnap = await getDoc(userDocRef);
+            
+            if (userDocSnap.exists()) {
+              const user = serializeUser(firebaseUser, userDocSnap.data());
+              setCurrentUser(user);
+            } else {
+              // Si el documento no existe en Firestore, deslogueamos al usuario
+              await auth.signOut();
+              setCurrentUser(null);
+            }
+        } catch (error) {
+            console.error("Error fetching user data from Firestore:", error);
+            // Si hay un error al leer Firestore, deslogueamos para evitar un estado inconsistente
+            await auth.signOut();
+            setCurrentUser(null);
         }
       } else {
         setCurrentUser(null);
