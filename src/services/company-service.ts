@@ -46,13 +46,14 @@ const serializeCompany = (id: string, data: any): Company => {
 };
 
 class CompanyService {
-  private get companiesCollection() {
+  private getCompaniesCollection() {
     if (!db) throw new Error("Database not available");
     return collection(db, 'companies');
   }
 
   async getCompanies(): Promise<Company[]> {
-    const q = query(this.companiesCollection, where("status", "in", ["active", "pending", "inactive"]));
+    const coll = this.getCompaniesCollection();
+    const q = query(coll, where("status", "in", ["active", "pending", "inactive"]));
     try {
       const querySnapshot = await getDocs(q);
       return querySnapshot.docs.map(doc => serializeCompany(doc.id, doc.data()));
@@ -64,7 +65,7 @@ class CompanyService {
 
   async getCompanyById(id: string): Promise<Company | null> {
     if (!id) return null;
-    const docRef = doc(this.companiesCollection, id);
+    const docRef = doc(this.getCompaniesCollection(), id);
     const docSnap = await getDoc(docRef);
     return docSnap.exists() ? serializeCompany(docSnap.id, docSnap.data()) : null;
   }
@@ -74,8 +75,9 @@ class CompanyService {
       throw new Error("Company name and RUC are required.");
     }
     
+    const coll = this.getCompaniesCollection();
     const timestamp = serverTimestamp();
-    const docRef = await addDoc(this.companiesCollection, {
+    const docRef = await addDoc(coll, {
       ...companyData,
       status: 'active',
       createdAt: timestamp,
@@ -83,6 +85,7 @@ class CompanyService {
       registrationDate: timestamp,
     });
     
+    // Crear platos de ejemplo después de crear la compañía
     await dishService.createSampleDishesForCompany(docRef.id);
     
     const newCompany = await this.getCompanyById(docRef.id);
@@ -100,7 +103,8 @@ class CompanyService {
   }
 
   async updateCompany(companyId: string, companyData: Partial<Company>, user: { uid: string; email: string }): Promise<Company> {
-    const docRef = doc(this.companiesCollection, companyId);
+    const coll = this.getCompaniesCollection();
+    const docRef = doc(coll, companyId);
     const docSnap = await getDoc(docRef);
     if (!docSnap.exists()) throw new Error("Company does not exist.");
     

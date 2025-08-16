@@ -60,9 +60,33 @@ const serializePlan = (id: string, data: any): LandingPlan => ({
   mp_preapproval_plan_id: data.mp_preapproval_plan_id,
 });
 
+// Función para limpiar un objeto de valores 'undefined' antes de enviarlo a Firestore
+const cleanupObject = (obj: any): any => {
+    if (obj === null || typeof obj !== 'object') {
+        return obj;
+    }
+    // No limpiar Timestamps de Firestore
+    if (obj instanceof Timestamp || obj instanceof Date) {
+        return obj;
+    }
+    if (Array.isArray(obj)) {
+        return obj.map(item => cleanupObject(item));
+    }
+    const cleanedObj: { [key: string]: any } = {};
+    for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            const value = obj[key];
+            if (value !== undefined) {
+                cleanedObj[key] = cleanupObject(value);
+            }
+        }
+    }
+    return cleanedObj;
+};
+
 
 class LandingPlansService {
-  private get plansCollection() {
+  private getPlansCollection() {
     if (!db) throw new Error("Database not available");
     return collection(db, this.COLLECTION_NAME);
   }
@@ -71,24 +95,27 @@ class LandingPlansService {
   private readonly AUDIT_COLLECTION = 'planAuditLogs';
 
   private async validateSlug(slug: string, excludeId?: string): Promise<boolean> {
+    const coll = this.getPlansCollection();
     const constraints = [where('slug', '==', slug)];
     if (excludeId) {
       constraints.push(where('__name__', '!=', excludeId));
     }
-    const q = query(this.plansCollection, ...constraints);
+    const q = query(coll, ...constraints);
     const snapshot = await getDocs(q);
     return snapshot.empty;
   }
 
   async getPlans(): Promise<LandingPlan[]> {
-    const q = query(this.plansCollection, orderBy('order', 'asc'));
+    const coll = this.getPlansCollection();
+    const q = query(coll, orderBy('order', 'asc'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => serializePlan(doc.id, doc.data()));
   }
 
   async getPublicPlans(): Promise<LandingPlan[]> {
+    const coll = this.getPlansCollection();
     const q = query(
-      this.plansCollection,
+      coll,
       where('isActive', '==', true),
       where('isPublic', '==', true),
       orderBy('order', 'asc')
@@ -110,10 +137,11 @@ class LandingPlansService {
       slug = `${slug}-${Date.now()}`; // Make slug unique
     }
 
+    const coll = this.getPlansCollection();
     const newPlanData = {
       ...data,
       slug,
-      order: (await getDocs(this.plansCollection)).size,
+      order: (await getDocs(coll)).size,
       isActive: data.isActive ?? true,
       isPublic: data.isPublic ?? true,
       createdAt: serverTimestamp(),
@@ -122,7 +150,7 @@ class LandingPlansService {
       updatedBy: userEmail,
     };
 
-    const docRef = await addDoc(this.plansCollection, newPlanData);
+    const docRef = await addDoc(coll, newPlanData);
     const createdPlan = await this.getPlanById(docRef.id);
     if (!createdPlan) throw new Error("Failed to retrieve plan after creation.");
     
@@ -131,7 +159,7 @@ class LandingPlansService {
       entityId: docRef.id,
       action: 'created',
       performedBy: { uid: userId, email: userEmail },
-      newData: createdPlan,
+      newData: cleanupObject(createdPlan),
       ipAddress,
       userAgent
     });
@@ -139,7 +167,8 @@ class LandingPlansService {
   }
 
   async updatePlan(id: string, data: UpdatePlanRequest, userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<LandingPlan> {
-    const docRef = doc(db, this.COLLECTION_NAME, id);
+    const coll = this.getPlansCollection();
+    const docRef = doc(coll, id);
     const originalDoc = await this.getPlanById(id);
     if (!originalDoc) throw new Error(`Plan with id ${id} not found`);
 
@@ -162,8 +191,8 @@ class LandingPlansService {
       entityId: id,
       action: 'updated',
       performedBy: { uid: userId, email: userEmail },
-      previousData: originalDoc,
-      newData: updatedPlan,
+      previousData: cleanupObject(originalDoc),
+      newData: cleanupObject(updatedPlan),
       ipAddress,
       userAgent
     });
@@ -176,9 +205,10 @@ class LandingPlansService {
   }
 
   async reorderPlans(planIds: string[], userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<void> {
+    const coll = this.getPlansCollection();
     const batch = writeBatch(db);
     planIds.forEach((id, index) => {
-      const docRef = doc(db, this.COLLECTION_NAME, id);
+      const docRef = doc(coll, id);
       batch.update(docRef, { order: index, updatedAt: serverTimestamp() });
     });
     await batch.commit();

@@ -80,6 +80,7 @@ const serializeDate = (date: any): string => {
   if (date && typeof date.seconds === 'number') {
     return new Date(date.seconds * 1000).toISOString();
   }
+  // Si no hay fecha, devuelve la fecha actual como string
   return new Date().toISOString();
 };
 
@@ -102,13 +103,16 @@ const serializeDish = (id: string, data: any): Dish => {
 };
 
 class DishService {
-  private get dishesCollection() {
-    if (!db) throw new Error("Database not available");
+  private getDishesCollection() {
+    if (!db) {
+      console.error("Firebase no está inicializado. No se puede acceder a la colección 'dishes'.");
+      throw new Error("La base de datos no está disponible.");
+    }
     return collection(db, 'dishes');
   }
 
   async createSampleDishesForCompany(companyId: string): Promise<void> {
-    const coll = this.dishesCollection;
+    const coll = this.getDishesCollection();
     const timestamp = serverTimestamp();
     const promises = sampleDishes.map(dish => {
       const dishData = {
@@ -122,23 +126,24 @@ class DishService {
 
     try {
       await Promise.all(promises);
+      console.log(`✅ Platos de ejemplo creados para la compañía ${companyId}`);
     } catch (error) {
-      console.error(`Error creating sample dishes for ${companyId}:`, error);
-      throw error;
+      console.error(`Error creando platos de ejemplo para ${companyId}:`, error);
+      // No relanzar para no interrumpir flujos críticos si solo falla esto.
     }
   }
 
   async getDishesByCompany(companyId: string): Promise<Dish[]> {
     if (!companyId) return [];
-    const coll = this.dishesCollection;
-
+    
     try {
+      const coll = this.getDishesCollection();
       const q = query(coll, where('companyId', '==', companyId));
       const querySnapshot = await getDocs(q);
       return querySnapshot.docs.map(doc => serializeDish(doc.id, doc.data()));
     } catch (error) {
-      console.error(`Error fetching dishes for company ${companyId}:`, error);
-      throw new Error('Could not fetch dishes.');
+      console.error(`Error obteniendo platos para la compañía ${companyId}:`, error);
+      throw new Error('No se pudieron obtener los platos.');
     }
   }
 }
