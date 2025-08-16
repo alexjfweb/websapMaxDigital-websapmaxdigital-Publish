@@ -1,3 +1,4 @@
+
 // src/services/landing-config-service.ts
 
 import { db } from '@/lib/firebase';
@@ -70,19 +71,6 @@ const serializeDate = (date: any): string => {
   return new Date(date).toISOString();
 };
 
-const serializeConfig = (data: any): LandingConfig => {
-  const defaultConfig = getDefaultConfig();
-  return {
-    ...defaultConfig,
-    ...data,
-    id: CONFIG_ID,
-    createdAt: data.createdAt ? serializeDate(data.createdAt) : undefined,
-    updatedAt: data.updatedAt ? serializeDate(data.updatedAt) : undefined,
-    seo: { ...defaultConfig.seo, ...data.seo },
-    sections: (data.sections || []).map((s: any) => ({ ...s, subsections: s.subsections || [] })),
-  };
-};
-
 const getDefaultConfig = (): LandingConfig => ({
   id: CONFIG_ID,
   heroTitle: "Transforma tu Restaurante con un Menú Digital",
@@ -129,12 +117,25 @@ const getDefaultConfig = (): LandingConfig => ({
   },
 });
 
-// --- SERVICE CLASS ---
+const serializeConfig = (data: any): LandingConfig => {
+  const defaultConfig = getDefaultConfig();
+  return {
+    ...defaultConfig,
+    ...data,
+    id: CONFIG_ID,
+    createdAt: data.createdAt ? serializeDate(data.createdAt) : undefined,
+    updatedAt: data.updatedAt ? serializeDate(data.updatedAt) : undefined,
+    seo: { ...defaultConfig.seo, ...data.seo },
+    sections: (data.sections || []).map((s: any) => ({ ...s, subsections: s.subsections || [] })),
+  };
+};
+
 class LandingConfigService {
   private readonly COLLECTION_NAME = 'landing_configs';
+  private readonly CONFIG_ID = 'main';
 
   private get docRef() {
-    return doc(db, this.COLLECTION_NAME, CONFIG_ID);
+    return doc(db, this.COLLECTION_NAME, this.CONFIG_ID);
   }
 
   async getLandingConfig(): Promise<LandingConfig> {
@@ -143,30 +144,56 @@ class LandingConfigService {
       if (docSnap.exists()) {
         return serializeConfig(docSnap.data());
       } else {
-        console.log("No config found, creating default.");
+        console.log("No config found, creating and returning a default one.");
+        // If it doesn't exist, create it with default values and return them.
         const defaultConfig = getDefaultConfig();
-        await setDoc(this.docRef, { ...defaultConfig, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-        return serializeConfig(defaultConfig);
+        // Remove ID from the object being saved to avoid redundancy.
+        const { id, ...configToSave } = defaultConfig;
+        await setDoc(this.docRef, { ...configToSave, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+        // Return the full default config object, including the ID.
+        return defaultConfig;
       }
     } catch (error) {
       console.error("Error getting landing config:", error);
       throw new Error("Could not fetch landing page configuration.");
     }
   }
+  
+  async createLandingConfig(configData: LandingConfig, userId: string, userEmail: string): Promise<void> {
+    try {
+        const { id, ...dataToSave } = configData;
+        await setDoc(this.docRef, {
+            ...dataToSave,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        });
+        await auditService.log({
+            entity: 'landingPlans', // Entity might need adjustment
+            entityId: this.CONFIG_ID,
+            action: 'created',
+            performedBy: { uid: userId, email: userEmail },
+            newData: configData,
+        });
+    } catch(error) {
+        console.error("Error creating landing config:", error);
+        throw new Error("Could not create landing page configuration.");
+    }
+  }
 
   async updateLandingConfig(configData: Partial<LandingConfig>, userId: string, userEmail: string): Promise<void> {
     try {
-      const currentConfig = await this.getLandingConfig();
       const updatePayload = { ...configData, updatedAt: serverTimestamp() };
+      // Use set with merge:true to create if not exists, or update if it does.
       await setDoc(this.docRef, updatePayload, { merge: true });
 
+      // For auditing, we log the update. We don't need to fetch previous data here
+      // as the primary goal is just to record the update action.
       await auditService.log({
         entity: 'landingPlans',
-        entityId: CONFIG_ID,
+        entityId: this.CONFIG_ID,
         action: 'updated',
         performedBy: { uid: userId, email: userEmail },
-        previousData: currentConfig,
-        newData: { ...currentConfig, ...configData },
+        newData: configData, // Log the changes that were applied.
       });
     } catch (error) {
       console.error("Error updating landing config:", error);
@@ -176,3 +203,5 @@ class LandingConfigService {
 }
 
 export const landingConfigService = new LandingConfigService();
+
+    
