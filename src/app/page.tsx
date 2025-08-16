@@ -13,13 +13,10 @@ import LandingClient from './landing-client'; // Import the client component
 export default async function LandingPage() {
   try {
     // Fetch all necessary data in parallel
-    const [allPlans, config] = await Promise.all([
-      landingPlansService.getPlans(),
+    const [publicPlans, config] = await Promise.all([
+      landingPlansService.getPublicPlans(),
       landingConfigService.getLandingConfig(),
     ]);
-    
-    // Filter plans to show only those marked as active and public
-    const publicPlans = allPlans.filter(plan => plan.isActive && plan.isPublic);
     
     // The data is now serialized and ready to be passed to a client component.
     return <LandingClient plans={publicPlans} config={config} />;

@@ -1,4 +1,3 @@
-
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -16,6 +15,8 @@ import type { Company } from '@/types';
 import { auditService } from './audit-service';
 import { dishService } from './dish-service';
 
+export type CreateCompanyInput = Omit<Company, 'id' | 'createdAt' | 'updatedAt' | 'registrationDate' | 'status' | 'planId' | 'subscriptionStatus'>;
+
 const serializeDate = (date: any): string | null => {
   if (!date) return null;
   if (date instanceof Timestamp) return date.toDate().toISOString();
@@ -29,7 +30,6 @@ const serializeDate = (date: any): string | null => {
   if (date && typeof date.seconds === 'number') {
     return new Date(date.seconds * 1000).toISOString();
   }
-  // Return as is if it's already a serialized string or null
   return (typeof date === 'string') ? date : null;
 };
 
@@ -69,7 +69,7 @@ class CompanyService {
     return docSnap.exists() ? serializeCompany(docSnap.id, docSnap.data()) : null;
   }
   
-  async createCompany(companyData: Omit<Company, 'id' | 'createdAt' | 'updatedAt'>, user: { uid: string; email: string }): Promise<Company> {
+  async createCompany(companyData: CreateCompanyInput, user: { uid: string; email: string }): Promise<Company> {
     if (!companyData.name || !companyData.ruc) {
       throw new Error("Company name and RUC are required.");
     }
@@ -77,6 +77,7 @@ class CompanyService {
     const timestamp = serverTimestamp();
     const docRef = await addDoc(this.companiesCollection, {
       ...companyData,
+      status: 'active',
       createdAt: timestamp,
       updatedAt: timestamp,
       registrationDate: timestamp,

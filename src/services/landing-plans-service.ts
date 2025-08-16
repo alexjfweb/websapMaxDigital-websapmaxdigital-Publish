@@ -1,4 +1,3 @@
-
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -62,35 +61,14 @@ const serializePlan = (id: string, data: any): LandingPlan => ({
 });
 
 
-// Función para eliminar claves con valor `undefined` de forma recursiva
-const cleanupObject = (obj: any): any => {
-    if (obj === null || typeof obj !== 'object') {
-        return obj;
-    }
-    if (Array.isArray(obj)) {
-        return obj.map(item => cleanupObject(item));
-    }
-    const cleanedObj: { [key: string]: any } = {};
-    for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key)) {
-            const value = obj[key];
-            if (value !== undefined) {
-                cleanedObj[key] = cleanupObject(value);
-            }
-        }
-    }
-    return cleanedObj;
-};
-
-
-// --- SERVICE CLASS ---
 class LandingPlansService {
-  private readonly COLLECTION_NAME = 'landingPlans';
-  private readonly AUDIT_COLLECTION = 'planAuditLogs';
-
   private get plansCollection() {
+    if (!db) throw new Error("Database not available");
     return collection(db, this.COLLECTION_NAME);
   }
+
+  private readonly COLLECTION_NAME = 'landingPlans';
+  private readonly AUDIT_COLLECTION = 'planAuditLogs';
 
   private async validateSlug(slug: string, excludeId?: string): Promise<boolean> {
     const constraints = [where('slug', '==', slug)];
@@ -104,6 +82,17 @@ class LandingPlansService {
 
   async getPlans(): Promise<LandingPlan[]> {
     const q = query(this.plansCollection, orderBy('order', 'asc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => serializePlan(doc.id, doc.data()));
+  }
+
+  async getPublicPlans(): Promise<LandingPlan[]> {
+    const q = query(
+      this.plansCollection,
+      where('isActive', '==', true),
+      where('isPublic', '==', true),
+      orderBy('order', 'asc')
+    );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => serializePlan(doc.id, doc.data()));
   }
@@ -137,7 +126,15 @@ class LandingPlansService {
     const createdPlan = await this.getPlanById(docRef.id);
     if (!createdPlan) throw new Error("Failed to retrieve plan after creation.");
     
-    await this.logAudit(docRef.id, 'created', userId, userEmail, { newData: createdPlan, ipAddress, userAgent });
+    await auditService.log({
+      entity: 'landingPlans',
+      entityId: docRef.id,
+      action: 'created',
+      performedBy: { uid: userId, email: userEmail },
+      newData: createdPlan,
+      ipAddress,
+      userAgent
+    });
     return createdPlan;
   }
 
@@ -160,11 +157,21 @@ class LandingPlansService {
     const updatedPlan = await this.getPlanById(id);
     if (!updatedPlan) throw new Error("Failed to retrieve plan after update.");
 
-    await this.logAudit(id, 'updated', userId, userEmail, { previousData: originalDoc, newData: updatedPlan, ipAddress, userAgent });
+    await auditService.log({
+      entity: 'landingPlans',
+      entityId: id,
+      action: 'updated',
+      performedBy: { uid: userId, email: userEmail },
+      previousData: originalDoc,
+      newData: updatedPlan,
+      ipAddress,
+      userAgent
+    });
     return updatedPlan;
   }
 
   async deletePlan(id: string, userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<void> {
+    // Soft delete by making it inactive and not public
     await this.updatePlan(id, { isActive: false, isPublic: false }, userId, userEmail, ipAddress, userAgent);
   }
 
@@ -175,7 +182,15 @@ class LandingPlansService {
       batch.update(docRef, { order: index, updatedAt: serverTimestamp() });
     });
     await batch.commit();
-    await this.logAudit('system', 'reordered', userId, userEmail, { details: `Reordered ${planIds.length} plans`, ipAddress, userAgent });
+    await auditService.log({
+      entity: 'landingPlans',
+      entityId: 'system',
+      action: 'reordered',
+      performedBy: { uid: userId, email: userEmail },
+      details: `Reordered ${planIds.length} plans`,
+      ipAddress,
+      userAgent
+    });
   }
   
   async getPlanAuditLogs(planId: string): Promise<PlanAuditLog[]> {
@@ -205,25 +220,16 @@ class LandingPlansService {
     const planRef = doc(db, this.COLLECTION_NAME, planId);
     await setDoc(planRef, { ...logData.previousData, updatedAt: serverTimestamp() }, { merge: true });
 
-    await this.logAudit(planId, 'rollback', userId, userEmail, {
+    await auditService.log({
+      entity: 'landingPlans',
+      entityId: planId,
+      action: 'rollback',
+      performedBy: { uid: userId, email: userEmail },
       details: `Rolled back to state from audit log ${auditLogId}`,
       newData: logData.previousData,
-      ipAddress, userAgent
+      ipAddress,
+      userAgent
     });
-  }
-
-  async logAudit(planId: string, action: PlanAuditLog['action'], userId: string, userEmail: string, details: Partial<Omit<PlanAuditLog, 'id' | 'planId' | 'action' | 'userId' | 'userEmail' | 'timestamp'>>) {
-    const data = {
-      planId,
-      action,
-      userId,
-      userEmail,
-      timestamp: serverTimestamp(),
-      ...details,
-    };
-    // Limpiar el objeto de datos antes de enviarlo a Firestore
-    const cleanedData = cleanupObject(data);
-    await addDoc(collection(db, this.AUDIT_COLLECTION), cleanedData);
   }
 }
 

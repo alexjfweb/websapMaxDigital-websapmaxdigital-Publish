@@ -101,54 +101,46 @@ const serializeDish = (id: string, data: any): Dish => {
   };
 };
 
-// --- FUNCIONES PURAS EN LUGAR DE CLASE ---
-const getDishesCollection = () => {
-  if (!db) throw new Error("La base de datos no está disponible.");
-  return collection(db, 'dishes');
-};
-
-// ✅ FUNCIÓN PURA - Crear platos de ejemplo
-export const createSampleDishesForCompany = async (companyId: string): Promise<void> => {
-  const coll = getDishesCollection();
-  const timestamp = serverTimestamp();
-  const promises = sampleDishes.map(dish => {
-    const dishData = {
-      ...dish,
-      companyId: companyId,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    };
-    return addDoc(coll, dishData);
-  });
-
-  try {
-    await Promise.all(promises);
-  } catch (error) {
-    console.error(`Error al crear platos de ejemplo para ${companyId}:`, error);
-    throw error;
+class DishService {
+  private get dishesCollection() {
+    if (!db) throw new Error("Database not available");
+    return collection(db, 'dishes');
   }
-};
 
-// ✅ FUNCIÓN PURA - Obtener platos por compañía
-export const getDishesByCompany = async (companyId: string): Promise<Dish[]> => {
-  if (!companyId) return [];
-  const coll = getDishesCollection();
-  
-  try {
-    const q = query(coll, where('companyId', '==', companyId));
-    const querySnapshot = await getDocs(q);
-    
-    // Serialización completa para Next.js
-    return querySnapshot.docs.map(doc => serializeDish(doc.id, doc.data()));
-    
-  } catch (error) {
-    console.error(`Error al obtener los platos para ${companyId}:`, error);
-    throw new Error('No se pudieron obtener los platos.');
+  async createSampleDishesForCompany(companyId: string): Promise<void> {
+    const coll = this.dishesCollection;
+    const timestamp = serverTimestamp();
+    const promises = sampleDishes.map(dish => {
+      const dishData = {
+        ...dish,
+        companyId: companyId,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      };
+      return addDoc(coll, dishData);
+    });
+
+    try {
+      await Promise.all(promises);
+    } catch (error) {
+      console.error(`Error creating sample dishes for ${companyId}:`, error);
+      throw error;
+    }
   }
-};
 
-// ✅ EXPORTAR OBJETO CON FUNCIONES (no una instancia de clase)
-export const dishService = {
-  createSampleDishesForCompany,
-  getDishesByCompany,
-};
+  async getDishesByCompany(companyId: string): Promise<Dish[]> {
+    if (!companyId) return [];
+    const coll = this.dishesCollection;
+
+    try {
+      const q = query(coll, where('companyId', '==', companyId));
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => serializeDish(doc.id, doc.data()));
+    } catch (error) {
+      console.error(`Error fetching dishes for company ${companyId}:`, error);
+      throw new Error('Could not fetch dishes.');
+    }
+  }
+}
+
+export const dishService = new DishService();

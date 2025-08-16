@@ -1,4 +1,3 @@
-
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auditService } from './audit-service';
@@ -113,16 +112,15 @@ export const getLandingDefaultConfig = (): LandingConfig => ({
 
 
 class LandingConfigService {
-  private configDocRef;
-
-  constructor() {
-    this.configDocRef = doc(db, CONFIG_COLLECTION_NAME, MAIN_CONFIG_DOC_ID);
+  private getConfigDocRef() {
+    if (!db) throw new Error("Database not available");
+    return doc(db, CONFIG_COLLECTION_NAME, MAIN_CONFIG_DOC_ID);
   }
 
   private async createDefaultConfig(userId: string, userEmail: string): Promise<LandingConfig> {
     const defaultConfig = getLandingDefaultConfig();
     const { id, ...dataToSave } = defaultConfig;
-    await setDoc(this.configDocRef, {
+    await setDoc(this.getConfigDocRef(), {
       ...dataToSave,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -131,20 +129,25 @@ class LandingConfigService {
   }
 
   async getLandingConfig(): Promise<LandingConfig> {
-    const docSnap = await getDoc(this.configDocRef);
-    if (!docSnap.exists()) {
-      return this.createDefaultConfig('system', 'system@init.com');
+    try {
+        const docSnap = await getDoc(this.getConfigDocRef());
+        if (!docSnap.exists()) {
+          console.warn("Landing config not found, creating a default one.");
+          return this.createDefaultConfig('system', 'system@init.com');
+        }
+        const data = docSnap.data();
+        const defaultConfig = getLandingDefaultConfig();
+        return {
+          ...defaultConfig,
+          ...data,
+          id: docSnap.id,
+          sections: data.sections || defaultConfig.sections,
+          seo: { ...defaultConfig.seo, ...data.seo },
+        };
+    } catch(error) {
+        console.error("Error getting landing config:", error);
+        throw new Error("Could not retrieve landing page configuration.");
     }
-    const data = docSnap.data();
-    // Merge with defaults to ensure all fields are present
-    const defaultConfig = getLandingDefaultConfig();
-    return {
-      ...defaultConfig,
-      ...data,
-      id: docSnap.id,
-      sections: data.sections || defaultConfig.sections,
-      seo: { ...defaultConfig.seo, ...data.seo },
-    };
   }
 
   async updateLandingConfig(
@@ -154,15 +157,13 @@ class LandingConfigService {
   ): Promise<void> {
     const originalDoc = await this.getLandingConfig();
     
-    // We only update, never create from here to avoid loops.
-    // getLandingConfig handles creation if doc doesn't exist.
-    await setDoc(this.configDocRef, { 
+    await setDoc(this.getConfigDocRef(), { 
       ...configUpdate,
       updatedAt: serverTimestamp() 
     }, { merge: true });
 
     await auditService.log({
-      entity: 'landingPlans', // Using landingPlans as a generic entity for this config
+      entity: 'landingPlans',
       entityId: MAIN_CONFIG_DOC_ID,
       action: 'updated',
       performedBy: { uid: userId, email: userEmail },
