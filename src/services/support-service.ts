@@ -79,9 +79,6 @@ class SupportService {
   async addReply(ticketId: string, reply: { userId: string; message: string; createdAt: any }): Promise<void> {
     // Esta es una implementación simplificada. En una app real, las respuestas serían una subcolección.
     // Aquí simplemente actualizaremos un array en el documento principal para mantenerlo simple.
-    const ticketRef = doc(this.ticketsCollection, ticketId);
-    // Para implementar esto correctamente, se necesitaría leer el documento, añadir al array y actualizar.
-    // Por ahora, esta función queda como placeholder.
     console.log("Añadiendo respuesta (placeholder):", ticketId, reply);
   }
 }
