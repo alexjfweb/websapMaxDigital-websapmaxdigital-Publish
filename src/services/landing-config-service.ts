@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auditService } from './audit-service';
@@ -64,7 +65,8 @@ const CONFIG_COLLECTION_NAME = 'landing_configs';
 const MAIN_CONFIG_DOC_ID = 'main';
 
 
-export const getLandingDefaultConfig = (): LandingConfig => ({
+// Default configuration is now a private function within the service
+const getLandingDefaultConfig = (): LandingConfig => ({
   id: 'main',
   heroTitle: 'Transforma tu Restaurante con un Menú Digital',
   heroSubtitle: 'Atrae más clientes, optimiza pedidos y mejora la experiencia.',
@@ -121,8 +123,11 @@ class LandingConfigService {
     try {
         const docSnap = await getDoc(this.getConfigDocRef());
         if (!docSnap.exists()) {
-          console.warn("Landing config not found. Returning a default one. Run sync script to create it.");
-          return getLandingDefaultConfig();
+          console.warn("Landing config not found. Creating and returning a default one.");
+          const defaultConfig = getLandingDefaultConfig();
+          // Create it silently if it doesn't exist
+          await this.updateLandingConfig(defaultConfig, 'system-init', 'system@init.com');
+          return defaultConfig;
         }
         const data = docSnap.data();
         const defaultConfig = getLandingDefaultConfig();
@@ -134,8 +139,8 @@ class LandingConfigService {
           sections: data.sections && data.sections.length > 0 ? data.sections : defaultConfig.sections,
           seo: { ...defaultConfig.seo, ...data.seo },
         };
-    } catch(error) {
-        console.error("Error getting landing config:", error);
+    } catch(error: any) {
+        console.error("Error getting landing config:", error.message);
         throw new Error("Could not retrieve landing page configuration.");
     }
   }
@@ -145,7 +150,7 @@ class LandingConfigService {
     userId: string,
     userEmail: string
   ): Promise<void> {
-    const originalDoc = await this.getLandingConfig();
+    const originalDoc = await this.getLandingConfig().catch(() => getLandingDefaultConfig());
     
     await setDoc(this.getConfigDocRef(), { 
       ...configUpdate,
@@ -153,7 +158,7 @@ class LandingConfigService {
     }, { merge: true });
 
     await auditService.log({
-      entity: 'landingPlans',
+      entity: 'landingPlans', // Entity can remain as landingPlans for consistency in logs
       entityId: MAIN_CONFIG_DOC_ID,
       action: 'updated',
       performedBy: { uid: userId, email: userEmail },
@@ -164,3 +169,4 @@ class LandingConfigService {
 }
 
 export const landingConfigService = new LandingConfigService();
+export { getLandingDefaultConfig };
