@@ -12,9 +12,9 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from "@/hooks/use-toast";
 import { useLandingConfig, useDefaultConfig } from '@/hooks/use-landing-config';
-import { LandingSection, LandingConfig } from '@/services/landing-config-service';
+import type { LandingSection, LandingConfig } from '@/services/landing-config-service';
 import { storageService } from '@/services/storage-service';
 import { 
   Save, 
@@ -29,18 +29,20 @@ import {
   Settings,
   Globe,
   UploadCloud,
-  Loader2
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import Image from 'next/image';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function LandingPublicPage() {
-  const { config, isLoading, updateConfig } = useLandingConfig();
+  const { config, isLoading, isError, updateConfig } = useLandingConfig();
   const defaultConfig = useDefaultConfig();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
 
-  const [formData, setFormData] = useState<LandingConfig>(defaultConfig);
+  const [formData, setFormData] = useState<LandingConfig | null>(null);
   const [activeTab, setActiveTab] = useState('hero');
   const [previewMode, setPreviewMode] = useState(false);
 
@@ -50,22 +52,22 @@ export default function LandingPublicPage() {
       setFormData({
         ...defaultConfig, // Asegura que todos los campos por defecto estén presentes
         ...config,
-        sections: config.sections.map(s => ({
+        sections: config.sections?.map(s => ({
           ...s,
           subsections: s.subsections || []
-        })),
-        seo: { ...defaultConfig.seo, ...config.seo }
+        })) || [],
+        seo: { ...defaultConfig.seo, ...(config.seo || {}) }
       });
+    } else if (!isLoading) {
+        setFormData(defaultConfig);
     }
-  }, [config, defaultConfig]);
+  }, [config, defaultConfig, isLoading]);
 
   const handleSave = async () => {
+    if (!formData) return;
     setSaving(true);
     try {
-      // Directamente usamos la función de SWR que ya maneja la lógica de actualización
-      await updateConfig({
-        ...formData
-      });
+      await updateConfig(formData);
       
       toast({
         title: "Éxito",
@@ -84,9 +86,8 @@ export default function LandingPublicPage() {
 
   const handleSubsectionImageUpload = async (e: ChangeEvent<HTMLInputElement>, sectionIndex: number, subIndex: number) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !formData) return;
 
-    // --- Validación del archivo ---
     const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
     const maxSize = 5 * 1024 * 1024; // 5MB
@@ -108,7 +109,6 @@ export default function LandingPublicPage() {
       });
       return;
     }
-    // --- Fin de la validación ---
 
     const subsectionId = formData.sections[sectionIndex].subsections![subIndex].id;
     setUploading(prev => ({ ...prev, [subsectionId]: true }));
@@ -137,6 +137,7 @@ export default function LandingPublicPage() {
   
   const updateSubsection = (sectionIndex: number, subIndex: number, field: string, value: any) => {
      setFormData(prev => {
+      if (!prev) return null;
       const newSections = [...prev.sections];
       const newSubsections = [...(newSections[sectionIndex].subsections || [])];
       newSubsections[subIndex] = { ...newSubsections[subIndex], [field]: value };
@@ -146,7 +147,8 @@ export default function LandingPublicPage() {
   };
 
   const addSection = () => {
-    const newSection: Omit<LandingSection, 'id'> = {
+    const newSection: LandingSection = {
+      id: `section-${Date.now()}`,
       type: 'features',
       title: 'Nueva Sección',
       subtitle: '',
@@ -157,7 +159,7 @@ export default function LandingPublicPage() {
       buttonText: 'Ver más',
       buttonUrl: '',
       imageUrl: '',
-      order: formData.sections.length,
+      order: formData?.sections.length || 0,
       isActive: true,
       animation: 'fadeIn',
       seoTitle: '',
@@ -166,20 +168,27 @@ export default function LandingPublicPage() {
       subsections: [],
     };
 
-    setFormData(prev => ({
-      ...prev,
-      sections: [...prev.sections, { ...newSection, id: `section-${Date.now()}` }]
-    }));
+    setFormData(prev => {
+        if (!prev) return null;
+        return {
+            ...prev,
+            sections: [...prev.sections, newSection]
+        }
+    });
   };
 
   const removeSection = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      sections: prev.sections.filter((_, i) => i !== index)
-    }));
+    setFormData(prev => {
+        if (!prev) return null;
+        return {
+            ...prev,
+            sections: prev.sections.filter((_, i) => i !== index)
+        }
+    });
   };
 
   const moveSection = (index: number, direction: 'up' | 'down') => {
+    if (!formData) return;
     const newSections = [...formData.sections];
     const newIndex = direction === 'up' ? index - 1 : index + 1;
     
@@ -188,28 +197,52 @@ export default function LandingPublicPage() {
       newSections[index].order = index;
       newSections[newIndex].order = newIndex;
       
-      setFormData(prev => ({
+      setFormData(prev => prev ? ({
         ...prev,
         sections: newSections
-      }));
+      }) : null);
     }
   };
 
   const updateSection = (index: number, field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      sections: prev.sections.map((section, i) => 
-        i === index ? { ...section, [field]: value } : section
-      )
-    }));
+    setFormData(prev => {
+        if (!prev) return null;
+        return {
+            ...prev,
+            sections: prev.sections.map((section, i) => 
+                i === index ? { ...section, [field]: value } : section
+            )
+        }
+    });
   };
 
-  if (isLoading) {
+  if (isLoading || !formData) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Cargando configuración...</div>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+            <Skeleton className="h-10 w-64"/>
+            <div className="flex gap-2">
+                <Skeleton className="h-10 w-24"/>
+                <Skeleton className="h-10 w-24"/>
+                <Skeleton className="h-10 w-32"/>
+            </div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card><CardContent className="p-6"><Skeleton className="h-96 w-full" /></CardContent></Card>
+            <div className="sticky top-6"><Card><CardContent className="p-6"><Skeleton className="h-96 w-full" /></CardContent></Card></div>
+        </div>
       </div>
     );
+  }
+
+  if (isError) {
+      return (
+          <div className="flex flex-col items-center justify-center h-64 text-destructive-foreground bg-destructive/80 rounded-lg p-8">
+              <AlertCircle className="h-12 w-12 mb-4"/>
+              <h2 className="text-2xl font-bold">Error al Cargar la Configuración</h2>
+              <p>No se pudo obtener la configuración de la landing page. Por favor, recarga la página o contacta a soporte.</p>
+          </div>
+      )
   }
 
   return (
@@ -232,7 +265,7 @@ export default function LandingPublicPage() {
             onClick={() => {
               const defaultConfig = useDefaultConfig();
               setFormData(prev => ({
-                ...prev,
+                ...prev!,
                 sections: defaultConfig.sections
               }));
               toast({
@@ -277,7 +310,7 @@ export default function LandingPublicPage() {
                       <Input
                         id="heroTitle"
                         value={formData.heroTitle}
-                        onChange={(e) => setFormData(prev => ({ ...prev, heroTitle: e.target.value }))}
+                        onChange={(e) => setFormData(prev => prev ? ({ ...prev, heroTitle: e.target.value }) : null)}
                         placeholder="Título principal de la landing"
                       />
                     </div>
@@ -286,7 +319,7 @@ export default function LandingPublicPage() {
                       <Input
                         id="heroSubtitle"
                         value={formData.heroSubtitle}
-                        onChange={(e) => setFormData(prev => ({ ...prev, heroSubtitle: e.target.value }))}
+                        onChange={(e) => setFormData(prev => prev ? ({ ...prev, heroSubtitle: e.target.value }) : null)}
                         placeholder="Subtítulo descriptivo"
                       />
                     </div>
@@ -298,7 +331,7 @@ export default function LandingPublicPage() {
                       <Input
                         id="heroButtonText"
                         value={formData.heroButtonText}
-                        onChange={(e) => setFormData(prev => ({ ...prev, heroButtonText: e.target.value }))}
+                        onChange={(e) => setFormData(prev => prev ? ({ ...prev, heroButtonText: e.target.value }) : null)}
                         placeholder="¡Comenzar ahora!"
                       />
                     </div>
@@ -307,7 +340,7 @@ export default function LandingPublicPage() {
                       <Input
                         id="heroButtonUrl"
                         value={formData.heroButtonUrl}
-                        onChange={(e) => setFormData(prev => ({ ...prev, heroButtonUrl: e.target.value }))}
+                        onChange={(e) => setFormData(prev => prev ? ({ ...prev, heroButtonUrl: e.target.value }) : null)}
                         placeholder="#contact"
                       />
                     </div>
@@ -323,12 +356,12 @@ export default function LandingPublicPage() {
                           id="heroBackgroundColor"
                           type="color"
                           value={formData.heroBackgroundColor}
-                          onChange={(e) => setFormData(prev => ({ ...prev, heroBackgroundColor: e.target.value }))}
+                          onChange={(e) => setFormData(prev => prev ? ({ ...prev, heroBackgroundColor: e.target.value }) : null)}
                           className="w-16 h-10"
                         />
                         <Input
                           value={formData.heroBackgroundColor}
-                          onChange={(e) => setFormData(prev => ({ ...prev, heroBackgroundColor: e.target.value }))}
+                          onChange={(e) => setFormData(prev => prev ? ({ ...prev, heroBackgroundColor: e.target.value }) : null)}
                           placeholder="#ffffff"
                         />
                       </div>
@@ -340,12 +373,12 @@ export default function LandingPublicPage() {
                           id="heroTextColor"
                           type="color"
                           value={formData.heroTextColor}
-                          onChange={(e) => setFormData(prev => ({ ...prev, heroTextColor: e.target.value }))}
+                          onChange={(e) => setFormData(prev => prev ? ({ ...prev, heroTextColor: e.target.value }) : null)}
                           className="w-16 h-10"
                         />
                         <Input
                           value={formData.heroTextColor}
-                          onChange={(e) => setFormData(prev => ({ ...prev, heroTextColor: e.target.value }))}
+                          onChange={(e) => setFormData(prev => prev ? ({ ...prev, heroTextColor: e.target.value }) : null)}
                           placeholder="#1f2937"
                         />
                       </div>
@@ -357,12 +390,12 @@ export default function LandingPublicPage() {
                           id="heroButtonColor"
                           type="color"
                           value={formData.heroButtonColor}
-                          onChange={(e) => setFormData(prev => ({ ...prev, heroButtonColor: e.target.value }))}
+                          onChange={(e) => setFormData(prev => prev ? ({ ...prev, heroButtonColor: e.target.value }) : null)}
                           className="w-16 h-10"
                         />
                         <Input
                           value={formData.heroButtonColor}
-                          onChange={(e) => setFormData(prev => ({ ...prev, heroButtonColor: e.target.value }))}
+                          onChange={(e) => setFormData(prev => prev ? ({ ...prev, heroButtonColor: e.target.value }) : null)}
                           placeholder="#3b82f6"
                         />
                       </div>
@@ -373,7 +406,7 @@ export default function LandingPublicPage() {
                     <Label htmlFor="heroAnimation">Animación</Label>
                     <Select
                       value={formData.heroAnimation}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, heroAnimation: value as any }))}
+                      onValueChange={(value) => setFormData(prev => prev ? ({ ...prev, heroAnimation: value as any }) : null)}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -703,10 +736,10 @@ export default function LandingPublicPage() {
                     <Input
                       id="seoTitle"
                       value={formData.seo.title}
-                      onChange={(e) => setFormData(prev => ({ 
+                      onChange={(e) => setFormData(prev => prev ? ({ 
                         ...prev, 
                         seo: { ...prev.seo, title: e.target.value }
-                      }))}
+                      }) : null)}
                       placeholder="Título para motores de búsqueda"
                     />
                   </div>
@@ -716,10 +749,10 @@ export default function LandingPublicPage() {
                     <Textarea
                       id="seoDescription"
                       value={formData.seo.description}
-                      onChange={(e) => setFormData(prev => ({ 
+                      onChange={(e) => setFormData(prev => prev ? ({ 
                         ...prev, 
                         seo: { ...prev.seo, description: e.target.value }
-                      }))}
+                      }) : null)}
                       placeholder="Descripción para motores de búsqueda"
                       rows={3}
                     />
@@ -730,13 +763,13 @@ export default function LandingPublicPage() {
                     <Input
                       id="seoKeywords"
                       value={formData.seo.keywords.join(', ')}
-                      onChange={(e) => setFormData(prev => ({ 
+                      onChange={(e) => setFormData(prev => prev ? ({ 
                         ...prev, 
                         seo: { 
                           ...prev.seo, 
                           keywords: e.target.value.split(',').map(k => k.trim()).filter(k => k)
                         }
-                      }))}
+                      }) : null)}
                       placeholder="palabra1, palabra2, palabra3"
                     />
                   </div>
@@ -746,10 +779,10 @@ export default function LandingPublicPage() {
                     <Input
                       id="ogTitle"
                       value={formData.seo.ogTitle || ''}
-                      onChange={(e) => setFormData(prev => ({ 
+                      onChange={(e) => setFormData(prev => prev ? ({ 
                         ...prev, 
                         seo: { ...prev.seo, ogTitle: e.target.value }
-                      }))}
+                      }) : null)}
                       placeholder="Título para redes sociales"
                     />
                   </div>
@@ -759,10 +792,10 @@ export default function LandingPublicPage() {
                     <Textarea
                       id="ogDescription"
                       value={formData.seo.ogDescription || ''}
-                      onChange={(e) => setFormData(prev => ({ 
+                      onChange={(e) => setFormData(prev => prev ? ({ 
                         ...prev, 
                         seo: { ...prev.seo, ogDescription: e.target.value }
-                      }))}
+                      }) : null)}
                       placeholder="Descripción para redes sociales"
                       rows={3}
                     />
@@ -773,10 +806,10 @@ export default function LandingPublicPage() {
                     <Input
                       id="ogImage"
                       value={formData.seo.ogImage || ''}
-                      onChange={(e) => setFormData(prev => ({ 
+                      onChange={(e) => setFormData(prev => prev ? ({ 
                         ...prev, 
                         seo: { ...prev.seo, ogImage: e.target.value }
-                      }))}
+                      }) : null)}
                       placeholder="URL de la imagen para redes sociales"
                     />
                   </div>
