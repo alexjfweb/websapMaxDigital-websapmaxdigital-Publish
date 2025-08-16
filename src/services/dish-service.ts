@@ -1,4 +1,3 @@
-
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -11,90 +10,8 @@ import {
 } from 'firebase/firestore';
 import type { Dish } from '@/types';
 
-// --- DATOS DE EJEMPLO (sin cambios) ---
-const sampleDishes = [ /* ... */ ];
-
-// --- FUNCIÓN DE SERIALIZACIÓN ROBUSTA ---
-const serializeDate = (date: any): string => {
-  if (date instanceof Timestamp) return date.toDate().toISOString();
-  if (date instanceof Date) return date.toISOString();
-  if (typeof date === 'string') {
-    const d = new Date(date);
-    if (!isNaN(d.getTime())) return d.toISOString();
-  }
-  if (date && typeof date.seconds === 'number') {
-    return new Date(date.seconds * 1000).toISOString();
-  }
-  return new Date().toISOString();
-};
-
-const serializeDish = (id: string, data: any): Dish => {
-  return {
-    id,
-    name: data.name || 'Sin Nombre',
-    description: data.description || '',
-    price: data.price || 0,
-    imageUrl: data.imageUrl || 'https://placehold.co/800x450.png',
-    stock: data.stock ?? -1,
-    likes: data.likes ?? 0,
-    category: data.category || 'Sin categoría',
-    isFeatured: data.isFeatured ?? false,
-    companyId: data.companyId,
-    available: data.available ?? true,
-    createdAt: serializeDate(data.createdAt),
-    updatedAt: serializeDate(data.updatedAt),
-  };
-};
-
-
-class DishService {
-  private get dishesCollection() {
-    if (!db) throw new Error("La base de datos no está disponible.");
-    return collection(db, 'dishes');
-  }
-
-  async createSampleDishesForCompany(companyId: string): Promise<void> {
-    const coll = this.dishesCollection;
-    const timestamp = serverTimestamp();
-    const promises = sampleDishes.map(dish => {
-      const dishData = {
-        ...dish,
-        companyId: companyId,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-      };
-      return addDoc(coll, dishData);
-    });
-
-    try {
-      await Promise.all(promises);
-    } catch (error) {
-      console.error(`Error al crear platos de ejemplo para ${companyId}:`, error);
-    }
-  }
-
-  async getDishesByCompany(companyId: string): Promise<Dish[]> {
-    if (!companyId) return [];
-    const coll = this.dishesCollection;
-    
-    try {
-      const q = query(coll, where('companyId', '==', companyId));
-      const querySnapshot = await getDocs(q);
-      
-      // **LA SOLUCIÓN DEFINITIVA**
-      return querySnapshot.docs.map(doc => serializeDish(doc.id, doc.data()));
-      
-    } catch (error) {
-      console.error(`Error al obtener los platos para ${companyId}:`, error);
-      throw new Error('No se pudieron obtener los platos.');
-    }
-  }
-}
-
-export const dishService = new DishService();
-
-// Pegar los datos de ejemplo aquí para mantener el archivo completo
-const sampleDishesData = [
+// --- DATOS DE EJEMPLO ---
+const sampleDishes = [
   {
     name: 'Fajitas de Pollo',
     description: 'Tiras de pollo a la parrilla con pimientos y cebollas, servido con tortillas calientes, salsa y guacamole.',
@@ -151,5 +68,87 @@ const sampleDishesData = [
     isFeatured: false,
   },
 ];
-// Re-asigna sampleDishes para que el código interno de la clase lo use
-(DishService as any).prototype.sampleDishes = sampleDishesData;
+
+// --- FUNCIÓN DE SERIALIZACIÓN ROBUSTA ---
+const serializeDate = (date: any): string => {
+  if (date instanceof Timestamp) return date.toDate().toISOString();
+  if (date instanceof Date) return date.toISOString();
+  if (typeof date === 'string') {
+    const d = new Date(date);
+    if (!isNaN(d.getTime())) return d.toISOString();
+  }
+  if (date && typeof date.seconds === 'number') {
+    return new Date(date.seconds * 1000).toISOString();
+  }
+  return new Date().toISOString();
+};
+
+const serializeDish = (id: string, data: any): Dish => {
+  return {
+    id,
+    name: data.name || 'Sin Nombre',
+    description: data.description || '',
+    price: data.price || 0,
+    imageUrl: data.imageUrl || 'https://placehold.co/600x400.png',
+    stock: data.stock ?? -1,
+    likes: data.likes ?? 0,
+    category: data.category || 'Sin categoría',
+    isFeatured: data.isFeatured ?? false,
+    companyId: data.companyId,
+    available: data.available ?? true,
+    createdAt: serializeDate(data.createdAt),
+    updatedAt: serializeDate(data.updatedAt),
+  };
+};
+
+// --- FUNCIONES PURAS EN LUGAR DE CLASE ---
+const getDishesCollection = () => {
+  if (!db) throw new Error("La base de datos no está disponible.");
+  return collection(db, 'dishes');
+};
+
+// ✅ FUNCIÓN PURA - Crear platos de ejemplo
+export const createSampleDishesForCompany = async (companyId: string): Promise<void> => {
+  const coll = getDishesCollection();
+  const timestamp = serverTimestamp();
+  const promises = sampleDishes.map(dish => {
+    const dishData = {
+      ...dish,
+      companyId: companyId,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+    return addDoc(coll, dishData);
+  });
+
+  try {
+    await Promise.all(promises);
+  } catch (error) {
+    console.error(`Error al crear platos de ejemplo para ${companyId}:`, error);
+    throw error;
+  }
+};
+
+// ✅ FUNCIÓN PURA - Obtener platos por compañía
+export const getDishesByCompany = async (companyId: string): Promise<Dish[]> => {
+  if (!companyId) return [];
+  const coll = getDishesCollection();
+  
+  try {
+    const q = query(coll, where('companyId', '==', companyId));
+    const querySnapshot = await getDocs(q);
+    
+    // Serialización completa para Next.js
+    return querySnapshot.docs.map(doc => serializeDish(doc.id, doc.data()));
+    
+  } catch (error) {
+    console.error(`Error al obtener los platos para ${companyId}:`, error);
+    throw new Error('No se pudieron obtener los platos.');
+  }
+};
+
+// ✅ EXPORTAR OBJETO CON FUNCIONES (no una instancia de clase)
+export const dishService = {
+  createSampleDishesForCompany,
+  getDishesByCompany,
+};

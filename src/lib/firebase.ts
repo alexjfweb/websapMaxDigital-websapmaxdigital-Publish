@@ -1,34 +1,28 @@
-
-// src/lib/firebase.ts
-import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
-import { getStorage } from 'firebase/storage';
+import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { firebaseConfig } from './firebase-config';
+import { getAuth } from 'firebase/auth';
 
-let app: FirebaseApp;
+// Tus credenciales de Firebase desde las variables de entorno
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
 
-// Función para inicializar y obtener la app, garantizando una única instancia.
+// Patrón Singleton para una inicialización segura de Firebase
 function getFirebaseApp(): FirebaseApp {
-  console.log("🔵 getFirebaseApp: Verificando estado de la app de Firebase...");
-  if (!firebaseConfig.projectId) {
-    console.error("🔴 ERROR: La configuración de Firebase está incompleta. No se puede inicializar.");
-    throw new Error("Configuración de Firebase inválida.");
+  if (!getApps().length) {
+    return initializeApp(firebaseConfig);
   }
-  if (getApps().length === 0) {
-    console.log("🟠 Inicializando nueva instancia de Firebase con projectId:", firebaseConfig.projectId);
-    app = initializeApp(firebaseConfig);
-    console.log("✅ Firebase App Initialized con éxito.");
-  } else {
-    app = getApp();
-    console.log("🟢 Firebase App ya estaba inicializada.");
-  }
-  return app;
+  return getApp();
 }
 
-const appInstance = getFirebaseApp();
-const db = getFirestore(appInstance);
+const app = getFirebaseApp();
+const db = getFirestore(app);
+const auth = getAuth(app);
 
-// Solución al problema de CORS: Especificar explícitamente el bucket de almacenamiento.
-const storage = getStorage(appInstance, firebaseConfig.storageBucket);
-
-export { getFirebaseApp, db, storage };
+// Exporta las instancias que necesitas en tu aplicación
+export { app, db, auth };

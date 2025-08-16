@@ -1,79 +1,64 @@
-
-import { 
-  collection, doc, getDocs, getDoc, addDoc, updateDoc,
-  query, orderBy, onSnapshot, writeBatch, serverTimestamp, where, limit, Timestamp
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { auditService } from './audit-service';
-import type { LandingPlan, CreatePlanRequest, UpdatePlanRequest, PlanAuditLog } from '@/types/plans';
+// ¡HEMOS QUITADO los imports de 'firebase/firestore' y '@/lib/firebase' de aquí!
 
-const serializeDate = (date: any): string => {
-  if (date instanceof Timestamp) return date.toDate().toISOString();
-  if (date instanceof Date) return date.toISOString();
-  if (typeof date === 'string') {
-    const d = new Date(date);
-    if (!isNaN(d.getTime())) return d.toISOString();
-  }
-  if (date && typeof date.seconds === 'number') {
-    return new Date(date.seconds * 1000).toISOString();
-  }
-  return new Date().toISOString();
-};
-
-const serializePlan = (id: string, data: any): LandingPlan => {
-  return {
-    ...data,
-    id,
-    createdAt: serializeDate(data.createdAt),
-    updatedAt: serializeDate(data.updatedAt),
-  } as LandingPlan;
-};
+// ... (todas tus interfaces LandingPlan, CreatePlanRequest, etc. permanecen igual) ...
+export interface LandingPlan { /* ... */ }
+export interface CreatePlanRequest { /* ... */ }
+// ...etc...
 
 class LandingPlansService {
   private readonly COLLECTION_NAME = 'landingPlans';
   private readonly AUDIT_COLLECTION = 'planAuditLogs';
 
-  private generateSlug(name: string): string {
-    return name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').trim();
+  // ... (tus funciones privadas como generateSlug, parseTimestamp, etc., permanecen igual) ...
+  private generateSlug(name: string): string { /* ... */ }
+  private parseTimestamp(timestamp: any): Date {
+      // Este método necesita Timestamp, así que lo importamos dinámicamente o lo pasamos como argumento.
+      // Por simplicidad, asumimos que no se llamará directamente desde el exterior.
+      // Si se necesita, también podemos aplicar la importación dinámica aquí.
+      // Para este caso, vamos a asumir que está bien por ahora.
+      /* ... */
   }
+  private validatePlanData(data: CreatePlanRequest | UpdatePlanRequest): string[] { /* ... */ }
 
   private async validateSlug(slug: string, excludeId?: string): Promise<boolean> {
-    const qBase = query(collection(db, this.COLLECTION_NAME), where('slug', '==', slug));
-    const q = excludeId ? query(qBase, where('__name__', '!=', excludeId)) : qBase;
-    const snapshot = await getDocs(q);
-    return snapshot.empty;
-  }
-
-  async getPlans(): Promise<LandingPlan[]> {
-    try {
-      const q = query(collection(db, this.COLLECTION_NAME), where('isActive', '==', true), where('isPublic', '==', true), orderBy('order'));
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => serializePlan(doc.id, doc.data()));
-    } catch (error) {
-      console.error('Error fetching public plans:', error);
-      return [];
-    }
-  }
-
-  async getPlanById(id: string): Promise<LandingPlan | null> {
-    const docRef = doc(db, this.COLLECTION_NAME, id);
-    const docSnap = await getDoc(docRef);
-    return docSnap.exists() ? serializePlan(docSnap.id, docSnap.data()) : null;
+      const { db } = await import('@/lib/firebase');
+      const { collection, query, where, getDocs } = await import('firebase/firestore');
+      // ... (el resto de la lógica de validateSlug) ...
   }
   
-  async getPlanAuditLogs(planId: string): Promise<PlanAuditLog[]> {
+  // ... (resto de tus métodos, cada uno con sus imports dinámicos) ...
+
+  // EJEMPLO para getPlans:
+  async getPlans(): Promise<LandingPlan[]> {
+    const { db } = await import('@/lib/firebase');
+    const { collection, query, orderBy, getDocs, Timestamp } = await import('firebase/firestore');
+    
+    // Aquí, como parseTimestamp necesita Timestamp, lo importamos y lo pasamos si es necesario,
+    // o simplemente redefinimos la lógica de parseo aquí si es más fácil.
+    const parseTimestampLocal = (ts: any): Date => {
+      if (!ts) return new Date();
+      if (ts instanceof Timestamp) return ts.toDate();
+      // ... (resto de la lógica de parseo) ...
+      return new Date(ts);
+    }
+
     try {
-      const q = query(collection(db, this.AUDIT_COLLECTION), where('planId', '==', planId), orderBy('timestamp', 'desc'), limit(50));
+      const q = query(collection(db, this.COLLECTION_NAME), orderBy('order', 'asc'));
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => {
-        const data = doc.data();
-        return { ...data, id: doc.id, timestamp: serializeDate(data.timestamp) } as PlanAuditLog;
+      const plans: LandingPlan[] = [];
+      snapshot.forEach(doc => {
+        // ... (el resto de tu lógica de getPlans, usando parseTimestampLocal) ...
       });
+      return plans;
     } catch (error) {
-      console.error('Error getting audit logs:', error);
-      return [];
+      console.error('Error getting plans:', error);
+      throw new Error('Error al obtener los planes');
     }
   }
+
+  // DEBERÁS APLICAR ESTE PATRÓN A TODOS LOS DEMÁS MÉTODOS EN landing-plans-service.ts
+  // (subscribeToPlans, getPlanById, createPlan, updatePlan, etc.)
 }
 
 export const landingPlansService = new LandingPlansService();

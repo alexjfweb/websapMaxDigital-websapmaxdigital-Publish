@@ -1,12 +1,12 @@
-
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import type { User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, usePathname } from 'next/navigation';
-import { getFirebaseApp, db } from '@/lib/firebase';
-import { getAuth, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+// ¡CAMBIO IMPORTANTE AQUÍ! Importamos 'auth' y 'db' directamente.
+import { auth, db } from '@/lib/firebase'; 
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc, Timestamp } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 
@@ -44,7 +44,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    const auth = getAuth(getFirebaseApp());
+    // ¡CAMBIO IMPORTANTE AQUÍ! Usamos la instancia 'auth' importada.
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         const userDocRef = doc(db, "users", firebaseUser.uid);
@@ -63,7 +63,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, []); // El array de dependencias vacío es correcto aquí.
 
   useEffect(() => {
     if (isLoading) return;
@@ -82,7 +82,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      await getAuth(getFirebaseApp()).signOut();
+      // Usamos la instancia 'auth' importada.
+      await auth.signOut(); 
       setCurrentUser(null);
       router.push('/login');
     } catch (error) {

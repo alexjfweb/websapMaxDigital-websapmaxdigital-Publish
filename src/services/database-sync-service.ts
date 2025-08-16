@@ -1,4 +1,3 @@
-
 // src/services/database-sync-service.ts
 import { collection, getDocs, writeBatch, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -165,54 +164,56 @@ const examplePlans = [
   }
 ];
 
-class DatabaseSyncService {
-  async syncLandingPlans(userId: string, userEmail: string): Promise<string> {
-    if (!db) {
-      throw new Error("La base de datos no está disponible. La sincronización falló.");
+// ✅ FUNCIÓN PURA en lugar de clase
+export const syncLandingPlans = async (userId: string, userEmail: string): Promise<string> => {
+  if (!db) {
+    throw new Error("La base de datos no está disponible. La sincronización falló.");
+  }
+  
+  try {
+    const plansCollection = collection(db, 'landingPlans');
+    const existingPlansSnapshot = await getDocs(plansCollection);
+
+    if (!existingPlansSnapshot.empty) {
+      const litePlanExists = existingPlansSnapshot.docs.some(doc => doc.id === 'plan_gratis_lite');
+      if (litePlanExists) {
+        return 'Los planes ya existen. No se requiere ninguna acción.';
+      }
+    }
+
+    const batch = writeBatch(db);
+    
+    for (const planData of examplePlans) {
+      const docId = planData.id || planData.slug;
+      const docRef = doc(db, 'landingPlans', docId);
+      const fullPlanData = {
+        ...planData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        createdBy: userId,
+        updatedBy: userEmail,
+      };
+      batch.set(docRef, fullPlanData, { merge: true });
     }
     
-    try {
-      const plansCollection = collection(db, 'landingPlans');
-      const existingPlansSnapshot = await getDocs(plansCollection);
+    await batch.commit();
 
-      if (!existingPlansSnapshot.empty) {
-        const litePlanExists = existingPlansSnapshot.docs.some(doc => doc.id === 'plan_gratis_lite');
-        if (litePlanExists) {
-          return 'Los planes ya existen. No se requiere ninguna acción.';
-        }
-      }
+    await landingPlansService.logAudit(
+      'system-sync',
+      'created',
+      userId,
+      userEmail,
+      { details: `Sincronización de ${examplePlans.length} planes de ejemplo.` }
+    );
 
-      const batch = writeBatch(db);
-      
-      for (const planData of examplePlans) {
-        const docId = planData.id || planData.slug;
-        const docRef = doc(db, 'landingPlans', docId);
-        const fullPlanData = {
-          ...planData,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-          createdBy: userId,
-          updatedBy: userEmail,
-        };
-        batch.set(docRef, fullPlanData, { merge: true });
-      }
-      
-      await batch.commit();
-
-      await landingPlansService.logAudit(
-        'system-sync',
-        'created',
-        userId,
-        userEmail,
-        { details: `Sincronización de ${examplePlans.length} planes de ejemplo.` }
-      );
-
-      return `Sincronización completada. Se crearon o actualizaron ${examplePlans.length} planes.`;
-    } catch (error) {
-      console.error('Error durante la sincronización de la base de datos:', error);
-      throw new Error('No se pudo completar la sincronización de la base de datos.');
-    }
+    return `Sincronización completada. Se crearon o actualizaron ${examplePlans.length} planes.`;
+  } catch (error) {
+    console.error('Error durante la sincronización de la base de datos:', error);
+    throw new Error('No se pudo completar la sincronización de la base de datos.');
   }
-}
+};
 
-export const databaseSyncService = new DatabaseSyncService();
+// ✅ EXPORTAR OBJETO CON FUNCIONES (no instancia de clase)
+export const databaseSyncService = {
+  syncLandingPlans,
+};
