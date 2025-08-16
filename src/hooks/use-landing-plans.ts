@@ -13,7 +13,7 @@ export function useLandingPlans() {
   });
 
   return {
-    plans: data || [],
+    plans: data?.plans || [], // Correctly access the 'plans' array from the response object
     isLoading,
     error: error ? error.message : null,
     refetch: mutate,
