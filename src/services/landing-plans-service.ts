@@ -113,9 +113,16 @@ class LandingPlansService {
 
   async getPublicPlans(): Promise<LandingPlan[]> {
     const coll = this.getPlansCollection();
-    const q = query(coll, where('isActive', '==', true), where('isPublic', '==', true), orderBy('order', 'asc'));
+    // Consulta simplificada para evitar la necesidad de un índice compuesto complejo.
+    // Solo filtra por 'isActive', el resto se hace en el lado del cliente.
+    const q = query(coll, where('isActive', '==', true));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => serializePlan(doc.id, doc.data()));
+    
+    // Filtrar y ordenar en el código en lugar de en la consulta
+    return snapshot.docs
+      .map(doc => serializePlan(doc.id, doc.data()))
+      .filter(plan => plan.isPublic)
+      .sort((a, b) => a.order - b.order);
   }
   
   async getPlanById(id: string): Promise<LandingPlan | null> {
