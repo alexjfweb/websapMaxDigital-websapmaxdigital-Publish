@@ -76,18 +76,20 @@ const getLandingDefaultConfigForServer = (): LandingConfig => ({
 
 async function getPublicPlansForServer(): Promise<LandingPlan[]> {
     const coll = adminDb.collection('landingPlans');
-    const q = coll.where('isActive', '==', true).where('isPublic', '==', true);
+    const q = coll.where('isActive', '==', true);
     const snapshot = await q.get();
+    
     return snapshot.docs
       .map(doc => serializePlan(doc.id, doc.data()))
-      .sort((a, b) => a.order - b.order);
+      .filter(plan => plan.isPublic) // Filtrar por público aquí
+      .sort((a, b) => a.order - b.order); // Ordenar aquí
 }
 
 async function getLandingConfigForServer(): Promise<LandingConfig> {
   const configDocRef = adminDb.collection('landing_configs').doc('main');
   const defaultConfig = getLandingDefaultConfigForServer();
   try {
-    const docSnap = await configDocRef.get();
+    const docSnap = await docSnap.get();
     if (!docSnap.exists) {
       console.warn("Server: Landing config not found. A default one will be used.");
       return defaultConfig;
