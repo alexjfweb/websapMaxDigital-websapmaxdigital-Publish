@@ -103,7 +103,7 @@ class LandingPlansService {
   }
 
   async getPlans(): Promise<LandingPlan[]> {
-    const q = query(this.plansCollection, orderBy('order', 'asc'));
+    const q = query(this.plansCollection, where('isPublic', '==', true), orderBy('order', 'asc'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => serializePlan(doc.id, doc.data()));
   }
