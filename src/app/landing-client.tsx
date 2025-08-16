@@ -4,18 +4,67 @@ import { motion } from 'framer-motion';
 import Head from "next/head";
 import SubscriptionPlansSection from '@/components/SubscriptionPlansSection';
 import type { LandingPlan } from '@/types/plans';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Loader2 } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import type { LandingConfig } from '@/services/landing-config-service';
+import { useLandingConfig } from '@/hooks/use-landing-config';
+import { useLandingPlans } from '@/hooks/use-landing-plans';
+import { Skeleton } from '@/components/ui/skeleton';
 
-interface LandingClientProps {
-  plans: LandingPlan[];
-  config: LandingConfig;
+
+function LandingSkeleton() {
+  return (
+    <main className="min-h-screen w-full flex flex-col items-center">
+      <section className="w-full py-20 flex flex-col items-center">
+        <Skeleton className="h-12 w-2/3 mb-4" />
+        <Skeleton className="h-6 w-1/2 mb-8" />
+        <Skeleton className="h-12 w-40 rounded-full" />
+      </section>
+      <section className="w-full py-16 container mx-auto">
+        <Skeleton className="h-8 w-1/3 mx-auto mb-4" />
+        <Skeleton className="h-5 w-2/3 mx-auto mb-12" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-64 w-full" />
+        </div>
+      </section>
+    </main>
+  );
 }
 
-export default function LandingClient({ plans, config }: LandingClientProps) {
+
+export default function LandingClient() {
+  const { plans, isLoading: isLoadingPlans, error: errorPlans } = useLandingPlans(true); // Fetch public plans
+  const { config, isLoading: isLoadingConfig, isError: isErrorConfig } = useLandingConfig();
+
+  const isLoading = isLoadingPlans || isLoadingConfig;
+
+  if (isLoading) {
+    return <LandingSkeleton />;
+  }
+
+  if (isErrorConfig || errorPlans) {
+     return (
+        <div className="flex flex-col items-center justify-center min-h-screen text-center text-red-500 p-4">
+            <AlertTriangle className="h-12 w-12 mb-4" />
+            <h1 className="text-2xl font-bold">Error al cargar la página</h1>
+            <p className="mt-2">No se pudieron obtener los datos necesarios. Por favor, intente más tarde.</p>
+            <p className="text-xs mt-4 bg-red-100 p-2 rounded-md">{errorPlans || "Error en la configuración de la landing."}</p>
+        </div>
+    );
+  }
+
+  if (!config) {
+     return (
+        <div className="flex flex-col items-center justify-center min-h-screen text-center text-gray-500 p-4">
+            <Loader2 className="h-12 w-12 mb-4 animate-spin" />
+            <h1 className="text-2xl font-bold">Cargando configuración...</h1>
+        </div>
+     );
+  }
 
   return (
     <>
@@ -23,19 +72,16 @@ export default function LandingClient({ plans, config }: LandingClientProps) {
         <title>{config.seo.title}</title>
         <meta name="description" content={config.seo.description} />
         <meta name="keywords" content={config.seo.keywords.join(', ')} />
-        {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:title" content={config.seo.ogTitle} />
         <meta property="og:description" content={config.seo.ogDescription} />
         <meta property="og:image" content={config.seo.ogImage} />
-        {/* Twitter */}
         <meta property="twitter:card" content="summary_large_image" />
         <meta property="twitter:title" content={config.seo.ogTitle} />
         <meta property="twitter:description" content={config.seo.ogDescription} />
         <meta property="twitter:image" content={config.seo.ogImage} />
       </Head>
       <main className="min-h-screen w-full flex flex-col items-center">
-        {/* Hero Section */}
         <motion.section
           initial={{ opacity: 0, y: -40 }}
           animate={{ opacity: 1, y: 0 }}
@@ -61,7 +107,6 @@ export default function LandingClient({ plans, config }: LandingClientProps) {
           </Button>
         </motion.section>
 
-        {/* Dynamic Sections from Config */}
         {config.sections.filter(s => s.isActive).map(section => (
           <motion.section
             key={section.id}
@@ -97,7 +142,6 @@ export default function LandingClient({ plans, config }: LandingClientProps) {
           </motion.section>
         ))}
         
-        {/* Subscription Plans Section - Uses the data passed as props */}
         <div id="planes">
           {plans && plans.length > 0 ? (
               <SubscriptionPlansSection plans={plans} />

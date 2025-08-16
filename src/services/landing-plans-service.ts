@@ -1,5 +1,5 @@
 
-import { adminDb } from '@/lib/firebase-admin';
+import { db } from '@/lib/firebase';
 import {
   collection,
   doc,
@@ -66,7 +66,6 @@ const cleanupObject = (obj: any): any => {
     if (obj === null || typeof obj !== 'object') {
         return obj;
     }
-    // No limpiar Timestamps de Firestore
     if (obj instanceof Timestamp || obj instanceof Date) {
         return obj;
     }
@@ -88,8 +87,8 @@ const cleanupObject = (obj: any): any => {
 
 class LandingPlansService {
   private getPlansCollection() {
-    if (!adminDb) throw new Error("Database not available");
-    return adminDb.collection(this.COLLECTION_NAME);
+    if (!db) throw new Error("Database not available");
+    return collection(db, this.COLLECTION_NAME);
   }
 
   private readonly COLLECTION_NAME = 'landingPlans';
@@ -97,61 +96,47 @@ class LandingPlansService {
 
   private async validateSlug(slug: string, excludeId?: string): Promise<boolean> {
     const coll = this.getPlansCollection();
-    let querySnapshot = coll.where('slug', '==', slug);
+    const q = query(coll, where('slug', '==', slug));
+    const snapshot = await getDocs(q);
     if (excludeId) {
-      // This part is tricky with Firestore queries.
-      // A direct "!=" is not available on the same field.
-      // We fetch all and filter in memory, which is acceptable for a unique check.
-      const snapshot = await querySnapshot.get();
-      return snapshot.docs.every(doc => doc.id === excludeId);
+        return snapshot.docs.every(doc => doc.id === excludeId);
     }
-    const snapshot = await querySnapshot.get();
     return snapshot.empty;
   }
 
   async getPlans(): Promise<LandingPlan[]> {
     const coll = this.getPlansCollection();
-    // Ordenar por 'order' si existe, si no, por fecha de creación para consistencia.
-    const q = coll.orderBy('order', 'asc').orderBy('createdAt', 'asc');
-    const snapshot = await q.get();
+    const q = query(coll, orderBy('order', 'asc'), orderBy('createdAt', 'asc'));
+    const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => serializePlan(doc.id, doc.data()));
   }
 
   async getPublicPlans(): Promise<LandingPlan[]> {
     const coll = this.getPlansCollection();
-    // Consulta simplificada para evitar la necesidad de un índice compuesto complejo.
-    // Solo filtra por 'isActive', el resto se hace en el lado del cliente.
-    const q = coll.where('isActive', '==', true);
-    const snapshot = await q.get();
-    
-    // Filtrar y ordenar en el código en lugar de en la consulta
-    return snapshot.docs
-      .map(doc => serializePlan(doc.id, doc.data()))
-      .filter(plan => plan.isPublic) // Filtrar por público aquí
-      .sort((a, b) => a.order - b.order); // Ordenar aquí
+    const q = query(coll, where('isActive', '==', true), where('isPublic', '==', true), orderBy('order', 'asc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => serializePlan(doc.id, doc.data()));
   }
   
   async getPlanById(id: string): Promise<LandingPlan | null> {
     if (!id) return null;
-    const docRef = this.getPlansCollection().doc(id);
-    const docSnap = await docRef.get();
-    return docSnap.exists ? serializePlan(docSnap.id, docSnap.data()) : null;
+    const docRef = doc(this.getPlansCollection(), id);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists() ? serializePlan(docSnap.id, docSnap.data()) : null;
   }
 
   async createPlan(data: CreatePlanRequest, userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<LandingPlan> {
     let slug = generateSlug(data.name);
     if (!await this.validateSlug(slug)) {
-      slug = `${slug}-${Date.now()}`; // Make slug unique
+      slug = `${slug}-${Date.now()}`;
     }
 
     const coll = this.getPlansCollection();
     
-    // Se elimina el cálculo de 'order' que usaba getDocs, para evitar el conflicto.
-    // El orden se manejará por fecha de creación por defecto, y luego por la función de reordenar.
     const newPlanData = {
       ...data,
       slug,
-      order: data.order ?? 999, // Asignar un número alto por defecto, la reordenación lo corregirá.
+      order: data.order ?? 999,
       isActive: data.isActive ?? true,
       isPublic: data.isPublic ?? true,
       createdAt: serverTimestamp(),
@@ -160,7 +145,7 @@ class LandingPlansService {
       updatedBy: userEmail,
     };
 
-    const docRef = await coll.add(newPlanData);
+    const docRef = await addDoc(coll, newPlanData);
     const createdPlan = await this.getPlanById(docRef.id);
     if (!createdPlan) throw new Error("Failed to retrieve plan after creation.");
     
@@ -177,7 +162,7 @@ class LandingPlansService {
   }
 
   async updatePlan(id: string, data: UpdatePlanRequest, userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<LandingPlan> {
-    const docRef = this.getPlansCollection().doc(id);
+    const docRef = doc(this.getPlansCollection(), id);
     const originalDoc = await this.getPlanById(id);
     if (!originalDoc) throw new Error(`Plan with id ${id} not found`);
 
@@ -190,7 +175,7 @@ class LandingPlansService {
     }
     
     const updateData = { ...data, slug, updatedAt: serverTimestamp(), updatedBy: userEmail };
-    await docRef.set(updateData, { merge: true });
+    await setDoc(docRef, updateData, { merge: true });
 
     const updatedPlan = await this.getPlanById(id);
     if (!updatedPlan) throw new Error("Failed to retrieve plan after update.");
@@ -209,14 +194,13 @@ class LandingPlansService {
   }
 
   async deletePlan(id: string, userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<void> {
-    // Soft delete by making it inactive and not public
     await this.updatePlan(id, { isActive: false, isPublic: false }, userId, userEmail, ipAddress, userAgent);
   }
 
   async reorderPlans(planIds: string[], userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<void> {
-    const batch = adminDb.batch();
+    const batch = writeBatch(db);
     planIds.forEach((id, index) => {
-      const docRef = this.getPlansCollection().doc(id);
+      const docRef = doc(this.getPlansCollection(), id);
       batch.update(docRef, { order: index, updatedAt: serverTimestamp() });
     });
     await batch.commit();
@@ -232,9 +216,9 @@ class LandingPlansService {
   }
   
   async getPlanAuditLogs(planId: string): Promise<PlanAuditLog[]> {
-    const coll = adminDb.collection(this.AUDIT_COLLECTION);
-    const q = coll.where('planId', '==', planId).orderBy('timestamp', 'desc');
-    const snapshot = await q.get();
+    const coll = collection(db, this.AUDIT_COLLECTION);
+    const q = query(coll, where('planId', '==', planId), orderBy('timestamp', 'desc'));
+    const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => {
         const data = doc.data();
         return {
@@ -246,17 +230,17 @@ class LandingPlansService {
   }
 
   async rollbackPlan(planId: string, auditLogId: string, userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<void> {
-    const auditLogRef = adminDb.collection(this.AUDIT_COLLECTION).doc(auditLogId);
-    const auditLogSnap = await auditLogRef.get();
-    if (!auditLogSnap.exists) throw new Error("Audit log not found.");
+    const auditLogRef = doc(db, this.AUDIT_COLLECTION, auditLogId);
+    const auditLogSnap = await getDoc(auditLogRef);
+    if (!auditLogSnap.exists()) throw new Error("Audit log not found.");
     
     const logData = auditLogSnap.data();
     if (!logData.previousData || Object.keys(logData.previousData).length === 0) {
       throw new Error("No previous data available to rollback to.");
     }
 
-    const planRef = this.getPlansCollection().doc(planId);
-    await planRef.set({ ...logData.previousData, updatedAt: serverTimestamp() }, { merge: true });
+    const planRef = doc(this.getPlansCollection(), planId);
+    await setDoc(planRef, { ...logData.previousData, updatedAt: serverTimestamp() }, { merge: true });
 
     await auditService.log({
       entity: 'landingPlans',

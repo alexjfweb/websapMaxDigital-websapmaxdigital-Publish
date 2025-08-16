@@ -4,12 +4,17 @@ import useSWR from 'swr';
 import { landingPlansService, LandingPlan, CreatePlanRequest, UpdatePlanRequest, PlanAuditLog } from '@/services/landing-plans-service';
 
 // El fetcher ahora llama directamente al servicio de Firestore
-const fetcher = () => landingPlansService.getPlans();
+const fetcher = (key: string) => {
+  const publicOnly = key.includes('-public');
+  return publicOnly ? landingPlansService.getPublicPlans() : landingPlansService.getPlans();
+};
 
-// Hook para obtener planes. Ahora obtiene TODOS los planes para el panel de admin.
-export function useLandingPlans() {
-  const { data, error, isLoading, mutate } = useSWR('landing-plans-admin', fetcher, {
-      revalidateOnFocus: true, // Revalidar cuando la ventana gana foco
+
+// Hook para obtener planes. Ahora puede obtener todos o solo los públicos.
+export function useLandingPlans(publicOnly = false) {
+  const swrKey = publicOnly ? 'landing-plans-public' : 'landing-plans-admin';
+  const { data, error, isLoading, mutate } = useSWR(swrKey, fetcher, {
+      revalidateOnFocus: true,
   });
 
   return {
@@ -21,7 +26,7 @@ export function useLandingPlans() {
 }
 
 
-// Hook para obtener un plan específico (sin cambios)
+// Hook para obtener un plan específico
 export function useLandingPlan(id: string) {
   const { data, error, isLoading } = useSWR(id ? `landing-plan-${id}` : null, () => landingPlansService.getPlanById(id));
 
@@ -32,7 +37,7 @@ export function useLandingPlan(id: string) {
   };
 }
 
-// Hook para operaciones CRUD (sin cambios)
+// Hook para operaciones CRUD
 export function useLandingPlansCRUD() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -130,7 +135,7 @@ export function useLandingPlansCRUD() {
   };
 }
 
-// Hook para historial de auditoría (sin cambios)
+// Hook para historial de auditoría
 export function usePlanAuditLogs(planId: string) {
   const [logs, setLogs] = useState<PlanAuditLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -184,7 +189,7 @@ export function usePlanAuditLogs(planId: string) {
   };
 }
 
-// Hook para gestión de estado local (sin cambios)
+// Hook para gestión de estado local
 export function usePlanState() {
   const [selectedPlan, setSelectedPlan] = useState<LandingPlan | null>(null);
   const [isEditing, setIsEditing] = useState(false);
