@@ -1,4 +1,5 @@
-import { db } from '@/lib/firebase';
+
+import { adminDb } from '@/lib/firebase-admin';
 import {
   collection,
   doc,
@@ -87,8 +88,8 @@ const cleanupObject = (obj: any): any => {
 
 class LandingPlansService {
   private getPlansCollection() {
-    if (!db) throw new Error("Database not available");
-    return collection(db, this.COLLECTION_NAME);
+    if (!adminDb) throw new Error("Database not available");
+    return adminDb.collection(this.COLLECTION_NAME);
   }
 
   private readonly COLLECTION_NAME = 'landingPlans';
@@ -96,20 +97,23 @@ class LandingPlansService {
 
   private async validateSlug(slug: string, excludeId?: string): Promise<boolean> {
     const coll = this.getPlansCollection();
-    const constraints = [where('slug', '==', slug)];
+    let querySnapshot = coll.where('slug', '==', slug);
     if (excludeId) {
-      constraints.push(where('__name__', '!=', excludeId));
+      // This part is tricky with Firestore queries.
+      // A direct "!=" is not available on the same field.
+      // We fetch all and filter in memory, which is acceptable for a unique check.
+      const snapshot = await querySnapshot.get();
+      return snapshot.docs.every(doc => doc.id === excludeId);
     }
-    const q = query(coll, ...constraints);
-    const snapshot = await getDocs(q);
+    const snapshot = await querySnapshot.get();
     return snapshot.empty;
   }
 
   async getPlans(): Promise<LandingPlan[]> {
     const coll = this.getPlansCollection();
     // Ordenar por 'order' si existe, si no, por fecha de creación para consistencia.
-    const q = query(coll, orderBy('order', 'asc'), orderBy('createdAt', 'asc'));
-    const snapshot = await getDocs(q);
+    const q = coll.orderBy('order', 'asc').orderBy('createdAt', 'asc');
+    const snapshot = await q.get();
     return snapshot.docs.map(doc => serializePlan(doc.id, doc.data()));
   }
 
@@ -117,8 +121,8 @@ class LandingPlansService {
     const coll = this.getPlansCollection();
     // Consulta simplificada para evitar la necesidad de un índice compuesto complejo.
     // Solo filtra por 'isActive', el resto se hace en el lado del cliente.
-    const q = query(coll, where('isActive', '==', true));
-    const snapshot = await getDocs(q);
+    const q = coll.where('isActive', '==', true);
+    const snapshot = await q.get();
     
     // Filtrar y ordenar en el código en lugar de en la consulta
     return snapshot.docs
@@ -129,9 +133,9 @@ class LandingPlansService {
   
   async getPlanById(id: string): Promise<LandingPlan | null> {
     if (!id) return null;
-    const docRef = doc(db, this.COLLECTION_NAME, id);
-    const docSnap = await getDoc(docRef);
-    return docSnap.exists() ? serializePlan(docSnap.id, docSnap.data()) : null;
+    const docRef = this.getPlansCollection().doc(id);
+    const docSnap = await docRef.get();
+    return docSnap.exists ? serializePlan(docSnap.id, docSnap.data()) : null;
   }
 
   async createPlan(data: CreatePlanRequest, userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<LandingPlan> {
@@ -156,7 +160,7 @@ class LandingPlansService {
       updatedBy: userEmail,
     };
 
-    const docRef = await addDoc(coll, newPlanData);
+    const docRef = await coll.add(newPlanData);
     const createdPlan = await this.getPlanById(docRef.id);
     if (!createdPlan) throw new Error("Failed to retrieve plan after creation.");
     
@@ -173,8 +177,7 @@ class LandingPlansService {
   }
 
   async updatePlan(id: string, data: UpdatePlanRequest, userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<LandingPlan> {
-    const coll = this.getPlansCollection();
-    const docRef = doc(coll, id);
+    const docRef = this.getPlansCollection().doc(id);
     const originalDoc = await this.getPlanById(id);
     if (!originalDoc) throw new Error(`Plan with id ${id} not found`);
 
@@ -187,7 +190,7 @@ class LandingPlansService {
     }
     
     const updateData = { ...data, slug, updatedAt: serverTimestamp(), updatedBy: userEmail };
-    await setDoc(docRef, updateData, { merge: true });
+    await docRef.set(updateData, { merge: true });
 
     const updatedPlan = await this.getPlanById(id);
     if (!updatedPlan) throw new Error("Failed to retrieve plan after update.");
@@ -211,10 +214,9 @@ class LandingPlansService {
   }
 
   async reorderPlans(planIds: string[], userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<void> {
-    const coll = this.getPlansCollection();
-    const batch = writeBatch(db);
+    const batch = adminDb.batch();
     planIds.forEach((id, index) => {
-      const docRef = doc(coll, id);
+      const docRef = this.getPlansCollection().doc(id);
       batch.update(docRef, { order: index, updatedAt: serverTimestamp() });
     });
     await batch.commit();
@@ -230,9 +232,9 @@ class LandingPlansService {
   }
   
   async getPlanAuditLogs(planId: string): Promise<PlanAuditLog[]> {
-    const coll = collection(db, this.AUDIT_COLLECTION);
-    const q = query(coll, where('planId', '==', planId), orderBy('timestamp', 'desc'));
-    const snapshot = await getDocs(q);
+    const coll = adminDb.collection(this.AUDIT_COLLECTION);
+    const q = coll.where('planId', '==', planId).orderBy('timestamp', 'desc');
+    const snapshot = await q.get();
     return snapshot.docs.map(doc => {
         const data = doc.data();
         return {
@@ -244,17 +246,17 @@ class LandingPlansService {
   }
 
   async rollbackPlan(planId: string, auditLogId: string, userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<void> {
-    const auditLogRef = doc(db, this.AUDIT_COLLECTION, auditLogId);
-    const auditLogSnap = await getDoc(auditLogRef);
-    if (!auditLogSnap.exists()) throw new Error("Audit log not found.");
+    const auditLogRef = adminDb.collection(this.AUDIT_COLLECTION).doc(auditLogId);
+    const auditLogSnap = await auditLogRef.get();
+    if (!auditLogSnap.exists) throw new Error("Audit log not found.");
     
     const logData = auditLogSnap.data();
     if (!logData.previousData || Object.keys(logData.previousData).length === 0) {
       throw new Error("No previous data available to rollback to.");
     }
 
-    const planRef = doc(db, this.COLLECTION_NAME, planId);
-    await setDoc(planRef, { ...logData.previousData, updatedAt: serverTimestamp() }, { merge: true });
+    const planRef = this.getPlansCollection().doc(planId);
+    await planRef.set({ ...logData.previousData, updatedAt: serverTimestamp() }, { merge: true });
 
     await auditService.log({
       entity: 'landingPlans',

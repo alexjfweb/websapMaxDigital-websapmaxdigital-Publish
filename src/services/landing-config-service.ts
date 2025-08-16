@@ -1,5 +1,5 @@
 
-import { db } from '@/lib/firebase';
+import { adminDb } from '@/lib/firebase-admin';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auditService } from './audit-service';
 
@@ -115,14 +115,14 @@ const getLandingDefaultConfig = (): LandingConfig => ({
 
 class LandingConfigService {
   private getConfigDocRef() {
-    if (!db) throw new Error("Database not available");
-    return doc(db, CONFIG_COLLECTION_NAME, MAIN_CONFIG_DOC_ID);
+    if (!adminDb) throw new Error("Database not available");
+    return adminDb.collection(CONFIG_COLLECTION_NAME).doc(MAIN_CONFIG_DOC_ID);
   }
 
   async getLandingConfig(): Promise<LandingConfig> {
     try {
-        const docSnap = await getDoc(this.getConfigDocRef());
-        if (!docSnap.exists()) {
+        const docSnap = await this.getConfigDocRef().get();
+        if (!docSnap.exists) {
           console.warn("Landing config not found. Creating and returning a default one.");
           const defaultConfig = getLandingDefaultConfig();
           // Create it silently if it doesn't exist
@@ -152,7 +152,7 @@ class LandingConfigService {
   ): Promise<void> {
     const originalDoc = await this.getLandingConfig().catch(() => getLandingDefaultConfig());
     
-    await setDoc(this.getConfigDocRef(), { 
+    await this.getConfigDocRef().set({ 
       ...configUpdate,
       updatedAt: serverTimestamp() 
     }, { merge: true });
