@@ -3,16 +3,12 @@
 import 'server-only';
 import React from 'react';
 import LandingClient from './landing-client';
-
-// --- Imports para acceso a datos con privilegios de administrador ---
 import { adminDb } from '@/lib/firebase-admin';
 import type { Timestamp } from 'firebase-admin/firestore';
-
-// --- Tipos de datos importados para mantener la consistencia ---
 import type { LandingPlan } from '@/types/plans';
 import type { LandingConfig } from '@/services/landing-config-service';
 
-// --- Funciones de ayuda movidas aquí para ser usadas en el servidor ---
+// --- Funciones de ayuda para el servidor ---
 
 const serializeDate = (date: any): string | null => {
   if (!date) return null;
@@ -81,15 +77,15 @@ async function getPublicPlansForServer(): Promise<LandingPlan[]> {
     
     return snapshot.docs
       .map(doc => serializePlan(doc.id, doc.data()))
-      .filter(plan => plan.isPublic) // Filtrar por público aquí
-      .sort((a, b) => a.order - b.order); // Ordenar aquí
+      .filter(plan => plan.isPublic)
+      .sort((a, b) => a.order - b.order);
 }
 
 async function getLandingConfigForServer(): Promise<LandingConfig> {
   const configDocRef = adminDb.collection('landing_configs').doc('main');
   const defaultConfig = getLandingDefaultConfigForServer();
   try {
-    const docSnap = await docSnap.get();
+    const docSnap = await configDocRef.get();
     if (!docSnap.exists) {
       console.warn("Server: Landing config not found. A default one will be used.");
       return defaultConfig;
@@ -108,25 +104,17 @@ async function getLandingConfigForServer(): Promise<LandingConfig> {
   }
 }
 
-
-/**
- * Este es el componente de servidor para la página de inicio.
- * Ahora obtiene los datos directamente usando el SDK de Administrador para evitar problemas de permisos.
- */
 export default async function LandingPage() {
   try {
-    // Obtener todos los datos necesarios en paralelo
     const [publicPlans, config] = await Promise.all([
       getPublicPlansForServer(),
       getLandingConfigForServer(),
     ]);
     
-    // Pasar los datos obtenidos a un componente de cliente para el renderizado
     return <LandingClient plans={publicPlans} config={config} />;
 
   } catch (error) {
     console.error("Failed to fetch landing page data (plans or config):", error);
-    // Renderizar un estado de error claro si la obtención de datos falla
     return (
         <div className="flex flex-col items-center justify-center min-h-screen text-center text-red-500 p-4">
             <h1 className="text-2xl font-bold">Error al cargar la página</h1>
