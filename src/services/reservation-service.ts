@@ -1,4 +1,3 @@
-
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -50,7 +49,7 @@ class ReservationService {
     const reservationDoc = {
       ...data,
       restaurantId: restaurantId,
-      status: 'pending',
+      status: 'pending' as const,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };

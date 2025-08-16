@@ -13,7 +13,6 @@ import {
 } from 'firebase/firestore';
 import type { Company } from '@/types';
 import { auditService } from './audit-service';
-import { dishService } from './dish-service';
 
 export type CreateCompanyInput = Omit<Company, 'id' | 'createdAt' | 'updatedAt' | 'registrationDate' | 'status' | 'planId' | 'subscriptionStatus'>;
 
@@ -84,9 +83,6 @@ class CompanyService {
       updatedAt: timestamp,
       registrationDate: timestamp,
     });
-    
-    // Crear platos de ejemplo después de crear la compañía
-    await dishService.createSampleDishesForCompany(docRef.id);
     
     const newCompany = await this.getCompanyById(docRef.id);
     if (!newCompany) throw new Error("Failed to retrieve newly created company.");

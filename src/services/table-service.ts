@@ -58,22 +58,19 @@ export interface TableLog {
 class TableService {
   private get tablesCollection() {
     if (!db) {
-      console.error("Firebase no está inicializado. No se puede acceder a la colección 'tables'.");
-      return null;
+      throw new Error("La base de datos no está disponible.");
     }
     return collection(db, 'tables');
   }
   private get reservationsCollection() {
-    if (!db) {
-      console.error("Firebase no está inicializado. No se puede acceder a la colección 'table_reservations'.");
-      return null;
+     if (!db) {
+      throw new Error("La base de datos no está disponible.");
     }
     return collection(db, 'table_reservations');
   }
   private get logsCollection() {
-    if (!db) {
-      console.error("Firebase no está inicializado. No se puede acceder a la colección 'table_logs'.");
-      return null;
+     if (!db) {
+      throw new Error("La base de datos no está disponible.");
     }
     return collection(db, 'table_logs');
   }
@@ -81,7 +78,6 @@ class TableService {
   // CRUD
   async createTable(tableData: Omit<Table, 'id' | 'createdAt' | 'updatedAt'> & { restaurantId?: string }): Promise<string> {
     const coll = this.tablesCollection;
-    if (!coll) throw new Error("La base de datos no está disponible.");
 
     const restaurantId = typeof tableData.restaurantId === 'string' && tableData.restaurantId.trim() !== '' ? tableData.restaurantId : 'websapmax';
     // Validar unicidad de número de mesa por restaurante
@@ -109,7 +105,6 @@ class TableService {
 
   async updateTable(tableId: string, updates: Partial<Table>): Promise<void> {
     const coll = this.tablesCollection;
-    if (!coll) throw new Error("La base de datos no está disponible.");
 
     const tableRef = doc(coll, tableId);
     const tableDoc = await getDoc(tableRef);
@@ -135,7 +130,6 @@ class TableService {
 
   async deleteTable(tableId: string): Promise<void> {
     const coll = this.tablesCollection;
-    if (!coll) throw new Error("La base de datos no está disponible.");
     
     const tableRef = doc(coll, tableId);
     const tableDoc = await getDoc(tableRef);
@@ -157,7 +151,6 @@ class TableService {
 
   async getTable(tableId: string): Promise<Table | null> {
     const coll = this.tablesCollection;
-    if (!coll) return null;
 
     const tableRef = doc(coll, tableId);
     const tableDoc = await getDoc(tableRef);
@@ -167,7 +160,6 @@ class TableService {
 
   async getAllTables(restaurantId: string): Promise<Table[]> {
     const coll = this.tablesCollection;
-    if (!coll) return [];
 
     if (!restaurantId) {
       throw new Error("El ID del restaurante es obligatorio.");
@@ -194,7 +186,6 @@ class TableService {
   async reserveTable(reservationData: Omit<TableReservation, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     const resColl = this.reservationsCollection;
     const tableColl = this.tablesCollection;
-    if (!resColl || !tableColl) throw new Error("La base de datos no está disponible.");
     
     const batch = writeBatch(db);
     const reservationWithTimestamps = {
@@ -222,7 +213,6 @@ class TableService {
   async releaseTable(tableId: string): Promise<void> {
     const tableColl = this.tablesCollection;
     const resColl = this.reservationsCollection;
-    if (!tableColl || !resColl) throw new Error("La base de datos no está disponible.");
     
     const batch = writeBatch(db);
     const tableRef = doc(tableColl, tableId);
@@ -253,7 +243,6 @@ class TableService {
 
   async changeTableStatus(tableId: string, newStatus: TableStatus): Promise<void> {
     const coll = this.tablesCollection;
-    if (!coll) throw new Error("La base de datos no está disponible.");
 
     const tableRef = doc(coll, tableId);
     const tableDoc = await getDoc(tableRef);
@@ -273,7 +262,6 @@ class TableService {
 
   async getTableReservations(tableId?: string): Promise<TableReservation[]> {
     const coll = this.reservationsCollection;
-    if (!coll) return [];
 
     let q = query(coll, orderBy('reservationDate', 'desc'), orderBy('reservationTime', 'desc'));
     if (tableId) {
@@ -286,7 +274,6 @@ class TableService {
   // Logs
   private async createLog(logData: Omit<TableLog, 'id' | 'createdAt'> & { restaurantId?: string }): Promise<void> {
     const coll = this.logsCollection;
-    if (!coll) return;
 
     const logWithRestaurant = logData.restaurantId
       ? { ...logData, restaurantId: logData.restaurantId, createdAt: serverTimestamp() }
@@ -296,7 +283,6 @@ class TableService {
 
   async getTableLogs(tableId: string): Promise<TableLog[]> {
     const coll = this.logsCollection;
-    if (!coll) return [];
 
     if (!tableId) {
       throw new Error("El ID de la mesa es obligatorio.");

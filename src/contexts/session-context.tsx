@@ -4,9 +4,8 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import type { User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, usePathname } from 'next/navigation';
-// ¡CAMBIO IMPORTANTE AQUÍ! Importamos 'auth' y 'db' directamente.
-import { auth, db } from '@/lib/firebase'; 
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
+import { getFirebaseApp, db } from "@/lib/firebase"; 
 import { doc, getDoc, Timestamp } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 
@@ -44,7 +43,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    // ¡CAMBIO IMPORTANTE AQUÍ! Usamos la instancia 'auth' importada.
+    const app = getFirebaseApp();
+    const auth = getAuth(app);
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
@@ -55,13 +55,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
               const user = serializeUser(firebaseUser, userDocSnap.data());
               setCurrentUser(user);
             } else {
-              // Si el documento no existe en Firestore, deslogueamos al usuario
               await auth.signOut();
               setCurrentUser(null);
             }
         } catch (error) {
             console.error("Error fetching user data from Firestore:", error);
-            // Si hay un error al leer Firestore, deslogueamos para evitar un estado inconsistente
             await auth.signOut();
             setCurrentUser(null);
         }
@@ -71,26 +69,25 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     });
     return () => unsubscribe();
-  }, []); // El array de dependencias vacío es correcto aquí.
+  }, []);
 
   useEffect(() => {
     if (isLoading) return;
 
     const isAuthPage = ['/login', '/register'].includes(pathname);
     const isPublicPage = isAuthPage || pathname === '/' || pathname.startsWith('/menu/');
-    const userRole = currentUser?.role;
-
-    if (!userRole && !isPublicPage) {
+    
+    if (!currentUser && !isPublicPage) {
       router.push('/login');
-    } else if (userRole && isAuthPage) {
-      const targetDashboard = `/${userRole}/dashboard`;
+    } else if (currentUser && isAuthPage) {
+      const targetDashboard = `/${currentUser.role}/dashboard`;
       router.push(targetDashboard);
     }
   }, [currentUser, isLoading, pathname, router]);
 
   const logout = useCallback(async () => {
     try {
-      // Usamos la instancia 'auth' importada.
+      const auth = getAuth(getFirebaseApp());
       await auth.signOut(); 
       setCurrentUser(null);
       router.push('/login');
@@ -98,6 +95,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       toast({ title: 'Error', description: 'No se pudo cerrar la sesión.', variant: 'destructive' });
     }
   }, [toast, router]);
+
+  const value = {
+      currentUser,
+      isLoading,
+      logout,
+  };
 
   if (isLoading) {
     return (
@@ -109,7 +112,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <SessionContext.Provider value={{ currentUser, isLoading, logout }}>
+    <SessionContext.Provider value={value}>
       {children}
     </SessionContext.Provider>
   );

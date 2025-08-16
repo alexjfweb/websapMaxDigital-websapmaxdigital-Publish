@@ -1,4 +1,3 @@
-
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -27,7 +26,7 @@ class OrderService {
   private get ordersCollection() {
     if (!db) {
       console.error("Firebase no está inicializado. No se puede acceder a la colección 'orders'.");
-      return null;
+      throw new Error("La base de datos no está disponible.");
     }
     return collection(db, 'orders');
   }
@@ -39,10 +38,6 @@ class OrderService {
     }
     
     const coll = this.ordersCollection;
-    if (!coll) {
-        console.error("[OrderService] La conexión a la base de datos no está disponible.");
-        throw new Error("La conexión a la base de datos no está disponible.");
-    }
     
     try {
       const q = query(
