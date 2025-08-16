@@ -160,7 +160,7 @@ export default function LandingClient({ config, plans }: LandingClientProps) {
           </motion.section>
         ))}
         
-        {plans.length > 0 ? (
+        {plans && plans.length > 0 ? (
             <SubscriptionPlansSection plans={plans} />
         ) : (
              <motion.section
