@@ -1,229 +1,135 @@
 
+"use client";
+
 import { useState, useEffect, useCallback } from 'react';
-import useSWR from 'swr';
-import { landingPlansService, LandingPlan, CreatePlanRequest, UpdatePlanRequest, PlanAuditLog } from '@/services/landing-plans-service';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import type { LandingPlan } from '@/types/plans';
 
-// El fetcher ahora llama al endpoint de la API
-const fetcher = async (url: string): Promise<LandingPlan[]> => {
-  const res = await fetch(url);
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({})); // Intenta parsear el error, si falla, devuelve objeto vacío
-    throw new Error(errorData.error || 'No se pudieron cargar los planes.');
-  }
-  return res.json();
-};
-
-// Hook para obtener planes. Ahora puede obtener todos o solo los públicos via API.
-export function useLandingPlans(publicOnly = false) {
-  // El SWR key es ahora la URL del endpoint
-  const swrKey = publicOnly ? '/api/landing-plans' : null; // Por ahora solo soportamos público
-
-  const { data, error, isLoading, mutate } = useSWR(swrKey, fetcher, {
-      revalidateOnFocus: false, // Puedes ajustar esto según necesites
-  });
-
-  return {
-    plans: data || [],
-    isLoading,
-    error: error ? error.message : null,
-    refetch: mutate,
-  };
+interface UseLandingPlansReturn {
+  plans: LandingPlan[] | null;
+  isLoading: boolean;
+  error: string | null;
+  retry: () => void;
 }
 
-
-// Hook para obtener un plan específico
-export function useLandingPlan(id: string) {
-  const { data, error, isLoading } = useSWR(id ? `landing-plan-${id}` : null, () => landingPlansService.getPlanById(id));
-
-  return { 
-    plan: data, 
-    isLoading, 
-    error: error ? error.message : null
-  };
-}
-
-// Hook para operaciones CRUD
-export function useLandingPlansCRUD() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const createPlan = useCallback(async (
-    data: CreatePlanRequest,
-    userId: string,
-    userEmail: string,
-    ipAddress?: string,
-    userAgent?: string
-  ) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const result = await landingPlansService.createPlan(data, userId, userEmail, ipAddress, userAgent);
-      return result;
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const updatePlan = useCallback(async (
-    id: string,
-    data: UpdatePlanRequest,
-    userId: string,
-    userEmail: string,
-    ipAddress?: string,
-    userAgent?: string
-  ) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const result = await landingPlansService.updatePlan(id, data, userId, userEmail, ipAddress, userAgent);
-      return result;
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const deletePlan = useCallback(async (
-    id: string,
-    userId: string,
-    userEmail: string,
-    ipAddress?: string,
-    userAgent?: string
-  ) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      await landingPlansService.deletePlan(id, userId, userEmail, ipAddress, userAgent);
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const reorderPlans = useCallback(async (
-    planIds: string[],
-    userId: string,
-    userEmail: string,
-    ipAddress?: string,
-    userAgent?: string
-  ) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      await landingPlansService.reorderPlans(planIds, userId, userEmail, ipAddress, userAgent);
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  return {
-    createPlan,
-    updatePlan,
-    deletePlan,
-    reorderPlans,
-    isLoading,
-    error
-  };
-}
-
-// Hook para historial de auditoría
-export function usePlanAuditLogs(planId: string) {
-  const [logs, setLogs] = useState<PlanAuditLog[]>([]);
+export function useLandingPlans(publicOnly: boolean = true): UseLandingPlansReturn {
+  const [plans, setPlans] = useState<LandingPlan[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+
+  const fetchPlans = useCallback(async (attempt: number = 0): Promise<() => void> => {
+    const maxRetries = 3;
+    const retryDelay = Math.pow(2, attempt) * 1000;
+
+    return new Promise(async (resolve, reject) => {
+        let unsubscribe: (() => void) | null = null;
+        try {
+            setIsLoading(true);
+            setError(null);
+
+            console.log(`🔄 [useLandingPlans] Intento ${attempt + 1} de carga...`);
+
+            const timeoutPromise = new Promise<never>((_, rejectTimeout) => {
+                setTimeout(() => rejectTimeout(new Error('Timeout al cargar planes')), 8000);
+            });
+
+            const fetchPromise = (async () => {
+                const plansCollection = collection(db, 'landingPlans');
+                const q = publicOnly 
+                ? query(plansCollection, where('isPublic', '==', true), where('isActive', '==', true))
+                : query(plansCollection);
+                
+                const querySnapshot = await getDocs(q);
+                
+                const plansData = querySnapshot.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }) as LandingPlan)
+                    .sort((a,b) => a.order - b.order);
+
+                if (!Array.isArray(plansData)) {
+                    throw new Error('Formato de datos de planes inválido');
+                }
+
+                return plansData;
+            })();
+
+            const plansData = await Promise.race([fetchPromise, timeoutPromise]);
+            
+            setPlans(plansData);
+            setIsLoading(false);
+            setRetryCount(0);
+            
+            console.log(`✅ [useLandingPlans] ${plansData.length} planes cargados exitosamente`);
+
+            const plansCollection = collection(db, 'landingPlans');
+            const q = publicOnly 
+                ? query(plansCollection, where('isPublic', '==', true), where('isActive', '==', true))
+                : query(plansCollection);
+
+            unsubscribe = onSnapshot(q,
+                (snapshot) => {
+                const updatedPlans = snapshot.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }) as LandingPlan)
+                    .sort((a,b) => a.order - b.order);
+                
+                setPlans(updatedPlans);
+                console.log(`🔄 [useLandingPlans] ${updatedPlans.length} planes actualizados en tiempo real`);
+                },
+                (error) => {
+                console.error('❌ [useLandingPlans] Error en listener:', error);
+                }
+            );
+
+            resolve(() => { if (unsubscribe) unsubscribe(); });
+
+        } catch (fetchError) {
+            const errorMessage = fetchError instanceof Error ? fetchError.message : 'Error desconocido';
+            console.error(`❌ [useLandingPlans] Error en intento ${attempt + 1}:`, errorMessage);
+
+            if (attempt < maxRetries) {
+                console.log(`⏳ [useLandingPlans] Reintentando en ${retryDelay}ms...`);
+                setTimeout(() => {
+                    setRetryCount(attempt + 1);
+                    fetchPlans(attempt + 1).then(resolve).catch(reject);
+                }, retryDelay);
+            } else {
+                setError(errorMessage);
+                setIsLoading(false);
+                console.error('💥 [useLandingPlans] Todos los intentos fallaron');
+                reject(new Error(errorMessage));
+            }
+        }
+    });
+  }, [publicOnly]);
+
+  const retry = useCallback(() => {
+    setRetryCount(0);
+    fetchPlans(0);
+  }, [fetchPlans]);
 
   useEffect(() => {
-    if (!planId) {
-      setLogs([]);
-      setIsLoading(false);
-      return;
-    }
+    let unsubscribe: (() => void) | undefined;
 
-    setIsLoading(true);
-    setError(null);
+    fetchPlans(0).then((unsub) => {
+      if (typeof unsub === 'function') {
+        unsubscribe = unsub;
+      }
+    }).catch(err => {
+        console.error("Fallo final de fetchPlans en useEffect", err);
+    });
 
-    landingPlansService.getPlanAuditLogs(planId)
-      .then(setLogs)
-      .catch((err) => setError(err.message))
-      .finally(() => setIsLoading(false));
-  }, [planId]);
-
-  const rollbackPlan = useCallback(async (
-    auditLogId: string,
-    userId: string,
-    userEmail: string,
-    ipAddress?: string,
-    userAgent?: string
-  ) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const result = await landingPlansService.rollbackPlan(planId, auditLogId, userId, userEmail, ipAddress, userAgent);
-      // Recargar logs después del rollback
-      const updatedLogs = await landingPlansService.getPlanAuditLogs(planId);
-      setLogs(updatedLogs);
-      return result;
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [planId]);
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [fetchPlans]);
 
   return {
-    logs,
+    plans,
     isLoading,
     error,
-    rollbackPlan
-  };
-}
-
-// Hook para gestión de estado local
-export function usePlanState() {
-  const [selectedPlan, setSelectedPlan] = useState<LandingPlan | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-
-  const startEditing = useCallback((plan: LandingPlan) => {
-    setSelectedPlan(plan);
-    setIsEditing(true);
-    setIsCreating(false);
-  }, []);
-
-  const startCreating = useCallback(() => {
-    setSelectedPlan(null);
-    setIsCreating(true);
-    setIsEditing(false);
-  }, []);
-
-  const cancelEdit = useCallback(() => {
-    setSelectedPlan(null);
-    setIsEditing(false);
-    setIsCreating(false);
-  }, []);
-
-  return {
-    selectedPlan,
-    isEditing,
-    isCreating,
-    startEditing,
-    startCreating,
-    cancelEdit
+    retry
   };
 }
