@@ -37,9 +37,10 @@ export function useLandingPlans(publicOnly: boolean = true): UseLandingPlansRetu
 
             const fetchPromise = (async () => {
                 const plansCollection = collection(db, 'subscription_plans');
+                // **CORRECCIÓN:** La consulta ya no incluye el orderBy que requiere un índice compuesto.
                 const q = publicOnly 
-                ? query(plansCollection, where('isPublic', '==', true), where('isActive', '==', true), orderBy('order', 'asc'))
-                : query(plansCollection, orderBy('order', 'asc'));
+                  ? query(plansCollection, where('isPublic', '==', true), where('isActive', '==', true))
+                  : query(plansCollection);
                 
                 const querySnapshot = await getDocs(q);
                 
@@ -48,6 +49,9 @@ export function useLandingPlans(publicOnly: boolean = true): UseLandingPlansRetu
                 if (!Array.isArray(plansData)) {
                     throw new Error('Formato de datos de planes inválido');
                 }
+                
+                // **CORRECIÓN:** El ordenamiento se realiza en el cliente.
+                plansData.sort((a, b) => a.order - b.order);
 
                 return plansData;
             })();
@@ -61,19 +65,21 @@ export function useLandingPlans(publicOnly: boolean = true): UseLandingPlansRetu
             console.log(`✅ [useLandingPlans] ${plansData.length} planes cargados exitosamente`);
 
             const plansCollection = collection(db, 'subscription_plans');
+            // **CORRECCIÓN:** La consulta para el listener tampoco incluye el orderBy.
              const q = publicOnly 
-                ? query(plansCollection, where('isPublic', '==', true), where('isActive', '==', true), orderBy('order', 'asc'))
-                : query(plansCollection, orderBy('order', 'asc'));
+                ? query(plansCollection, where('isPublic', '==', true), where('isActive', '==', true))
+                : query(plansCollection);
 
             unsubscribe = onSnapshot(q,
                 (snapshot) => {
-                const updatedPlans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as LandingPlan);
-                
-                setPlans(updatedPlans);
-                console.log(`🔄 [useLandingPlans] ${updatedPlans.length} planes actualizados en tiempo real`);
+                  const updatedPlans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as LandingPlan);
+                  // **CORRECIÓN:** El ordenamiento se realiza en el cliente también para las actualizaciones.
+                  updatedPlans.sort((a, b) => a.order - b.order);
+                  setPlans(updatedPlans);
+                  console.log(`🔄 [useLandingPlans] ${updatedPlans.length} planes actualizados en tiempo real`);
                 },
                 (error) => {
-                console.error('❌ [useLandingPlans] Error en listener:', error);
+                  console.error('❌ [useLandingPlans] Error en listener:', error);
                 }
             );
 

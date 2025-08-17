@@ -43,7 +43,7 @@ export function useLandingConfig(): UseLandingConfigReturn {
                 const configSnap = await getDoc(configRef);
                 
                 if (!configSnap.exists()) {
-                throw new Error('Documento de configuración no encontrado');
+                  throw new Error('Documento de configuración no encontrado');
                 }
                 
                 const data = configSnap.data() as LandingConfig;
@@ -70,13 +70,13 @@ export function useLandingConfig(): UseLandingConfigReturn {
                 if (doc.exists()) {
                     const updatedData = doc.data() as LandingConfig;
                     if (updatedData && updatedData.heroTitle) {
-                    setConfig(updatedData);
-                    console.log('🔄 [useLandingConfig] Configuración actualizada en tiempo real');
+                      setConfig(updatedData);
+                      console.log('🔄 [useLandingConfig] Configuración actualizada en tiempo real');
                     }
                 }
                 },
                 (error) => {
-                console.error('❌ [useLandingConfig] Error en listener:', error);
+                  console.error('❌ [useLandingConfig] Error en listener:', error);
                 }
             );
 
@@ -116,7 +116,6 @@ export function useLandingConfig(): UseLandingConfigReturn {
         unsubscribe = unsub;
       }
     }).catch(err => {
-        // Error después de todos los reintentos
         console.error("Fallo final en useEffect", err);
     });
 
