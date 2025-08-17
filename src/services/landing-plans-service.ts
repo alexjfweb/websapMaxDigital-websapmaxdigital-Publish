@@ -86,13 +86,13 @@ const cleanupObject = (obj: any): any => {
 
 
 class LandingPlansService {
+  private readonly COLLECTION_NAME = 'subscription_plans'; // CORREGIDO
+  private readonly AUDIT_COLLECTION = 'planAuditLogs';
+  
   private getPlansCollection() {
     if (!db) throw new Error("La base de datos no está inicializada.");
     return collection(db, this.COLLECTION_NAME);
   }
-
-  private readonly COLLECTION_NAME = 'landingPlans';
-  private readonly AUDIT_COLLECTION = 'planAuditLogs';
 
   private async validateSlug(slug: string, excludeId?: string): Promise<boolean> {
     const coll = this.getPlansCollection();
@@ -113,16 +113,11 @@ class LandingPlansService {
 
   async getPublicPlans(): Promise<LandingPlan[]> {
     const coll = this.getPlansCollection();
-    const q = query(coll, where('isActive', '==', true), orderBy('order', 'asc'));
+    const q = query(coll, where('isActive', '==', true), where('isPublic', '==', true), orderBy('order', 'asc'));
     
     const snapshot = await getDocs(q);
     
-    // Filtro adicional en el cliente
-    const plans = snapshot.docs
-      .map(doc => serializePlan(doc.id, doc.data()))
-      .filter(plan => plan.isPublic === true);
-
-    return plans;
+    return snapshot.docs.map(doc => serializePlan(doc.id, doc.data()));
   }
   
   async getPlanById(id: string): Promise<LandingPlan | null> {

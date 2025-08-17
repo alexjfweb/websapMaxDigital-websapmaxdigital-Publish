@@ -36,7 +36,7 @@ export function useLandingPlans(publicOnly: boolean = true): UseLandingPlansRetu
             });
 
             const fetchPromise = (async () => {
-                const plansCollection = collection(db, 'landingPlans');
+                const plansCollection = collection(db, 'subscription_plans');
                 const q = publicOnly 
                 ? query(plansCollection, where('isPublic', '==', true), where('isActive', '==', true), orderBy('order', 'asc'))
                 : query(plansCollection, orderBy('order', 'asc'));
@@ -60,7 +60,7 @@ export function useLandingPlans(publicOnly: boolean = true): UseLandingPlansRetu
             
             console.log(`✅ [useLandingPlans] ${plansData.length} planes cargados exitosamente`);
 
-            const plansCollection = collection(db, 'landingPlans');
+            const plansCollection = collection(db, 'subscription_plans');
              const q = publicOnly 
                 ? query(plansCollection, where('isPublic', '==', true), where('isActive', '==', true), orderBy('order', 'asc'))
                 : query(plansCollection, orderBy('order', 'asc'));
