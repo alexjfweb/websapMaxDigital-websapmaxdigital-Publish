@@ -52,8 +52,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const app = getFirebaseApp();
     const auth = getAuth(app);
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setIsLoading(true); // Siempre empezar como cargando al cambiar el estado de auth
       if (firebaseUser) {
+        // Solo si hay un usuario autenticado, buscamos sus datos
         try {
             const userDocRef = doc(db, "users", firebaseUser.uid);
             const userDocSnap = await getDoc(userDocRef);
@@ -74,6 +74,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             setIsLoading(false);
         }
       } else {
+        // Si no hay usuario, la sesión es nula y terminamos de cargar
         setCurrentUser(null);
         setIsLoading(false);
       }
@@ -111,15 +112,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       isLoading,
       logout,
   };
-
-  if (isLoading && !['/', '/login', '/register'].includes(pathname) && !pathname.startsWith('/menu/')) {
-    return (
-      <div className="flex min-h-svh w-full items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Verificando sesión...</span>
-      </div>
-    );
-  }
 
   return (
     <SessionContext.Provider value={value}>

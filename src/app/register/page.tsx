@@ -79,7 +79,7 @@ const PasswordValidationIndicator = ({ password }: { password?: string }) => {
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const planId = searchParams.get('plan');
+  const planSlug = searchParams.get('plan'); // Usamos slug para consistencia
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorState, setErrorState] = useState<{ title: string; message: string } | null>(null);
 
@@ -102,7 +102,6 @@ function RegisterForm() {
   const isSuperAdminFlow = emailValue.toLowerCase() === SUPERADMIN_EMAIL;
 
   useEffect(() => {
-    // Si el email cambia a ser el de superadmin, limpiamos los campos de negocio
     if (isSuperAdminFlow) {
         form.setValue("businessName", "");
         form.setValue("ruc", "");
@@ -117,11 +116,9 @@ function RegisterForm() {
     let firebaseUser: FirebaseUser | null = null;
     
     try {
-      // 1. Crear usuario en Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       firebaseUser = userCredential.user;
 
-      // 2. Crear compañía (si aplica) y obtener su ID
       let companyId: string | null = null;
       const role: UserRole = isSuperAdminFlow ? 'superadmin' : 'admin';
       
@@ -136,17 +133,16 @@ function RegisterForm() {
             ruc: values.ruc,
             status: 'active',
             registrationDate: new Date().toISOString(),
-            planId: planId || 'plan-gratuito',
-            subscriptionStatus: planId ? 'pending_payment' : 'trialing',
+            planId: planSlug || 'plan-gratuito', // Usamos el slug del plan
+            subscriptionStatus: planSlug ? 'pending_payment' : 'trialing',
+            trialEndsAt: planSlug ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 días de prueba si no hay plan
             location: '',
         };
         
-        // El usuario que realiza la acción es el propio usuario recién creado
         const createdCompany = await companyService.createCompany(companyData, { uid: firebaseUser.uid, email: firebaseUser.email! });
         companyId = createdCompany.id;
       }
       
-      // 3. Crear el documento del usuario en Firestore AHORA que tenemos todos los datos
       const userData: Omit<User, 'id'> = {
         uid: firebaseUser.uid,
         email: firebaseUser.email || values.email,
@@ -154,7 +150,7 @@ function RegisterForm() {
         firstName: values.name,
         lastName: values.lastName,
         role: role,
-        companyId: companyId || undefined, // Asigna el ID de la compañía o undefined
+        companyId: companyId || undefined,
         businessName: values.businessName || '',
         status: 'active',
         registrationDate: new Date().toISOString(),
@@ -169,9 +165,8 @@ function RegisterForm() {
         description: `Serás redirigido para continuar.`,
       });
 
-      // Redirigir según si hay un plan seleccionado o no
-      if (planId) {
-          router.push(`/admin/checkout?plan=${planId}`);
+      if (planSlug) {
+          router.push(`/admin/checkout?plan=${planSlug}`);
       } else {
           router.push('/login');
       }
@@ -179,11 +174,10 @@ function RegisterForm() {
     } catch (error) {
       console.error("Error detallado en el registro:", error);
       
-      // Si el usuario de Auth se creó pero algo más falló, lo revertimos.
       if (firebaseUser) {
         try {
           await deleteUser(firebaseUser);
-          console.log("↩️ Usuario de Auth revertido exitosamente debido a un error en el flujo de registro posterior.");
+          console.log("↩️ Usuario de Auth revertido exitosamente.");
         } catch (revertError) {
           console.error("🔴 Error CRÍTICO al revertir la creación del usuario de Auth:", revertError);
         }

@@ -12,7 +12,7 @@ import { Check, Star, ArrowRight, AlertCircle, XCircle, CreditCard } from 'lucid
 import Link from 'next/link';
 import { useState } from 'react';
 import SupportRequestDialog from '@/components/support/SupportRequestDialog';
-import type { Company } from '@/types';
+import type { Company, LandingPlan } from '@/types';
 
 
 function SubscriptionSkeleton() {
@@ -47,8 +47,7 @@ function SubscriptionSkeleton() {
     )
 }
 
-function PlanCard({ plan, isCurrent, isPopular }: { plan: any, isCurrent?: boolean, isPopular?: boolean }) {
-    // CORRECCIÓN: Asegurarse de que el slug exista y sea válido
+function PlanCard({ plan, isCurrent, isPopular }: { plan: LandingPlan, isCurrent?: boolean, isPopular?: boolean }) {
     const planSlug = plan.slug || plan.name.toLowerCase().replace(/\s+/g, '-');
     return (
         <Card className={`flex flex-col ${isCurrent ? 'border-primary border-2' : ''} ${isPopular ? 'border-yellow-400' : ''}`}>
@@ -85,7 +84,7 @@ function PlanCard({ plan, isCurrent, isPopular }: { plan: any, isCurrent?: boole
 
 export default function SubscriptionPage() {
     const { subscription, isLoading: isLoadingSubscription, error: errorSubscription } = useSubscription();
-    const { plans, isLoading: isLoadingPlans, error: errorPlans } = useLandingPlans();
+    const { plans: allPlans, isLoading: isLoadingPlans, error: errorPlans } = useLandingPlans(true);
     const { employees, isLoading: isLoadingEmployees } = useEmployees(subscription?.company?.id);
     const [isSupportDialogOpen, setIsSupportDialogOpen] = useState(false);
 
@@ -122,8 +121,8 @@ export default function SubscriptionPage() {
     const { company, plan } = subscription || {};
     const statusInfo = company ? getStatusInfo(company.subscriptionStatus) : null;
     
-    // El plan gratuito no debe mostrarse como una opción de mejora
-    const otherPlans = (plans || []).filter(p => p.id !== plan?.id && p.id !== 'plan-gratis-lite' && p.slug !== 'plan-gratuito');
+    // Los planes de mejora son todos los planes públicos que no son el plan actual del usuario
+    const otherPlans = (allPlans || []).filter(p => p.id !== plan?.id);
 
     return (
         <>
