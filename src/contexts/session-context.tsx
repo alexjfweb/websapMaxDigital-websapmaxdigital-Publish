@@ -107,7 +107,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [toast, router]);
 
   const value = {
-      currentUser: currentUser!, // Se usa el non-null assertion porque el contexto no se renderiza si es nulo
+      currentUser: currentUser,
       isLoading,
       logout,
   };
