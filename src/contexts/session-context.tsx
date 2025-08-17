@@ -8,7 +8,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import { getAuth, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
 import { getFirebaseApp, db } from "@/lib/firebase"; 
 import { doc, getDoc, Timestamp } from 'firebase/firestore';
-import { Loader2 } from 'lucide-react';
 
 interface SessionContextType {
   currentUser: User | null;
@@ -32,7 +31,7 @@ const serializeUser = (firebaseUser: FirebaseUser, firestoreData: any): User => 
     for (const key in data) {
         if (data[key] instanceof Timestamp) {
             data[key] = data[key].toDate().toISOString();
-        } else if (data[key] && typeof data[key].seconds === 'number' && typeof data[key].nanoseconds === 'number') {
+        } else if (data[key] && typeof data[key] === 'object' && typeof data[key].seconds === 'number' && typeof data[key].nanoseconds === 'number') {
             // Manejar el caso de objeto de timestamp serializado
             data[key] = new Timestamp(data[key].seconds, data[key].nanoseconds).toDate().toISOString();
         }
@@ -53,7 +52,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const auth = getAuth(app);
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // Solo si hay un usuario autenticado, buscamos sus datos
         try {
             const userDocRef = doc(db, "users", firebaseUser.uid);
             const userDocSnap = await getDoc(userDocRef);
@@ -70,14 +68,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             console.error("Error fetching user data from Firestore:", error);
             await auth.signOut();
             setCurrentUser(null);
-        } finally {
-            setIsLoading(false);
         }
       } else {
-        // Si no hay usuario, la sesión es nula y terminamos de cargar
         setCurrentUser(null);
-        setIsLoading(false);
       }
+      setIsLoading(false);
     });
     return () => unsubscribe();
   }, []);

@@ -5,6 +5,7 @@ import AppShell from "@/components/layout/app-shell";
 import { SessionProvider, useSession } from "@/contexts/session-context";
 import { usePathname } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { OrderProvider } from "@/contexts/order-context";
 
 // Componente que decide qué layout renderizar
 function LayoutDecider({ children }: { children: React.ReactNode }) {
@@ -29,13 +30,17 @@ function LayoutDecider({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // Si no es una ruta pública y hay un usuario, renderizamos el AppShell.
-  // Si no hay usuario, la lógica en SessionProvider ya lo estará redirigiendo a /login.
+  // Si no es una ruta pública y hay un usuario, renderizamos el AppShell
+  // que ahora incluye el OrderProvider.
   if (currentUser) {
-    return <AppShell>{children}</AppShell>;
+    return (
+      <OrderProvider>
+        <AppShell>{children}</AppShell>
+      </OrderProvider>
+    );
   }
 
-  // Fallback mientras se redirige
+  // Fallback mientras se redirige a /login
   return (
     <div className="flex min-h-svh w-full items-center justify-center bg-background">
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
