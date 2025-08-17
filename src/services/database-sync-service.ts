@@ -1,7 +1,6 @@
 // src/services/database-sync-service.ts
 import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, writeBatch, serverTimestamp } from 'firebase/firestore';
-import { landingConfigService } from './landing-config-service';
 import { getLandingDefaultConfig } from './landing-config-service';
 
 // Planes de ejemplo
@@ -9,6 +8,7 @@ const examplePlans = [
   // ... (tus planes de ejemplo aquí, igual que antes)
   {
     id: 'plan_gratis_lite',
+    slug: 'plan-gratis-lite',
     name: 'Plan Gratis Lite',
     description: 'Funcionalidad limitada para mantener el acceso básico. Los datos no esenciales se limpian periódicamente.',
     price: 0, currency: 'USD', period: 'monthly',

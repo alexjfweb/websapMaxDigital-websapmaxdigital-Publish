@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot, orderBy } from 'firebase/firestore';
 import type { LandingPlan } from '@/types/plans';
 
 interface UseLandingPlansReturn {
@@ -38,14 +38,12 @@ export function useLandingPlans(publicOnly: boolean = true): UseLandingPlansRetu
             const fetchPromise = (async () => {
                 const plansCollection = collection(db, 'landingPlans');
                 const q = publicOnly 
-                ? query(plansCollection, where('isPublic', '==', true), where('isActive', '==', true))
-                : query(plansCollection);
+                ? query(plansCollection, where('isPublic', '==', true), where('isActive', '==', true), orderBy('order', 'asc'))
+                : query(plansCollection, orderBy('order', 'asc'));
                 
                 const querySnapshot = await getDocs(q);
                 
-                const plansData = querySnapshot.docs
-                    .map(doc => ({ id: doc.id, ...doc.data() }) as LandingPlan)
-                    .sort((a,b) => a.order - b.order);
+                const plansData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as LandingPlan);
 
                 if (!Array.isArray(plansData)) {
                     throw new Error('Formato de datos de planes inválido');
@@ -63,15 +61,13 @@ export function useLandingPlans(publicOnly: boolean = true): UseLandingPlansRetu
             console.log(`✅ [useLandingPlans] ${plansData.length} planes cargados exitosamente`);
 
             const plansCollection = collection(db, 'landingPlans');
-            const q = publicOnly 
-                ? query(plansCollection, where('isPublic', '==', true), where('isActive', '==', true))
-                : query(plansCollection);
+             const q = publicOnly 
+                ? query(plansCollection, where('isPublic', '==', true), where('isActive', '==', true), orderBy('order', 'asc'))
+                : query(plansCollection, orderBy('order', 'asc'));
 
             unsubscribe = onSnapshot(q,
                 (snapshot) => {
-                const updatedPlans = snapshot.docs
-                    .map(doc => ({ id: doc.id, ...doc.data() }) as LandingPlan)
-                    .sort((a,b) => a.order - b.order);
+                const updatedPlans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as LandingPlan);
                 
                 setPlans(updatedPlans);
                 console.log(`🔄 [useLandingPlans] ${updatedPlans.length} planes actualizados en tiempo real`);

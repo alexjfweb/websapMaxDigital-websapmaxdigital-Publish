@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auditService } from './audit-service';
@@ -65,7 +66,7 @@ const MAIN_CONFIG_DOC_ID = 'main';
 
 
 // Default configuration is now a private function within the service
-const getLandingDefaultConfig = (): LandingConfig => ({
+export const getLandingDefaultConfig = (): LandingConfig => ({
   id: 'main',
   heroTitle: 'Transforma tu Restaurante con un Menú Digital',
   heroSubtitle: 'Atrae más clientes, optimiza pedidos y mejora la experiencia.',
@@ -190,4 +191,3 @@ class LandingConfigService {
 }
 
 export const landingConfigService = new LandingConfigService();
-export { getLandingDefaultConfig };

@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -112,14 +113,16 @@ class LandingPlansService {
 
   async getPublicPlans(): Promise<LandingPlan[]> {
     const coll = this.getPlansCollection();
-    const q = query(coll, where('isActive', '==', true), where('isPublic', '==', true));
+    const q = query(coll, where('isActive', '==', true), orderBy('order', 'asc'));
     
     const snapshot = await getDocs(q);
     
-    const plans = snapshot.docs.map(doc => serializePlan(doc.id, doc.data()));
+    // Filtro adicional en el cliente
+    const plans = snapshot.docs
+      .map(doc => serializePlan(doc.id, doc.data()))
+      .filter(plan => plan.isPublic === true);
 
-    // Ordenar en el cliente
-    return plans.sort((a, b) => a.order - b.order);
+    return plans;
   }
   
   async getPlanById(id: string): Promise<LandingPlan | null> {
