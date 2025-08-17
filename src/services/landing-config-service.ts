@@ -118,15 +118,12 @@ class LandingConfigService {
     return doc(db, CONFIG_COLLECTION_NAME, MAIN_CONFIG_DOC_ID);
   }
 
-  async getLandingConfig(): Promise<LandingConfig> {
+  async getLandingConfig(): Promise<LandingConfig | null> {
     try {
         const docSnap = await getDoc(this.getConfigDocRef());
         if (!docSnap.exists()) {
-          console.warn("Landing config not found. Creating and returning a default one.");
-          const defaultConfig = getLandingDefaultConfig();
-          // Create it silently if it doesn't exist
-          await this.updateLandingConfig(defaultConfig, 'system-init', 'system@init.com');
-          return defaultConfig;
+          console.warn("Landing config not found.");
+          return null;
         }
         const data = docSnap.data();
         const defaultConfig = getLandingDefaultConfig();
@@ -164,6 +161,31 @@ class LandingConfigService {
       previousData: originalDoc,
       newData: { ...originalDoc, ...configUpdate },
     });
+  }
+
+    async createLandingConfig(
+        configData: LandingConfig,
+        userId: string,
+        userEmail: string
+    ): Promise<void> {
+        const { id, ...dataToSave } = configData;
+        await setDoc(this.getConfigDocRef(), {
+            ...dataToSave,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        });
+
+        await auditService.log({
+            entity: 'landingPlans',
+            entityId: MAIN_CONFIG_DOC_ID,
+            action: 'created',
+            performedBy: { uid: userId, email: userEmail },
+            newData: configData,
+        });
+    }
+
+  getDefaultConfig() {
+    return getLandingDefaultConfig();
   }
 }
 
