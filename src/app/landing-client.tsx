@@ -52,7 +52,8 @@ export default function LandingClient() {
             <AlertTriangle className="h-12 w-12 mb-4" />
             <h1 className="text-2xl font-bold">Error al cargar la página</h1>
             <p className="mt-2">No se pudieron obtener los datos necesarios. Por favor, intente más tarde.</p>
-            <p className="text-xs mt-4 bg-red-100 p-2 rounded-md">{errorPlans || "Error en la configuración de la landing."}</p>
+            {errorPlans && <p className="text-xs mt-4 bg-red-100 p-2 rounded-md">Detalle (Planes): {errorPlans}</p>}
+            {isErrorConfig && <p className="text-xs mt-4 bg-red-100 p-2 rounded-md">Detalle (Configuración): Error en la configuración de la landing.</p>}
         </div>
     );
   }

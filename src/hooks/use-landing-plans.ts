@@ -3,18 +3,23 @@ import { useState, useEffect, useCallback } from 'react';
 import useSWR from 'swr';
 import { landingPlansService, LandingPlan, CreatePlanRequest, UpdatePlanRequest, PlanAuditLog } from '@/services/landing-plans-service';
 
-// El fetcher ahora llama directamente al servicio de Firestore
-const fetcher = (key: string) => {
-  const publicOnly = key.includes('-public');
-  return publicOnly ? landingPlansService.getPublicPlans() : landingPlansService.getPlans();
+// El fetcher ahora llama al endpoint de la API
+const fetcher = async (url: string): Promise<LandingPlan[]> => {
+  const res = await fetch(url);
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({})); // Intenta parsear el error, si falla, devuelve objeto vacío
+    throw new Error(errorData.error || 'No se pudieron cargar los planes.');
+  }
+  return res.json();
 };
 
-
-// Hook para obtener planes. Ahora puede obtener todos o solo los públicos.
+// Hook para obtener planes. Ahora puede obtener todos o solo los públicos via API.
 export function useLandingPlans(publicOnly = false) {
-  const swrKey = publicOnly ? 'landing-plans-public' : 'landing-plans-admin';
+  // El SWR key es ahora la URL del endpoint
+  const swrKey = publicOnly ? '/api/landing-plans' : null; // Por ahora solo soportamos público
+
   const { data, error, isLoading, mutate } = useSWR(swrKey, fetcher, {
-      revalidateOnFocus: true,
+      revalidateOnFocus: false, // Puedes ajustar esto según necesites
   });
 
   return {

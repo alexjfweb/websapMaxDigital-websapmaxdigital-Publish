@@ -114,7 +114,7 @@ const getLandingDefaultConfig = (): LandingConfig => ({
 
 class LandingConfigService {
   private getConfigDocRef() {
-    if (!db) throw new Error("Database not available");
+    if (!db) throw new Error("La base de datos no está inicializada.");
     return doc(db, CONFIG_COLLECTION_NAME, MAIN_CONFIG_DOC_ID);
   }
 
@@ -140,7 +140,7 @@ class LandingConfigService {
         };
     } catch(error: any) {
         console.error("Error getting landing config:", error.message);
-        throw new Error("Could not retrieve landing page configuration.");
+        throw new Error("No se pudo obtener la configuración de la página de inicio.");
     }
   }
 

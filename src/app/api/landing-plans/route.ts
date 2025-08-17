@@ -5,7 +5,7 @@ import { landingPlansService } from '@/services/landing-plans-service';
 
 export async function GET(request: Request) {
   try {
-    const plans = await landingPlansService.getPlans();
+    const plans = await landingPlansService.getPublicPlans();
     return NextResponse.json(plans);
   } catch (error: any) {
     console.error('❌ [API /api/landing-plans] Error:', error.message);

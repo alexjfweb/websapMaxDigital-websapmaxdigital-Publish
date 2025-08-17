@@ -86,7 +86,7 @@ const cleanupObject = (obj: any): any => {
 
 class LandingPlansService {
   private getPlansCollection() {
-    if (!db) throw new Error("Database not available");
+    if (!db) throw new Error("La base de datos no está inicializada.");
     return collection(db, this.COLLECTION_NAME);
   }
 
@@ -112,16 +112,14 @@ class LandingPlansService {
 
   async getPublicPlans(): Promise<LandingPlan[]> {
     const coll = this.getPlansCollection();
-    // Consulta simplificada para evitar la necesidad de un índice compuesto complejo.
-    // Solo filtra por 'isActive', el resto se hace en el lado del cliente.
-    const q = query(coll, where('isActive', '==', true));
+    const q = query(coll, where('isActive', '==', true), where('isPublic', '==', true));
+    
     const snapshot = await getDocs(q);
     
-    // Filtrar y ordenar en el código en lugar de en la consulta
-    return snapshot.docs
-      .map(doc => serializePlan(doc.id, doc.data()))
-      .filter(plan => plan.isPublic)
-      .sort((a, b) => a.order - b.order);
+    const plans = snapshot.docs.map(doc => serializePlan(doc.id, doc.data()));
+
+    // Ordenar en el cliente
+    return plans.sort((a, b) => a.order - b.order);
   }
   
   async getPlanById(id: string): Promise<LandingPlan | null> {
