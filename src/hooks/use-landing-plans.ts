@@ -7,14 +7,14 @@ import { collection, query, where, getDocs, onSnapshot, orderBy } from 'firebase
 import type { LandingPlan } from '@/types/plans';
 
 interface UseLandingPlansReturn {
-  plans: LandingPlan[] | null;
+  plans: LandingPlan[];
   isLoading: boolean;
   error: string | null;
   retry: () => void;
 }
 
 export function useLandingPlans(publicOnly: boolean = true): UseLandingPlansReturn {
-  const [plans, setPlans] = useState<LandingPlan[] | null>(null);
+  const [plans, setPlans] = useState<LandingPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
