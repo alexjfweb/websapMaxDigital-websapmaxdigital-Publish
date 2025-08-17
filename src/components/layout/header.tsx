@@ -12,9 +12,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import type { User } from '@/types';
 
 interface AppHeaderProps {
-  currentUser: User;
+  currentUser: User | null;
   handleLogout: () => void;
-  showSidebarRelatedUI: boolean; 
 }
 
 function ConditionalSidebarTrigger() {
@@ -28,9 +27,8 @@ function ConditionalSidebarTrigger() {
   );
 }
 
-export default function AppHeader({ currentUser, handleLogout, showSidebarRelatedUI }: AppHeaderProps) {
+export default function AppHeader({ currentUser, handleLogout }: AppHeaderProps) {
   const router = useRouter();
-  const pathname = usePathname();
   
   const languages = [
     { code: 'en', name: 'English', flag: '🇬🇧' },
@@ -41,10 +39,11 @@ export default function AppHeader({ currentUser, handleLogout, showSidebarRelate
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 sm:px-6 shadow-sm">
-      {showSidebarRelatedUI && (
-        <React.Suspense fallback={null}>
-          <ConditionalSidebarTrigger />
-        </React.Suspense>
+      {/* El trigger del Sidebar solo debe existir si el layout principal del sidebar está presente */}
+      {currentUser && (
+          <React.Suspense fallback={null}>
+              <ConditionalSidebarTrigger />
+          </React.Suspense>
       )}
       
       <div className="flex-1">
