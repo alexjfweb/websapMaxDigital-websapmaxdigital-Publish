@@ -44,7 +44,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     shouldFetch ? `/api/companies/${companyId}/orders` : null,
     fetcher,
     {
-      revalidateOnFocus: false, 
+      revalidateOnFocus: true, // Revalidar al enfocar para datos en tiempo real
       shouldRetryOnError: false,
     }
   );

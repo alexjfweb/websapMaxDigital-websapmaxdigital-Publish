@@ -1,8 +1,7 @@
 
 "use client";
 import React from "react";
-import AppShell from "@/components/layout/app-shell"; // Importar el nuevo AppShell
-import { OrderProvider } from "@/contexts/order-context";
+import AppShell from "@/components/layout/app-shell"; 
 import { SessionProvider, useSession } from "@/contexts/session-context";
 import { usePathname } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -44,13 +43,10 @@ function LayoutDecider({ children }: { children: React.ReactNode }) {
   );
 }
 
-
 export default function ClientProviders({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
-      <OrderProvider>
-        <LayoutDecider>{children}</LayoutDecider>
-      </OrderProvider>
+      <LayoutDecider>{children}</LayoutDecider>
     </SessionProvider>
   );
 }
