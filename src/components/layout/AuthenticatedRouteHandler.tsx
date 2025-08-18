@@ -3,8 +3,6 @@
 
 import React from 'react';
 import { useSession } from '@/contexts/session-context';
-import AppShell from './app-shell';
-import { OrderProvider } from '@/contexts/order-context';
 import { Loader2 } from 'lucide-react';
 
 function SimpleLoader({ message }: { message: string }) {
@@ -18,8 +16,9 @@ function SimpleLoader({ message }: { message: string }) {
   );
 }
 
-// Este componente interno maneja la lógica de la sesión y renderiza el AppShell
-function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
+// Este componente ahora solo se encarga de la lógica de carga y protección,
+// sin renderizar el AppShell directamente.
+export default function AuthenticatedRouteHandler({ children }: { children: React.ReactNode }) {
   const { currentUser, isLoading } = useSession();
 
   if (isLoading) {
@@ -32,16 +31,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
     return <SimpleLoader message="Redirigiendo..." />;
   }
 
-  return (
-    <OrderProvider>
-      <AppShell>{children}</AppShell>
-    </OrderProvider>
-  );
-}
-
-// El componente exportado se encarga de la lógica de renderizado
-export default function AuthenticatedRouteHandler({ children }: { children: React.ReactNode }) {
-  return (
-    <AuthenticatedLayout>{children}</AuthenticatedLayout>
-  );
+  // Si el usuario está autenticado y no estamos cargando, renderizamos los hijos.
+  // El layout (AppShell) será proveído por el LayoutDecider en ClientProviders.
+  return <>{children}</>;
 }

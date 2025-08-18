@@ -7,6 +7,7 @@ import AuthenticatedRouteHandler from "@/components/layout/AuthenticatedRouteHan
 import AppLayout from "@/components/layout/app-layout";
 import { usePathname } from "next/navigation";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import AppShell from "@/components/layout/app-shell";
 
 
 function LayoutDecider({ children }: { children: React.ReactNode }) {
@@ -14,14 +15,16 @@ function LayoutDecider({ children }: { children: React.ReactNode }) {
     const isPublicRoute = pathname === '/' || pathname === '/login' || pathname === '/register' || pathname.startsWith('/menu/');
 
     if (isPublicRoute) {
-        return <AppLayout>{children}</AppLayout>
+        // Para las rutas públicas, solo usamos el layout simple que incluye la cabecera.
+        // AppShell se encarga de la estructura principal incluyendo el sidebar.
+        return <AppLayout>{children}</AppLayout>;
     }
 
     // Para todas las demás rutas, usamos el handler que protege
-    // y muestra el AppShell con la barra lateral, etc.
+    // y luego renderiza el contenido dentro del layout principal con sidebar.
     return (
         <AuthenticatedRouteHandler>
-            {children}
+            <AppShell>{children}</AppShell>
         </AuthenticatedRouteHandler>
     );
 }
@@ -31,7 +34,9 @@ export default function ClientProviders({ children }: { children: React.ReactNod
   return (
     <SidebarProvider>
       <SessionProvider>
+        <OrderProvider>
           <LayoutDecider>{children}</LayoutDecider>
+        </OrderProvider>
       </SessionProvider>
     </SidebarProvider>
   );
