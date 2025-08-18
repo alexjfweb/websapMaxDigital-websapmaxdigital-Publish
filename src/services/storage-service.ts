@@ -8,15 +8,16 @@ class StorageService {
    * @param file El archivo de imagen original.
    * @returns El archivo comprimido.
    */
-  async compressImage(file: File): Promise<File> {
+  private async compressImage(file: File): Promise<File> {
     const options = {
       maxSizeMB: 1,
       maxWidthOrHeight: 1080,
       useWebWorker: true,
     };
     try {
+      console.log(`Comprimiendo imagen de ${(file.size / 1024 / 1024).toFixed(2)}MB...`);
       const compressedFile = await imageCompression(file, options);
-      console.log(`Imagen comprimida de ${(file.size / 1024).toFixed(2)}KB a ${(compressedFile.size / 1024).toFixed(2)}KB`);
+      console.log(`Imagen comprimida a ${(compressedFile.size / 1024).toFixed(2)}KB`);
       return compressedFile;
     } catch (error) {
       console.error("Error al comprimir la imagen:", error);
@@ -31,7 +32,7 @@ class StorageService {
    * @param path La ruta de destino en Storage (ej. 'avatars/').
    * @returns La URL de descarga pública del archivo.
    */
-  async uploadFile(file: File, path: string): Promise<string> {
+  private async uploadFile(file: File, path: string): Promise<string> {
     if (!(file instanceof File)) {
       throw new Error("Se esperaba un objeto de tipo File para subir.");
     }
@@ -52,8 +53,7 @@ class StorageService {
         throw new Error(result.error || 'Error en el servidor al subir el archivo.');
       }
       
-      const downloadURL = result.url;
-      return downloadURL;
+      return result.url;
   
     } catch (uploadError: any) {
       console.error("❌ Error al subir el archivo:", uploadError);
@@ -70,7 +70,6 @@ class StorageService {
    */
   async compressAndUploadFile(file: File, path: string): Promise<string> {
     const compressedFile = await this.compressImage(file);
-    // Ahora, sube el archivo comprimido y devuelve la URL.
     return this.uploadFile(compressedFile, path);
   }
 
@@ -89,3 +88,5 @@ class StorageService {
 }
 
 export const storageService = new StorageService();
+
+    

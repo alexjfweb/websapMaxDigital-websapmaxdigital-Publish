@@ -139,17 +139,23 @@ export default function LandingPublicPage() {
   
   const updateSubsection = (sectionIndex: number, subIndex: number, field: string, value: any) => {
     setFormData(prev => {
-      if (!prev) return null;
-      const newSections = JSON.parse(JSON.stringify(prev.sections));
-      const newSubsections = newSections[sectionIndex].subsections || [];
-      
-      // Merge new value with existing data instead of replacing
-      newSubsections[subIndex] = { ...newSubsections[subIndex], [field]: value };
-      
-      newSections[sectionIndex].subsections = newSubsections;
-      return { ...prev, sections: newSections };
+        if (!prev) return null;
+        const newSections = [...prev.sections];
+        const targetSection = { ...newSections[sectionIndex] };
+        const newSubsections = [...(targetSection.subsections || [])];
+        
+        // Ensure the subsection object exists before trying to update it
+        if (newSubsections[subIndex]) {
+            newSubsections[subIndex] = { ...newSubsections[subIndex], [field]: value };
+        }
+        
+        targetSection.subsections = newSubsections;
+        newSections[sectionIndex] = targetSection;
+        
+        return { ...prev, sections: newSections };
     });
   };
+
 
   const addSection = () => {
     const newSection: LandingSection = {
@@ -307,3 +313,5 @@ export default function LandingPublicPage() {
     </div>
   );
 }
+
+    
