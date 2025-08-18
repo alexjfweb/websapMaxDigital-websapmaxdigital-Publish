@@ -4,12 +4,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { LandingPlan } from '@/types/plans';
 import useSWR from 'swr';
+import { landingPlansService } from '@/services/landing-plans-service';
 
+// Fetcher para la API pública (solo planes activos)
 const fetcher = async (url: string) => {
     const res = await fetch(url);
     if (!res.ok) {
         const error = new Error('An error occurred while fetching the data.');
-        // Attach extra info to the error object.
         try {
             error.message = (await res.json()).error || 'Failed to fetch plans';
         } catch (e) {
@@ -20,25 +21,34 @@ const fetcher = async (url: string) => {
     return res.json();
 };
 
+// Fetcher para el panel de admin (todos los planes)
+const adminFetcher = async () => {
+  return landingPlansService.getPlans();
+};
+
 
 interface UseLandingPlansReturn {
   plans: LandingPlan[];
   isLoading: boolean;
   error: string | null;
-  retry: () => void;
+  refetch: () => void; // Renombrado de retry a refetch para mayor claridad
 }
 
 export function useLandingPlans(publicOnly: boolean = true): UseLandingPlansReturn {
+  // La clave SWR ahora depende de si queremos los planes públicos o todos
+  const swrKey = publicOnly ? '/api/landing-plans' : 'admin/all-plans';
+  const swrFetcher = publicOnly ? fetcher : adminFetcher;
+
   const { data, error, isLoading, mutate, isValidating } = useSWR(
-    publicOnly ? '/api/landing-plans' : null, // Solo hace fetch si es para la landing pública
-    fetcher,
+    swrKey,
+    swrFetcher,
     {
-      revalidateOnFocus: false, // Evita re-fetch innecesarios
-      shouldRetryOnError: false, // El reintento se maneja manualmente
+      revalidateOnFocus: false, 
+      shouldRetryOnError: false, 
     }
   );
 
-  const retry = useCallback(() => {
+  const refetch = useCallback(() => {
     mutate();
   }, [mutate]);
 
@@ -46,7 +56,7 @@ export function useLandingPlans(publicOnly: boolean = true): UseLandingPlansRetu
     plans: data || [],
     isLoading: isLoading || isValidating,
     error: error ? error.message : null,
-    retry,
+    refetch, // Exportar la función para refrescar
   };
 }
 
@@ -112,4 +122,3 @@ export const usePlanAuditLogs = (planId: string | null) => {
 
     return { logs, isLoading, error, rollbackPlan };
 };
-

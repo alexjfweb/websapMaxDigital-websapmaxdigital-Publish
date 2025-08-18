@@ -104,6 +104,7 @@ class LandingPlansService {
     return snapshot.empty;
   }
 
+  // Obtiene TODOS los planes, para el panel de admin
   async getPlans(): Promise<LandingPlan[]> {
     const coll = this.getPlansCollection();
     const q = query(coll, orderBy('order', 'asc'), orderBy('createdAt', 'asc'));
@@ -111,14 +112,14 @@ class LandingPlansService {
     return snapshot.docs.map(doc => serializePlan(doc.id, doc.data()));
   }
 
+  // Obtiene solo los planes públicos y activos para la landing page
   async getPublicPlans(): Promise<LandingPlan[]> {
     const coll = this.getPlansCollection();
-    // ✅ CORRECCIÓN: Se elimina orderBy para evitar la necesidad de un índice compuesto.
-    // El ordenamiento se hará en el cliente.
-    const q = query(coll, where('isActive', '==', true));
+    const q = query(coll, where('isActive', '==', true), where('isPublic', '==', true));
     
     const snapshot = await getDocs(q);
     
+    // El ordenamiento se hace en el cliente para evitar índices compuestos
     return snapshot.docs.map(doc => serializePlan(doc.id, doc.data()));
   }
   
@@ -249,7 +250,7 @@ class LandingPlansService {
     await auditService.log({
       entity: 'landingPlans',
       entityId: planId,
-      action: 'rollback',
+      action: 'rollback' as any, // 'rollback' es una acción personalizada
       performedBy: { uid: userId, email: userEmail },
       details: `Rolled back to state from audit log ${auditLogId}`,
       newData: logData.previousData,
