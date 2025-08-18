@@ -22,8 +22,11 @@ export async function POST(request: NextRequest) {
 
     // Crear una referencia en el bucket de Firebase Storage
     const bucket = adminStorage.bucket(BUCKET_NAME);
+    
+    // **LA CORRECCIÓN CLAVE**: Asegurar un nombre de archivo único para evitar colisiones
     const sanitizedFileName = file.name.replace(/[^a-z0-9._-]/gi, '_');
     const fullPath = `${path}${Date.now()}-${sanitizedFileName}`;
+    
     const fileUpload = bucket.file(fullPath);
 
     // Subir el buffer al bucket
