@@ -69,9 +69,10 @@ class StorageService {
    * @param path La ruta de destino en Firebase Storage.
    * @returns La URL pública del archivo subido.
    */
-  async compressAndUploadFile(file: File, path: string): Promise<string> {
+  async compressAndUploadFile(file: File): Promise<string> {
     const compressedFile = await this.compressImage(file);
-    return this.uploadFile(compressedFile, path);
+    // Usa la ruta genérica para las imágenes de la landing
+    return this.uploadFile(compressedFile, 'landing-images/subsections/');
   }
 
 

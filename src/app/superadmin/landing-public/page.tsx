@@ -135,7 +135,7 @@ export default function LandingPublicPage() {
       toast({ title: "Subiendo y optimizando imagen...", description: "Este proceso puede tardar unos segundos." });
   
       try {
-          const imageUrl = await storageService.compressAndUploadFile(file, `landing-images/subsections/`);
+          const imageUrl = await storageService.compressAndUploadFile(file);
           
           if (imageUrl) {
               updateSubsection(sectionIndex, subIndex, 'imageUrl', imageUrl);
@@ -325,3 +325,4 @@ export default function LandingPublicPage() {
     </div>
   );
 }
+
