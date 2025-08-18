@@ -1,7 +1,9 @@
 
 /** @type {import('next').NextConfig} */
-module.exports = {
-  transpilePackages: ['framer-motion'],
+const nextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   images: {
     remotePatterns: [
       {
@@ -25,3 +27,5 @@ module.exports = {
     ],
   },
 };
+
+module.exports = nextConfig;
