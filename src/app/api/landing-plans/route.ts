@@ -6,6 +6,7 @@ import { landingPlansService } from '@/services/landing-plans-service';
 
 export async function GET(request: Request) {
   try {
+    // Usamos el nuevo método para obtener solo los planes públicos
     const plans = await landingPlansService.getPublicPlans();
     return NextResponse.json(plans);
   } catch (error: any) {

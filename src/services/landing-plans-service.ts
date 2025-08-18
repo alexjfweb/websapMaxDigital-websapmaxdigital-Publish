@@ -86,7 +86,7 @@ const cleanupObject = (obj: any): any => {
 
 
 class LandingPlansService {
-  private readonly COLLECTION_NAME = 'subscription_plans';
+  private readonly COLLECTION_NAME = 'landingPlans';
   private readonly AUDIT_COLLECTION = 'planAuditLogs';
   
   private getPlansCollection() {
@@ -113,7 +113,7 @@ class LandingPlansService {
 
   async getPublicPlans(): Promise<LandingPlan[]> {
     const coll = this.getPlansCollection();
-    const q = query(coll, where('isActive', '==', true), where('isPublic', '==', true), orderBy('order', 'asc'));
+    const q = query(coll, where('isActive', '==', true), orderBy('order', 'asc'));
     
     const snapshot = await getDocs(q);
     
