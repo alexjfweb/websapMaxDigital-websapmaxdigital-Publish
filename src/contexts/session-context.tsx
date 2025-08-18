@@ -4,174 +4,110 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import type { User } from '@/types';
 import { useRouter, usePathname } from 'next/navigation';
-
-// ✅ LAZY LOADING: Solo importar toast cuando sea necesario
-let useToast: any = null;
+import { getAuth, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { getFirebaseApp, db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { useToast } from "@/hooks/use-toast";
 
 interface SessionContextType {
   currentUser: User | null;
   isLoading: boolean;
   logout: () => void;
+  login: (user: User) => void; // Added for completeness, though auth is handled by Firebase
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
 export function useSession() {
   const context = useContext(SessionContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useSession must be used within a SessionProvider');
   }
   return context;
 }
 
-// ✅ FUNCIÓN UTILITARIA PARA SERIALIZAR USUARIO (sin importaciones estáticas)
-const serializeUser = (firebaseUser: any, firestoreData: any): User => {
-  const data = { id: firebaseUser.uid, ...firestoreData };
-  // Recorrer el objeto para convertir cualquier Timestamp a ISO string
-  for (const key in data) {
-    if (data[key] && typeof data[key] === 'object' && data[key].seconds && typeof data[key].nanoseconds === 'number') {
-      // Timestamp object detected
-      data[key] = new Date(data[key].seconds * 1000).toISOString();
-    } else if (data[key] && typeof data[key] === 'object' && typeof data[key].toDate === 'function') {
-      // Firebase Timestamp with toDate method
-      data[key] = data[key].toDate().toISOString();
+const serializeUser = (firebaseUser: FirebaseUser, firestoreData: any): User => {
+    const data = { id: firebaseUser.uid, ...firestoreData };
+    for (const key in data) {
+        if (data[key] && typeof data[key] === 'object' && data[key].seconds) {
+            data[key] = new Date(data[key].seconds * 1000).toISOString();
+        }
     }
-  }
-  return data as User;
+    return data as User;
 };
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [firebaseLoaded, setFirebaseLoaded] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const { toast } = useToast();
 
-  // ✅ LAZY LOADING DE FIREBASE: Solo cargar cuando sea necesario
   useEffect(() => {
-    const loadFirebaseAndInitAuth = async () => {
+    const auth = getAuth(getFirebaseApp());
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
-        // Cargar Firebase dinámicamente
-        const [
-          { getAuth, onAuthStateChanged },
-          { getFirebaseApp, db },
-          { doc, getDoc }
-        ] = await Promise.all([
-          import("firebase/auth"),
-          import("@/lib/firebase"),
-          import('firebase/firestore')
-        ]);
-
-        setFirebaseLoaded(true);
-
-        const app = getFirebaseApp();
-        const auth = getAuth(app);
-        
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-          if (firebaseUser) {
-            try {
-              const userDocRef = doc(db, "users", firebaseUser.uid);
-              const userDocSnap = await getDoc(userDocRef);
-              
-              if (userDocSnap.exists()) {
-                const user = serializeUser(firebaseUser, userDocSnap.data());
-                setCurrentUser(user);
-              } else {
-                console.warn(`No user document found for UID: ${firebaseUser.uid}. Logging out.`);
-                await auth.signOut();
-                setCurrentUser(null);
-              }
-            } catch (error) {
-              console.error("Error fetching user data from Firestore:", error);
-              await auth.signOut();
-              setCurrentUser(null);
-            } finally {
-              setIsLoading(false);
-            }
+        if (firebaseUser) {
+          const userDocRef = doc(db, "users", firebaseUser.uid);
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists()) {
+            const user = serializeUser(firebaseUser, userDocSnap.data());
+            setCurrentUser(user);
           } else {
+            console.warn(`No user document found for UID: ${firebaseUser.uid}. Logging out.`);
+            await auth.signOut();
             setCurrentUser(null);
-            setIsLoading(false);
           }
-        });
-
-        // Cleanup function
-        return () => unsubscribe();
+        } else {
+          setCurrentUser(null);
+        }
       } catch (error) {
-        console.error("Error loading Firebase:", error);
-        setIsLoading(false);
-      }
-    };
-
-    let cleanup: (() => void) | undefined;
-    
-    loadFirebaseAndInitAuth().then((cleanupFn) => {
-      if (typeof cleanupFn === 'function') {
-        cleanup = cleanupFn;
+        console.error("Error during auth state change:", error);
+        setCurrentUser(null); // Ensure user is null on error
+      } finally {
+        setIsLoading(false); // This is crucial
       }
     });
 
-    return () => {
-      if (cleanup) {
-        cleanup();
-      }
-    };
+    return () => unsubscribe();
   }, []);
 
-  // ✅ NAVEGACIÓN INTELIGENTE
   useEffect(() => {
-    if (isLoading || !firebaseLoaded) return;
+    if (isLoading) return;
 
-    const isAuthPage = ['/login', '/register'].includes(pathname);
-    const isPublicPage = isAuthPage || pathname === '/' || pathname.startsWith('/menu/');
+    const publicRoutes = ['/login', '/register', '/', '/test'];
+    const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route)) || pathname.startsWith('/menu/');
     
-    if (!currentUser && !isPublicPage) {
+    if (!currentUser && !isPublicRoute) {
       router.push('/login');
-    } else if (currentUser && isAuthPage) {
+    } else if (currentUser && (pathname === '/login' || pathname === '/register')) {
       const targetDashboard = `/${currentUser.role}/dashboard`;
       router.push(targetDashboard);
     }
-  }, [currentUser, isLoading, firebaseLoaded, pathname, router]);
+  }, [currentUser, isLoading, pathname, router]);
 
-  // ✅ LOGOUT CON CARGA DINÁMICA
+
   const logout = useCallback(async () => {
+    const auth = getAuth(getFirebaseApp());
     try {
-      // Cargar toast dinámicamente solo cuando se necesite
-      if (!useToast) {
-        const toastModule = await import('@/hooks/use-toast');
-        useToast = toastModule.useToast;
-      }
-      
-      // Cargar Firebase Auth dinámicamente
-      const [
-        { getAuth },
-        { getFirebaseApp }
-      ] = await Promise.all([
-        import("firebase/auth"),
-        import("@/lib/firebase")
-      ]);
-
-      const auth = getAuth(getFirebaseApp());
-      await auth.signOut(); 
-      setCurrentUser(null);
-      router.push('/login');
+        await auth.signOut();
+        setCurrentUser(null);
+        router.push('/login');
+        toast({ title: 'Cierre de sesión exitoso' });
     } catch (error) {
-      console.error('Logout error:', error);
-      // Si hay error cargando toast, usar console.error como fallback
-      if (useToast) {
-        const { toast } = useToast();
-        toast({ 
-          title: 'Error', 
-          description: 'No se pudo cerrar la sesión.', 
-          variant: 'destructive' 
-        });
-      }
+        toast({ title: 'Error', description: 'No se pudo cerrar la sesión.', variant: 'destructive' });
     }
-  }, [router]);
+  }, [router, toast]);
+
+  const login = (user: User) => {
+    setCurrentUser(user);
+  };
 
   const value = {
-    currentUser: currentUser,
-    isLoading: isLoading || !firebaseLoaded,
+    currentUser,
+    isLoading,
     logout,
+    login,
   };
 
   return (
@@ -180,6 +116,3 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     </SessionContext.Provider>
   );
 }
-
-// ✅ EXPORTACIÓN NOMBRADA para lazy loading si es necesario en otros sitios
-export default SessionProvider;

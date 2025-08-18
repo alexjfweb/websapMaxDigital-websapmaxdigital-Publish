@@ -3,6 +3,8 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { SessionProvider, useSession } from '@/contexts/session-context';
+import { OrderProvider } from '@/contexts/order-context';
 
 // ✅ COMPONENTE PÚBLICO PURO: Sin importaciones pesadas
 function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -22,42 +24,48 @@ function SimpleLoader({ message }: { message: string }) {
 }
 
 // ✅ MANEJADOR DE RUTAS AUTENTICADAS (Lazy loaded)
-const AuthenticatedRouteHandler = React.lazy(() => import('@/components/layout/AuthenticatedRouteHandler'));
+const AuthenticatedLayout = React.lazy(() => import('@/components/layout/app-shell'));
 
-// ✅ SMART ROUTER SIN DEPENDENCIAS PESADAS
-function SmartRouter({ children }: { children: React.ReactNode }) {
+// Este componente interno tiene acceso al contexto de sesión
+function RouteController({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [isClient, setIsClient] = useState(false);
+  const { currentUser, isLoading } = useSession();
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  if (!isClient) {
-    return <SimpleLoader message="Inicializando..." />;
+  // Define las rutas que no usarán el AppShell (el layout con sidebar, etc.)
+  const publicRoutes = ['/login', '/register', '/'];
+  const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith('/menu/');
+  
+  if (isLoading) {
+    return <SimpleLoader message="Verificando sesión..." />;
   }
 
-  // ✅ DEFINIR RUTAS PÚBLICAS
-  const publicRoutes = ['/login', '/register', '/'];
-  const isPublicMenuRoute = pathname.startsWith('/menu/');
-  const isPublicRoute = publicRoutes.includes(pathname) || isPublicMenuRoute;
-
-  // ✅ RUTAS PÚBLICAS: Layout súper liviano sin sesión
   if (isPublicRoute) {
     return <PublicLayout>{children}</PublicLayout>;
   }
 
-  // ✅ RUTAS PROTEGIDAS: Necesitan SessionProvider y todo el layout autenticado
+  // Si no es ruta pública y no hay usuario, SessionProvider redirigirá.
+  // Mientras tanto, mostramos un loader.
+  if (!currentUser) {
+      return <SimpleLoader message="Redirigiendo..." />;
+  }
+  
+  // Si es una ruta protegida y hay usuario, renderiza el layout autenticado.
   return (
-    <Suspense fallback={<SimpleLoader message="Cargando componentes..." />}>
-      <AuthenticatedRouteHandler>
-        {children}
-      </AuthenticatedRouteHandler>
+    <Suspense fallback={<SimpleLoader message="Cargando panel..." />}>
+      <OrderProvider>
+        <AuthenticatedLayout>
+            {children}
+        </AuthenticatedLayout>
+      </OrderProvider>
     </Suspense>
   );
 }
 
-// ✅ PROVIDER PRINCIPAL ULTRA MINIMALISTA
+// ✅ PROVIDER PRINCIPAL: Envuelve todo en el SessionProvider
 export default function ClientProviders({ children }: { children: React.ReactNode }) {
-  return <SmartRouter>{children}</SmartRouter>;
+  return (
+    <SessionProvider>
+      <RouteController>{children}</RouteController>
+    </SessionProvider>
+  );
 }

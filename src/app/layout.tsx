@@ -1,7 +1,9 @@
 
 import './globals.css';
 import { Inter } from 'next/font/google';
+import ClientProviders from './ClientProviders'; // Import the provider
 import React from 'react';
+import { Toaster } from "@/components/ui/toaster"; // Import Toaster
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -14,8 +16,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={inter.className}>
-        {/* ✅ NO cargar NADA dinámicamente en el layout principal */}
-        <div id="root-app">{children}</div>
+        {/* Wrap the entire application in ClientProviders */}
+        <ClientProviders>
+          {children}
+        </ClientProviders>
+        <Toaster />
       </body>
     </html>
   );
