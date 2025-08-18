@@ -1,6 +1,9 @@
-
 // src/services/storage-service.ts
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { app } from '@/lib/firebase'; // Usamos la instancia del cliente
 import imageCompression from 'browser-image-compression';
+
+const storage = getStorage(app);
 
 class StorageService {
   /**
@@ -11,83 +14,78 @@ class StorageService {
   private async compressImage(file: File): Promise<File> {
     const options = {
       maxSizeMB: 1,
-      maxWidthOrHeight: 1280, // Ligeramente mayor para mejor calidad
+      maxWidthOrHeight: 1280,
       useWebWorker: true,
-      initialQuality: 0.8, // Calidad inicial
+      initialQuality: 0.8,
     };
     try {
       console.log(`Comprimiendo imagen de ${(file.size / 1024 / 1024).toFixed(2)}MB...`);
       const compressedBlob = await imageCompression(file, options);
       console.log(`Imagen comprimida a ${(compressedBlob.size / 1024).toFixed(2)}KB`);
-      // **LA CORRECCIÓN CLAVE**: Convertir el Blob de vuelta a un File
       return new File([compressedBlob], file.name, {
         type: compressedBlob.type,
         lastModified: Date.now(),
       });
     } catch (error) {
-      console.error("Error al comprimir la imagen:", error);
-      // Devuelve el archivo original si la compresión falla
+      console.error("Error al comprimir la imagen, se subirá el original:", error);
       return file;
     }
   }
 
   /**
-   * Sube un archivo al servidor de la aplicación, que luego lo reenviará a Firebase Storage.
-   * @param file El archivo a subir. Debe ser un objeto File.
-   * @param path La ruta de destino en Storage (ej. 'avatars/').
+   * Sube un archivo directamente a Firebase Storage desde el cliente.
+   * @param file El archivo a subir.
+   * @param path La ruta de destino en Storage (ej. 'images/').
    * @returns La URL de descarga pública del archivo.
    */
   async uploadFile(file: File, path: string): Promise<string> {
-    // Validación para asegurar que es un objeto File
     if (!(file instanceof File)) {
-      console.error("Error en uploadFile: el argumento 'file' no es un objeto File.", file);
-      throw new Error(`Error en uploadFile: el argumento 'file' no es un objeto File. Recibido: ${Object.prototype.toString.call(file)}`);
+      console.error("Error en uploadFile: el argumento no es un objeto File.", file);
+      throw new Error("Se esperaba un objeto de tipo File para subir.");
     }
-  
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('path', path);
-  
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-  
-      if (!response.ok) {
-        const result = await response.json().catch(() => ({ error: `Error del servidor: ${response.statusText}` }));
-        throw new Error(result.error || `Error del servidor: ${response.statusText}`);
-      }
+      const uniqueFileName = `${Date.now()}-${file.name.replace(/[^a-z0-9._-]/gi, '_')}`;
+      const storageRef = ref(storage, `${path}/${uniqueFileName}`);
       
-      const result = await response.json();
-      console.log('✅ ¡Imagen subida con éxito! URL:', result.url);
-      return result.url;
-  
-    } catch (uploadError: any) {
-      console.error("¡ERROR FATAL DURANTE LA SUBIDA A FIREBASE!", uploadError);
-      throw new Error(`La subida del archivo falló: ${uploadError.message}`);
+      const snapshot = await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      
+      console.log('✅ Archivo subido con éxito a Firebase Storage. URL:', downloadURL);
+      return downloadURL;
+    } catch (error) {
+      console.error("¡ERROR FATAL DURANTE LA SUBIDA DIRECTA A FIREBASE!", error);
+      // Aquí puedes agregar un sistema de logging más avanzado si es necesario
+      throw new Error("No se pudo subir el archivo. Revisa las reglas de Storage y la configuración de Firebase.");
     }
   }
-  
+
   /**
    * Comprime y sube un archivo, devolviendo su URL pública.
-   * Esta función orquesta el proceso completo.
    * @param file El archivo original.
+   * @param path La ruta de destino en Storage.
    * @returns La URL pública del archivo subido.
    */
-  async compressAndUploadFile(file: File, path: string = 'landing-images/subsections/'): Promise<string> {
+  async compressAndUploadFile(file: File, path: string = 'images/'): Promise<string> {
     const compressedFile = await this.compressImage(file);
-    // Ahora 'compressedFile' es un objeto File y se puede pasar directamente.
     return this.uploadFile(compressedFile, path);
   }
 
   /**
    * Elimina un archivo de Firebase Storage.
-   * @param fileUrl La URL del archivo a eliminar.
+   * @param fileUrl La URL completa del archivo a eliminar.
    */
   async deleteFile(fileUrl: string): Promise<void> {
-    console.warn("La eliminación de archivos desde el cliente debe manejarse con cuidado. Considere un endpoint de backend.");
-    // La lógica de eliminación real requeriría una llamada a un endpoint de backend seguro.
+    try {
+      const fileRef = ref(storage, fileUrl);
+      await deleteObject(fileRef);
+      console.log(`Archivo eliminado: ${fileUrl}`);
+    } catch (error: any) {
+      // Ignorar errores si el archivo no existe (puede haber sido eliminado previamente)
+      if (error.code !== 'storage/object-not-found') {
+        console.error("Error al eliminar archivo de Storage:", error);
+        // No relanzar el error para no interrumpir flujos de usuario si solo falla la limpieza
+      }
+    }
   }
 }
 
