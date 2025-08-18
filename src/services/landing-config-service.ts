@@ -119,6 +119,7 @@ class LandingConfigService {
     return doc(db, CONFIG_COLLECTION_NAME, MAIN_CONFIG_DOC_ID);
   }
 
+  // Se mantiene para el panel de SuperAdmin, pero ya no se usa en el hook público.
   async getLandingConfig(): Promise<LandingConfig | null> {
     try {
         const docSnap = await getDoc(this.getConfigDocRef());
