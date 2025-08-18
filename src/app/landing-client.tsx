@@ -110,13 +110,14 @@ export default function LandingClient() {
   const { 
     config, 
     isLoading: isLoadingConfig,
+    error: errorConfig,
   } = usePublicLandingConfig();
 
   const { 
     plans, 
     isLoading: isLoadingPlans, 
     error: errorPlans, 
-    retry: retryPlans 
+    refetch: retryPlans 
   } = useLandingPlans(true);
 
   useEffect(() => {
@@ -276,7 +277,7 @@ export default function LandingClient() {
 
       {process.env.NODE_ENV === 'development' && (
         <div className="fixed bottom-4 left-4 bg-black bg-opacity-75 text-white p-2 rounded text-xs max-w-xs z-50">
-          <div>Config: {config ? '✅' : '❌'}</div>
+          <div>Config: {config && !errorConfig ? '✅' : '❌'}</div>
           <div>Plans: {plans ? `✅ ${plans.length}` : errorPlans ? '❌' : '⏳'}</div>
           <div>Online: {isOnline ? '🟢' : '🔴'}</div>
         </div>
