@@ -139,20 +139,17 @@ export default function LandingPublicPage() {
   
   const updateSubsection = (sectionIndex: number, subIndex: number, field: string, value: any) => {
     setFormData(prev => {
-        if (!prev) return null;
-        const newSections = [...prev.sections];
-        const targetSection = { ...newSections[sectionIndex] };
-        const newSubsections = [...(targetSection.subsections || [])];
-        
-        // Ensure the subsection object exists before trying to update it
-        if (newSubsections[subIndex]) {
-            newSubsections[subIndex] = { ...newSubsections[subIndex], [field]: value };
-        }
-        
-        targetSection.subsections = newSubsections;
-        newSections[sectionIndex] = targetSection;
-        
-        return { ...prev, sections: newSections };
+      if (!prev) return null;
+      const newSections = [...prev.sections];
+      const targetSection = { ...newSections[sectionIndex] };
+      const newSubsections = [...(targetSection.subsections || [])];
+      
+      newSubsections[subIndex] = { ...newSubsections[subIndex], [field]: value };
+      
+      targetSection.subsections = newSubsections;
+      newSections[sectionIndex] = targetSection;
+      
+      return { ...prev, sections: newSections };
     });
   };
 
@@ -268,7 +265,7 @@ export default function LandingPublicPage() {
                         <div><Label>Animación</Label><Select value={section.animation} onValueChange={(value) => updateSection(index, 'animation', value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="fadeIn">Fade In</SelectItem><SelectItem value="slideUp">Slide Up</SelectItem><SelectItem value="slideLeft">Slide Left</SelectItem><SelectItem value="slideRight">Slide Right</SelectItem><SelectItem value="zoomIn">Zoom In</SelectItem><SelectItem value="none">Sin Animación</SelectItem></SelectContent></Select></div>
                         <div className="grid grid-cols-3 gap-4 items-end"><div><Label>Tipo de Media</Label><Select value={section.mediaType || 'none'} onValueChange={value => updateSection(index, 'mediaType', value === 'none' ? null : value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Ninguno</SelectItem><SelectItem value="image">Imagen</SelectItem><SelectItem value="video">Video</SelectItem></SelectContent></Select></div><div><Label>URL de Media</Label><Input value={section.mediaUrl || ''} onChange={e => updateSection(index, 'mediaUrl', e.target.value)} placeholder="https://..." disabled={!section.mediaType || section.mediaType === 'none'}/></div><div><Label>Posición de Media</Label><Select value={section.mediaPosition || 'left'} onValueChange={value => updateSection(index, 'mediaPosition', value)} disabled={!section.mediaType || section.mediaType === 'none'}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="left">Izquierda</SelectItem><SelectItem value="right">Derecha</SelectItem><SelectItem value="top">Arriba</SelectItem></SelectContent></Select></div></div>
                         <div className="mt-6"><Label className="mb-2 block font-semibold">Subsecciones</Label><div className="space-y-4">
-                            {section.subsections && section.subsections.length > 0 && section.subsections.map((sub, subIdx) => (<Card key={sub.id} className="p-3 relative overflow-visible"><Button size="sm" variant="ghost" className="absolute top-1 right-1 h-6 w-6 p-0" onClick={() => {const newSubs = section.subsections!.filter((_, i) => i !== subIdx); updateSection(index, 'subsections', newSubs);}}><Trash2 className="h-4 w-4 text-destructive" /></Button><div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div className="space-y-2"><Input value={sub.title} onChange={e => updateSubsection(index, subIdx, 'title', e.target.value)} placeholder="Título de la subsección"/><Textarea value={sub.content} onChange={e => updateSubsection(index, subIdx, 'content', e.target.value)} placeholder="Contenido de la subsección" rows={3}/></div><div className="space-y-2"><Label>Imagen</Label><div className="flex items-center gap-2"><Image src={sub.imageUrl || "https://placehold.co/100x100.png?text=Sub"} alt="Vista previa de subsección" width={64} height={64} className="rounded-md border object-cover h-16 w-16" data-ai-hint="subsection image"/><Button variant="outline" asChild size="sm"><label htmlFor={`sub-img-${sub.id}`} className="cursor-pointer">{uploading[sub.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}{uploading[sub.id] ? "Subiendo..." : "Subir"}<input id={`sub-img-${sub.id}`} type="file" className="hidden" accept="image/png, image/jpeg, image/jpg, image/webp" onChange={(e) => handleSubsectionImageUpload(e, index, subIdx)} disabled={uploading[sub.id]}/></label></Button></div></div></div></Card>))}
+                            {(section.subsections || []).map((sub, subIdx) => (<Card key={sub.id} className="p-3 relative overflow-visible"><Button size="sm" variant="ghost" className="absolute top-1 right-1 h-6 w-6 p-0" onClick={() => {const newSubs = section.subsections!.filter((_, i) => i !== subIdx); updateSection(index, 'subsections', newSubs);}}><Trash2 className="h-4 w-4 text-destructive" /></Button><div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div className="space-y-2"><Input value={sub.title} onChange={e => updateSubsection(index, subIdx, 'title', e.target.value)} placeholder="Título de la subsección"/><Textarea value={sub.content} onChange={e => updateSubsection(index, subIdx, 'content', e.target.value)} placeholder="Contenido de la subsección" rows={3}/></div><div className="space-y-2"><Label>Imagen</Label><div className="flex items-center gap-2"><Image src={sub.imageUrl || "https://placehold.co/100x100.png?text=Sub"} alt="Vista previa de subsección" width={64} height={64} className="rounded-md border object-cover h-16 w-16" data-ai-hint="subsection image"/><Button variant="outline" asChild size="sm"><label htmlFor={`sub-img-${sub.id}`} className="cursor-pointer">{uploading[sub.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}{uploading[sub.id] ? "Subiendo..." : "Subir"}<input id={`sub-img-${sub.id}`} type="file" className="hidden" accept="image/png, image/jpeg, image/jpg, image/webp" onChange={(e) => handleSubsectionImageUpload(e, index, subIdx)} disabled={uploading[sub.id]}/></label></Button></div></div></div></Card>))}
                             <Button size="sm" variant="outline" onClick={() => {const newSub = { id: `sub-${Date.now()}`, title: '', content: '', imageUrl: '' }; updateSection(index, 'subsections', [...(section.subsections || []), newSub]);}}><Plus className="mr-2 h-4 w-4"/>Agregar subsección</Button></div></div>
                       </CardContent>
                     </Card>
@@ -293,7 +290,7 @@ export default function LandingPublicPage() {
                 <CardContent><div className="border rounded-lg p-4 bg-gray-50"><div className="text-center py-12" style={{ backgroundColor: formData.heroBackgroundColor, color: formData.heroTextColor}}><h1 className="text-4xl font-bold mb-4">{formData.heroTitle}</h1><p className="text-xl mb-8">{formData.heroSubtitle}</p><button className="px-8 py-3 rounded-lg font-semibold" style={{ backgroundColor: formData.heroButtonColor, color: '#ffffff' }}>{formData.heroButtonText}</button></div>
                     {formData.sections.filter(s => s.isActive).map((section) => (<div key={section.id} className="py-12 px-4" style={{ backgroundColor: section.backgroundColor, color: section.textColor}}><div className="max-w-4xl mx-auto text-center"><h2 className="text-3xl font-bold mb-4">{section.title}</h2>{section.subtitle && (<p className="text-xl mb-6">{section.subtitle}</p>)}<p className="mb-8">{section.content}</p><button className="px-6 py-2 rounded-lg font-semibold" style={{ backgroundColor: section.buttonColor, color: '#ffffff' }}>{section.buttonText}</button></div>
                         {section.mediaType && section.mediaType !== 'none' && section.mediaUrl && (<div className={`mb-6 w-full flex justify-center ${section.mediaPosition === 'top' ? 'order-first' : section.mediaPosition === 'left' ? 'md:flex-row flex-col' : 'md:flex-row-reverse flex-col'}`}> {section.mediaType === 'image' ? (<img src={section.mediaUrl} alt="media" className="rounded-lg max-w-xs w-full h-auto object-cover" />) : (<video src={section.mediaUrl} controls className="rounded-lg max-w-xs w-full h-auto object-cover" />)}</div>)}
-                        {section.subsections && section.subsections.length > 0 && (<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">{section.subsections.map(sub => (<div key={sub.id} className="bg-white rounded-lg shadow p-4 flex flex-col items-center">{sub.imageUrl && <img src={sub.imageUrl} alt="sub" className="mb-2 w-20 h-20 object-cover rounded-full" />}<h4 className="font-bold text-lg mb-1">{sub.title}</h4><p className="text-sm text-center">{sub.content}</p></div>))}</div>)}
+                        {(section.subsections || []).length > 0 && (<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">{section.subsections.map(sub => (<div key={sub.id} className="bg-white rounded-lg shadow p-4 flex flex-col items-center">{sub.imageUrl && <img src={sub.imageUrl} alt="sub" className="mb-2 w-20 h-20 object-cover rounded-full" />}<h4 className="font-bold text-lg mb-1">{sub.title}</h4><p className="text-sm text-center">{sub.content}</p></div>))}</div>)}
                       </div>))}
                     <div className="py-12 px-4 bg-gray-100"><div className="max-w-4xl mx-auto text-center"><h2 className="text-3xl font-bold mb-8">Planes de Suscripción</h2><p className="text-gray-600 mb-8">Esta sección es fija y no se puede editar</p><div className="grid grid-cols-1 md:grid-cols-3 gap-6"><div className="bg-white p-6 rounded-lg shadow"><h3 className="text-xl font-bold mb-2">Plan Básico</h3><p className="text-gray-600 mb-4">$29/mes</p></div><div className="bg-white p-6 rounded-lg shadow"><h3 className="text-xl font-bold mb-2">Plan Profesional</h3><p className="text-gray-600 mb-4">$59/mes</p></div><div className="bg-white p-6 rounded-lg shadow"><h3 className="text-xl font-bold mb-2">Plan Empresarial</h3><p className="text-gray-600 mb-4">$99/mes</p></div></div></div></div></div></CardContent>
               </Card>
@@ -313,5 +310,3 @@ export default function LandingPublicPage() {
     </div>
   );
 }
-
-    
