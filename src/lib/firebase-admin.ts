@@ -2,6 +2,7 @@
 // src/lib/firebase-admin.ts
 import * as admin from 'firebase-admin';
 
+// ✅ CORRECCIÓN: Usar la variable de entorno para el nombre del bucket.
 const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
 export const BUCKET_NAME = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
 
@@ -21,6 +22,11 @@ function initializeFirebaseAdmin() {
     if (!serviceAccountJson) {
       throw new Error('La variable de entorno FIREBASE_SERVICE_ACCOUNT no está definida. Es necesaria para el SDK de Administrador.');
     }
+    
+    // ✅ CORRECCIÓN: Validar también la existencia del nombre del bucket.
+    if (!BUCKET_NAME) {
+       throw new Error('La variable de entorno NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET no está definida. Es necesaria para el Admin SDK Storage.');
+    }
 
     const serviceAccount = JSON.parse(serviceAccountJson);
 
@@ -37,7 +43,7 @@ function initializeFirebaseAdmin() {
 
   } catch (error: any) {
     console.error('❌ Error al inicializar Firebase Admin SDK:', error.message);
-    console.error('🔴 Asegúrate de que la variable de entorno FIREBASE_SERVICE_ACCOUNT contenga un JSON válido de la cuenta de servicio de Firebase.');
+    console.error('🔴 Asegúrate de que la variable de entorno FIREBASE_SERVICE_ACCOUNT contenga un JSON válido y NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET esté definida.');
     return null; // Devuelve null en caso de fallo
   }
 }
