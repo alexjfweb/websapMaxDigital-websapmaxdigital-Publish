@@ -12,6 +12,10 @@ function getBaseUrl() {
   if (process.env.NEXT_PUBLIC_VERCEL_URL) {
     return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
   }
+  // ✅ CORRECCIÓN: Se añade la URL específica del entorno de desarrollo como una opción válida.
+  if (process.env.NODE_ENV === 'development') {
+    return process.env.NEXT_PUBLIC_BASE_URL || 'https://9000-firebase-studio-1748450787904.cluster-ux5mmlia3zhhask7riihruxydo.cloudworkstations.dev';
+  }
   return process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002';
 }
 
