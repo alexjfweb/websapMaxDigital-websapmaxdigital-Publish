@@ -63,12 +63,14 @@ class StorageService {
   
   /**
    * Comprime y sube un archivo, devolviendo su URL pública.
+   * Esta función orquesta el proceso completo.
    * @param file El archivo original.
    * @param path La ruta de destino en Firebase Storage.
    * @returns La URL pública del archivo subido.
    */
   async compressAndUploadFile(file: File, path: string): Promise<string> {
     const compressedFile = await this.compressImage(file);
+    // Ahora, sube el archivo comprimido y devuelve la URL.
     return this.uploadFile(compressedFile, path);
   }
 
