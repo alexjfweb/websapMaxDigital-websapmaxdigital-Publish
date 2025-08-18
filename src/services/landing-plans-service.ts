@@ -86,7 +86,7 @@ const cleanupObject = (obj: any): any => {
 
 
 class LandingPlansService {
-  private readonly COLLECTION_NAME = 'subscription_plans'; // CORREGIDO
+  private readonly COLLECTION_NAME = 'subscription_plans';
   private readonly AUDIT_COLLECTION = 'planAuditLogs';
   
   private getPlansCollection() {

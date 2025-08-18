@@ -1,3 +1,4 @@
+
 // src/app/api/landing-plans/route.ts
 
 import { NextResponse } from 'next/server';

@@ -2,9 +2,24 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, onSnapshot, orderBy } from 'firebase/firestore';
 import type { LandingPlan } from '@/types/plans';
+import useSWR from 'swr';
+
+const fetcher = async (url: string) => {
+    const res = await fetch(url);
+    if (!res.ok) {
+        const error = new Error('An error occurred while fetching the data.');
+        // Attach extra info to the error object.
+        try {
+            error.message = (await res.json()).error || 'Failed to fetch plans';
+        } catch (e) {
+            // Ignore if response is not JSON
+        }
+        throw error;
+    }
+    return res.json();
+};
+
 
 interface UseLandingPlansReturn {
   plans: LandingPlan[];
@@ -14,124 +29,87 @@ interface UseLandingPlansReturn {
 }
 
 export function useLandingPlans(publicOnly: boolean = true): UseLandingPlansReturn {
-  const [plans, setPlans] = useState<LandingPlan[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
-
-  const fetchPlans = useCallback(async (attempt: number = 0): Promise<() => void> => {
-    const maxRetries = 3;
-    const retryDelay = Math.pow(2, attempt) * 1000;
-
-    return new Promise(async (resolve, reject) => {
-        let unsubscribe: (() => void) | null = null;
-        try {
-            setIsLoading(true);
-            setError(null);
-
-            console.log(`🔄 [useLandingPlans] Intento ${attempt + 1} de carga...`);
-
-            const timeoutPromise = new Promise<never>((_, rejectTimeout) => {
-                setTimeout(() => rejectTimeout(new Error('Timeout al cargar planes')), 8000);
-            });
-
-            const fetchPromise = (async () => {
-                const plansCollection = collection(db, 'subscription_plans');
-                // **CORRECCIÓN:** La consulta ya no incluye el orderBy que requiere un índice compuesto.
-                const q = publicOnly 
-                  ? query(plansCollection, where('isPublic', '==', true), where('isActive', '==', true))
-                  : query(plansCollection);
-                
-                const querySnapshot = await getDocs(q);
-                
-                const plansData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as LandingPlan);
-
-                if (!Array.isArray(plansData)) {
-                    throw new Error('Formato de datos de planes inválido');
-                }
-                
-                // **CORRECIÓN:** El ordenamiento se realiza en el cliente.
-                plansData.sort((a, b) => a.order - b.order);
-
-                return plansData;
-            })();
-
-            const plansData = await Promise.race([fetchPromise, timeoutPromise]);
-            
-            setPlans(plansData);
-            setIsLoading(false);
-            setRetryCount(0);
-            
-            console.log(`✅ [useLandingPlans] ${plansData.length} planes cargados exitosamente`);
-
-            const plansCollection = collection(db, 'subscription_plans');
-            // **CORRECCIÓN:** La consulta para el listener tampoco incluye el orderBy.
-             const q = publicOnly 
-                ? query(plansCollection, where('isPublic', '==', true), where('isActive', '==', true))
-                : query(plansCollection);
-
-            unsubscribe = onSnapshot(q,
-                (snapshot) => {
-                  const updatedPlans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as LandingPlan);
-                  // **CORRECIÓN:** El ordenamiento se realiza en el cliente también para las actualizaciones.
-                  updatedPlans.sort((a, b) => a.order - b.order);
-                  setPlans(updatedPlans);
-                  console.log(`🔄 [useLandingPlans] ${updatedPlans.length} planes actualizados en tiempo real`);
-                },
-                (error) => {
-                  console.error('❌ [useLandingPlans] Error en listener:', error);
-                }
-            );
-
-            resolve(() => { if (unsubscribe) unsubscribe(); });
-
-        } catch (fetchError) {
-            const errorMessage = fetchError instanceof Error ? fetchError.message : 'Error desconocido';
-            console.error(`❌ [useLandingPlans] Error en intento ${attempt + 1}:`, errorMessage);
-
-            if (attempt < maxRetries) {
-                console.log(`⏳ [useLandingPlans] Reintentando en ${retryDelay}ms...`);
-                setTimeout(() => {
-                    setRetryCount(attempt + 1);
-                    fetchPlans(attempt + 1).then(resolve).catch(reject);
-                }, retryDelay);
-            } else {
-                setError(errorMessage);
-                setIsLoading(false);
-                console.error('💥 [useLandingPlans] Todos los intentos fallaron');
-                reject(new Error(errorMessage));
-            }
-        }
-    });
-  }, [publicOnly]);
+  const { data, error, isLoading, mutate, isValidating } = useSWR(
+    publicOnly ? '/api/landing-plans' : null, // Solo hace fetch si es para la landing pública
+    fetcher,
+    {
+      revalidateOnFocus: false, // Evita re-fetch innecesarios
+      shouldRetryOnError: false, // El reintento se maneja manualmente
+    }
+  );
 
   const retry = useCallback(() => {
-    setRetryCount(0);
-    fetchPlans(0);
-  }, [fetchPlans]);
-
-  useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-
-    fetchPlans(0).then((unsub) => {
-      if (typeof unsub === 'function') {
-        unsubscribe = unsub;
-      }
-    }).catch(err => {
-        console.error("Fallo final de fetchPlans en useEffect", err);
-    });
-
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
-  }, [fetchPlans]);
+    mutate();
+  }, [mutate]);
 
   return {
-    plans,
-    isLoading,
-    error,
-    retry
+    plans: data || [],
+    isLoading: isLoading || isValidating,
+    error: error ? error.message : null,
+    retry,
   };
 }
+
+
+// --- HOOKS PARA OPERACIONES CRUD (USO EN PANEL DE ADMIN) ---
+// Estos hooks no son necesarios si las operaciones se hacen con Server Actions,
+// pero son útiles si se prefiere una API REST.
+
+export const usePlanState = () => {
+    const [selectedPlan, setSelectedPlan] = useState<LandingPlan | null>(null);
+    const [isFormOpen, setIsFormOpen] = useState(false);
+
+    const startEditing = (plan: LandingPlan) => {
+        setSelectedPlan(plan);
+        setIsFormOpen(true);
+    };
+
+    const startCreating = () => {
+        setSelectedPlan(null);
+        setIsFormOpen(true);
+    };
+
+    const cancelEdit = () => {
+        setSelectedPlan(null);
+        setIsFormOpen(false);
+    };
+
+    return {
+        selectedPlan,
+        isEditing: !!selectedPlan,
+        isCreating: !selectedPlan && isFormOpen,
+        isFormOpen,
+        startEditing,
+        startCreating,
+        cancelEdit,
+    };
+}
+
+
+export const useLandingPlansCRUD = () => {
+    const [isLoading, setIsLoading] = useState(false);
+    
+    // Aquí irían las funciones para llamar a la API
+    // Ejemplo:
+    const createPlan = async (data: any, userId: string, userEmail: string) => {
+        setIsLoading(true);
+        // ... Lógica de fetch a POST /api/landing-plans
+        setIsLoading(false);
+    };
+    
+    // ... update, delete, reorder
+
+    return { createPlan, /* ... */ isLoading };
+};
+
+export const usePlanAuditLogs = (planId: string | null) => {
+    const [logs, setLogs] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // Fetch logs
+    const rollbackPlan = async (auditLogId: string, userId: string, userEmail: string) => {};
+
+    return { logs, isLoading, error, rollbackPlan };
+};
+
