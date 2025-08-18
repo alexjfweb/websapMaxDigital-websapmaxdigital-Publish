@@ -117,20 +117,19 @@ export default function LandingPublicPage() {
   const handleSubsectionImageUpload = async (e: ChangeEvent<HTMLInputElement>, sectionIndex: number, subIndex: number) => {
     const file = e.target.files?.[0];
     if (!file || !formData) return;
-  
+
     const subsectionId = formData.sections[sectionIndex].subsections![subIndex].id;
     setUploading(prev => ({ ...prev, [subsectionId]: true }));
-  
+
     try {
-      toast({ title: "Comprimiendo imagen...", description: "Este proceso puede tardar unos segundos." });
+      toast({ title: "Subiendo y optimizando imagen...", description: "Este proceso puede tardar unos segundos." });
       
-      const compressedFile = await storageService.compressImage(file);
-      const imageUrl = await storageService.uploadFile(compressedFile, `landing/subsections/`);
+      const imageUrl = await storageService.compressAndUploadFile(file, `landing/subsections/`);
       
       updateSubsection(sectionIndex, subIndex, 'imageUrl', imageUrl);
-  
+
       toast({ title: "Imagen subida", description: "La imagen se ha subido y comprimido correctamente." });
-  
+
     } catch (error: any) {
       toast({ title: "Error de subida", description: error.message || "No se pudo subir la imagen.", variant: "destructive" });
     } finally {
@@ -139,11 +138,14 @@ export default function LandingPublicPage() {
   };
   
   const updateSubsection = (sectionIndex: number, subIndex: number, field: string, value: any) => {
-     setFormData(prev => {
+    setFormData(prev => {
       if (!prev) return null;
-      const newSections = JSON.parse(JSON.stringify(prev.sections)); // Deep copy
+      const newSections = JSON.parse(JSON.stringify(prev.sections));
       const newSubsections = newSections[sectionIndex].subsections || [];
+      
+      // Merge new value with existing data instead of replacing
       newSubsections[subIndex] = { ...newSubsections[subIndex], [field]: value };
+      
       newSections[sectionIndex].subsections = newSubsections;
       return { ...prev, sections: newSections };
     });

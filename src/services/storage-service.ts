@@ -16,6 +16,7 @@ class StorageService {
     };
     try {
       const compressedFile = await imageCompression(file, options);
+      console.log(`Imagen comprimida de ${(file.size / 1024).toFixed(2)}KB a ${(compressedFile.size / 1024).toFixed(2)}KB`);
       return compressedFile;
     } catch (error) {
       console.error("Error al comprimir la imagen:", error);
@@ -23,7 +24,6 @@ class StorageService {
       return file;
     }
   }
-
 
   /**
    * Sube un archivo al servidor de la aplicación, que luego lo reenviará a Firebase Storage.
@@ -41,8 +41,6 @@ class StorageService {
       formData.append('file', file);
       formData.append('path', path);
   
-      console.log(`Enviando archivo al backend a la ruta: ${path}`);
-      
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
@@ -55,13 +53,23 @@ class StorageService {
       }
       
       const downloadURL = result.url;
-      console.log(`✅ Archivo subido exitosamente a través del backend. URL: ${downloadURL}`);
       return downloadURL;
   
     } catch (uploadError: any) {
       console.error("❌ Error al subir el archivo:", uploadError);
       throw new Error(uploadError.message || 'La subida del archivo falló.');
     }
+  }
+  
+  /**
+   * Comprime y sube un archivo, devolviendo su URL pública.
+   * @param file El archivo original.
+   * @param path La ruta de destino en Firebase Storage.
+   * @returns La URL pública del archivo subido.
+   */
+  async compressAndUploadFile(file: File, path: string): Promise<string> {
+    const compressedFile = await this.compressImage(file);
+    return this.uploadFile(compressedFile, path);
   }
 
 
