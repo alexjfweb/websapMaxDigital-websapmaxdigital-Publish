@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
+import imageCompression from 'browser-image-compression';
 
 export default function LandingPublicPage() {
   const { currentUser } = useSession();
@@ -117,31 +118,27 @@ export default function LandingPublicPage() {
   const handleSubsectionImageUpload = async (e: ChangeEvent<HTMLInputElement>, sectionIndex: number, subIndex: number) => {
     const file = e.target.files?.[0];
     if (!file || !formData) return;
-
-    const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    const maxSize = 5 * 1024 * 1024; // 5MB
-
-    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
-      toast({ title: "Archivo no válido", description: "Por favor, selecciona una imagen (JPG, PNG, WEBP).", variant: "destructive" });
-      return;
-    }
-
-    if (file.size > maxSize) {
-      toast({ title: "Archivo demasiado grande", description: "La imagen no puede pesar más de 5MB.", variant: "destructive" });
-      return;
-    }
-
+  
     const subsectionId = formData.sections[sectionIndex].subsections![subIndex].id;
     setUploading(prev => ({ ...prev, [subsectionId]: true }));
-
+  
     try {
-      toast({ title: "Comprimiendo y subiendo imagen...", description: "Este proceso puede tardar unos segundos." });
-      const imageUrl = await storageService.compressAndUploadFile(file, `landing/subsections/`);
+      toast({ title: "Comprimiendo imagen...", description: "Este proceso puede tardar unos segundos." });
+  
+      const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1080,
+        useWebWorker: true,
+      };
+      
+      const compressedFile = await imageCompression(file, options);
+      
+      const imageUrl = await storageService.uploadFile(compressedFile, `landing/subsections/`);
       
       updateSubsection(sectionIndex, subIndex, 'imageUrl', imageUrl);
-
+  
       toast({ title: "Imagen subida", description: "La imagen se ha subido y comprimido correctamente." });
+  
     } catch (error: any) {
       toast({ title: "Error de subida", description: error.message || "No se pudo subir la imagen.", variant: "destructive" });
     } finally {
@@ -316,4 +313,3 @@ export default function LandingPublicPage() {
     </div>
   );
 }
-
