@@ -8,21 +8,10 @@ import type { LandingPlan } from '@/services/landing-plans-service';
 import type { Company } from '@/types';
 
 // Helper para obtener la URL base de la aplicación
+// ✅ CORRECCIÓN DEFINITIVA: Se establece la URL base de forma estática y prioritaria.
 function getBaseUrl() {
-  const devUrl = 'https://9000-firebase-studio-1748450787904.cluster-ux5mmlia3zhhask7riihruxydo.cloudworkstations.dev';
-  
-  // Se da prioridad absoluta a la URL de desarrollo correcta.
-  if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_BASE_URL?.includes('cloudworkstations')) {
-    return devUrl;
-  }
-
-  // Fallback para Vercel u otros despliegues
-  if (process.env.NEXT_PUBLIC_VERCEL_URL) {
-    return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
-  }
-  
-  // Fallback final
-  return process.env.NEXT_PUBLIC_BASE_URL || devUrl;
+  // Se prioriza la URL específica del entorno de desarrollo para evitar cualquier ambigüedad.
+  return 'https://9000-firebase-studio-1748450787904.cluster-ux5mmlia3zhhask7riihruxydo.cloudworkstations.dev';
 }
 
 const CONFIG_DOC_ID = 'main_payment_methods';
