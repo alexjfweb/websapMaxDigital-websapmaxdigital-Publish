@@ -1,4 +1,3 @@
-
 "use client";
 import React, { createContext, useContext, useState, ReactNode, useCallback } from "react";
 import useSWR from 'swr';
@@ -83,3 +82,5 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     </OrderContext.Provider>
   );
 };
+
+export default OrderProvider;

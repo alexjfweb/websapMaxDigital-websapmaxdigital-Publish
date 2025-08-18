@@ -1,11 +1,22 @@
-
 "use client";
-import React from "react";
-import AppShell from "@/components/layout/app-shell"; 
+import React, { lazy, Suspense } from "react";
 import { SessionProvider, useSession } from "@/contexts/session-context";
 import { usePathname } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { OrderProvider } from "@/contexts/order-context";
+
+// ✅ LAZY LOADING: Solo cargar cuando sea necesario
+const AppShell = lazy(() => import("@/components/layout/app-shell"));
+const OrderProvider = lazy(() => import("@/contexts/order-context").then(module => ({ 
+  default: module.OrderProvider 
+})));
+
+// Componente de loading para el lazy loading
+const LazyLoadingSpinner = () => (
+  <div className="flex min-h-svh w-full items-center justify-center bg-background">
+    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    <span className="ml-2">Cargando aplicación...</span>
+  </div>
+);
 
 // Componente que decide qué layout renderizar
 function LayoutDecider({ children }: { children: React.ReactNode }) {
@@ -25,18 +36,19 @@ function LayoutDecider({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Si estamos en una ruta pública, no renderizamos el AppShell.
+  // ✅ RUTAS PÚBLICAS: Layout liviano sin componentes pesados
   if (isPublicRoute) {
     return <>{children}</>;
   }
 
-  // Si no es una ruta pública y hay un usuario, renderizamos el AppShell
-  // que ahora incluye el OrderProvider.
+  // ✅ RUTAS AUTENTICADAS: Lazy loading de componentes pesados
   if (currentUser) {
     return (
-      <OrderProvider>
-        <AppShell>{children}</AppShell>
-      </OrderProvider>
+      <Suspense fallback={<LazyLoadingSpinner />}>
+        <OrderProvider>
+          <AppShell>{children}</AppShell>
+        </OrderProvider>
+      </Suspense>
     );
   }
 
