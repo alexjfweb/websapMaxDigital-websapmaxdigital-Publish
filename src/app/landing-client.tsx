@@ -224,7 +224,13 @@ export default function LandingClient() {
                     <Card key={sub.id} className="text-left bg-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out hover:scale-105">
                       {sub.imageUrl && (
                         <CardHeader className="p-0">
-                          <Image src={sub.imageUrl} alt={sub.title} className="w-full h-48 object-cover rounded-t-lg" width={400} height={300} data-ai-hint="feature icon"/>
+                          <img 
+                            src={sub.imageUrl} 
+                            alt={sub.title} 
+                            className="w-full h-auto object-cover rounded-t-lg" 
+                            loading="lazy"
+                            data-ai-hint="feature icon"
+                          />
                         </CardHeader>
                       )}
                       <CardContent className="p-6">
