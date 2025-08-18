@@ -68,11 +68,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             console.error("Error fetching user data from Firestore:", error);
             await auth.signOut();
             setCurrentUser(null);
+        } finally {
+            setIsLoading(false);
         }
       } else {
         setCurrentUser(null);
+        setIsLoading(false);
       }
-      setIsLoading(false);
     });
     return () => unsubscribe();
   }, []);
