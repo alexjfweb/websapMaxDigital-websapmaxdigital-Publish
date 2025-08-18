@@ -1,40 +1,39 @@
-
 "use client";
-import React, { useState, useEffect, Suspense } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import React, { Suspense } from "react";
+import { usePathname } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { SessionProvider, useSession } from '@/contexts/session-context';
 import { OrderProvider } from '@/contexts/order-context';
 
-// ✅ COMPONENTE PÚBLICO PURO: Sin importaciones pesadas
-function PublicLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
-}
-
-// ✅ LOADING COMPONENT SIMPLE
+// Componente de carga simple
 function SimpleLoader({ message }: { message: string }) {
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-white">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-        <p className="text-gray-600">{message}</p>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="text-muted-foreground">{message}</p>
       </div>
     </div>
   );
 }
 
-// ✅ MANEJADOR DE RUTAS AUTENTICADAS (Lazy loaded)
+// Layout para páginas públicas
+function PublicLayout({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
+}
+
+// Usamos React.lazy para cargar el AppShell solo cuando se necesita
 const AuthenticatedLayout = React.lazy(() => import('@/components/layout/app-shell'));
 
-// Este componente interno tiene acceso al contexto de sesión
+// Componente que decide qué layout renderizar
 function RouteController({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { currentUser, isLoading } = useSession();
 
-  // Define las rutas que no usarán el AppShell (el layout con sidebar, etc.)
+  // Rutas que no requieren el layout de la aplicación (AppShell)
   const publicRoutes = ['/login', '/register', '/'];
   const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith('/menu/');
-  
+
   if (isLoading) {
     return <SimpleLoader message="Verificando sesión..." />;
   }
@@ -43,13 +42,14 @@ function RouteController({ children }: { children: React.ReactNode }) {
     return <PublicLayout>{children}</PublicLayout>;
   }
 
-  // Si no es ruta pública y no hay usuario, SessionProvider redirigirá.
-  // Mientras tanto, mostramos un loader.
+  // Si no es una ruta pública y no hay usuario, el SessionProvider ya se encarga de redirigir.
+  // Mientras tanto, mostramos un loader para evitar parpadeos.
   if (!currentUser) {
       return <SimpleLoader message="Redirigiendo..." />;
   }
   
-  // Si es una ruta protegida y hay usuario, renderiza el layout autenticado.
+  // Si es una ruta protegida y hay un usuario, cargamos el layout completo.
+  // Usamos Suspense para mostrar un loader mientras se carga el código del AppShell.
   return (
     <Suspense fallback={<SimpleLoader message="Cargando panel..." />}>
       <OrderProvider>
@@ -61,7 +61,7 @@ function RouteController({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ✅ PROVIDER PRINCIPAL: Envuelve todo en el SessionProvider
+// El proveedor principal envuelve toda la aplicación en el SessionProvider
 export default function ClientProviders({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
