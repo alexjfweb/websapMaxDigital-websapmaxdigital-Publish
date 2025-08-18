@@ -10,7 +10,7 @@ import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import type { LandingConfig } from '@/services/landing-config-service';
-import { useLandingConfig } from '@/hooks/use-landing-config';
+import { usePublicLandingConfig } from '@/hooks/use-landing-config';
 import { useLandingPlans } from '@/hooks/use-landing-plans';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useState, useEffect } from 'react';
@@ -109,11 +109,8 @@ export default function LandingClient() {
 
   const { 
     config, 
-    isLoading: isLoadingConfig, 
-    isError: isErrorConfig, 
-    error: errorConfig, 
-    retry: retryConfig 
-  } = useLandingConfig();
+    isLoading: isLoadingConfig,
+  } = usePublicLandingConfig();
 
   const { 
     plans, 
@@ -140,27 +137,6 @@ export default function LandingClient() {
 
   if (isLoading) {
     return <LandingSkeleton />;
-  }
-
-  if (isErrorConfig) {
-    return (
-      <ErrorDisplay
-        title="Error de Configuración"
-        message="No se pudo cargar la configuración de la página."
-        details={errorConfig || "Error en la configuración de la landing"}
-        onRetry={retryConfig}
-        isOnline={isOnline}
-      />
-    );
-  }
-
-  if (!config) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen text-center text-gray-500 p-4">
-        <Loader2 className="h-12 w-12 mb-4 animate-spin" />
-        <h1 className="text-2xl font-bold">Cargando configuración...</h1>
-      </div>
-    );
   }
 
   return (
