@@ -1,7 +1,7 @@
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, query, serverTimestamp, where, orderBy, limit } from 'firebase/firestore';
-import type { Timestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, serverTimestamp, where, orderBy, limit, Timestamp } from 'firebase/firestore';
+import type { Timestamp as FirestoreTimestamp } from 'firebase/firestore';
 
 // Definición de la estructura de un log de auditoría
 export interface AuditLog {
