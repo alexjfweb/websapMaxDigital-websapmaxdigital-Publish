@@ -68,11 +68,11 @@ const MAIN_CONFIG_DOC_ID = 'main';
 // Default configuration is now a private function within the service
 export const getLandingDefaultConfig = (): LandingConfig => ({
   id: 'main',
-  heroTitle: 'Transforma tu Restaurante con un Menú Digital',
-  heroSubtitle: 'Atrae más clientes, optimiza pedidos y mejora la experiencia.',
-  heroButtonText: 'Ver Planes',
+  heroTitle: 'Moderniza tu negocio y aumenta tus ventas.',
+  heroSubtitle: 'Descubre la revolución para tu NEGOCIO. ¿Tienes una cafetería, pizzería, food truck, panadería, pastelería, servicio de catering o cualquier otro negocio gastronómico? ¡Esta solución es para ti! Con nuestro menú digital interactivo, tus clientes explorarán tus platos con fotos de alta calidad y descripciones detalladas, facilitando su elección y aumentando su satisfacción. Además, nuestro sistema de gestión integral te permite controlar cada aspecto de tu negocio: desde el inventario y los pedidos hasta las mesas y el personal, todo en una sola plataforma. Optimiza tu operación, reduce costos y toma decisiones más inteligentes con datos en tiempo real. Es la solución completa para llevar tu restaurante a un nuevo nivel de eficiencia y rentabilidad.',
+  heroButtonText: 'Ver Demo',
   heroButtonUrl: '#planes',
-  heroBackgroundColor: '#FFF2E6',
+  heroBackgroundColor: '#FFFFFF',
   heroTextColor: '#1f2937',
   heroButtonColor: '#FF4500',
   heroAnimation: 'fadeIn',
@@ -81,21 +81,42 @@ export const getLandingDefaultConfig = (): LandingConfig => ({
       id: 'section-1',
       type: 'features',
       title: 'Características Principales',
-      subtitle: 'Todo lo que necesitas para llevar tu restaurante al siguiente nivel.',
-      content: 'Nuestra plataforma es fácil de usar, personalizable y está diseñada para crecer contigo.',
-      backgroundColor: '#ffffff',
+      subtitle: 'Todo lo que necesitas para digitalizar tu negocio',
+      content: '',
+      backgroundColor: '#FFFFFF',
       textColor: '#1f2937',
       buttonColor: '#FF4500',
-      buttonText: 'Explorar Funciones',
-      buttonUrl: '#',
+      buttonText: '',
+      buttonUrl: '',
       imageUrl: '',
       order: 1,
       isActive: true,
       animation: 'fadeIn',
       subsections: [
-        { id: 'sub-1-1', title: 'Menú con QR', content: 'Acceso instantáneo para tus clientes.', imageUrl: 'https://placehold.co/300x200.png?text=QR' },
-        { id: 'sub-1-2', title: 'Gestión de Pedidos', content: 'Optimiza tu cocina y servicio.', imageUrl: 'https://placehold.co/300x200.png?text=Pedidos' },
-        { id: 'sub-1-3', title: 'Reservas Online', content: 'Asegura mesas llenas.', imageUrl: 'https://placehold.co/300x200.png?text=Reservas' },
+        { id: 'sub-1-1', title: 'Sistema de menú digital con pago desde el móvil', content: 'Revoluciona la experiencia de tus clientes con nuestro sistema de menú digital y pago desde el móvil. Ahora, tus comensales pueden ordenar y pagar de forma segura y sin esperas, directo desde su smartphone. Agiliza tus mesas, aumenta la rotación de clientes y mejora la rentabilidad de tu restaurante, todo con un proceso sencillo y moderno.', imageUrl: 'https://placehold.co/400x300.png?text=Pago+Móvil' },
+        { id: 'sub-1-2', title: 'Herramienta para personalizar menú digital con videos', content: 'Imagina un menú que cobra vida: muestra tu herramienta para personalizar tu menú digital con videos de tus deliciosos platos directamente desde Bucaramanga. Captura la atención de tus clientes en Santander, ofreciéndoles una experiencia visual única antes de ordenar. Destaca tus especialidades y aumenta el apetito, convirtiendo tus ventas y modernizando tu restaurante en Colombia.', imageUrl: 'https://placehold.co/400x300.png?text=Menú+con+Video' },
+        { id: 'sub-1-3', title: 'Sistema de gestión para restaurante con integración de pedidos en línea', content: 'Lleva tu restaurante en Bucaramanga al siguiente nivel: nuestro sistema de gestión con integración de pedidos en línea te permite recibir órdenes desde cualquier lugar de Santander, directo a tu cocina. Agiliza tu operación, expande tu alcance y ofrece comodidad a tus clientes, aumentando tus ventas y optimizando tu servicio en toda Colombia.', imageUrl: 'https://placehold.co/400x300.png?text=Gestión+Online' },
+      ],
+    },
+     {
+      id: 'section-2',
+      type: 'services',
+      title: 'Nuestros Servicios',
+      subtitle: 'Soluciones a tu medida',
+      content: '',
+      backgroundColor: '#F9FAFB',
+      textColor: '#1f2937',
+      buttonColor: '#FF4500',
+      buttonText: '',
+      buttonUrl: '',
+      imageUrl: '',
+      order: 2,
+      isActive: true,
+      animation: 'fadeIn',
+      subsections: [
+        { id: 'sub-2-1', title: '¿Su restaurante está lleno todas las noches? Si no, sus clientes potenciales están cenando en la competencia.', content: 'Haga que su restaurante sea la primera opción para comensales hambrientos en su área. Deje de esperar a que los clientes entren por la puerta y comience a atraerlos directamente desde sus teléfonos.', imageUrl: 'https://placehold.co/400x300.png?text=Marketing' },
+        { id: 'sub-2-2', title: 'Crear menú digital con código QR para mi bar', content: 'Transforma la experiencia en tu bar con un menú digital y código QR. Acepta pedidos, realiza cobros y crea una carta siempre actualizada, atrayendo a más clientes con una tecnología moderna y segura. Ofrece a tus visitantes una forma fácil de explorar tus bebidas y platos, mejorando su experiencia de consumo y aumentando tus ventas.', imageUrl: 'https://placehold.co/400x300.png?text=QR+Bar' },
+        { id: 'sub-2-3', title: 'App de menú digital para tomar pedidos en la mesa', content: 'Transforma la experiencia de tus clientes en su ciudad con nuestra app de menú digital: pedir desde la mesa nunca fue tan fácil. Agiliza tu servicio, reduce errores y ofrece a tus comensales una carta interactiva y atractiva. Incrementa la eficiencia de tu personal y la satisfacción de tus clientes, optimizando así tus ventas.', imageUrl: 'https://placehold.co/400x300.png?text=App+Mesa' },
       ],
     },
   ],
@@ -152,7 +173,7 @@ class LandingConfigService {
     }, { merge: true });
 
     await auditService.log({
-      entity: 'landingConfigs' as any, // Corregido de 'landingPlans' a 'landingConfigs'
+      entity: 'landingConfigs' as any,
       entityId: MAIN_CONFIG_DOC_ID,
       action: 'updated',
       performedBy: { uid: userId, email: userEmail },
@@ -174,7 +195,7 @@ class LandingConfigService {
         });
 
         await auditService.log({
-            entity: 'landingConfigs' as any, // Corregido de 'landingPlans' a 'landingConfigs'
+            entity: 'landingConfigs' as any,
             entityId: MAIN_CONFIG_DOC_ID,
             action: 'created',
             performedBy: { uid: userId, email: userEmail },

@@ -187,12 +187,12 @@ export default function LandingClient() {
           style={{ backgroundColor: config.heroBackgroundColor, color: config.heroTextColor }}
         >
           <h1
-            className="text-5xl font-extrabold mb-4 text-center"
+            className="text-5xl font-extrabold mb-4 text-center max-w-4xl"
             style={{ color: config.heroTextColor }}
           >
             {config.heroTitle}
           </h1>
-          <p className="text-xl mb-8 text-center">
+          <p className="text-xl mb-8 text-center max-w-3xl">
             {config.heroSubtitle}
           </p>
           <Button
@@ -224,7 +224,7 @@ export default function LandingClient() {
                     <Card key={sub.id} className="text-left bg-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out hover:scale-105">
                       {sub.imageUrl && (
                         <CardHeader className="p-0">
-                          <Image src={sub.imageUrl} alt={sub.title} className="w-full h-40 object-cover rounded-t-lg" width={400} height={200} data-ai-hint="feature icon"/>
+                          <Image src={sub.imageUrl} alt={sub.title} className="w-full h-48 object-cover rounded-t-lg" width={400} height={200} data-ai-hint="feature icon"/>
                         </CardHeader>
                       )}
                       <CardContent className="p-6">
