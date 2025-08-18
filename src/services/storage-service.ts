@@ -22,11 +22,12 @@ class StorageService {
     try {
       console.log(`Comprimiendo imagen de ${(file.size / 1024 / 1024).toFixed(2)}MB...`);
       const compressedBlob = await imageCompression(file, options);
-      console.log(`Imagen comprimida a ${(compressedBlob.size / 1024).toFixed(2)}KB`);
-      return new File([compressedBlob], file.name, {
+      const compressedFile = new File([compressedBlob], file.name, {
         type: compressedBlob.type,
         lastModified: Date.now(),
       });
+      console.log(`Imagen comprimida a ${(compressedFile.size / 1024).toFixed(2)}KB`);
+      return compressedFile;
     } catch (error) {
       console.error("Error al comprimir la imagen, se subirá el original:", error);
       return file;
@@ -62,14 +63,13 @@ class StorageService {
           console.error("¡ERROR DE SUBIDA A FIREBASE STORAGE!", error);
           switch (error.code) {
             case 'storage/unauthorized':
-              reject(new Error('Error de permisos. Asegúrate de que las reglas de Storage permiten la escritura para usuarios autenticados.'));
+              reject(new Error('Error de permisos. Asegúrate de que las reglas de Storage permiten la escritura.'));
               break;
             case 'storage/canceled':
               reject(new Error('La subida fue cancelada.'));
               break;
             case 'storage/unknown':
-              // Este es a menudo el error que se ve para CORS.
-              reject(new Error('Error desconocido. Esto puede ser un problema de CORS o de red. Por favor, verifica la configuración CORS de tu bucket.'));
+              reject(new Error('Error desconocido. Esto puede ser un problema de CORS. Por favor, verifica la configuración CORS de tu bucket.'));
               break;
             default:
               reject(new Error('Error inesperado al subir el archivo.'));
