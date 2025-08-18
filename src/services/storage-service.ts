@@ -1,6 +1,6 @@
 // src/services/storage-service.ts
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
-import { app } from '@/lib/firebase'; // Usamos la instancia del cliente
+import { app } from '@/lib/firebase';
 import imageCompression from 'browser-image-compression';
 
 const storage = getStorage(app);
@@ -22,7 +22,6 @@ class StorageService {
       console.log(`Comprimiendo imagen de ${(file.size / 1024 / 1024).toFixed(2)}MB...`);
       const compressedBlob = await imageCompression(file, options);
       console.log(`Imagen comprimida a ${(compressedBlob.size / 1024).toFixed(2)}KB`);
-      // Convertir Blob a File para asegurar compatibilidad
       return new File([compressedBlob], file.name, {
         type: compressedBlob.type,
         lastModified: Date.now(),
@@ -34,48 +33,49 @@ class StorageService {
   }
 
   /**
-   * Sube un archivo directamente a Firebase Storage usando un método resumible
-   * que permite monitorear el progreso y manejar errores de forma más granular.
+   * Sube un archivo a Firebase Storage usando un método resumible.
+   * Este método permite monitorear el progreso y manejar errores de forma más granular.
    * @param file El archivo a subir.
    * @param path La ruta de destino en Storage (ej. 'images/').
    * @returns Una promesa que se resuelve con la URL de descarga pública del archivo.
    */
   async uploadFile(file: File, path: string): Promise<string> {
-    if (!(file instanceof File)) {
-      console.error("Error en uploadFile: el argumento no es un objeto File.", file);
-      throw new Error("Se esperaba un objeto de tipo File para subir.");
-    }
-
     return new Promise((resolve, reject) => {
-        const uniqueFileName = `${Date.now()}-${file.name.replace(/[^a-z0-9._-]/gi, '_')}`;
-        const storageRef = ref(storage, `${path}/${uniqueFileName}`);
-        const uploadTask = uploadBytesResumable(storageRef, file);
+      if (!(file instanceof File)) {
+        const errorMsg = "Error en uploadFile: el argumento no es un objeto File.";
+        console.error(errorMsg, file);
+        return reject(new Error(errorMsg));
+      }
 
-        uploadTask.on(
-            'state_changed',
-            (snapshot) => {
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                console.log(`Progreso de subida: ${progress.toFixed(2)}%`);
-            },
-            (error) => {
-                console.error("¡ERROR FATAL DURANTE LA SUBIDA A FIREBASE!", error);
-                 if (error.code === 'storage/unauthorized' || error.code === 'storage/unknown') {
-                    reject(new Error('Error de permisos o CORS. Por favor, verifica la configuración de CORS en tu bucket de Firebase Storage y las reglas de seguridad.'));
-                } else {
-                    reject(new Error('Error interno del servidor al subir el archivo.'));
-                }
-            },
-            async () => {
-                try {
-                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                    console.log('✅ Archivo subido con éxito a Firebase Storage. URL:', downloadURL);
-                    resolve(downloadURL);
-                } catch (urlError) {
-                    console.error("Error obteniendo la URL de descarga:", urlError);
-                    reject(new Error("La subida se completó pero no se pudo obtener la URL."));
-                }
-            }
-        );
+      const uniqueFileName = `${Date.now()}-${file.name.replace(/[^a-z0-9._-]/gi, '_')}`;
+      const storageRef = ref(storage, `${path}/${uniqueFileName}`);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          console.log(`Progreso de subida: ${progress.toFixed(2)}%`);
+        },
+        (error) => {
+          console.error("¡ERROR FATAL DURANTE LA SUBIDA A FIREBASE!", error);
+          if (error.code === 'storage/unauthorized' || error.code === 'storage/unknown') {
+            reject(new Error('Error de permisos o CORS. Por favor, verifica la configuración de CORS en tu bucket de Firebase Storage y las reglas de seguridad.'));
+          } else {
+            reject(new Error('Error interno del servidor al subir el archivo.'));
+          }
+        },
+        async () => {
+          try {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            console.log('✅ Archivo subido con éxito a Firebase Storage. URL:', downloadURL);
+            resolve(downloadURL);
+          } catch (urlError) {
+            console.error("Error obteniendo la URL de descarga:", urlError);
+            reject(new Error("La subida se completó pero no se pudo obtener la URL."));
+          }
+        }
+      );
     });
   }
 
