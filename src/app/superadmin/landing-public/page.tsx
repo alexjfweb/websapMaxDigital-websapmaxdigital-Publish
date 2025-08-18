@@ -120,15 +120,16 @@ export default function LandingPublicPage() {
 
     const subsectionId = formData.sections[sectionIndex].subsections![subIndex].id;
     setUploading(prev => ({ ...prev, [subsectionId]: true }));
+    toast({ title: "Subiendo y optimizando imagen...", description: "Este proceso puede tardar unos segundos." });
 
     try {
-      toast({ title: "Subiendo y optimizando imagen...", description: "Este proceso puede tardar unos segundos." });
-      
       const imageUrl = await storageService.compressAndUploadFile(file, `landing/subsections/`);
       
+      // *** ESTA ES LA CORRECCIÓN CLAVE ***
+      // Primero actualizamos el estado y LUEGO mostramos la notificación de éxito.
       updateSubsection(sectionIndex, subIndex, 'imageUrl', imageUrl);
 
-      toast({ title: "Imagen subida", description: "La imagen se ha subido y comprimido correctamente." });
+      toast({ title: "Imagen subida", description: "La imagen se ha subido y actualizado correctamente." });
 
     } catch (error: any) {
       toast({ title: "Error de subida", description: error.message || "No se pudo subir la imagen.", variant: "destructive" });
