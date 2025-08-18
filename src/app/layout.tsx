@@ -4,7 +4,7 @@ import './globals.css';
 import { Inter } from 'next/font/google';
 import ClientProviders from './ClientProviders';
 import React from 'react';
-import { Toaster } from "@/components/ui/toaster"; // Mover Toaster aquí
+import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -13,6 +13,7 @@ export const metadata = {
   description: 'La solución completa para gestionar tu restaurante.',
 };
 
+// ✅ LAYOUT SUPER SIMPLE: Sin importaciones dinámicas complejas
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" suppressHydrationWarning>

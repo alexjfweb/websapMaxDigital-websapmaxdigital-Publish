@@ -1,69 +1,63 @@
+
 "use client";
-import React, { lazy, Suspense } from "react";
-import { SessionProvider, useSession } from "@/contexts/session-context";
-import { usePathname } from "next/navigation";
+import React, { useState, useEffect, Suspense } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
-// ✅ LAZY LOADING: Solo cargar cuando sea necesario
-const AppShell = lazy(() => import("@/components/layout/app-shell"));
-const OrderProvider = lazy(() => import("@/contexts/order-context").then(module => ({ 
-  default: module.OrderProvider 
-})));
+// ✅ COMPONENTE PÚBLICO PURO: Sin importaciones pesadas
+function PublicLayout({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
+}
 
-// Componente de loading para el lazy loading
-const LazyLoadingSpinner = () => (
-  <div className="flex min-h-svh w-full items-center justify-center bg-background">
-    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-    <span className="ml-2">Cargando aplicación...</span>
-  </div>
-);
-
-// Componente que decide qué layout renderizar
-function LayoutDecider({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const { currentUser, isLoading } = useSession();
-
-  // Define las rutas que no usarán el AppShell (el layout con sidebar, etc.)
-  const publicRoutes = ['/login', '/register', '/'];
-  const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith('/menu/');
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-svh w-full items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Verificando sesión...</span>
-      </div>
-    );
-  }
-
-  // ✅ RUTAS PÚBLICAS: Layout liviano sin componentes pesados
-  if (isPublicRoute) {
-    return <>{children}</>;
-  }
-
-  // ✅ RUTAS AUTENTICADAS: Lazy loading de componentes pesados
-  if (currentUser) {
-    return (
-      <Suspense fallback={<LazyLoadingSpinner />}>
-        <OrderProvider>
-          <AppShell>{children}</AppShell>
-        </OrderProvider>
-      </Suspense>
-    );
-  }
-
-  // Fallback mientras se redirige a /login
+// ✅ LOADING COMPONENT SIMPLE
+function SimpleLoader({ message }: { message: string }) {
   return (
-    <div className="flex min-h-svh w-full items-center justify-center bg-background">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    <div className="flex min-h-screen w-full items-center justify-center bg-white">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+        <p className="text-gray-600">{message}</p>
+      </div>
     </div>
   );
 }
 
-export default function ClientProviders({ children }: { children: React.ReactNode }) {
+// ✅ MANEJADOR DE RUTAS AUTENTICADAS (Lazy loaded)
+const AuthenticatedRouteHandler = React.lazy(() => import('@/components/layout/AuthenticatedRouteHandler'));
+
+// ✅ SMART ROUTER SIN DEPENDENCIAS PESADAS
+function SmartRouter({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) {
+    return <SimpleLoader message="Inicializando..." />;
+  }
+
+  // ✅ DEFINIR RUTAS PÚBLICAS
+  const publicRoutes = ['/login', '/register', '/'];
+  const isPublicMenuRoute = pathname.startsWith('/menu/');
+  const isPublicRoute = publicRoutes.includes(pathname) || isPublicMenuRoute;
+
+  // ✅ RUTAS PÚBLICAS: Layout súper liviano sin sesión
+  if (isPublicRoute) {
+    return <PublicLayout>{children}</PublicLayout>;
+  }
+
+  // ✅ RUTAS PROTEGIDAS: Necesitan SessionProvider y todo el layout autenticado
   return (
-    <SessionProvider>
-      <LayoutDecider>{children}</LayoutDecider>
-    </SessionProvider>
+    <Suspense fallback={<SimpleLoader message="Cargando componentes..." />}>
+      <AuthenticatedRouteHandler>
+        {children}
+      </AuthenticatedRouteHandler>
+    </Suspense>
   );
+}
+
+// ✅ PROVIDER PRINCIPAL ULTRA MINIMALISTA
+export default function ClientProviders({ children }: { children: React.ReactNode }) {
+  return <SmartRouter>{children}</SmartRouter>;
 }
