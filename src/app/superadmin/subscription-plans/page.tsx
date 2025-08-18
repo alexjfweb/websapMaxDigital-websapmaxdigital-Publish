@@ -30,9 +30,10 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useLandingPlans, useLandingPlansCRUD, usePlanState, usePlanAuditLogs } from '@/hooks/use-landing-plans';
-import { LandingPlan, CreatePlanRequest } from '@/services/landing-plans-service';
-import { toast } from '@/hooks/use-toast';
+import { useLandingPlans } from '@/hooks/use-landing-plans';
+import { landingPlansService } from '@/services/landing-plans-service';
+import type { LandingPlan, CreatePlanRequest, PlanAuditLog } from '@/types/plans';
+import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Opciones para íconos y colores
@@ -60,638 +61,45 @@ const PERIODS = [
   { value: 'lifetime', label: 'De por vida' },
 ];
 
-export default function SubscriptionPlansPage() {
-  const { plans, isLoading, refetch } = useLandingPlans();
-  const { createPlan, updatePlan, deletePlan, reorderPlans, isLoading: isCRUDLoading } = useLandingPlansCRUD();
-  const { selectedPlan, isEditing, isCreating, startEditing, startCreating, cancelEdit } = usePlanState();
-  const [selectedPlanForHistory, setSelectedPlanForHistory] = useState<string | null>(null);
-  const [showInactive, setShowInactive] = useState(false);
-
-  const [formData, setFormData] = useState<Partial<CreatePlanRequest>>({
-    name: '',
-    description: '',
-    price: 0,
-    currency: 'USD',
-    period: 'monthly',
-    features: [''],
-    isActive: true,
-    isPopular: false,
-    icon: 'zap',
-    color: 'blue',
-    maxUsers: 5,
-    maxProjects: 10,
-    ctaText: 'Comenzar Prueba Gratuita'
-  });
-
-  const displayedPlans = useMemo(() => {
-    if (showInactive) {
-      return plans;
-    }
-    return plans.filter(plan => plan.isActive);
-  }, [plans, showInactive]);
-
-  // Simular datos del usuario (en producción vendría del contexto de autenticación)
-  const currentUser = {
-    id: 'superadmin',
-    email: 'superadmin@websapmax.com'
-  };
-
-  const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleFeatureChange = (index: number, value: string) => {
-    const newFeatures = [...(formData.features || [])];
-    newFeatures[index] = value;
-    setFormData(prev => ({ ...prev, features: newFeatures }));
-  };
-
-  const addFeature = () => {
-    setFormData(prev => ({
-      ...prev,
-      features: [...(formData.features || []), '']
-    }));
-  };
-
-  const removeFeature = (index: number) => {
-    const newFeatures = [...(formData.features || [])];
-    newFeatures.splice(index, 1);
-    setFormData(prev => ({ ...prev, features: newFeatures }));
-  };
-
-  const handleSubmit = async () => {
-    try {
-      if (!formData.name || !formData.description || !formData.features?.length) {
-        toast({
-          title: "Error",
-          description: "Por favor completa todos los campos obligatorios",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const planData: CreatePlanRequest = {
-        name: formData.name,
-        description: formData.description,
-        price: formData.price || 0,
-        currency: formData.currency || 'USD',
-        period: formData.period || 'monthly',
-        features: formData.features.filter(f => f.trim() !== ''),
-        isActive: formData.isActive !== false,
-        isPopular: formData.isPopular || false,
-        icon: formData.icon || 'zap',
-        color: formData.color || 'blue',
-        maxUsers: formData.maxUsers,
-        maxProjects: formData.maxProjects,
-        ctaText: formData.ctaText
-      };
-
-      if (isEditing && selectedPlan) {
-        await updatePlan(selectedPlan.id, planData, currentUser.id, currentUser.email);
-        toast({
-          title: "Éxito",
-          description: "Plan actualizado correctamente"
-        });
-      } else {
-        await createPlan(planData, currentUser.id, currentUser.email);
-        toast({
-          title: "Éxito",
-          description: "Plan creado correctamente"
-        });
-      }
-      
-      refetch();
-      cancelEdit();
-      resetForm();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleDelete = async (plan: LandingPlan) => {
-    try {
-      await deletePlan(plan.id, currentUser.id, currentUser.email);
-      refetch();
-      toast({
-        title: "Éxito",
-        description: "Plan eliminado correctamente"
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleReorder = async (planId: string, direction: 'up' | 'down') => {
-    const currentIndex = plans.findIndex(p => p.id === planId);
-    if (currentIndex === -1) return;
-
-    const newPlans = [...plans];
-    if (direction === 'up' && currentIndex > 0) {
-      [newPlans[currentIndex], newPlans[currentIndex - 1]] = [newPlans[currentIndex - 1], newPlans[currentIndex]];
-    } else if (direction === 'down' && currentIndex < newPlans.length - 1) {
-      [newPlans[currentIndex], newPlans[currentIndex + 1]] = [newPlans[currentIndex + 1], newPlans[currentIndex]];
-    }
-
-    try {
-      await reorderPlans(newPlans.map(p => p.id), currentUser.id, currentUser.email);
-      refetch();
-      toast({
-        title: "Éxito",
-        description: "Orden actualizado correctamente"
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      description: '',
-      price: 0,
-      currency: 'USD',
-      period: 'monthly',
-      features: [''],
-      isActive: true,
-      isPopular: false,
-      icon: 'zap',
-      color: 'blue',
-      maxUsers: 5,
-      maxProjects: 10,
-      ctaText: 'Comenzar Prueba Gratuita'
-    });
-  };
-
-  const openEditForm = (plan: LandingPlan) => {
-    setFormData({
-      name: plan.name,
-      description: plan.description,
-      price: plan.price,
-      currency: plan.currency,
-      period: plan.period,
-      features: plan.features,
-      isActive: plan.isActive,
-      isPopular: plan.isPopular,
-      icon: plan.icon,
-      color: plan.color,
-      maxUsers: plan.maxUsers,
-      maxProjects: plan.maxProjects,
-      ctaText: plan.ctaText
-    });
-    startEditing(plan);
-  };
-
-  const getIconComponent = (iconValue: string) => {
-    const iconData = PLAN_ICONS.find(icon => icon.value === iconValue);
-    return iconData ? iconData.icon : Zap;
-  };
-
-  const getColorClass = (colorValue: string) => {
-    const colorData = PLAN_COLORS.find(color => color.value === colorValue);
-    return colorData ? colorData.class : 'bg-blue-500';
-  };
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <div className="text-2xl font-bold mb-4">Cargando planes...</div>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gestión de Planes de Suscripción</h1>
-          <p className="text-gray-600 mt-2">
-            Administra los planes que se muestran en la página principal
-          </p>
-        </div>
-        <Button onClick={startCreating} className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="w-4 h-4 mr-2" />
-          Crear Plan
-        </Button>
-      </div>
-
-      {/* Stats and Controls */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-blue-600">{plans.length}</div>
-            <div className="text-sm text-gray-600">Total de Planes</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-600">
-              {plans.filter(p => p.isActive).length}
-            </div>
-            <div className="text-sm text-gray-600">Planes Activos</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-yellow-600">
-              {plans.filter(p => p.isPopular).length}
-            </div>
-            <div className="text-sm text-gray-600">Planes Populares</div>
-          </CardContent>
-        </Card>
-         <Card className="col-span-1 md:col-span-2">
-            <CardContent className="p-4 flex items-center justify-center h-full">
-                <div className="flex items-center space-x-2">
-                    <Switch
-                        id="show-inactive"
-                        checked={showInactive}
-                        onCheckedChange={setShowInactive}
-                    />
-                    <Label htmlFor="show-inactive" className="text-sm text-gray-600">
-                        Mostrar planes inactivos
-                    </Label>
-                </div>
-            </CardContent>
-        </Card>
-      </div>
-
-      {/* Plans List */}
-      <div className="space-y-4">
-        <AnimatePresence>
-          {displayedPlans.map((plan, index) => {
-            const IconComponent = getIconComponent(plan.icon);
-            const colorClass = getColorClass(plan.color);
-            
-            return (
-              <motion.div
-                key={plan.id}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20, transition: { duration: 0.2 } }}
-                transition={{ duration: 0.3 }}
-              >
-                <Card className={`hover:shadow-md transition-shadow ${!plan.isActive ? 'bg-gray-100 opacity-70' : ''}`}>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className={`w-12 h-12 rounded-full ${colorClass} flex items-center justify-center text-white`}>
-                          <IconComponent size={24} />
-                        </div>
-                        <div>
-                          <div className="flex items-center space-x-2">
-                            <h3 className="text-xl font-semibold">{plan.name}</h3>
-                            {plan.isPopular && (
-                              <Badge className="bg-yellow-400 text-yellow-900">Popular</Badge>
-                            )}
-                            {!plan.isActive && (
-                              <Badge variant="secondary">Inactivo</Badge>
-                            )}
-                          </div>
-                          <p className="text-gray-600">{plan.description}</p>
-                          <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-                            <span>${plan.price}/{plan.period === 'monthly' ? 'mes' : plan.period === 'yearly' ? 'año' : 'único'}</span>
-                            <span>Orden: {plan.order}</span>
-                            <span>{plan.features.length} características</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        {/* Reorder Buttons */}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleReorder(plan.id, 'up')}
-                          disabled={index === 0}
-                        >
-                          <ArrowUp className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleReorder(plan.id, 'down')}
-                          disabled={index === displayedPlans.length - 1}
-                        >
-                          <ArrowDown className="w-4 h-4" />
-                        </Button>
-
-                        {/* History Button */}
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setSelectedPlanForHistory(plan.id)}
-                            >
-                              <History className="w-4 h-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-4xl">
-                            <DialogHeader>
-                              <DialogTitle>Historial de Cambios - {plan.name}</DialogTitle>
-                            </DialogHeader>
-                            {selectedPlanForHistory && (
-                              <PlanHistoryDialog planId={selectedPlanForHistory} />
-                            )}
-                          </DialogContent>
-                        </Dialog>
-
-                        {/* Edit Button */}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openEditForm(plan)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-
-                        {/* Delete Button */}
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm" className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>¿Estás seguro de que deseas eliminar este plan?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta acción marcará el plan como "inactivo" y no se puede deshacer. No se eliminará permanentemente de la base de datos.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction 
-                                onClick={() => handleDelete(plan)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Sí, eliminar
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
-      </div>
-
-      {/* Create/Edit Dialog */}
-      <Dialog open={isCreating || isEditing} onOpenChange={cancelEdit}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {isCreating ? 'Crear Nuevo Plan' : 'Editar Plan'}
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-6">
-            {/* Basic Info */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="name">Nombre *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  placeholder="Plan Básico"
-                />
-              </div>
-              <div>
-                <Label htmlFor="price">Precio *</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  value={formData.price}
-                  onChange={(e) => handleInputChange('price', parseFloat(e.target.value) || 0)}
-                  placeholder="29.99"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="description">Descripción *</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                placeholder="Descripción del plan..."
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="currency">Moneda</Label>
-                <Select value={formData.currency} onValueChange={(value) => handleInputChange('currency', value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="EUR">EUR</SelectItem>
-                    <SelectItem value="COP">COP</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="period">Período</Label>
-                <Select value={formData.period} onValueChange={(value) => handleInputChange('period', value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PERIODS.map(period => (
-                      <SelectItem key={period.value} value={period.value}>
-                        {period.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="ctaText">Texto del Botón</Label>
-                <Input
-                  id="ctaText"
-                  value={formData.ctaText}
-                  onChange={(e) => handleInputChange('ctaText', e.target.value)}
-                  placeholder="Comenzar Prueba Gratuita"
-                />
-              </div>
-            </div>
-
-            {/* Visual Settings */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="icon">Ícono</Label>
-                <Select value={formData.icon} onValueChange={(value) => handleInputChange('icon', value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PLAN_ICONS.map(icon => (
-                      <SelectItem key={icon.value} value={icon.value}>
-                        <div className="flex items-center space-x-2">
-                          <span>{icon.label}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="color">Color</Label>
-                <Select value={formData.color} onValueChange={(value) => handleInputChange('color', value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PLAN_COLORS.map(color => (
-                      <SelectItem key={color.value} value={color.value}>
-                        <div className="flex items-center space-x-2">
-                          <div className={`w-4 h-4 rounded ${color.class}`}></div>
-                          <span>{color.label}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Limits */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="maxUsers">Límite de Usuarios (-1 = ilimitado)</Label>
-                <Input
-                  id="maxUsers"
-                  type="number"
-                  value={formData.maxUsers}
-                  onChange={(e) => handleInputChange('maxUsers', parseInt(e.target.value) || 0)}
-                  placeholder="5"
-                />
-              </div>
-              <div>
-                <Label htmlFor="maxProjects">Límite de Proyectos (-1 = ilimitado)</Label>
-                <Input
-                  id="maxProjects"
-                  type="number"
-                  value={formData.maxProjects}
-                  onChange={(e) => handleInputChange('maxProjects', parseInt(e.target.value) || 0)}
-                  placeholder="10"
-                />
-              </div>
-            </div>
-
-            {/* Features */}
-            <div>
-              <Label>Características *</Label>
-              <div className="space-y-2">
-                {formData.features?.map((feature, index) => (
-                  <div key={index} className="flex space-x-2">
-                    <Input
-                      value={feature}
-                      onChange={(e) => handleFeatureChange(index, e.target.value)}
-                      placeholder={`Característica ${index + 1}`}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeFeature(index)}
-                      disabled={formData.features?.length === 1}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))}
-                <Button type="button" variant="outline" onClick={addFeature}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Agregar Característica
-                </Button>
-              </div>
-            </div>
-
-            {/* Switches */}
-            <div className="flex space-x-6">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="isActive"
-                  checked={formData.isActive}
-                  onCheckedChange={(checked) => handleInputChange('isActive', checked)}
-                />
-                <Label htmlFor="isActive">Plan Activo</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="isPopular"
-                  checked={formData.isPopular}
-                  onCheckedChange={(checked) => handleInputChange('isPopular', checked)}
-                />
-                <Label htmlFor="isPopular">Plan Popular</Label>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button variant="outline" onClick={cancelEdit}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSubmit} disabled={isCRUDLoading}>
-              {isCRUDLoading ? 'Guardando...' : (isCreating ? 'Crear Plan' : 'Actualizar Plan')}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
-
-// Componente para mostrar el historial de cambios
 function PlanHistoryDialog({ planId }: { planId: string }) {
-  const { logs, isLoading, error, rollbackPlan } = usePlanAuditLogs(planId);
+  const [logs, setLogs] = useState<PlanAuditLog[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
-  // Simular datos del usuario
-  const currentUser = {
-    id: 'superadmin',
-    email: 'superadmin@websapmax.com'
-  };
+  const currentUser = { id: 'superadmin', email: 'superadmin@websapmax.com' };
+
+  useEffect(() => {
+    if (planId) {
+      setIsLoading(true);
+      setError(null);
+      landingPlansService.getPlanAuditLogs(planId)
+        .then(setLogs)
+        .catch(err => {
+          console.error("Error fetching audit logs:", err);
+          setError("No se pudo cargar el historial.");
+        })
+        .finally(() => setIsLoading(false));
+    }
+  }, [planId]);
 
   const handleRollback = async (auditLogId: string) => {
     try {
-      await rollbackPlan(auditLogId, currentUser.id, currentUser.email);
+      await landingPlansService.rollbackPlan(planId, auditLogId, currentUser.id, currentUser.email);
       toast({
         title: "Éxito",
-        description: "Plan restaurado correctamente"
+        description: "Plan restaurado a la versión seleccionada."
       });
+      // Idealmente, se debería refetchear la lista de planes aquí
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: "Error al restaurar",
         description: error.message,
         variant: "destructive"
       });
     }
   };
+
+  const { toast } = useToast();
 
   const renderContent = () => {
     if (isLoading) {
@@ -708,8 +116,7 @@ function PlanHistoryDialog({ planId }: { planId: string }) {
        return (
         <div className="flex flex-col items-center justify-center text-center text-destructive py-8">
             <AlertCircle className="h-8 w-8 mb-2" />
-            <p className="font-semibold">Error al cargar el historial</p>
-            <p className="text-sm">{error}</p>
+            <p className="font-semibold">{error}</p>
         </div>
       );
     }
@@ -726,7 +133,7 @@ function PlanHistoryDialog({ planId }: { planId: string }) {
           <div className="flex-1">
             <div className="flex items-center space-x-2 mb-2">
               <Badge variant={log.action === 'created' ? 'default' : log.action === 'updated' ? 'secondary' : 'destructive'}>
-                {log.action === 'created' ? 'Creado' : log.action === 'updated' ? 'Actualizado' : 'Eliminado'}
+                {log.action}
               </Badge>
               <span className="text-sm text-gray-500">
                 {new Date(log.timestamp).toLocaleString()}
@@ -763,3 +170,340 @@ function PlanHistoryDialog({ planId }: { planId: string }) {
     </div>
   );
 }
+
+
+export default function SubscriptionPlansPage() {
+  const { plans, isLoading, refetch } = useLandingPlans(false);
+  const [isCRUDLoading, setIsCRUDLoading] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<LandingPlan | null>(null);
+  
+  const [selectedPlanForHistory, setSelectedPlanForHistory] = useState<string | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
+
+  const [formData, setFormData] = useState<Partial<CreatePlanRequest>>({
+    name: '',
+    description: '',
+    price: 0,
+    currency: 'USD',
+    period: 'monthly',
+    features: [''],
+    isActive: true,
+    isPopular: false,
+    icon: 'zap',
+    color: 'blue',
+    maxUsers: 5,
+    maxProjects: 10,
+    ctaText: 'Comenzar Prueba Gratuita'
+  });
+
+  const { toast } = useToast();
+  
+  const displayedPlans = useMemo(() => {
+    let sortedPlans = [...plans].sort((a,b) => a.order - b.order);
+    if (showInactive) {
+      return sortedPlans;
+    }
+    return sortedPlans.filter(plan => plan.isActive);
+  }, [plans, showInactive]);
+
+  const currentUser = { id: 'superadmin', email: 'superadmin@websapmax.com' };
+
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleFeatureChange = (index: number, value: string) => {
+    const newFeatures = [...(formData.features || [])];
+    newFeatures[index] = value;
+    setFormData(prev => ({ ...prev, features: newFeatures }));
+  };
+
+  const addFeature = () => {
+    setFormData(prev => ({
+      ...prev,
+      features: [...(formData.features || []), '']
+    }));
+  };
+
+  const removeFeature = (index: number) => {
+    const newFeatures = [...(formData.features || [])];
+    newFeatures.splice(index, 1);
+    setFormData(prev => ({ ...prev, features: newFeatures }));
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '', description: '', price: 0, currency: 'USD',
+      period: 'monthly', features: [''], isActive: true,
+      isPopular: false, icon: 'zap', color: 'blue',
+      maxUsers: 5, maxProjects: 10, ctaText: 'Comenzar Prueba Gratuita'
+    });
+  };
+  
+  const openCreateForm = () => {
+    resetForm();
+    setEditingPlan(null);
+    setIsFormOpen(true);
+  };
+  
+  const openEditForm = (plan: LandingPlan) => {
+    setFormData({
+      name: plan.name,
+      description: plan.description,
+      price: plan.price,
+      currency: plan.currency,
+      period: plan.period,
+      features: plan.features,
+      isActive: plan.isActive,
+      isPopular: plan.isPopular,
+      icon: plan.icon,
+      color: plan.color,
+      maxUsers: plan.maxUsers,
+      maxProjects: plan.maxProjects,
+      ctaText: plan.ctaText
+    });
+    setEditingPlan(plan);
+    setIsFormOpen(true);
+  };
+  
+  const handleSubmit = async () => {
+    setIsCRUDLoading(true);
+    try {
+      if (!formData.name || !formData.description || !formData.features?.length) {
+        toast({ title: "Error", description: "Completa los campos obligatorios", variant: "destructive" });
+        return;
+      }
+
+      const planData: CreatePlanRequest = {
+        name: formData.name,
+        description: formData.description,
+        price: formData.price || 0,
+        currency: formData.currency || 'USD',
+        period: formData.period || 'monthly',
+        features: formData.features.filter(f => f.trim() !== ''),
+        isActive: formData.isActive !== false,
+        isPopular: formData.isPopular || false,
+        icon: formData.icon || 'zap',
+        color: formData.color || 'blue',
+        maxUsers: formData.maxUsers,
+        maxProjects: formData.maxProjects,
+        ctaText: formData.ctaText
+      };
+
+      if (editingPlan) {
+        await landingPlansService.updatePlan(editingPlan.id, planData, currentUser.id, currentUser.email);
+        toast({ title: "Éxito", description: "Plan actualizado correctamente" });
+      } else {
+        await landingPlansService.createPlan(planData, currentUser.id, currentUser.email);
+        toast({ title: "Éxito", description: "Plan creado correctamente" });
+      }
+      
+      await refetch();
+      setIsFormOpen(false);
+      
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+        setIsCRUDLoading(false);
+    }
+  };
+
+  const handleDelete = async (plan: LandingPlan) => {
+    setIsCRUDLoading(true);
+    try {
+      await landingPlansService.deletePlan(plan.id, currentUser.id, currentUser.email);
+      await refetch();
+      toast({ title: "Éxito", description: "Plan eliminado correctamente" });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsCRUDLoading(false);
+    }
+  };
+
+  const handleReorder = async (planId: string, direction: 'up' | 'down') => {
+    const currentIndex = plans.findIndex(p => p.id === planId);
+    if (currentIndex === -1) return;
+
+    const newPlans = [...plans];
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    
+    if (targetIndex >= 0 && targetIndex < newPlans.length) {
+        [newPlans[currentIndex], newPlans[targetIndex]] = [newPlans[targetIndex], newPlans[currentIndex]];
+    }
+
+    setIsCRUDLoading(true);
+    try {
+      await landingPlansService.reorderPlans(newPlans.map(p => p.id), currentUser.id, currentUser.email);
+      await refetch();
+      toast({ title: "Éxito", description: "Orden actualizado" });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsCRUDLoading(false);
+    }
+  };
+
+
+  const getIconComponent = (iconValue: string) => {
+    const iconData = PLAN_ICONS.find(icon => icon.value === iconValue);
+    return iconData ? iconData.icon : Zap;
+  };
+
+  const getColorClass = (colorValue: string) => {
+    const colorData = PLAN_COLORS.find(color => color.value === colorValue);
+    return colorData ? colorData.class : 'bg-blue-500';
+  };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <div className="text-2xl font-bold mb-4">Cargando planes...</div>
+          <Skeleton className="h-8 w-8 mx-auto animate-spin rounded-full border-b-2 border-blue-600" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Gestión de Planes de Suscripción</h1>
+          <p className="text-gray-600 mt-2">
+            Administra los planes que se muestran en la página principal
+          </p>
+        </div>
+        <Button onClick={openCreateForm} className="bg-blue-600 hover:bg-blue-700">
+          <Plus className="w-4 h-4 mr-2" />
+          Crear Plan
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+        {/* ... Cards de stats ... */}
+         <Card className="col-span-1 md:col-span-5">
+            <CardContent className="p-4 flex items-center justify-center h-full">
+                <div className="flex items-center space-x-2">
+                    <Switch
+                        id="show-inactive"
+                        checked={showInactive}
+                        onCheckedChange={setShowInactive}
+                    />
+                    <Label htmlFor="show-inactive" className="text-sm text-gray-600">
+                        Mostrar planes inactivos
+                    </Label>
+                </div>
+            </CardContent>
+        </Card>
+      </div>
+
+      <div className="space-y-4">
+        <AnimatePresence>
+          {displayedPlans.map((plan, index) => {
+            const IconComponent = getIconComponent(plan.icon);
+            const colorClass = getColorClass(plan.color);
+            
+            return (
+              <motion.div
+                key={plan.id}
+                layout
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20, transition: { duration: 0.2 } }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card className={`hover:shadow-md transition-shadow ${!plan.isActive ? 'bg-gray-100 opacity-70' : ''}`}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className={`w-12 h-12 rounded-full ${colorClass} flex items-center justify-center text-white`}>
+                          <IconComponent size={24} />
+                        </div>
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <h3 className="text-xl font-semibold">{plan.name}</h3>
+                            {plan.isPopular && <Badge className="bg-yellow-400 text-yellow-900">Popular</Badge>}
+                            {!plan.isActive && <Badge variant="secondary">Inactivo</Badge>}
+                          </div>
+                          <p className="text-gray-600">{plan.description}</p>
+                          <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                            <span>${plan.price}/{plan.period}</span>
+                            <span>Orden: {plan.order}</span>
+                            <span>{plan.features.length} características</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => handleReorder(plan.id, 'up')} disabled={index === 0}><ArrowUp className="w-4 h-4" /></Button>
+                        <Button variant="outline" size="sm" onClick={() => handleReorder(plan.id, 'down')} disabled={index === displayedPlans.length - 1}><ArrowDown className="w-4 h-4" /></Button>
+                        <Dialog onOpenChange={(open) => !open && setSelectedPlanForHistory(null)}>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" onClick={() => setSelectedPlanForHistory(plan.id)}><History className="w-4 h-4" /></Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl"><DialogHeader><DialogTitle>Historial - {plan.name}</DialogTitle></DialogHeader>{selectedPlanForHistory === plan.id && <PlanHistoryDialog planId={plan.id} />}</DialogContent>
+                        </Dialog>
+                        <Button variant="outline" size="sm" onClick={() => openEditForm(plan)}><Edit className="w-4 h-4" /></Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild><Button variant="outline" size="sm" className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button></AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>¿Eliminar este plan?</AlertDialogTitle><AlertDialogDescription>Esta acción marcará el plan como inactivo. No se eliminará permanentemente.</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(plan)} className="bg-destructive hover:bg-destructive/90">Sí, eliminar</AlertDialogAction></AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
+
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{editingPlan ? 'Editar Plan' : 'Crear Nuevo Plan'}</DialogTitle></DialogHeader>
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div><Label htmlFor="name">Nombre *</Label><Input id="name" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} /></div>
+              <div><Label htmlFor="price">Precio *</Label><Input id="price" type="number" value={formData.price} onChange={(e) => handleInputChange('price', parseFloat(e.target.value) || 0)} /></div>
+            </div>
+            <div><Label htmlFor="description">Descripción *</Label><Textarea id="description" value={formData.description} onChange={(e) => handleInputChange('description', e.target.value)} rows={3}/></div>
+            <div className="grid grid-cols-3 gap-4">
+              <div><Label htmlFor="currency">Moneda</Label><Select value={formData.currency} onValueChange={(v) => handleInputChange('currency', v)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="USD">USD</SelectItem><SelectItem value="EUR">EUR</SelectItem><SelectItem value="COP">COP</SelectItem></SelectContent></Select></div>
+              <div><Label htmlFor="period">Período</Label><Select value={formData.period} onValueChange={(v) => handleInputChange('period', v)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{PERIODS.map(p=><SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label htmlFor="ctaText">Texto del Botón</Label><Input id="ctaText" value={formData.ctaText} onChange={(e) => handleInputChange('ctaText', e.target.value)} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div><Label htmlFor="icon">Ícono</Label><Select value={formData.icon} onValueChange={(v) => handleInputChange('icon', v)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{PLAN_ICONS.map(i=><SelectItem key={i.value} value={i.value}>{i.label}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label htmlFor="color">Color</Label><Select value={formData.color} onValueChange={(v) => handleInputChange('color', v)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{PLAN_COLORS.map(c=><SelectItem key={c.value} value={c.value}><div className="flex items-center gap-2"><div className={`w-4 h-4 rounded ${c.class}`}></div>{c.label}</div></SelectItem>)}</SelectContent></Select></div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <div><Label htmlFor="maxUsers">Límite de Usuarios (-1 = ilimitado)</Label><Input id="maxUsers" type="number" value={formData.maxUsers} onChange={(e) => handleInputChange('maxUsers', parseInt(e.target.value) || 0)} /></div>
+                <div><Label htmlFor="maxProjects">Límite de Proyectos (-1 = ilimitado)</Label><Input id="maxProjects" type="number" value={formData.maxProjects} onChange={(e) => handleInputChange('maxProjects', parseInt(e.target.value) || 0)} /></div>
+            </div>
+            <div>
+              <Label>Características *</Label>
+              <div className="space-y-2">
+                {formData.features?.map((feature, index) => (<div key={index} className="flex space-x-2"><Input value={feature} onChange={(e) => handleFeatureChange(index, e.target.value)}/><Button type="button" variant="outline" size="sm" onClick={() => removeFeature(index)} disabled={formData.features?.length === 1}><X className="w-4 h-4"/></Button></div>))}
+                <Button type="button" variant="outline" onClick={addFeature}><Plus className="w-4 h-4 mr-2"/>Agregar Característica</Button>
+              </div>
+            </div>
+            <div className="flex space-x-6">
+              <div className="flex items-center space-x-2"><Switch id="isActive" checked={formData.isActive} onCheckedChange={(c) => handleInputChange('isActive', c)} /><Label htmlFor="isActive">Plan Activo</Label></div>
+              <div className="flex items-center space-x-2"><Switch id="isPopular" checked={formData.isPopular} onCheckedChange={(c) => handleInputChange('isPopular', c)} /><Label htmlFor="isPopular">Plan Popular</Label></div>
+            </div>
+          </div>
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button variant="outline" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSubmit} disabled={isCRUDLoading}>{isCRUDLoading ? 'Guardando...' : (editingPlan ? 'Actualizar' : 'Crear')}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
