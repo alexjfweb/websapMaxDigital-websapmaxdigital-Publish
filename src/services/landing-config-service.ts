@@ -92,9 +92,6 @@ export const getLandingDefaultConfig = (): LandingConfig => ({
       order: 1,
       isActive: true,
       animation: 'fadeIn',
-      seoTitle: 'Características Principales de WebSapMax',
-      seoDescription: 'Descubre las características que te ayudarán a gestionar tu restaurante.',
-      seoKeywords: ['gestión restaurante', 'menú qr', 'pedidos online'],
       subsections: [
         { id: 'sub-1-1', title: 'Menú con QR', content: 'Acceso instantáneo para tus clientes.', imageUrl: 'https://placehold.co/300x200.png?text=QR' },
         { id: 'sub-1-2', title: 'Gestión de Pedidos', content: 'Optimiza tu cocina y servicio.', imageUrl: 'https://placehold.co/300x200.png?text=Pedidos' },
@@ -119,7 +116,6 @@ class LandingConfigService {
     return doc(db, CONFIG_COLLECTION_NAME, MAIN_CONFIG_DOC_ID);
   }
 
-  // Se mantiene para el panel de SuperAdmin, pero ya no se usa en el hook público.
   async getLandingConfig(): Promise<LandingConfig | null> {
     try {
         const docSnap = await getDoc(this.getConfigDocRef());
@@ -156,7 +152,7 @@ class LandingConfigService {
     }, { merge: true });
 
     await auditService.log({
-      entity: 'landingPlans', // Entity can remain as landingPlans for consistency in logs
+      entity: 'landingPlans',
       entityId: MAIN_CONFIG_DOC_ID,
       action: 'updated',
       performedBy: { uid: userId, email: userEmail },
