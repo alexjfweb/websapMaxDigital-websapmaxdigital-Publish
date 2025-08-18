@@ -12,9 +12,12 @@ const fetcher = async (url: string) => {
     if (!res.ok) {
         const error = new Error('An error occurred while fetching the data.');
         try {
-            error.message = (await res.json()).error || 'Failed to fetch plans';
+            // Intenta parsear el error del cuerpo de la respuesta, si existe
+            const errorBody = await res.json();
+            error.message = errorBody.error || 'Failed to fetch plans';
         } catch (e) {
-            // Ignore if response is not JSON
+            // Si el cuerpo no es JSON o está vacío, usa el texto de estado
+            error.message = res.statusText;
         }
         throw error;
     }
@@ -31,11 +34,10 @@ interface UseLandingPlansReturn {
   plans: LandingPlan[];
   isLoading: boolean;
   error: string | null;
-  refetch: () => void; // Renombrado de retry a refetch para mayor claridad
+  refetch: () => void;
 }
 
 export function useLandingPlans(publicOnly: boolean = true): UseLandingPlansReturn {
-  // La clave SWR ahora depende de si queremos los planes públicos o todos
   const swrKey = publicOnly ? '/api/landing-plans' : 'admin/all-plans';
   const swrFetcher = publicOnly ? fetcher : adminFetcher;
 
@@ -43,8 +45,8 @@ export function useLandingPlans(publicOnly: boolean = true): UseLandingPlansRetu
     swrKey,
     swrFetcher,
     {
-      revalidateOnFocus: false, 
-      shouldRetryOnError: false, 
+      revalidateOnFocus: false,
+      shouldRetryOnError: false,
     }
   );
 
@@ -54,9 +56,11 @@ export function useLandingPlans(publicOnly: boolean = true): UseLandingPlansRetu
 
   return {
     plans: data || [],
-    isLoading: isLoading || isValidating,
+    // CORRECCIÓN: El estado de carga solo debe ser true si SWR está activamente cargando o revalidando.
+    // Si 'data' o 'error' ya están definidos, la carga inicial ha terminado.
+    isLoading: (isLoading || isValidating) && !data && !error,
     error: error ? error.message : null,
-    refetch, // Exportar la función para refrescar
+    refetch,
   };
 }
 
