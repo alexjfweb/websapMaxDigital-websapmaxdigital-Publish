@@ -2,24 +2,24 @@
 "use client";
 
 import * as React from 'react';
-import { useRouter } from 'next/navigation';
 import AppHeader from '@/components/layout/header';
 import { useSession } from '@/contexts/session-context';
 
-// Este componente ahora es mucho más simple. Actúa como un contenedor general.
-// La lógica de Sidebar y layouts complejos se ha movido a AppShell.
+/**
+ * Layout principal para las páginas públicas.
+ * Se encarga de renderizar la cabecera (barra de navegación) y el contenido principal.
+ */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const { currentUser, logout } = useSession();
 
   const handleLogout = () => {
     logout();
-    router.push('/login');
+    // La redirección se maneja en el SessionProvider
   };
 
   return (
     <div className="flex flex-col min-h-svh">
-      {/* El AppHeader ahora se renderiza aquí para las páginas públicas */}
+      {/* El AppHeader se renderiza aquí para todas las páginas que usan este layout */}
       <AppHeader currentUser={currentUser} handleLogout={handleLogout} />
       <main className="flex-1 bg-background">
         {children}

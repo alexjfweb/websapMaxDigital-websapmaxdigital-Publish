@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { SessionProvider, useSession } from '@/contexts/session-context';
 import { OrderProvider } from '@/contexts/order-context';
+import AppLayout from "@/components/layout/app-layout"; // Importar el layout principal
 
 // Componente de carga simple
 function SimpleLoader({ message }: { message: string }) {
@@ -17,9 +18,9 @@ function SimpleLoader({ message }: { message: string }) {
   );
 }
 
-// Layout para páginas públicas
+// Layout para páginas públicas - AHORA USA AppLayout para incluir el header
 function PublicLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return <AppLayout>{children}</AppLayout>;
 }
 
 // Usamos React.lazy para cargar el AppShell solo cuando se necesita
