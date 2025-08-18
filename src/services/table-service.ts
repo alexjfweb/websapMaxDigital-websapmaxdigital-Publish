@@ -79,7 +79,11 @@ class TableService {
   async createTable(tableData: Omit<Table, 'id' | 'createdAt' | 'updatedAt'> & { restaurantId?: string }): Promise<string> {
     const coll = this.tablesCollection;
 
-    const restaurantId = typeof tableData.restaurantId === 'string' && tableData.restaurantId.trim() !== '' ? tableData.restaurantId : 'websapmax';
+    const restaurantId = tableData.restaurantId;
+    if (!restaurantId) {
+        throw new Error("El ID del restaurante es obligatorio para crear una mesa.");
+    }
+    
     // Validar unicidad de número de mesa por restaurante
     const q = query(coll, where('restaurantId', '==', restaurantId), where('number', '==', tableData.number), where('isActive', '==', true));
     const existing = await getDocs(q);
