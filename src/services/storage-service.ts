@@ -4,8 +4,29 @@ import imageCompression from 'browser-image-compression';
 
 class StorageService {
   /**
+   * Comprime una imagen antes de subirla.
+   * @param file El archivo de imagen original.
+   * @returns El archivo comprimido.
+   */
+  async compressImage(file: File): Promise<File> {
+    const options = {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1080,
+      useWebWorker: true,
+    };
+    try {
+      const compressedFile = await imageCompression(file, options);
+      return compressedFile;
+    } catch (error) {
+      console.error("Error al comprimir la imagen:", error);
+      // Devuelve el archivo original si la compresión falla
+      return file;
+    }
+  }
+
+
+  /**
    * Sube un archivo al servidor de la aplicación, que luego lo reenviará a Firebase Storage.
-   * Este método ya no comprime; la compresión debe hacerse antes de llamar a esta función.
    * @param file El archivo a subir (ya sea el original o uno comprimido).
    * @param path La ruta de destino en Storage (ej. 'avatars/').
    * @returns La URL de descarga pública del archivo.

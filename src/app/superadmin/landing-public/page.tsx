@@ -35,7 +35,6 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
-import imageCompression from 'browser-image-compression';
 
 export default function LandingPublicPage() {
   const { currentUser } = useSession();
@@ -124,15 +123,8 @@ export default function LandingPublicPage() {
   
     try {
       toast({ title: "Comprimiendo imagen...", description: "Este proceso puede tardar unos segundos." });
-  
-      const options = {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 1080,
-        useWebWorker: true,
-      };
       
-      const compressedFile = await imageCompression(file, options);
-      
+      const compressedFile = await storageService.compressImage(file);
       const imageUrl = await storageService.uploadFile(compressedFile, `landing/subsections/`);
       
       updateSubsection(sectionIndex, subIndex, 'imageUrl', imageUrl);
