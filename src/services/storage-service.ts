@@ -1,3 +1,4 @@
+
 // src/services/storage-service.ts
 import imageCompression from 'browser-image-compression';
 
@@ -60,6 +61,11 @@ class StorageService {
       throw new Error(uploadError.message || 'La subida del archivo falló.');
     }
   }
+
+  async uploadFile(file: File, path: string): Promise<string> {
+    return this.compressAndUploadFile(file, path);
+  }
+
 
   /**
    * Elimina un archivo de Firebase Storage.
