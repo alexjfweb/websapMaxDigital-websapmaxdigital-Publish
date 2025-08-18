@@ -45,9 +45,10 @@ export default function LandingPublicPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isError, setIsError] = useState(false);
   
+  // Estado dedicado para los archivos pendientes de subida, como se recomendó.
   const [subsectionFiles, setSubsectionFiles] = useState<Record<string, File | null>>({});
-
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
+
   const [activeTab, setActiveTab] = useState('hero');
   const [previewMode, setPreviewMode] = useState(false);
 
@@ -326,3 +327,5 @@ export default function LandingPublicPage() {
     </div>
   );
 }
+
+    

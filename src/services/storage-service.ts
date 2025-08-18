@@ -34,6 +34,7 @@ class StorageService {
    */
   async uploadFile(file: File, path: string): Promise<string> {
     if (!(file instanceof File)) {
+      console.error("Error en uploadFile: el argumento 'file' no es un objeto File.", file);
       throw new Error("Se esperaba un objeto de tipo File para subir.");
     }
   
@@ -57,6 +58,7 @@ class StorageService {
       return result.url;
   
     } catch (uploadError: any) {
+      // Este es el bloque crucial para capturar el error de subida
       console.error("¡ERROR FATAL DURANTE LA SUBIDA A FIREBASE!", uploadError);
       throw new Error(`La subida del archivo falló: ${uploadError.message}`);
     }
@@ -68,10 +70,10 @@ class StorageService {
    * @param file El archivo original.
    * @returns La URL pública del archivo subido.
    */
-  async compressAndUploadFile(file: File): Promise<string> {
+  async compressAndUploadFile(file: File, path: string = 'landing-images/subsections/'): Promise<string> {
     const compressedFile = await this.compressImage(file);
-    // Usa la ruta genérica para las imágenes de la landing
-    return this.uploadFile(compressedFile, 'landing-images/subsections/');
+    // CORRECCIÓN: Usar el archivo comprimido para la subida.
+    return this.uploadFile(compressedFile, path);
   }
 
 
@@ -89,3 +91,5 @@ class StorageService {
 }
 
 export const storageService = new StorageService();
+
+    
