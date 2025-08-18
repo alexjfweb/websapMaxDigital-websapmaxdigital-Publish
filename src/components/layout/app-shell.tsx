@@ -4,7 +4,6 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  SidebarProvider,
   Sidebar,
   SidebarHeader,
   SidebarContent,
@@ -38,7 +37,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <SidebarProvider defaultOpen>
+    <>
       <Sidebar collapsible="icon" variant="sidebar" side="left">
         <SidebarHeader className="p-4 flex flex-col items-center gap-2">
           <Link href="/" className="flex items-center gap-2 font-semibold text-lg text-primary">
@@ -103,6 +102,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </main>
         <FooterNavigation role={currentUser.role} />
       </SidebarInset>
-    </SidebarProvider>
+    </>
   );
 }

@@ -6,6 +6,7 @@ import { OrderProvider } from '@/contexts/order-context';
 import AuthenticatedRouteHandler from "@/components/layout/AuthenticatedRouteHandler";
 import AppLayout from "@/components/layout/app-layout";
 import { usePathname } from "next/navigation";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 
 function LayoutDecider({ children }: { children: React.ReactNode }) {
@@ -28,8 +29,10 @@ function LayoutDecider({ children }: { children: React.ReactNode }) {
 
 export default function ClientProviders({ children }: { children: React.ReactNode }) {
   return (
-    <SessionProvider>
-        <LayoutDecider>{children}</LayoutDecider>
-    </SessionProvider>
+    <SidebarProvider>
+      <SessionProvider>
+          <LayoutDecider>{children}</LayoutDecider>
+      </SessionProvider>
+    </SidebarProvider>
   );
 }
