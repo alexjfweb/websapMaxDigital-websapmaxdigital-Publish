@@ -121,6 +121,7 @@ export default function LandingPublicPage() {
   };
   
   const handleSubsectionImageUpload = async (sectionIndex: number, subIndex: number) => {
+      console.log("¡¡¡CONFIRMADO: El código nuevo SÍ se está ejecutando!!!");
       if (!formData) return;
   
       const subsectionId = formData.sections[sectionIndex].subsections![subIndex].id;
@@ -139,7 +140,7 @@ export default function LandingPublicPage() {
           
           if (imageUrl) {
               updateSubsection(sectionIndex, subIndex, 'imageUrl', imageUrl);
-              setSubsectionFiles(prev => ({...prev, [subsectionId]: null}));
+              setSubsectionFiles(prev => ({...prev, [subsectionId]: null})); // Limpiar el archivo pendiente
               toast({ title: "Imagen subida", description: "La imagen se ha subido y actualizado correctamente." });
           } else {
               toast({ title: "Error de Subida", description: "La subida devolvió un resultado nulo. Revisa la consola para más detalles.", variant: "destructive"});
@@ -325,4 +326,3 @@ export default function LandingPublicPage() {
     </div>
   );
 }
-
