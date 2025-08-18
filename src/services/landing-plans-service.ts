@@ -107,7 +107,10 @@ class LandingPlansService {
   // Obtiene TODOS los planes, para el panel de admin
   async getPlans(): Promise<LandingPlan[]> {
     const coll = this.getPlansCollection();
-    const q = query(coll, orderBy('order', 'asc'), orderBy('createdAt', 'asc'));
+    // **CORRECCIÓN:** Se simplifica la consulta para ordenar solo por 'order'.
+    // Ordenar por múltiples campos requiere un índice compuesto, que puede no existir.
+    // El ordenamiento secundario se hará en el cliente.
+    const q = query(coll, orderBy('order', 'asc'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => serializePlan(doc.id, doc.data()));
   }

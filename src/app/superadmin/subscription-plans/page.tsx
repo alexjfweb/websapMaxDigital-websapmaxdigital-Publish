@@ -82,6 +82,8 @@ function PlanHistoryDialog({ planId }: { planId: string }) {
     }
   }, [planId]);
 
+  const { toast } = useToast();
+
   const handleRollback = async (auditLogId: string) => {
     try {
       await landingPlansService.rollbackPlan(planId, auditLogId, currentUser.id, currentUser.email);
@@ -98,8 +100,6 @@ function PlanHistoryDialog({ planId }: { planId: string }) {
       });
     }
   };
-
-  const { toast } = useToast();
 
   const renderContent = () => {
     if (isLoading) {
@@ -200,7 +200,15 @@ export default function SubscriptionPlansPage() {
   const { toast } = useToast();
   
   const displayedPlans = useMemo(() => {
-    let sortedPlans = [...plans].sort((a,b) => a.order - b.order);
+    // **CORRECCIÓN:** Se añade un ordenamiento secundario por fecha de creación para
+    // asegurar un orden consistente si el campo 'order' es el mismo.
+    let sortedPlans = [...plans].sort((a, b) => {
+        if (a.order !== b.order) {
+            return a.order - b.order;
+        }
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    });
+
     if (showInactive) {
       return sortedPlans;
     }
@@ -506,4 +514,3 @@ export default function SubscriptionPlansPage() {
     </div>
   );
 }
-
