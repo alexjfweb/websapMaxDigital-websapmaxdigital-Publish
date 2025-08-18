@@ -1,4 +1,3 @@
-
 // src/services/storage-service.ts
 import imageCompression from 'browser-image-compression';
 
@@ -70,6 +69,7 @@ class StorageService {
    */
   async compressAndUploadFile(file: File, path: string): Promise<string> {
     const compressedFile = await this.compressImage(file);
+    // **LA CORRECCIÓN CLAVE ESTÁ AQUÍ:** Usamos `compressedFile` en lugar de `file`.
     return this.uploadFile(compressedFile, path);
   }
 
