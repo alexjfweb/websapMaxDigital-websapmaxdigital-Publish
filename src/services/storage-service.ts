@@ -4,7 +4,6 @@ import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } f
 import { app } from '@/lib/firebase';
 import imageCompression from 'browser-image-compression';
 
-// ✅ CORRECCIÓN: La instancia de storage ya se obtiene desde firebase.ts que usa la config central.
 const storage = getStorage(app);
 
 class StorageService {
@@ -24,7 +23,6 @@ class StorageService {
       console.log(`Comprimiendo imagen de ${(file.size / 1024 / 1024).toFixed(2)}MB...`);
       const compressedBlob = await imageCompression(file, options);
       console.log(`Imagen comprimida a ${(compressedBlob.size / 1024).toFixed(2)}KB`);
-      // ✅ CORRECCIÓN: Convertir el Blob comprimido de nuevo a un objeto File.
       return new File([compressedBlob], file.name, {
         type: compressedBlob.type,
         lastModified: Date.now(),
@@ -61,14 +59,20 @@ class StorageService {
           console.log(`Progreso de subida: ${progress.toFixed(2)}%`);
         },
         (error) => {
-          console.error("¡ERROR FATAL DURANTE LA SUBIDA A FIREBASE!", error);
-          if (error.code === 'storage/unauthorized') {
-            reject(new Error('Error de permisos. Asegúrate de que las reglas de Storage permiten la escritura.'));
-          } else if (error.code === 'storage/object-not-found') {
-             reject(new Error('Objeto no encontrado. Verifica el nombre del bucket y la ruta.'));
-          } else {
-             // El error de CORS suele caer aquí
-             reject(new Error('Error de CORS o de red. Por favor, verifica que la configuración CORS de tu bucket de Firebase Storage sea correcta.'));
+          console.error("¡ERROR DE SUBIDA A FIREBASE STORAGE!", error);
+          switch (error.code) {
+            case 'storage/unauthorized':
+              reject(new Error('Error de permisos. Asegúrate de que las reglas de Storage permiten la escritura para usuarios autenticados.'));
+              break;
+            case 'storage/canceled':
+              reject(new Error('La subida fue cancelada.'));
+              break;
+            case 'storage/unknown':
+              // Este es a menudo el error que se ve para CORS.
+              reject(new Error('Error desconocido. Esto puede ser un problema de CORS o de red. Por favor, verifica la configuración CORS de tu bucket.'));
+              break;
+            default:
+              reject(new Error('Error inesperado al subir el archivo.'));
           }
         },
         async () => {
