@@ -1,4 +1,3 @@
-
 // src/services/storage-service.ts
 import imageCompression from 'browser-image-compression';
 
@@ -50,14 +49,17 @@ class StorageService {
       const result = await response.json();
   
       if (!response.ok) {
-        throw new Error(result.error || 'Error en el servidor al subir el archivo.');
+        // Esto lanzará un error que será capturado por el bloque catch de abajo
+        throw new Error(result.error || `Error del servidor: ${response.statusText}`);
       }
       
+      console.log('✅ ¡Imagen subida con éxito! URL:', result.url);
       return result.url;
   
     } catch (uploadError: any) {
-      console.error("❌ Error al subir el archivo:", uploadError);
-      throw new Error(uploadError.message || 'La subida del archivo falló.');
+      // ESTA ES LA PARTE IMPORTANTE: Hacemos visible el error en la consola.
+      console.error("¡ERROR FATAL DURANTE LA SUBIDA!", uploadError);
+      throw new Error(`La subida del archivo falló: ${uploadError.message}`);
     }
   }
   
