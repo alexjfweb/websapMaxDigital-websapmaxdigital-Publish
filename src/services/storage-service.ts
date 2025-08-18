@@ -32,7 +32,7 @@ class StorageService {
    * @param path La ruta de destino en Storage (ej. 'avatars/').
    * @returns La URL de descarga pública del archivo.
    */
-  private async uploadFile(file: File, path: string): Promise<string> {
+  async uploadFile(file: File, path: string): Promise<string> {
     if (!(file instanceof File)) {
       throw new Error("Se esperaba un objeto de tipo File para subir.");
     }
@@ -70,6 +70,7 @@ class StorageService {
    */
   async compressAndUploadFile(file: File, path: string): Promise<string> {
     const compressedFile = await this.compressImage(file);
+    // CORRECCIÓN: Asegurarse de subir el archivo comprimido.
     return this.uploadFile(compressedFile, path);
   }
 
