@@ -9,14 +9,20 @@ import type { Company } from '@/types';
 
 // Helper para obtener la URL base de la aplicación
 function getBaseUrl() {
+  const devUrl = 'https://9000-firebase-studio-1748450787904.cluster-ux5mmlia3zhhask7riihruxydo.cloudworkstations.dev';
+  
+  // Se da prioridad absoluta a la URL de desarrollo correcta.
+  if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_BASE_URL?.includes('cloudworkstations')) {
+    return devUrl;
+  }
+
+  // Fallback para Vercel u otros despliegues
   if (process.env.NEXT_PUBLIC_VERCEL_URL) {
     return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
   }
-  // ✅ CORRECCIÓN: Se añade la URL específica del entorno de desarrollo como una opción válida.
-  if (process.env.NODE_ENV === 'development') {
-    return process.env.NEXT_PUBLIC_BASE_URL || 'https://9000-firebase-studio-1748450787904.cluster-ux5mmlia3zhhask7riihruxydo.cloudworkstations.dev';
-  }
-  return process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002';
+  
+  // Fallback final
+  return process.env.NEXT_PUBLIC_BASE_URL || devUrl;
 }
 
 const CONFIG_DOC_ID = 'main_payment_methods';
