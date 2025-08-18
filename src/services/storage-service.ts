@@ -70,6 +70,7 @@ class StorageService {
    */
   async compressAndUploadFile(file: File, path: string): Promise<string> {
     const compressedFile = await this.compressImage(file);
+    // CORRECCIÓN: Usar el archivo comprimido para la subida.
     return this.uploadFile(compressedFile, path);
   }
 
