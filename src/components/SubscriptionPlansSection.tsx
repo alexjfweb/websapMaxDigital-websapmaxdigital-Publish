@@ -1,3 +1,4 @@
+
 "use client";
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
@@ -58,6 +59,11 @@ interface SubscriptionPlansSectionProps {
 
 export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSectionProps) {
 
+  // ✅ CORRECCIÓN: Ordenar los planes en el cliente por el campo 'order'.
+  const sortedPlans = React.useMemo(() => {
+    return [...plans].sort((a, b) => a.order - b.order);
+  }, [plans]);
+
   return (
     <motion.section
       key="planes-loaded"
@@ -72,7 +78,7 @@ export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSec
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
-        {plans.map((plan) => {
+        {sortedPlans.map((plan) => {
           const IconComponent = getPlanIcon(plan.icon);
           const colorClass = getPlanColorClass(plan.color, 'bg');
           const borderColorClass = getPlanColorClass(plan.color, 'border');

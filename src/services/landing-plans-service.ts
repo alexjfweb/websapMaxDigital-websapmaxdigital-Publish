@@ -113,7 +113,9 @@ class LandingPlansService {
 
   async getPublicPlans(): Promise<LandingPlan[]> {
     const coll = this.getPlansCollection();
-    const q = query(coll, where('isActive', '==', true), orderBy('order', 'asc'));
+    // ✅ CORRECCIÓN: Se elimina orderBy para evitar la necesidad de un índice compuesto.
+    // El ordenamiento se hará en el cliente.
+    const q = query(coll, where('isActive', '==', true));
     
     const snapshot = await getDocs(q);
     
