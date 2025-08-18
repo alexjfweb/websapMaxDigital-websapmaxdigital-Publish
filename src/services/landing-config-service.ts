@@ -152,7 +152,7 @@ class LandingConfigService {
     }, { merge: true });
 
     await auditService.log({
-      entity: 'landingPlans',
+      entity: 'landingConfigs' as any, // Corregido de 'landingPlans' a 'landingConfigs'
       entityId: MAIN_CONFIG_DOC_ID,
       action: 'updated',
       performedBy: { uid: userId, email: userEmail },
@@ -174,7 +174,7 @@ class LandingConfigService {
         });
 
         await auditService.log({
-            entity: 'landingPlans',
+            entity: 'landingConfigs' as any, // Corregido de 'landingPlans' a 'landingConfigs'
             entityId: MAIN_CONFIG_DOC_ID,
             action: 'created',
             performedBy: { uid: userId, email: userEmail },
