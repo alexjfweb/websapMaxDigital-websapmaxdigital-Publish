@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import AppHeader from '@/components/layout/header';
 import { useSession } from '@/contexts/session-context';
 
