@@ -1,5 +1,5 @@
 // src/services/storage-service.ts
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { app } from '@/lib/firebase'; // Usamos la instancia del cliente
 import imageCompression from 'browser-image-compression';
 
@@ -22,6 +22,7 @@ class StorageService {
       console.log(`Comprimiendo imagen de ${(file.size / 1024 / 1024).toFixed(2)}MB...`);
       const compressedBlob = await imageCompression(file, options);
       console.log(`Imagen comprimida a ${(compressedBlob.size / 1024).toFixed(2)}KB`);
+      // Convertir Blob a File para asegurar compatibilidad
       return new File([compressedBlob], file.name, {
         type: compressedBlob.type,
         lastModified: Date.now(),
@@ -33,7 +34,8 @@ class StorageService {
   }
 
   /**
-   * Sube un archivo directamente a Firebase Storage usando un método resumible.
+   * Sube un archivo directamente a Firebase Storage usando un método resumible
+   * que permite monitorear el progreso y manejar errores de forma más granular.
    * @param file El archivo a subir.
    * @param path La ruta de destino en Storage (ej. 'images/').
    * @returns Una promesa que se resuelve con la URL de descarga pública del archivo.
@@ -52,21 +54,18 @@ class StorageService {
         uploadTask.on(
             'state_changed',
             (snapshot) => {
-                // Opcional: monitorear el progreso
                 const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                console.log(`Subida está al ${progress}%`);
+                console.log(`Progreso de subida: ${progress.toFixed(2)}%`);
             },
             (error) => {
-                // Manejo de errores, incluyendo CORS
                 console.error("¡ERROR FATAL DURANTE LA SUBIDA A FIREBASE!", error);
-                 if (error.code === 'storage/unauthorized' || error.code === 'storage/object-not-found') {
+                 if (error.code === 'storage/unauthorized' || error.code === 'storage/unknown') {
                     reject(new Error('Error de permisos o CORS. Por favor, verifica la configuración de CORS en tu bucket de Firebase Storage y las reglas de seguridad.'));
                 } else {
                     reject(new Error('Error interno del servidor al subir el archivo.'));
                 }
             },
             async () => {
-                // Manejo de subida exitosa
                 try {
                     const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
                     console.log('✅ Archivo subido con éxito a Firebase Storage. URL:', downloadURL);
@@ -101,10 +100,8 @@ class StorageService {
       await deleteObject(fileRef);
       console.log(`Archivo eliminado: ${fileUrl}`);
     } catch (error: any) {
-      // Ignorar errores si el archivo no existe (puede haber sido eliminado previamente)
       if (error.code !== 'storage/object-not-found') {
         console.error("Error al eliminar archivo de Storage:", error);
-        // No relanzar el error para no interrumpir flujos de usuario si solo falla la limpieza
       }
     }
   }
