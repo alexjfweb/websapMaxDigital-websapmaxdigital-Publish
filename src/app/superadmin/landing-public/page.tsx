@@ -127,7 +127,7 @@ export default function LandingPublicPage() {
       const file = subsectionFiles[subsectionId];
   
       if (!file) {
-          toast({ title: "Error", description: "Por favor, selecciona un archivo primero.", variant: "destructive"});
+          toast({ title: "Archivo no seleccionado", description: "Por favor, selecciona un archivo antes de subir.", variant: "destructive"});
           return;
       }
   
@@ -135,11 +135,11 @@ export default function LandingPublicPage() {
       toast({ title: "Subiendo y optimizando imagen...", description: "Este proceso puede tardar unos segundos." });
   
       try {
-          const imageUrl = await storageService.compressAndUploadFile(file);
+          const imageUrl = await storageService.compressAndUploadFile(file, `landing-images/subsections/`);
           
           if (imageUrl) {
               updateSubsection(sectionIndex, subIndex, 'imageUrl', imageUrl);
-              setSubsectionFiles(prev => ({...prev, [subsectionId]: null})); // Limpiar el archivo seleccionado
+              setSubsectionFiles(prev => ({...prev, [subsectionId]: null}));
               toast({ title: "Imagen subida", description: "La imagen se ha subido y actualizado correctamente." });
           } else {
               toast({ title: "Error de Subida", description: "La subida devolvió un resultado nulo. Revisa la consola para más detalles.", variant: "destructive"});
@@ -325,5 +325,3 @@ export default function LandingPublicPage() {
     </div>
   );
 }
-
-    

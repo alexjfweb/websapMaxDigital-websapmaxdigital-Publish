@@ -1,3 +1,4 @@
+
 // src/services/storage-service.ts
 import imageCompression from 'browser-image-compression';
 
@@ -49,7 +50,6 @@ class StorageService {
       const result = await response.json();
   
       if (!response.ok) {
-        // Esto lanzará un error que será capturado por el bloque catch de abajo
         throw new Error(result.error || `Error del servidor: ${response.statusText}`);
       }
       
@@ -57,8 +57,7 @@ class StorageService {
       return result.url;
   
     } catch (uploadError: any) {
-      // ESTA ES LA PARTE IMPORTANTE: Hacemos visible el error en la consola.
-      console.error("¡ERROR FATAL DURANTE LA SUBIDA!", uploadError);
+      console.error("¡ERROR FATAL DURANTE LA SUBIDA A FIREBASE!", uploadError);
       throw new Error(`La subida del archivo falló: ${uploadError.message}`);
     }
   }
@@ -72,7 +71,6 @@ class StorageService {
    */
   async compressAndUploadFile(file: File, path: string): Promise<string> {
     const compressedFile = await this.compressImage(file);
-    // CORRECCIÓN: Usar el archivo comprimido para la subida.
     return this.uploadFile(compressedFile, path);
   }
 
