@@ -1,3 +1,4 @@
+
 {
   "hosting": {
     "source": ".",
@@ -15,5 +16,8 @@
         "function": "ssrapi"
       }
     ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
   }
 }
