@@ -16,7 +16,7 @@
     "predeploy": "npm run typecheck && npm run lint",
     "cleanup:plans": "node scripts/cleanup-plans.js",
     "migrate:plans": "node scripts/migrate-plans.js",
-    "migrate:landing-plans": "node scripts/migrate-landing-plans.js",
+    "migrate:landing-plans": "node src/scripts/init-landing-config.js",
     "seed:dishes": "node src/scripts/create-sample-dishes.js"
   },
   "dependencies": {

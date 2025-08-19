@@ -1,7 +1,8 @@
 // src/services/database-sync-service.ts
 import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, writeBatch, serverTimestamp } from 'firebase/firestore';
-import { getLandingDefaultConfig } from './landing-config-service';
+import { landingConfigService } from './landing-config-service';
+import { landingPlansService } from './landing-plans-service';
 
 // Planes de ejemplo
 const examplePlans = [
@@ -78,7 +79,7 @@ const syncAll = async (userId: string, userEmail: string): Promise<string> => {
     // 2. Sincronizar Configuración de Landing
     console.log('📝 Sincronizando configuración de landing por defecto...');
     const configDocRef = doc(db, 'landing_configs', 'main');
-    const defaultConfig = getLandingDefaultConfig();
+    const defaultConfig = landingConfigService.getDefaultConfig();
     const { id, ...dataToSave } = defaultConfig;
     batch.set(configDocRef, { ...dataToSave, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }, { merge: true });
     operationsCount++;
