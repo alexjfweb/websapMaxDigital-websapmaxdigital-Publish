@@ -1,10 +1,10 @@
-
 import './globals.css';
 import { Inter } from 'next/font/google';
-import ClientProviders from './ClientProviders';
-import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
-import ErrorBoundary from '@/components/ErrorBoundary';
+import { SessionProvider } from '@/contexts/session-context';
+import AppShell from '@/components/layout/app-shell';
+import { OrderProvider } from '@/contexts/order-context';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -13,15 +13,23 @@ export const metadata = {
   description: 'La solución completa para gestionar tu restaurante.',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={inter.className}>
-        <ErrorBoundary>
-            <ClientProviders>
-              {children}
-            </ClientProviders>
-        </ErrorBoundary>
+        <SessionProvider>
+          <OrderProvider>
+            <SidebarProvider>
+                <AppShell>
+                    {children}
+                </AppShell>
+            </SidebarProvider>
+          </OrderProvider>
+        </SessionProvider>
         <Toaster />
       </body>
     </html>
