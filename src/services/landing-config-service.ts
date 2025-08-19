@@ -152,12 +152,14 @@ class LandingConfigService {
       
       const dbData = docSnap.data();
       
-      // PRIORITIZE DB DATA. Merge defaultConfig underneath to fill in any missing fields.
+      // ✅ CORRECCIÓN: Realizar una fusión profunda y segura, garantizando que `seo` siempre exista.
       const finalConfig = {
-          ...defaultConfig,
-          ...dbData,
+          ...defaultConfig, // Empezar con la estructura por defecto completa.
+          ...dbData,       // Sobrescribir con los datos de la base de datos.
           id: docSnap.id,
+          // Asegurar que `seo` sea un objeto, fusionando el `seo` de la DB sobre el por defecto.
           seo: { ...defaultConfig.seo, ...(dbData.seo || {}) },
+          // Asegurar que `sections` sea un array.
           sections: dbData.sections || defaultConfig.sections,
       };
       
