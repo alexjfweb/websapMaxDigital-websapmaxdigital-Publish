@@ -147,38 +147,19 @@ class LandingConfigService {
         const dbData = docSnap.data();
         const defaultConfig = getLandingDefaultConfig();
         
-        // Función para fusionar profundamente dos objetos
-        const deepMerge = (target: any, source: any) => {
-          const output = { ...target };
-          if (target && typeof target === 'object' && source && typeof source === 'object') {
-            Object.keys(source).forEach(key => {
-              if (source[key] && typeof source[key] === 'object') {
-                if (!(key in target)) {
-                  Object.assign(output, { [key]: source[key] });
-                } else {
-                  output[key] = deepMerge(target[key], source[key]);
-                }
-              } else {
-                Object.assign(output, { [key]: source[key] });
-              }
-            });
-          }
-          return output;
+        // CAMBIO: Fusión directa priorizando datos de BD
+        const finalConfig = {
+            ...defaultConfig,
+            ...dbData,
+            id: docSnap.id,
         };
-
-        // Combina la configuración por defecto con la de la base de datos,
-        // dando prioridad a los datos de la base de datos.
-        const finalConfig = deepMerge(defaultConfig, dbData);
         
-        // Asegura que las secciones y subsecciones de la DB tengan prioridad si existen.
-        if (dbData.sections && dbData.sections.length > 0) {
+        // CAMBIO: Siempre usar secciones de BD si existen
+        if (dbData.sections) {
             finalConfig.sections = dbData.sections;
         }
 
-        return {
-          ...finalConfig,
-          id: docSnap.id,
-        };
+        return finalConfig;
     } catch(error: any) {
         console.error("Error getting landing config:", error.message);
         throw new Error("No se pudo obtener la configuración de la página de inicio.");
