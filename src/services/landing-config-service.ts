@@ -1,7 +1,7 @@
 
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auditService } from './audit-service';
-import { getDb } from '@/lib/firebase-lazy'; // Usar lazy loading
+import { db } from '@/lib/firebase'; // Importar la instancia directa de db
 
 // Basic structure for a subsection, like a feature card
 export interface LandingSubsection {
@@ -132,21 +132,21 @@ export const getLandingDefaultConfig = (): LandingConfig => ({
 
 
 class LandingConfigService {
-  private async getConfigDocRef() {
-    const db = await getDb();
+  private getConfigDocRef() {
+    if (!db) {
+      throw new Error("Firestore no está inicializado. No se puede acceder a la configuración.");
+    }
     return doc(db, CONFIG_COLLECTION_NAME, MAIN_CONFIG_DOC_ID);
   }
 
   async getLandingConfig(): Promise<LandingConfig> {
     try {
-      const docRef = await this.getConfigDocRef();
+      const docRef = this.getConfigDocRef();
       const docSnap = await getDoc(docRef);
       const defaultConfig = getLandingDefaultConfig();
       
       if (!docSnap.exists()) {
         console.warn("Landing config not found in DB, returning defaults.");
-        // Consider creating the default config in DB if it doesn't exist
-        // await this.createLandingConfig(defaultConfig, 'system', 'system@init');
         return defaultConfig;
       }
       
@@ -175,7 +175,7 @@ class LandingConfigService {
     userEmail: string
   ): Promise<void> {
     const originalDoc = await this.getLandingConfig().catch(() => getLandingDefaultConfig());
-    const docRef = await this.getConfigDocRef();
+    const docRef = this.getConfigDocRef();
     
     await setDoc(docRef, { 
       ...configUpdate,
@@ -198,7 +198,7 @@ class LandingConfigService {
         userEmail: string
     ): Promise<void> {
         const { id, ...dataToSave } = configData;
-        const docRef = await this.getConfigDocRef();
+        const docRef = this.getConfigDocRef();
         await setDoc(docRef, {
             ...dataToSave,
             createdAt: serverTimestamp(),

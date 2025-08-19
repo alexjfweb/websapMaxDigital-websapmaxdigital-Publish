@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import Head from "next/head";
 import SubscriptionPlansSection from '@/components/SubscriptionPlansSection';
 import type { LandingPlan } from '@/types/plans';
-import { AlertTriangle, Loader2, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { AlertTriangle, Loader2, RefreshCw } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
@@ -13,7 +13,6 @@ import type { LandingConfig } from '@/services/landing-config-service';
 import { usePublicLandingConfig } from '@/hooks/use-landing-config';
 import { useLandingPlans } from '@/hooks/use-landing-plans';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useState, useEffect } from 'react';
 
 function LandingSkeleton() {
   return (
@@ -150,8 +149,8 @@ export default function LandingClient() {
                                   fill
                                   className="object-cover rounded-t-lg"
                                   loading="lazy"
-                                  data-ai-hint="feature icon"
                                   unoptimized={true}
+                                  data-ai-hint="feature icon"
                               />
                           </div>
                       </CardHeader>
