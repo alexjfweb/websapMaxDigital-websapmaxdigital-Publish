@@ -1,38 +1,155 @@
+
 "use client";
 
 import * as React from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from '@/contexts/session-context';
-import AuthenticatedRouteHandler from './AuthenticatedRouteHandler';
 import AppHeader from './header';
+import { Loader2 } from 'lucide-react';
+import {
+  Sidebar,
+  SidebarHeader,
+  SidebarContent,
+  SidebarFooter,
+  SidebarInset,
+  SidebarRail,
+  SidebarProvider,
+} from '@/components/ui/sidebar';
+import NavigationMenu from '@/components/layout/navigation-menu';
+import FooterNavigation from '@/components/layout/footer-navigation';
+import { Button } from '@/components/ui/button';
+import { LogOut, Settings, UserCircle } from 'lucide-react';
+import Link from 'next/link';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
-/**
- * Este componente ahora actúa como el controlador principal del layout.
- * Decide si mostrar una página pública, el cargador, o el layout completo del panel de admin.
- */
+function SimpleLoader({ message }: { message: string }) {
+  return (
+    <div className="flex min-h-screen w-full items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-4">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-muted-foreground">{message}</p>
+      </div>
+    </div>
+  );
+}
+
+function ProtectedLayout({ children }: { children: React.ReactNode }) {
+    const { currentUser, logout } = useSession();
+    const router = useRouter();
+
+    const handleLogout = () => {
+      logout();
+      router.push('/login');
+    };
+
+    if (!currentUser) {
+        // This should theoretically not be reached if logic in SessionProvider is correct,
+        // but serves as a final guard.
+        return <SimpleLoader message="Redirigiendo a inicio de sesión..." />;
+    }
+
+    return (
+        <SidebarProvider>
+            <Sidebar collapsible="icon" variant="sidebar" side="left">
+                <SidebarHeader className="p-4 flex flex-col items-center gap-2">
+                <Link href="/" className="flex items-center gap-2 font-semibold text-lg text-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-primary">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                    </svg>
+                    <span className="group-data-[collapsible=icon]:hidden">websapMax</span>
+                </Link>
+                <div className="mt-1 text-center group-data-[collapsible=icon]:hidden">
+                    <p className="text-sm font-medium text-sidebar-foreground truncate max-w-[150px]">
+                    {currentUser.name || currentUser.username}
+                    </p>
+                    <p className="text-xs text-sidebar-foreground/80 capitalize">
+                    Rol: {currentUser.role}
+                    </p>
+                </div>
+                </SidebarHeader>
+                <SidebarContent className="flex-grow">
+                <NavigationMenu role={currentUser.role} />
+                </SidebarContent>
+                <SidebarFooter className="p-2 mt-auto">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="w-full justify-start gap-2 p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto">
+                        <Avatar className="h-8 w-8">
+                        <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name || 'User'} />
+                        <AvatarFallback>{currentUser.name ? currentUser.name.substring(0,1).toUpperCase() : currentUser.username.substring(0,1).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <div className="group-data-[collapsible=icon]:hidden flex flex-col items-start">
+                        <span className="text-sm font-medium truncate max-w-[120px]">{currentUser.name || currentUser.username}</span>
+                        <span className="text-xs text-muted-foreground truncate max-w-[120px]">{currentUser.email}</span>
+                        </div>
+                    </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56 mb-2 ml-2" side="top" align="start">
+                    <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuGroup>
+                        <DropdownMenuItem disabled>
+                        <UserCircle className="mr-2 h-4 w-4" />
+                        <span>Perfil</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem disabled>
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Configuración</span>
+                        </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Cerrar sesión</span>
+                    </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+                </SidebarFooter>
+            </Sidebar>
+            <SidebarRail />
+            <SidebarInset className="flex flex-col">
+                <AppHeader />
+                <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background pb-20 md:pb-8">
+                {children}
+                </main>
+                <FooterNavigation role={currentUser.role} />
+            </SidebarInset>
+        </SidebarProvider>
+    );
+}
+
+
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { currentUser, isLoading } = useSession();
   const pathname = usePathname();
-  
+  const router = useRouter();
+
   const isPublicRoute = pathname === '/' || pathname === '/login' || pathname === '/register' || pathname.startsWith('/menu/');
 
-  // Si la ruta es pública, la renderizamos directamente dentro de una estructura mínima
-  // que incluye el header.
-  if (isPublicRoute) {
-    return (
-      <div className="flex flex-col min-h-svh">
-        <AppHeader />
-        <main className="flex-1 bg-background">{children}</main>
-      </div>
-    );
+  React.useEffect(() => {
+    if (!isLoading && !currentUser && !isPublicRoute) {
+        router.push('/login');
+    }
+  }, [isLoading, currentUser, isPublicRoute, pathname, router]);
+
+
+  if (isLoading) {
+    return <SimpleLoader message="Verificando sesión..." />;
+  }
+  
+  if(isPublicRoute){
+      return (
+        <div className="flex flex-col min-h-svh">
+            <AppHeader />
+            <main className="flex-1 bg-background">{children}</main>
+        </div>
+      )
   }
 
-  // Para el resto de las rutas (que son protegidas), usamos el AuthenticatedRouteHandler
-  // que se encargará de mostrar el cargador, redirigir si es necesario, o mostrar
-  // el contenido protegido dentro del layout del panel.
-  return (
-    <AuthenticatedRouteHandler>
-      {children}
-    </AuthenticatedRouteHandler>
-  );
+  if(!currentUser){
+      return <SimpleLoader message="Redirigiendo a inicio de sesión..." />;
+  }
+
+  return <ProtectedLayout>{children}</ProtectedLayout>;
 }

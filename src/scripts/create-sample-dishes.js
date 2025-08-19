@@ -1,3 +1,4 @@
+
 // src/scripts/create-sample-dishes.js
 
 // Este script se ejecuta con Node.js para poblar la base de datos con platos de ejemplo.
