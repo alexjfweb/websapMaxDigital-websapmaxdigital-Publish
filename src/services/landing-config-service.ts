@@ -137,34 +137,40 @@ class LandingConfigService {
     return doc(db, CONFIG_COLLECTION_NAME, MAIN_CONFIG_DOC_ID);
   }
 
-  async getLandingConfig(): Promise<LandingConfig | null> {
+  async getLandingConfig(): Promise<LandingConfig> {
     try {
         const docSnap = await getDoc(this.getConfigDocRef());
-        if (!docSnap.exists()) {
-          console.warn("Landing config not found.");
-          return null;
-        }
-        const dbData = docSnap.data();
         const defaultConfig = getLandingDefaultConfig();
         
-        // CAMBIO: Fusión directa priorizando datos de BD
+        if (!docSnap.exists()) {
+          console.warn("Landing config not found, using defaults.");
+          return defaultConfig;
+        }
+        
+        const dbData = docSnap.data();
+        
+        // Fusión directa priorizando datos de BD
         const finalConfig = {
             ...defaultConfig,
             ...dbData,
             id: docSnap.id,
         };
         
-        // CAMBIO: Siempre usar secciones de BD si existen
+        // Siempre usar secciones de BD si existen
         if (dbData.sections) {
             finalConfig.sections = dbData.sections;
         }
+        
+        console.log('Service debug - sections from DB:', dbData.sections?.length || 0);
+        console.log('Service debug - final sections:', finalConfig.sections?.length || 0);
 
         return finalConfig;
     } catch(error: any) {
         console.error("Error getting landing config:", error.message);
-        throw new Error("No se pudo obtener la configuración de la página de inicio.");
+        // CAMBIO: En lugar de throw, devolver config por defecto
+        return getLandingDefaultConfig();
     }
-  }
+}
 
   async updateLandingConfig(
     configUpdate: Partial<LandingConfig>,

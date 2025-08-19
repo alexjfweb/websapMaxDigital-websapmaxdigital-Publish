@@ -10,7 +10,7 @@ import useSWR from 'swr';
 const SWR_KEY = 'public-landing-config';
 
 // The fetcher function for SWR
-const fetcher = (): Promise<LandingConfig | null> => landingConfigService.getLandingConfig();
+const fetcher = (): Promise<LandingConfig> => landingConfigService.getLandingConfig();
 
 export function useDefaultConfig(): LandingConfig {
     return landingConfigService.getDefaultConfig();
@@ -21,23 +21,26 @@ export function useDefaultConfig(): LandingConfig {
  * It fetches data from Firestore and provides loading and error states.
  */
 export function usePublicLandingConfig() {
-  const { data, error, isLoading, isValidating } = useSWR<LandingConfig | null>(SWR_KEY, fetcher, {
-      revalidateOnFocus: false, // Public content doesn't need frequent revalidation
-      shouldRetryOnError: false, // Desactivar reintentos automáticos para manejar el fallback
+  const { data, error, isLoading, isValidating } = useSWR<LandingConfig>(SWR_KEY, fetcher, {
+      revalidateOnFocus: false,
+      shouldRetryOnError: false,
   });
 
   const defaultConfig = landingConfigService.getDefaultConfig();
 
-  // Determinar el estado de carga final. Estará cargando si SWR está en su ciclo inicial.
-  const finalIsLoading = isLoading;
-
-  // Si hay un error, o si terminó de cargar y no hay datos, usar la config por defecto.
-  // De lo contrario, usar los datos obtenidos.
-  const config = error || (!isLoading && !data) ? defaultConfig : (data || defaultConfig);
+  // CAMBIO: Solo usar defaultConfig si hay error real, no si data es null
+  const config = error ? defaultConfig : (data || defaultConfig);
+  
+  console.log('Hook debug:', { 
+    hasError: !!error, 
+    hasData: !!data, 
+    isLoading, 
+    configSource: error ? 'default' : (data ? 'database' : 'default')
+  });
   
   return {
     config,
-    isLoading: finalIsLoading,
+    isLoading,
     error,
   };
 }
