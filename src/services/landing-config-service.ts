@@ -1,7 +1,7 @@
 
-import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auditService } from './audit-service';
+import { getDb } from '@/lib/firebase-lazy'; // Usar lazy loading
 
 // Basic structure for a subsection, like a feature card
 export interface LandingSubsection {
@@ -132,14 +132,15 @@ export const getLandingDefaultConfig = (): LandingConfig => ({
 
 
 class LandingConfigService {
-  private getConfigDocRef() {
-    if (!db) throw new Error("La base de datos no está inicializada.");
+  private async getConfigDocRef() {
+    const db = await getDb();
     return doc(db, CONFIG_COLLECTION_NAME, MAIN_CONFIG_DOC_ID);
   }
 
   async getLandingConfig(): Promise<LandingConfig> {
     try {
-        const docSnap = await getDoc(this.getConfigDocRef());
+        const docRef = await this.getConfigDocRef();
+        const docSnap = await getDoc(docRef);
         const defaultConfig = getLandingDefaultConfig();
         
         if (!docSnap.exists()) {
@@ -160,14 +161,11 @@ class LandingConfigService {
         if (dbData.sections) {
             finalConfig.sections = dbData.sections;
         }
-        
-        console.log('Service debug - sections from DB:', dbData.sections?.length || 0);
-        console.log('Service debug - final sections:', finalConfig.sections?.length || 0);
 
         return finalConfig;
     } catch(error: any) {
         console.error("Error getting landing config:", error.message);
-        // CAMBIO: En lugar de throw, devolver config por defecto
+        // En caso de error, devolver la configuración por defecto para que la página no se rompa
         return getLandingDefaultConfig();
     }
 }
@@ -178,8 +176,9 @@ class LandingConfigService {
     userEmail: string
   ): Promise<void> {
     const originalDoc = await this.getLandingConfig().catch(() => getLandingDefaultConfig());
+    const docRef = await this.getConfigDocRef();
     
-    await setDoc(this.getConfigDocRef(), { 
+    await setDoc(docRef, { 
       ...configUpdate,
       updatedAt: serverTimestamp() 
     }, { merge: true });
@@ -200,7 +199,8 @@ class LandingConfigService {
         userEmail: string
     ): Promise<void> {
         const { id, ...dataToSave } = configData;
-        await setDoc(this.getConfigDocRef(), {
+        const docRef = await this.getConfigDocRef();
+        await setDoc(docRef, {
             ...dataToSave,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),

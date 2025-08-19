@@ -1,5 +1,4 @@
 
-import { db } from '@/lib/firebase';
 import {
   collection,
   doc,
@@ -16,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import type { LandingPlan, CreatePlanRequest, UpdatePlanRequest, PlanAuditLog } from '@/types/plans';
 import { auditService } from './audit-service';
+import { getDb } from '@/lib/firebase-lazy'; // Usar lazy loading
 
 // --- HELPER FUNCTIONS ---
 const generateSlug = (name: string): string => {
@@ -89,13 +89,18 @@ class LandingPlansService {
   private readonly COLLECTION_NAME = 'landingPlans';
   private readonly AUDIT_COLLECTION = 'planAuditLogs';
   
-  private getPlansCollection() {
-    if (!db) throw new Error("La base de datos no está inicializada.");
+  private async getPlansCollection() {
+    const db = await getDb();
     return collection(db, this.COLLECTION_NAME);
   }
 
+  private async getAuditCollection() {
+      const db = await getDb();
+      return collection(db, this.AUDIT_COLLECTION);
+  }
+
   private async validateSlug(slug: string, excludeId?: string): Promise<boolean> {
-    const coll = this.getPlansCollection();
+    const coll = await this.getPlansCollection();
     const q = query(coll, where('slug', '==', slug));
     const snapshot = await getDocs(q);
     if (excludeId) {
@@ -106,10 +111,7 @@ class LandingPlansService {
 
   // Obtiene TODOS los planes, para el panel de admin
   async getPlans(): Promise<LandingPlan[]> {
-    const coll = this.getPlansCollection();
-    // **CORRECCIÓN:** Se simplifica la consulta para ordenar solo por 'order'.
-    // Ordenar por múltiples campos requiere un índice compuesto, que puede no existir.
-    // El ordenamiento secundario se hará en el cliente.
+    const coll = await this.getPlansCollection();
     const q = query(coll, orderBy('order', 'asc'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => serializePlan(doc.id, doc.data()));
@@ -117,18 +119,18 @@ class LandingPlansService {
 
   // Obtiene solo los planes públicos y activos para la landing page
   async getPublicPlans(): Promise<LandingPlan[]> {
-    const coll = this.getPlansCollection();
+    const coll = await this.getPlansCollection();
     const q = query(coll, where('isActive', '==', true), where('isPublic', '==', true));
     
     const snapshot = await getDocs(q);
     
-    // El ordenamiento se hace en el cliente para evitar índices compuestos
     return snapshot.docs.map(doc => serializePlan(doc.id, doc.data()));
   }
   
   async getPlanById(id: string): Promise<LandingPlan | null> {
     if (!id) return null;
-    const docRef = doc(this.getPlansCollection(), id);
+    const coll = await this.getPlansCollection();
+    const docRef = doc(coll, id);
     const docSnap = await getDoc(docRef);
     return docSnap.exists() ? serializePlan(docSnap.id, docSnap.data()) : null;
   }
@@ -139,7 +141,7 @@ class LandingPlansService {
       slug = `${slug}-${Date.now()}`;
     }
 
-    const coll = this.getPlansCollection();
+    const coll = await this.getPlansCollection();
     
     const newPlanData = {
       ...data,
@@ -170,7 +172,8 @@ class LandingPlansService {
   }
 
   async updatePlan(id: string, data: UpdatePlanRequest, userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<LandingPlan> {
-    const docRef = doc(this.getPlansCollection(), id);
+    const coll = await this.getPlansCollection();
+    const docRef = doc(coll, id);
     const originalDoc = await this.getPlanById(id);
     if (!originalDoc) throw new Error(`Plan with id ${id} not found`);
 
@@ -206,9 +209,12 @@ class LandingPlansService {
   }
 
   async reorderPlans(planIds: string[], userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<void> {
+    const db = await getDb();
     const batch = writeBatch(db);
+    const coll = await this.getPlansCollection();
+
     planIds.forEach((id, index) => {
-      const docRef = doc(this.getPlansCollection(), id);
+      const docRef = doc(coll, id);
       batch.update(docRef, { order: index, updatedAt: serverTimestamp() });
     });
     await batch.commit();
@@ -224,7 +230,7 @@ class LandingPlansService {
   }
   
   async getPlanAuditLogs(planId: string): Promise<PlanAuditLog[]> {
-    const coll = collection(db, this.AUDIT_COLLECTION);
+    const coll = await this.getAuditCollection();
     const q = query(coll, where('planId', '==', planId), orderBy('timestamp', 'desc'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => {
@@ -238,7 +244,9 @@ class LandingPlansService {
   }
 
   async rollbackPlan(planId: string, auditLogId: string, userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<void> {
-    const auditLogRef = doc(db, this.AUDIT_COLLECTION, auditLogId);
+    const db = await getDb();
+    const auditColl = await this.getAuditCollection();
+    const auditLogRef = doc(auditColl, auditLogId);
     const auditLogSnap = await getDoc(auditLogRef);
     if (!auditLogSnap.exists()) throw new Error("Audit log not found.");
     
@@ -247,7 +255,8 @@ class LandingPlansService {
       throw new Error("No previous data available to rollback to.");
     }
 
-    const planRef = doc(this.getPlansCollection(), planId);
+    const planColl = await this.getPlansCollection();
+    const planRef = doc(planColl, planId);
     await setDoc(planRef, { ...logData.previousData, updatedAt: serverTimestamp() }, { merge: true });
 
     await auditService.log({

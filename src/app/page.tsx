@@ -1,54 +1,37 @@
 "use client";
-import React from 'react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import React, { Suspense } from 'react';
+import LandingClient from './landing-client';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Componente de carga para la página de inicio
+function LandingPageSkeleton() {
+  return (
+    <main className="min-h-screen w-full flex flex-col items-center">
+      <section className="w-full py-20 flex flex-col items-center">
+        <Skeleton className="h-12 w-2/3 mb-4" />
+        <Skeleton className="h-6 w-1/2 mb-8" />
+        <Skeleton className="h-12 w-40 rounded-full" />
+      </section>
+      <section className="w-full py-16 container mx-auto">
+        <Skeleton className="h-8 w-1/3 mx-auto mb-4" />
+        <Skeleton className="h-5 w-2/3 mx-auto mb-12" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </section>
+    </main>
+  );
+}
+
 
 export default function Page() {
+  // Usamos Suspense para mostrar un esqueleto de carga mientras el componente
+  // cliente (y sus datos de Firebase) se cargan de forma diferida.
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-accent/10">
-      {/* Header básico sin Firebase */}
-      <header className="bg-white/80 backdrop-blur-lg sticky top-0 z-40 border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex justify-start lg:w-0 lg:flex-1">
-              <Link href="/" className="flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-primary">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
-                </svg>
-                <span className="text-2xl font-bold text-foreground">WebSapMax</span>
-              </Link>
-            </div>
-            <div className="hidden md:flex items-center justify-end md:flex-1 lg:w-0">
-              <Button asChild variant="ghost">
-                  <Link href="/login">Iniciar Sesión</Link>
-              </Button>
-              <Button asChild>
-                  <Link href="/register">Registrarse</Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Contenido principal estático */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
-        <div className="text-center">
-          <h1 className="text-4xl tracking-tight font-extrabold text-foreground sm:text-5xl md:text-6xl">
-            <span className="block">Bienvenido a</span>
-            <span className="block text-primary">WebSapMax Digital</span>
-          </h1>
-          <p className="mt-3 max-w-md mx-auto text-base text-muted-foreground sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
-            Una aplicación moderna construida con Next.js y Firebase, ahora sin errores de carga.
-          </p>
-          <div className="mt-5 max-w-md mx-auto sm:flex sm:justify-center md:mt-8">
-            <div className="rounded-md shadow">
-                <Button asChild size="lg">
-                    <Link href="/login">Comenzar</Link>
-                </Button>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
+    <Suspense fallback={<LandingPageSkeleton />}>
+      <LandingClient />
+    </Suspense>
   );
 }
