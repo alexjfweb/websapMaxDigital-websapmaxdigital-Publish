@@ -150,22 +150,20 @@ class LandingConfigService {
         
         const dbData = docSnap.data();
         
-        // Fusión directa priorizando datos de BD
+        // CORRECCIÓN: Usar los datos de la BD como base y rellenar con los por defecto si algo falta.
+        // Esto prioriza lo que el usuario guardó.
         const finalConfig = {
-            ...defaultConfig,
-            ...dbData,
+            ...defaultConfig, // Empezar con el por defecto
+            ...dbData,       // Sobrescribir con los datos de la BD
             id: docSnap.id,
+            seo: { ...defaultConfig.seo, ...(dbData.seo || {}) }, // Asegurar que SEO no se pierda
+            sections: dbData.sections || defaultConfig.sections, // Usar secciones de BD si existen
         };
         
-        // Siempre usar secciones de BD si existen
-        if (dbData.sections) {
-            finalConfig.sections = dbData.sections;
-        }
-
         return finalConfig;
+
     } catch(error: any) {
         console.error("Error getting landing config:", error.message);
-        // En caso de error, devolver la configuración por defecto para que la página no se rompa
         return getLandingDefaultConfig();
     }
 }
