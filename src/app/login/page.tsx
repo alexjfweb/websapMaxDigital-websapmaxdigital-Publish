@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,11 +18,9 @@ import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
 import { LogIn, Loader2 } from "lucide-react";
 import { useRouter } from 'next/navigation';
-import type { User } from "@/types";
-import { useSession } from "@/contexts/session-context";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { getFirebaseApp } from "@/lib/firebase";
 import React from "react";
+import { getFirebaseAuth } from "@/lib/firebase-lazy";
+import { signInWithEmailAndPassword } from "firebase/auth";
 
 const loginFormSchema = z.object({
   email: z.string().email({
@@ -36,7 +33,6 @@ const loginFormSchema = z.object({
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useSession(); // Aunque la sesión se manejará por onAuthStateChanged, lo mantenemos por si hay usos futuros.
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm<z.infer<typeof loginFormSchema>>({
@@ -50,25 +46,19 @@ export default function LoginPage() {
   async function onSubmit(values: z.infer<typeof loginFormSchema>) {
     setIsSubmitting(true);
     try {
-      const app = getFirebaseApp();
-      const auth = getAuth(app);
+      const auth = await getFirebaseAuth(); // Carga diferida de Firebase Auth
       
-      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-      const user = userCredential.user;
-
-      // El onAuthStateChanged en SessionProvider se encargará de
-      // obtener los datos de Firestore y actualizar el estado global.
-      // Aquí solo notificamos y redirigimos.
+      await signInWithEmailAndPassword(auth, values.email, values.password);
       
       toast({
         title: 'Inicio de sesión exitoso',
-        description: '¡Bienvenido de nuevo!',
+        description: '¡Bienvenido de nuevo! Redirigiendo...',
       });
       
-      // La redirección se manejará en SessionProvider basado en el rol.
-      // Pero como puede tardar un instante, iniciamos una redirección genérica.
-      // El SessionProvider lo corregirá si es necesario.
-      router.push("/admin/dashboard");
+      // La redirección se maneja en SessionProvider, que se activará
+      // con el cambio de estado de autenticación.
+      // Forzamos un refresco para asegurar que el contexto se actualice si es necesario.
+      router.refresh();
 
     } catch (error: any) {
       let errorMessage = 'Por favor, verifica tu correo electrónico y contraseña.';

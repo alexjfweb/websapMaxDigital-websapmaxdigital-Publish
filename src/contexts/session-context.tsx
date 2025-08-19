@@ -1,12 +1,13 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import type { User as FirebaseUserType } from 'firebase/auth'; // Renombramos para evitar conflictos
 import type { User } from '@/types';
 import { useRouter, usePathname } from 'next/navigation';
-import { getAuth, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { getFirebaseApp, db } from '@/lib/firebase';
-import { doc, getDoc, Timestamp } from 'firebase/firestore';
-import { useToast } from "@/hooks/use-toast";
+import { getFirebaseAuth } from '@/lib/firebase-lazy'; // Usar lazy loading
+import { onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, doc, getDoc, Timestamp } from 'firebase/firestore';
+import { toast } from "@/hooks/use-toast";
 
 interface SessionContextType {
   currentUser: User | null;
@@ -25,7 +26,7 @@ export function useSession() {
   return context;
 }
 
-const serializeUser = (firebaseUser: FirebaseUser, firestoreData: any): User => {
+const serializeUser = (firebaseUser: FirebaseUserType, firestoreData: any): User => {
     const data = { id: firebaseUser.uid, ...firestoreData };
     for (const key in data) {
         const value = data[key];
@@ -38,50 +39,70 @@ const serializeUser = (firebaseUser: FirebaseUser, firestoreData: any): User => 
     return data as User;
 };
 
-
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
-  const { toast } = useToast();
 
   useEffect(() => {
-    const auth = getAuth(getFirebaseApp());
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    let unsubscribe: (() => void) | null = null;
+    
+    // Función asíncrona para inicializar la autenticación
+    const initAuthListener = async () => {
       try {
-        if (firebaseUser) {
-          const userDocRef = doc(db, "users", firebaseUser.uid);
-          const userDocSnap = await getDoc(userDocRef);
-          if (userDocSnap.exists()) {
-            const user = serializeUser(firebaseUser, userDocSnap.data());
-            setCurrentUser(user);
-          } else {
-            console.warn(`No user document found for UID: ${firebaseUser.uid}. Logging out.`);
-            await auth.signOut();
-            setCurrentUser(null);
-          }
-        } else {
-          setCurrentUser(null);
-        }
-      } catch (error) {
-        console.error("Error during auth state change:", error);
-        setCurrentUser(null);
-      } finally {
-        // ✅ ESTA ES LA CORRECCIÓN CLAVE:
-        // Asegura que el estado de carga se desactive SIEMPRE.
-        setIsLoading(false);
-      }
-    });
+        const auth = await getFirebaseAuth(); // Obtener auth de forma lazy
+        const { getDb } = await import('@/lib/firebase-lazy');
+        const db = await getDb();
 
-    return () => unsubscribe();
-  }, []);
+        unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+          try {
+            if (firebaseUser) {
+              const userDocRef = doc(db, "users", firebaseUser.uid);
+              const userDocSnap = await getDoc(userDocRef);
+              if (userDocSnap.exists()) {
+                const user = serializeUser(firebaseUser, userDocSnap.data());
+                setCurrentUser(user);
+              } else {
+                console.warn(`No user document found for UID: ${firebaseUser.uid}. Logging out.`);
+                await auth.signOut();
+                setCurrentUser(null);
+              }
+            } else {
+              setCurrentUser(null);
+            }
+          } catch (error) {
+            console.error("Error during auth state change:", error);
+            setCurrentUser(null);
+          } finally {
+            setIsLoading(false);
+          }
+        });
+      } catch (error) {
+        console.error("Failed to initialize Firebase Auth listener:", error);
+        setIsLoading(false); // Detener la carga si Firebase no se puede inicializar
+      }
+    };
+    
+    // Iniciar la escucha solo si no estamos en la página de inicio
+    if (pathname !== '/') {
+        initAuthListener();
+    } else {
+        setIsLoading(false); // Para la página de inicio, no esperamos a Firebase
+    }
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [pathname]); // Depende del pathname para re-evaluar si cargar Firebase
 
   useEffect(() => {
     if (isLoading) return;
 
     const isAuthPage = pathname === '/login' || pathname === '/register';
-    const isPublicRoute = isAuthPage || pathname === '/' || pathname.startsWith('/menu/');
+    const isPublicRoute = isAuthPage || pathname === '/';
     
     if (!currentUser && !isPublicRoute) {
       router.push('/login');
@@ -92,8 +113,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [currentUser, isLoading, pathname, router]);
 
   const logout = useCallback(async () => {
-    const auth = getAuth(getFirebaseApp());
     try {
+        const auth = await getFirebaseAuth();
         await auth.signOut();
         setCurrentUser(null);
         router.push('/login');
@@ -101,7 +122,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     } catch (error) {
         toast({ title: 'Error', description: 'No se pudo cerrar la sesión.', variant: 'destructive' });
     }
-  }, [router, toast]);
+  }, [router]);
 
   const login = (user: User) => {
     setCurrentUser(user);

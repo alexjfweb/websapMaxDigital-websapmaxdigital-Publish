@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,9 +18,10 @@ import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
 import { UserPlus, Loader2, Check, X } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createUserWithEmailAndPassword, getAuth, User as FirebaseUser, deleteUser } from "firebase/auth";
-import { getFirebaseApp, db } from "@/lib/firebase"; 
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { User as FirebaseUser, deleteUser } from "firebase/auth";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { getFirebaseAuth, getDb } from "@/lib/firebase-lazy"; // Usar lazy loading
+import { doc, setDoc } from "firebase/firestore";
 import type { UserRole, User, Company } from "@/types";
 import React, { Suspense, useState, useEffect } from "react";
 import { companyService } from "@/services/company-service";
@@ -29,7 +29,6 @@ import ErrorModal from "@/components/ui/error-modal";
 
 const SUPERADMIN_EMAIL = 'alexjfweb@gmail.com';
 
-// Enhanced Zod schema for stronger validation
 const registerFormSchema = z.object({
   name: z.string().min(2, { message: "El nombre es obligatorio." }),
   lastName: z.string().min(2, { message: "El apellido es obligatorio." }),
@@ -75,25 +74,18 @@ const PasswordValidationIndicator = ({ password }: { password?: string }) => {
     );
 };
 
-
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const planSlug = searchParams.get('plan'); // Usamos slug para consistencia
+  const planSlug = searchParams.get('plan');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorState, setErrorState] = useState<{ title: string; message: string } | null>(null);
 
   const form = useForm<z.infer<typeof registerFormSchema>>({
     resolver: zodResolver(registerFormSchema),
-    mode: "onTouched", // Validate on blur
+    mode: "onTouched",
     defaultValues: {
-      name: "",
-      lastName: "",
-      businessName: "",
-      ruc: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
+      name: "", lastName: "", businessName: "", ruc: "", email: "", password: "", confirmPassword: "",
     },
   });
 
@@ -111,11 +103,12 @@ function RegisterForm() {
   async function onSubmit(values: z.infer<typeof registerFormSchema>) {
     setIsSubmitting(true);
     setErrorState(null);
-    const app = getFirebaseApp();
-    const auth = getAuth(app);
     let firebaseUser: FirebaseUser | null = null;
     
     try {
+      const auth = await getFirebaseAuth(); // Lazy load
+      const db = await getDb(); // Lazy load
+
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       firebaseUser = userCredential.user;
 
@@ -128,14 +121,11 @@ function RegisterForm() {
         }
         
         const companyData: Omit<Company, 'id' | 'createdAt' | 'updatedAt'> = {
-            name: values.businessName,
-            email: values.email,
-            ruc: values.ruc,
-            status: 'active',
+            name: values.businessName, email: values.email, ruc: values.ruc, status: 'active',
             registrationDate: new Date().toISOString(),
-            planId: planSlug || 'plan-gratuito', // Usamos el slug del plan
+            planId: planSlug || 'plan-gratuito',
             subscriptionStatus: planSlug ? 'pending_payment' : 'trialing',
-            trialEndsAt: planSlug ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 días de prueba si no hay plan
+            trialEndsAt: planSlug ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
             location: '',
         };
         
@@ -144,26 +134,15 @@ function RegisterForm() {
       }
       
       const userData: Omit<User, 'id'> = {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email || values.email,
-        username: values.email.split('@')[0],
-        firstName: values.name,
-        lastName: values.lastName,
-        role: role,
-        companyId: companyId || undefined,
-        businessName: values.businessName || '',
-        status: 'active',
-        registrationDate: new Date().toISOString(),
-        isActive: true,
-        avatarUrl: `https://placehold.co/100x100.png?text=${values.name.charAt(0)}`,
+        uid: firebaseUser.uid, email: firebaseUser.email || values.email, username: values.email.split('@')[0],
+        firstName: values.name, lastName: values.lastName, role: role, companyId: companyId || undefined,
+        businessName: values.businessName || '', status: 'active', registrationDate: new Date().toISOString(),
+        isActive: true, avatarUrl: `https://placehold.co/100x100.png?text=${values.name.charAt(0)}`,
       };
       
       await setDoc(doc(db, "users", firebaseUser.uid), userData);
       
-      toast({
-        title: '¡Registro Exitoso!',
-        description: `Serás redirigido para continuar.`,
-      });
+      toast({ title: '¡Registro Exitoso!', description: `Serás redirigido para continuar.` });
 
       if (planSlug) {
           router.push(`/admin/checkout?plan=${planSlug}`);
@@ -175,25 +154,17 @@ function RegisterForm() {
       console.error("Error detallado en el registro:", error);
       
       if (firebaseUser) {
-        try {
-          await deleteUser(firebaseUser);
-          console.log("↩️ Usuario de Auth revertido exitosamente.");
-        } catch (revertError) {
-          console.error("🔴 Error CRÍTICO al revertir la creación del usuario de Auth:", revertError);
-        }
+        try { await deleteUser(firebaseUser); console.log("↩️ Usuario de Auth revertido exitosamente."); } 
+        catch (revertError) { console.error("🔴 Error CRÍTICO al revertir la creación del usuario de Auth:", revertError); }
       }
 
       const err = error as { code?: string; message?: string };
       let errorMessage = err.message || 'Hubo un error al crear la cuenta.';
-      
       if (err.code === 'auth/email-already-in-use') {
-        errorMessage = "El correo electrónico que ingresaste ya está en uso. Por favor, intenta con otro o inicia sesión si ya tienes una cuenta.";
+        errorMessage = "El correo electrónico que ingresaste ya está en uso.";
       }
       
-      setErrorState({
-            title: "Error de Registro",
-            message: errorMessage,
-      });
+      setErrorState({ title: "Error de Registro", message: errorMessage });
       
     } finally {
       setIsSubmitting(false);
@@ -202,12 +173,7 @@ function RegisterForm() {
 
   return (
     <>
-    <ErrorModal
-        isOpen={!!errorState}
-        title={errorState?.title || ""}
-        message={errorState?.message || ""}
-        onClose={() => setErrorState(null)}
-    />
+    <ErrorModal isOpen={!!errorState} title={errorState?.title || ""} message={errorState?.message || ""} onClose={() => setErrorState(null)} />
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background to-accent/10 p-4">
       <Card className="w-full max-w-lg shadow-2xl">
          <CardHeader className="text-center">
@@ -223,122 +189,26 @@ function RegisterForm() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nombre</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ej. Juan" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="lastName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Apellido</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ej. Pérez" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Ej. Juan" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Apellido</FormLabel><FormControl><Input placeholder="Ej. Pérez" {...field} /></FormControl><FormMessage /></FormItem>)} />
               </div>
-
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Correo Electrónico</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="su@correo.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
+              <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Correo Electrónico</FormLabel><FormControl><Input type="email" placeholder="su@correo.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
               {!isSuperAdminFlow && (
                  <>
-                  <FormField
-                      control={form.control}
-                      name="businessName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Nombre del Negocio</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Ej. Restaurante Sabor Único" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="ruc"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>RUC / ID Fiscal</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Ej. 123456789-0" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <FormField control={form.control} name="businessName" render={({ field }) => (<FormItem><FormLabel>Nombre del Negocio</FormLabel><FormControl><Input placeholder="Ej. Restaurante Sabor Único" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="ruc" render={({ field }) => (<FormItem><FormLabel>RUC / ID Fiscal</FormLabel><FormControl><Input placeholder="Ej. 123456789-0" {...field} /></FormControl><FormMessage /></FormItem>)} />
                  </>
               )}
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Contraseña</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
-                      </FormControl>
-                      <PasswordValidationIndicator password={passwordValue} />
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Confirmar Contraseña</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <FormField control={form.control} name="password" render={({ field }) => (<FormItem><FormLabel>Contraseña</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><PasswordValidationIndicator password={passwordValue} /><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="confirmPassword" render={({ field }) => (<FormItem><FormLabel>Confirmar Contraseña</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>)} />
               </div>
-              <Button type="submit" className="w-full text-lg py-3" disabled={isSubmitting}>
-                {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin"/> : <UserPlus className="mr-2 h-5 w-5" />}
-                {isSubmitting ? 'Registrando...' : 'Registrar Cuenta'}
-              </Button>
+              <Button type="submit" className="w-full text-lg py-3" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin"/> : <UserPlus className="mr-2 h-5 w-5" />}{isSubmitting ? 'Registrando...' : 'Registrar Cuenta'}</Button>
             </form>
           </Form>
         </CardContent>
         <CardFooter className="flex justify-center">
-          <p className="text-sm text-muted-foreground">
-            ¿Ya tienes una cuenta?{" "}
-            <Link href="/login" className="font-medium text-primary hover:underline">
-              Iniciar sesión
-            </Link>
-          </p>
+          <p className="text-sm text-muted-foreground">¿Ya tienes una cuenta? <Link href="/login" className="font-medium text-primary hover:underline">Iniciar sesión</Link></p>
         </CardFooter>
       </Card>
     </div>
