@@ -8,9 +8,12 @@ import React, { useState, useEffect } from 'react';
 
 export default function SuperAdminDashboardPage() {
     const [isClient, setIsClient] = useState(false);
+    const [lastBackupDate, setLastBackupDate] = useState("");
 
     useEffect(() => {
       setIsClient(true);
+      // CORRECCIÓN: Generar la fecha solo en el cliente para evitar mismatch
+      setLastBackupDate(new Date().toLocaleDateString()); 
     }, []);
 
   // Mock data for dashboard widgets
@@ -19,7 +22,6 @@ export default function SuperAdminDashboardPage() {
     totalAdmins: 25,
     totalEmployees: 100,
     systemHealthStatus: "Bueno", // Texto traducido directamente
-    lastBackup: "2024-07-30 02:00 AM", // This would typically be dynamic
     criticalLogs: 3,
   };
   
@@ -56,7 +58,7 @@ export default function SuperAdminDashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">Respaldo del sistema</div>
-              <p className="text-xs text-muted-foreground">Último respaldo: {mockSaStats.lastBackup}</p>
+              <p className="text-xs text-muted-foreground">Último respaldo: {lastBackupDate}</p>
             </CardContent>
           </Card>
         </Link>

@@ -42,8 +42,13 @@ export default function SuperAdminBackupPage() {
   const [restoreSelectedId, setRestoreSelectedId] = useState<string | null>(null);
   const { toast } = useToast();
 
+  const [lastBackupDate, setLastBackupDate] = useState("2024-07-30 02:00 AM");
+
   useEffect(() => {
     setIsMounted(true);
+    // Para evitar hydration mismatch, la fecha dinámica se puede setear aquí,
+    // aunque para este caso, la fecha mock es estática.
+    // setLastBackupDate(new Date().toLocaleString());
   }, []);
 
   if (!isMounted) {
