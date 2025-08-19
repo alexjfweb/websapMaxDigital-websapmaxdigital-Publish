@@ -73,9 +73,9 @@ export default function LandingClient() {
     refetch: retryPlans 
   } = useLandingPlans(true);
 
-  // CORRECCIÓN: Si la configuración principal o la de SEO no está lista, muestra el esqueleto.
+  // ✅ CORRECCIÓN: Si la configuración principal o la de SEO no está lista, muestra el esqueleto.
   // Esto previene el error "cannot read properties of undefined".
-  if (isLoadingConfig || isLoadingPlans || !config || !config.seo) {
+  if (isLoadingConfig || !config || !config.seo) {
     return <LandingSkeleton />;
   }
   
@@ -125,7 +125,7 @@ export default function LandingClient() {
           </Button>
         </motion.section>
 
-        {config.sections.filter(s => s.isActive).map(section => (
+        {config.sections && Array.isArray(config.sections) && config.sections.filter(s => s.isActive).map(section => (
           <motion.section
             key={section.id}
             id={section.id}
@@ -168,7 +168,9 @@ export default function LandingClient() {
         ))}
         
         <div id="planes">
-          {errorPlans ? (
+          {isLoadingPlans ? (
+            <LandingSkeleton />
+          ) : errorPlans ? (
              <ErrorDisplay title="Error al Cargar Planes" message={errorPlans} onRetry={retryPlans} />
           ) : (
             <SubscriptionPlansSection plans={plans} />

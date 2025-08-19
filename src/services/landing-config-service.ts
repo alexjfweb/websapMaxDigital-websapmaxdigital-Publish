@@ -152,15 +152,16 @@ class LandingConfigService {
       
       const dbData = docSnap.data();
       
-      // ✅ CORRECCIÓN: Realizar una fusión profunda y segura, garantizando que `seo` siempre exista.
+      // ✅ CORRECCIÓN: Realizar una fusión profunda y segura, garantizando que `seo` y `sections` siempre existan.
       const finalConfig = {
-          ...defaultConfig, // Empezar con la estructura por defecto completa.
-          ...dbData,       // Sobrescribir con los datos de la base de datos.
+          ...defaultConfig,
+          ...dbData,
           id: docSnap.id,
-          // Asegurar que `seo` sea un objeto, fusionando el `seo` de la DB sobre el por defecto.
-          seo: { ...defaultConfig.seo, ...(dbData.seo || {}) },
-          // Asegurar que `sections` sea un array.
-          sections: dbData.sections || defaultConfig.sections,
+          seo: { 
+              ...defaultConfig.seo, 
+              ...(dbData.seo || {}) 
+          },
+          sections: (dbData.sections && Array.isArray(dbData.sections)) ? dbData.sections : defaultConfig.sections,
       };
       
       return finalConfig;

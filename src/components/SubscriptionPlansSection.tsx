@@ -61,7 +61,8 @@ export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSec
 
   // ✅ CORRECCIÓN: Ordenar los planes en el cliente por el campo 'order'.
   const sortedPlans = React.useMemo(() => {
-    return [...plans].sort((a, b) => a.order - b.order);
+    if (!Array.isArray(plans)) return [];
+    return [...plans].sort((a, b) => (a.order || 99) - (b.order || 99));
   }, [plans]);
 
   return (
