@@ -117,6 +117,10 @@ export default function LandingPublicPage() {
   };
 
   const handleFileSelectionChange = (subsectionId: string, file: File | null) => {
+    if (!subsectionId) {
+        toast({ title: "Error", description: "ID de la subsección no definido. Guarda los cambios antes de subir la imagen.", variant: "destructive"});
+        return;
+    }
     setSubsectionFiles(prev => ({ ...prev, [subsectionId]: file }));
   };
   
@@ -124,6 +128,11 @@ export default function LandingPublicPage() {
       if (!formData) return;
   
       const subsectionId = formData.sections[sectionIndex].subsections![subIndex].id;
+      if (!subsectionId) {
+          toast({ title: "Error", description: "ID de la subsección no encontrado. Guarda la sección antes de subir la imagen.", variant: "destructive"});
+          return;
+      }
+      
       const file = subsectionFiles[subsectionId];
   
       if (!file) {
@@ -138,7 +147,6 @@ export default function LandingPublicPage() {
           const imageUrl = await storageService.compressAndUploadFile(file, `landing-subsections/${subsectionId}`);
           
           if (imageUrl) {
-              // ✅ CORRECCIÓN: Actualizar el estado del formulario con la nueva URL
               updateSubsection(sectionIndex, subIndex, 'imageUrl', imageUrl);
               setSubsectionFiles(prev => ({...prev, [subsectionId]: null}));
               toast({ title: "Imagen subida", description: "La imagen se ha subido y actualizado correctamente." });
