@@ -22,25 +22,29 @@ export function useDefaultConfig(): LandingConfig {
  */
 export function usePublicLandingConfig() {
   const { data, error, isLoading, isValidating } = useSWR<LandingConfig>(SWR_KEY, fetcher, {
-      revalidateOnFocus: false,
+      revalidateOnFocus: false, // Prevents re-fetching on window focus, can be noisy
       shouldRetryOnError: false,
   });
 
   const defaultConfig = landingConfigService.getDefaultConfig();
 
-  // CAMBIO: Solo usar defaultConfig si hay error real, no si data es null
-  const config = error ? defaultConfig : (data || defaultConfig);
-  
+  // CORRECCIÓN DEFINITIVA: 
+  // 1. Mantenemos el `data` existente si `isValidating` (revalidando en segundo plano).
+  // 2. Solo usamos `defaultConfig` si hay un `error` o si la carga inicial está ocurriendo y aún no hay `data`.
+  const config = data || defaultConfig;
+  const finalIsLoading = isLoading && !data; // Solo está "cargando" la primera vez.
+
   console.log('Hook debug:', { 
     hasError: !!error, 
     hasData: !!data, 
-    isLoading, 
-    configSource: error ? 'default' : (data ? 'database' : 'default')
+    isLoading: finalIsLoading,
+    isRevalidating: isValidating,
+    configSource: data ? 'database' : 'default'
   });
   
   return {
     config,
-    isLoading,
+    isLoading: finalIsLoading,
     error,
   };
 }
