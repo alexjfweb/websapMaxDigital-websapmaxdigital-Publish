@@ -156,17 +156,18 @@ export default function LandingPublicPage() {
   
   const updateSubsection = (sectionIndex: number, subIndex: number, field: string, value: any) => {
     setFormData(prev => {
-      if (!prev) return null;
-      const newSections = [...prev.sections];
-      const targetSection = { ...newSections[sectionIndex] };
-      const newSubsections = [...(targetSection.subsections || [])];
-      
-      newSubsections[subIndex] = { ...newSubsections[subIndex], [field]: value };
-      
-      targetSection.subsections = newSubsections;
-      newSections[sectionIndex] = targetSection;
-      
-      return { ...prev, sections: newSections };
+        if (!prev) return null;
+        
+        const newSections = JSON.parse(JSON.stringify(prev.sections)); // Deep copy
+        
+        if (newSections[sectionIndex] && newSections[sectionIndex].subsections && newSections[sectionIndex].subsections[subIndex]) {
+            newSections[sectionIndex].subsections[subIndex][field] = value;
+        }
+
+        return {
+            ...prev,
+            sections: newSections,
+        };
     });
   };
 
