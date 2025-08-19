@@ -222,19 +222,18 @@ export default function LandingClient() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
                   {section.subsections.map(sub => (
                     <Card key={sub.id} className="text-left bg-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out hover:scale-105">
-                      {sub.imageUrl && (
-                        <CardHeader className="p-0">
-                          <Image 
-                            src={sub.imageUrl} 
-                            alt={sub.title} 
-                            width={400}
-                            height={300}
-                            className="w-full h-auto object-cover rounded-t-lg" 
-                            loading="lazy"
-                            data-ai-hint="feature icon"
-                          />
-                        </CardHeader>
-                      )}
+                      <CardHeader className="p-0">
+                          <div className="relative aspect-video w-full">
+                              <Image 
+                                  src={sub.imageUrl || "https://placehold.co/400x300.png"} 
+                                  alt={sub.title || 'Característica'} 
+                                  fill
+                                  className="object-cover rounded-t-lg"
+                                  loading="lazy"
+                                  data-ai-hint="feature icon"
+                              />
+                          </div>
+                      </CardHeader>
                       <CardContent className="p-6">
                         <CardTitle className="text-xl mb-2 text-gray-800">{sub.title}</CardTitle>
                         <p className="text-gray-600">{sub.content}</p>
