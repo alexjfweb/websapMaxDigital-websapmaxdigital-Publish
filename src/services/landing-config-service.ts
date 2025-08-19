@@ -144,15 +144,40 @@ class LandingConfigService {
           console.warn("Landing config not found.");
           return null;
         }
-        const data = docSnap.data();
+        const dbData = docSnap.data();
         const defaultConfig = getLandingDefaultConfig();
         
+        // Función para fusionar profundamente dos objetos
+        const deepMerge = (target: any, source: any) => {
+          const output = { ...target };
+          if (target && typeof target === 'object' && source && typeof source === 'object') {
+            Object.keys(source).forEach(key => {
+              if (source[key] && typeof source[key] === 'object') {
+                if (!(key in target)) {
+                  Object.assign(output, { [key]: source[key] });
+                } else {
+                  output[key] = deepMerge(target[key], source[key]);
+                }
+              } else {
+                Object.assign(output, { [key]: source[key] });
+              }
+            });
+          }
+          return output;
+        };
+
+        // Combina la configuración por defecto con la de la base de datos,
+        // dando prioridad a los datos de la base de datos.
+        const finalConfig = deepMerge(defaultConfig, dbData);
+        
+        // Asegura que las secciones y subsecciones de la DB tengan prioridad si existen.
+        if (dbData.sections && dbData.sections.length > 0) {
+            finalConfig.sections = dbData.sections;
+        }
+
         return {
-          ...defaultConfig,
-          ...data,
+          ...finalConfig,
           id: docSnap.id,
-          sections: data.sections && data.sections.length > 0 ? data.sections : defaultConfig.sections,
-          seo: { ...defaultConfig.seo, ...data.seo },
         };
     } catch(error: any) {
         console.error("Error getting landing config:", error.message);
