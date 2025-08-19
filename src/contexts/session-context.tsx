@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
@@ -84,25 +85,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       }
     };
     
-    // Iniciar la escucha solo si no estamos en la página de inicio
-    if (pathname !== '/') {
-        initAuthListener();
-    } else {
-        setIsLoading(false); // Para la página de inicio, no esperamos a Firebase
-    }
+    // CORRECCIÓN: Se elimina la condición que evitaba la inicialización.
+    // El listener de autenticación se iniciará en todas las páginas,
+    // pero de forma asíncrona para no bloquear el renderizado.
+    initAuthListener();
 
     return () => {
       if (unsubscribe) {
         unsubscribe();
       }
     };
-  }, [pathname]); // Depende del pathname para re-evaluar si cargar Firebase
+  }, []); // Se elimina la dependencia del pathname para que se ejecute una sola vez.
 
   useEffect(() => {
     if (isLoading) return;
 
     const isAuthPage = pathname === '/login' || pathname === '/register';
-    const isPublicRoute = isAuthPage || pathname === '/';
+    const isPublicRoute = isAuthPage || pathname === '/' || pathname.startsWith('/menu/');
     
     if (!currentUser && !isPublicRoute) {
       router.push('/login');
