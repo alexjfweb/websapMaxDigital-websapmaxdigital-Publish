@@ -122,7 +122,6 @@ export default function LandingPublicPage() {
   };
   
   const handleSubsectionImageUpload = async (sectionIndex: number, subIndex: number) => {
-      console.log("¡¡¡CONFIRMADO: El código nuevo SÍ se está ejecutando!!!");
       if (!formData) return;
   
       const subsectionId = formData.sections[sectionIndex].subsections![subIndex].id;
@@ -137,7 +136,7 @@ export default function LandingPublicPage() {
       toast({ title: "Subiendo y optimizando imagen...", description: "Este proceso puede tardar unos segundos." });
   
       try {
-          const imageUrl = await storageService.compressAndUploadFile(file);
+          const imageUrl = await storageService.compressAndUploadFile(file, `landing-subsections/${subsectionId}`);
           
           if (imageUrl) {
               updateSubsection(sectionIndex, subIndex, 'imageUrl', imageUrl);

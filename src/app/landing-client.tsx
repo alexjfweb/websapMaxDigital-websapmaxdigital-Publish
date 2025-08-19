@@ -223,7 +223,7 @@ export default function LandingClient() {
                   {section.subsections.map(sub => (
                     <Card key={sub.id} className="text-left bg-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out hover:scale-105">
                       <CardHeader className="p-0">
-                          <div className="relative aspect-video w-full">
+                          <div className="relative aspect-[4/3] w-full">
                               <Image 
                                   src={sub.imageUrl || "https://placehold.co/400x300.png"} 
                                   alt={sub.title || 'Característica'} 
