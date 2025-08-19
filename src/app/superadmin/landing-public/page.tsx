@@ -45,7 +45,6 @@ export default function LandingPublicPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isError, setIsError] = useState(false);
   
-  // Estado dedicado para los archivos pendientes de subida, como se recomendó.
   const [subsectionFiles, setSubsectionFiles] = useState<Record<string, File | null>>({});
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
 
@@ -139,11 +138,12 @@ export default function LandingPublicPage() {
           const imageUrl = await storageService.compressAndUploadFile(file, `landing-subsections/${subsectionId}`);
           
           if (imageUrl) {
+              // ✅ CORRECCIÓN: Actualizar el estado del formulario con la nueva URL
               updateSubsection(sectionIndex, subIndex, 'imageUrl', imageUrl);
-              setSubsectionFiles(prev => ({...prev, [subsectionId]: null})); // Limpiar el archivo pendiente
+              setSubsectionFiles(prev => ({...prev, [subsectionId]: null}));
               toast({ title: "Imagen subida", description: "La imagen se ha subido y actualizado correctamente." });
           } else {
-              toast({ title: "Error de Subida", description: "La subida devolvió un resultado nulo. Revisa la consola para más detalles.", variant: "destructive"});
+              toast({ title: "Error de Subida", description: "La subida devolvió un resultado nulo.", variant: "destructive"});
           }
   
       } catch (error: any) {
@@ -327,5 +327,4 @@ export default function LandingPublicPage() {
     </div>
   );
 }
-
     

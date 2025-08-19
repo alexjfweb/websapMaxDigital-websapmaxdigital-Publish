@@ -231,6 +231,7 @@ export default function LandingClient() {
                                   className="object-cover rounded-t-lg"
                                   loading="lazy"
                                   data-ai-hint="feature icon"
+                                  unoptimized={!!sub.imageUrl}
                               />
                           </div>
                       </CardHeader>
