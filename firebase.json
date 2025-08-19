@@ -1,5 +1,8 @@
 
 {
+  "firestore": {
+    "rules": "firestore.rules"
+  },
   "hosting": {
     "source": ".",
     "ignore": [
@@ -16,8 +19,5 @@
         "function": "ssrapi"
       }
     ]
-  },
-  "firestore": {
-    "rules": "firestore.rules"
   }
 }
