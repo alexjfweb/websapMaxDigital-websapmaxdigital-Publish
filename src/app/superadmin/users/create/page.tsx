@@ -21,8 +21,8 @@ import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Save } from "lucide-react";
 import { useRouter } from 'next/navigation';
-import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
-import { getFirebaseApp, db } from "@/lib/firebase"; // Importar getFirebaseApp y db
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { getFirebaseAuth, getDb } from "@/lib/firebase-lazy"; // Usar lazy loading
 import { doc, setDoc } from "firebase/firestore"; // Importar doc y setDoc
 import type { User, UserRole } from "@/types";
 
@@ -55,8 +55,8 @@ export default function SuperAdminCreateUserPage() {
 
   async function onSubmit(values: z.infer<typeof createUserFormSchema>) {
     try {
-      const app = getFirebaseApp(); // Obtener app
-      const auth = getAuth(app); // Obtener auth de la app inicializada
+      const auth = getFirebaseAuth(); // Obtener auth
+      const db = getDb(); // Obtener db
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
 

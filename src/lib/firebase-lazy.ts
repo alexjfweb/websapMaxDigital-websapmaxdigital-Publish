@@ -1,63 +1,44 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth';
+import { firebaseConfig } from './firebase-config';
 
-let firebaseConfig: any = null;
-let app: FirebaseApp | null = null;
-let db: Firestore | null = null;
-let auth: Auth | null = null;
+let app: FirebaseApp;
+let db: Firestore;
+let auth: Auth;
 
-// Función para cargar la config de forma lazy
-async function loadFirebaseConfig() {
-  if (!firebaseConfig) {
-    // La importación dinámica retrasa la carga del archivo de configuración
-    const { firebaseConfig: config } = await import('./firebase-config');
-    firebaseConfig = config;
-  }
-  return firebaseConfig;
-}
-
-// Función lazy para inicializar Firebase
-async function initFirebase() {
-  // Si la app ya está inicializada, la devolvemos directamente
-  if (app && db && auth) {
-    return { app, db, auth };
-  }
-  
-  const config = await loadFirebaseConfig();
-  
-  if (!config.apiKey || !config.projectId) {
-    console.error("Firebase config is missing or incomplete. Check your .env.local file.");
-    throw new Error("Firebase config is incomplete");
-  }
-  
-  // Inicializamos la app si no existe
+function initializeServices() {
   if (!getApps().length) {
-    app = initializeApp(config);
+    if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+      console.error("Firebase config is missing or incomplete. Check your .env.local file.");
+      throw new Error("Firebase config is incomplete and cannot be initialized.");
+    }
+    app = initializeApp(firebaseConfig);
   } else {
     app = getApp();
   }
-  
-  // Obtenemos las instancias de los servicios
   db = getFirestore(app);
   auth = getAuth(app);
-  
-  return { app, db, auth };
 }
 
-// Exportamos funciones que aseguran la inicialización antes de devolver la instancia
+// Inicializar los servicios una vez al cargar este módulo
+initializeServices();
 
-export const getFirebaseApp = async (): Promise<FirebaseApp> => {
-  const { app } = await initFirebase();
-  return app!;
+// Las funciones ahora devuelven la instancia ya creada.
+// El "lazy" se refiere a que el módulo en sí puede ser cargado dinámicamente,
+// pero una vez cargado, las instancias están disponibles.
+
+export const getFirebaseApp = (): FirebaseApp => {
+  if (!app) initializeServices();
+  return app;
 };
 
-export const getDb = async (): Promise<Firestore> => {
-  const { db } = await initFirebase();
-  return db!;
+export const getDb = (): Firestore => {
+  if (!db) initializeServices();
+  return db;
 };
 
-export const getFirebaseAuth = async (): Promise<Auth> => {
-  const { auth } = await initFirebase();
-  return auth!;
+export const getFirebaseAuth = (): Auth => {
+  if (!auth) initializeServices();
+  return auth;
 };

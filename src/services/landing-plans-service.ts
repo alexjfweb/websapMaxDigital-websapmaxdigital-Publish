@@ -89,18 +89,18 @@ class LandingPlansService {
   private readonly COLLECTION_NAME = 'landingPlans';
   private readonly AUDIT_COLLECTION = 'planAuditLogs';
   
-  private async getPlansCollection() {
-    const db = await getDb();
+  private getPlansCollection() {
+    const db = getDb();
     return collection(db, this.COLLECTION_NAME);
   }
 
-  private async getAuditCollection() {
-      const db = await getDb();
+  private getAuditCollection() {
+      const db = getDb();
       return collection(db, this.AUDIT_COLLECTION);
   }
 
   private async validateSlug(slug: string, excludeId?: string): Promise<boolean> {
-    const coll = await this.getPlansCollection();
+    const coll = this.getPlansCollection();
     const q = query(coll, where('slug', '==', slug));
     const snapshot = await getDocs(q);
     if (excludeId) {
@@ -111,7 +111,7 @@ class LandingPlansService {
 
   // Obtiene TODOS los planes, para el panel de admin
   async getPlans(): Promise<LandingPlan[]> {
-    const coll = await this.getPlansCollection();
+    const coll = this.getPlansCollection();
     const q = query(coll, orderBy('order', 'asc'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => serializePlan(doc.id, doc.data()));
@@ -119,7 +119,7 @@ class LandingPlansService {
 
   // Obtiene solo los planes públicos y activos para la landing page
   async getPublicPlans(): Promise<LandingPlan[]> {
-    const coll = await this.getPlansCollection();
+    const coll = this.getPlansCollection();
     const q = query(coll, where('isActive', '==', true), where('isPublic', '==', true));
     
     const snapshot = await getDocs(q);
@@ -129,7 +129,7 @@ class LandingPlansService {
   
   async getPlanById(id: string): Promise<LandingPlan | null> {
     if (!id) return null;
-    const coll = await this.getPlansCollection();
+    const coll = this.getPlansCollection();
     const docRef = doc(coll, id);
     const docSnap = await getDoc(docRef);
     return docSnap.exists() ? serializePlan(docSnap.id, docSnap.data()) : null;
@@ -141,7 +141,7 @@ class LandingPlansService {
       slug = `${slug}-${Date.now()}`;
     }
 
-    const coll = await this.getPlansCollection();
+    const coll = this.getPlansCollection();
     
     const newPlanData = {
       ...data,
@@ -172,7 +172,7 @@ class LandingPlansService {
   }
 
   async updatePlan(id: string, data: UpdatePlanRequest, userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<LandingPlan> {
-    const coll = await this.getPlansCollection();
+    const coll = this.getPlansCollection();
     const docRef = doc(coll, id);
     const originalDoc = await this.getPlanById(id);
     if (!originalDoc) throw new Error(`Plan with id ${id} not found`);
@@ -209,9 +209,9 @@ class LandingPlansService {
   }
 
   async reorderPlans(planIds: string[], userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<void> {
-    const db = await getDb();
+    const db = getDb();
     const batch = writeBatch(db);
-    const coll = await this.getPlansCollection();
+    const coll = this.getPlansCollection();
 
     planIds.forEach((id, index) => {
       const docRef = doc(coll, id);
@@ -230,7 +230,7 @@ class LandingPlansService {
   }
   
   async getPlanAuditLogs(planId: string): Promise<PlanAuditLog[]> {
-    const coll = await this.getAuditCollection();
+    const coll = this.getAuditCollection();
     const q = query(coll, where('planId', '==', planId), orderBy('timestamp', 'desc'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => {
@@ -244,8 +244,8 @@ class LandingPlansService {
   }
 
   async rollbackPlan(planId: string, auditLogId: string, userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<void> {
-    const db = await getDb();
-    const auditColl = await this.getAuditCollection();
+    const db = getDb();
+    const auditColl = this.getAuditCollection();
     const auditLogRef = doc(auditColl, auditLogId);
     const auditLogSnap = await getDoc(auditLogRef);
     if (!auditLogSnap.exists()) throw new Error("Audit log not found.");
@@ -255,7 +255,7 @@ class LandingPlansService {
       throw new Error("No previous data available to rollback to.");
     }
 
-    const planColl = await this.getPlansCollection();
+    const planColl = this.getPlansCollection();
     const planRef = doc(planColl, planId);
     await setDoc(planRef, { ...logData.previousData, updatedAt: serverTimestamp() }, { merge: true });
 
