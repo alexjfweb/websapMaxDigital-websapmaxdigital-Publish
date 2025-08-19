@@ -139,34 +139,35 @@ class LandingConfigService {
 
   async getLandingConfig(): Promise<LandingConfig> {
     try {
-        const docRef = await this.getConfigDocRef();
-        const docSnap = await getDoc(docRef);
-        const defaultConfig = getLandingDefaultConfig();
-        
-        if (!docSnap.exists()) {
-          console.warn("Landing config not found, using defaults.");
-          return defaultConfig;
-        }
-        
-        const dbData = docSnap.data();
-        
-        // CORRECCIÓN: Usar los datos de la BD como base y rellenar con los por defecto si algo falta.
-        // Esto prioriza lo que el usuario guardó.
-        const finalConfig = {
-            ...defaultConfig, // Empezar con el por defecto
-            ...dbData,       // Sobrescribir con los datos de la BD
-            id: docSnap.id,
-            seo: { ...defaultConfig.seo, ...(dbData.seo || {}) }, // Asegurar que SEO no se pierda
-            sections: dbData.sections || defaultConfig.sections, // Usar secciones de BD si existen
-        };
-        
-        return finalConfig;
+      const docRef = await this.getConfigDocRef();
+      const docSnap = await getDoc(docRef);
+      const defaultConfig = getLandingDefaultConfig();
+      
+      if (!docSnap.exists()) {
+        console.warn("Landing config not found in DB, returning defaults.");
+        // Consider creating the default config in DB if it doesn't exist
+        // await this.createLandingConfig(defaultConfig, 'system', 'system@init');
+        return defaultConfig;
+      }
+      
+      const dbData = docSnap.data();
+      
+      // PRIORITIZE DB DATA. Merge defaultConfig underneath to fill in any missing fields.
+      const finalConfig = {
+          ...defaultConfig,
+          ...dbData,
+          id: docSnap.id,
+          seo: { ...defaultConfig.seo, ...(dbData.seo || {}) },
+          sections: dbData.sections || defaultConfig.sections,
+      };
+      
+      return finalConfig;
 
     } catch(error: any) {
         console.error("Error getting landing config:", error.message);
-        return getLandingDefaultConfig();
+        throw new Error('No se pudo obtener la configuración de la landing page.');
     }
-}
+  }
 
   async updateLandingConfig(
     configUpdate: Partial<LandingConfig>,

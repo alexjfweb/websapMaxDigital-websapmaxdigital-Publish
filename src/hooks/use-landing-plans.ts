@@ -45,8 +45,8 @@ export function useLandingPlans(publicOnly: boolean = true): UseLandingPlansRetu
     swrKey,
     swrFetcher,
     {
-      revalidateOnFocus: false,
-      shouldRetryOnError: false,
+      revalidateOnFocus: false, // Desactivado para evitar recargas inesperadas en el admin
+      shouldRetryOnError: false, // Evitar reintentos que puedan ocultar errores persistentes
     }
   );
 
@@ -56,9 +56,7 @@ export function useLandingPlans(publicOnly: boolean = true): UseLandingPlansRetu
 
   return {
     plans: data || [],
-    // CORRECCIÓN: El estado de carga solo debe ser true si SWR está activamente cargando o revalidando.
-    // Si 'data' o 'error' ya están definidos, la carga inicial ha terminado.
-    isLoading: (isLoading || isValidating) && !data && !error,
+    isLoading: isLoading && !data && !error,
     error: error ? error.message : null,
     refetch,
   };

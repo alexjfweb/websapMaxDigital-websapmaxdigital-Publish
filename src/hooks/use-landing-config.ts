@@ -21,23 +21,17 @@ export function useDefaultConfig(): LandingConfig {
  * It fetches data from Firestore and provides loading and error states.
  */
 export function usePublicLandingConfig() {
-  const { data, error, isLoading, isValidating } = useSWR<LandingConfig>(SWR_KEY, fetcher, {
-      revalidateOnFocus: true, // Re-fetch on focus to get latest changes
-      shouldRetryOnError: true,
+  const { data, error, isLoading, mutate } = useSWR<LandingConfig, Error>(SWR_KEY, fetcher, {
+      revalidateOnFocus: false, // Prevents re-fetching on window focus, can be distracting during dev
+      shouldRetryOnError: false, // Important to see the actual error
   });
 
   const defaultConfig = landingConfigService.getDefaultConfig();
 
-  // CORRECCIÓN: Lógica mejorada para evitar "parpadeo"
-  // 1. Si hay datos (`data`), siempre los usamos.
-  // 2. Si no hay datos Y estamos cargando por primera vez, `isLoading` será true.
-  // 3. Si hay un error, usamos la configuración por defecto como fallback.
-  const finalConfig = data || defaultConfig;
-  const initialLoading = isLoading && !data && !error;
-
   return {
-    config: finalConfig,
-    isLoading: initialLoading,
-    error,
+    config: data || defaultConfig,
+    isLoading: isLoading && !data && !error,
+    error: error ? error.message : null,
+    refetch: mutate,
   };
 }

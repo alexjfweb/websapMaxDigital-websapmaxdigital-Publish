@@ -36,81 +36,35 @@ function LandingSkeleton() {
   );
 }
 
-function ErrorDisplay({ 
-  title, 
-  message, 
-  details, 
-  onRetry, 
-  isOnline 
-}: {
-  title: string;
-  message: string;
-  details?: string;
-  onRetry: () => void;
-  isOnline: boolean;
-}) {
+function ErrorDisplay({ title, message, onRetry }: { title: string; message: string; onRetry?: () => void; }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen text-center p-4">
+    <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-4">
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full"
+        className="bg-red-50 rounded-lg shadow-lg p-8 max-w-md w-full border border-red-200"
       >
         <AlertTriangle className="h-16 w-16 mx-auto text-red-500 mb-4" />
-        
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">{title}</h1>
-        <p className="text-gray-600 mb-4">{message}</p>
-
-        <div className="flex items-center justify-center mb-4 p-2 rounded-lg bg-gray-50">
-          {isOnline ? (
-            <div className="flex items-center text-green-600">
-              <Wifi className="h-4 w-4 mr-2" />
-              <span className="text-sm">Conectado</span>
-            </div>
-          ) : (
-            <div className="flex items-center text-red-600">
-              <WifiOff className="h-4 w-4 mr-2" />
-              <span className="text-sm">Sin conexión</span>
-            </div>
-          )}
-        </div>
-
-        {details && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-left">
-            <p className="text-sm text-red-800">
-              <strong>Detalle:</strong> {details}
-            </p>
-          </div>
+        <h1 className="text-2xl font-bold text-red-800 mb-2">{title}</h1>
+        <p className="text-red-700 mb-4">{message}</p>
+        {onRetry && (
+          <Button onClick={onRetry} className="w-full bg-red-600 hover:bg-red-700 text-white">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Reintentar
+          </Button>
         )}
-
-        <Button 
-          onClick={onRetry}
-          className="w-full bg-red-600 hover:bg-red-700 text-white mb-4"
-        >
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Reintentar
-        </Button>
-
-        <div className="text-xs text-gray-500 text-left">
-          <p className="font-semibold mb-1">Posibles soluciones:</p>
-          <ul className="space-y-1">
-            <li>• Verifica tu conexión a internet</li>
-            <li>• Recarga la página completa (Ctrl+F5)</li>
-            <li>• Limpia el cache del navegador</li>
-          </ul>
-        </div>
       </motion.div>
     </div>
   );
 }
 
-export default function LandingClient() {
-  const [isOnline, setIsOnline] = useState(true);
 
+export default function LandingClient() {
   const { 
     config, 
     isLoading: isLoadingConfig,
     error: errorConfig,
+    refetch: retryConfig
   } = usePublicLandingConfig();
 
   const { 
@@ -120,24 +74,12 @@ export default function LandingClient() {
     refetch: retryPlans 
   } = useLandingPlans(true);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && typeof navigator !== 'undefined') {
-        setIsOnline(navigator.onLine);
-        const handleOnline = () => setIsOnline(true);
-        const handleOffline = () => setIsOnline(false);
-        window.addEventListener('online', handleOnline);
-        window.addEventListener('offline', handleOffline);
-        return () => {
-            window.removeEventListener('online', handleOnline);
-            window.removeEventListener('offline', handleOffline);
-        };
-    }
-  }, []);
-
-  const isLoading = isLoadingPlans || isLoadingConfig;
-
-  if (isLoading) {
+  if (isLoadingConfig || isLoadingPlans) {
     return <LandingSkeleton />;
+  }
+  
+  if (errorConfig) {
+      return <ErrorDisplay title="Error al Cargar la Página" message={errorConfig} onRetry={retryConfig} />;
   }
 
   return (
@@ -155,28 +97,6 @@ export default function LandingClient() {
         <meta property="twitter:description" content={config.seo.ogDescription} />
         <meta property="twitter:image" content={config.seo.ogImage} />
       </Head>
-
-      {!isOnline && (
-        <div className="fixed top-0 left-0 right-0 bg-yellow-500 text-white text-center py-2 text-sm z-50">
-          <WifiOff className="inline h-4 w-4 mr-2" />
-          Sin conexión - Mostrando última versión cargada
-        </div>
-      )}
-
-      {errorPlans && (
-        <div className="fixed top-4 right-4 bg-yellow-100 border border-yellow-300 text-yellow-800 px-4 py-2 rounded-lg shadow-lg z-40">
-          <div className="flex items-center">
-            <AlertTriangle className="h-4 w-4 mr-2" />
-            <span className="text-sm">Los planes no se pudieron cargar</span>
-            <button 
-              onClick={retryPlans}
-              className="ml-2 text-yellow-600 hover:text-yellow-800"
-            >
-              <RefreshCw className="h-3 w-3" />
-            </button>
-          </div>
-        </div>
-      )}
 
       <main className="min-h-screen w-full flex flex-col items-center">
         <motion.section
@@ -231,7 +151,7 @@ export default function LandingClient() {
                                   className="object-cover rounded-t-lg"
                                   loading="lazy"
                                   data-ai-hint="feature icon"
-                                  unoptimized={!!sub.imageUrl && sub.imageUrl.includes('firebasestorage')}
+                                  unoptimized={true}
                               />
                           </div>
                       </CardHeader>
@@ -248,48 +168,13 @@ export default function LandingClient() {
         ))}
         
         <div id="planes">
-          {plans && plans.length > 0 ? (
-            <SubscriptionPlansSection plans={plans} />
+          {errorPlans ? (
+             <ErrorDisplay title="Error al Cargar Planes" message={errorPlans} onRetry={retryPlans} />
           ) : (
-            <motion.section
-              key="planes-empty"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="w-full max-w-6xl py-16 flex justify-center"
-            >
-              <div className="col-span-full text-gray-600 text-center bg-gray-50 p-8 rounded-lg shadow-sm border">
-                <AlertTriangle className="h-10 w-10 mx-auto text-yellow-500 mb-4" />
-                <h3 className="text-xl font-semibold">
-                  {errorPlans ? 'Error al cargar planes' : 'No hay planes disponibles'}
-                </h3>
-                <p>
-                  {errorPlans 
-                    ? 'Ocurrió un problema al cargar los planes de suscripción.' 
-                    : 'Actualmente no hay planes de suscripción para mostrar. Por favor, vuelve más tarde.'
-                  }
-                </p>
-                {errorPlans && (
-                  <Button 
-                    onClick={retryPlans} 
-                    className="mt-4 bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Reintentar cargar planes
-                  </Button>
-                )}
-              </div>
-            </motion.section>
+            <SubscriptionPlansSection plans={plans} />
           )}
         </div>
       </main>
-
-      {process.env.NODE_ENV === 'development' && (
-        <div className="fixed bottom-4 left-4 bg-black bg-opacity-75 text-white p-2 rounded text-xs max-w-xs z-50">
-          <div>Config: {config && !errorConfig ? '✅' : '❌'}</div>
-          <div>Plans: {plans ? `✅ ${plans.length}` : errorPlans ? '❌' : '⏳'}</div>
-          <div>Online: {isOnline ? '🟢' : '🔴'}</div>
-        </div>
-      )}
     </>
   );
 }
