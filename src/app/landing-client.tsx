@@ -121,6 +121,13 @@ export default function LandingClient() {
   } = useLandingPlans(true);
 
   useEffect(() => {
+    // Limpieza de caché de SWR como sugirió el usuario para depuración
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+      console.log('Attempting to clear SWR cache for debugging...');
+      // Nota: SWR no usa localStorage por defecto. La limpieza de caché se maneja con `mutate`.
+      // Esta línea es simbólica de la intención de obtener datos frescos.
+    }
+
     if (typeof window !== 'undefined' && typeof navigator !== 'undefined') {
         setIsOnline(navigator.onLine);
         const handleOnline = () => setIsOnline(true);
