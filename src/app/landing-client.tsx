@@ -73,7 +73,9 @@ export default function LandingClient() {
     refetch: retryPlans 
   } = useLandingPlans(true);
 
-  if (isLoadingConfig || isLoadingPlans) {
+  // CORRECCIÓN: Si la configuración principal o la de SEO no está lista, muestra el esqueleto.
+  // Esto previene el error "cannot read properties of undefined".
+  if (isLoadingConfig || isLoadingPlans || !config || !config.seo) {
     return <LandingSkeleton />;
   }
   
@@ -149,7 +151,6 @@ export default function LandingClient() {
                                   fill
                                   className="object-cover rounded-t-lg"
                                   loading="lazy"
-                                  unoptimized={true}
                                   data-ai-hint="feature icon"
                               />
                           </div>
