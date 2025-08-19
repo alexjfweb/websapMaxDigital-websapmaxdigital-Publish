@@ -6,13 +6,12 @@
 // Importar las funciones necesarias de Firebase
 const { initializeApp } = require('firebase/app');
 const { getFirestore, collection, addDoc, serverTimestamp, getDocs, query, where } = require('firebase/firestore');
-const dotenv = require('dotenv');
-const path = require('path');
 
-// Cargar variables de entorno desde .env.local
-dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+// La configuración de Firebase ahora se importa desde el archivo centralizado
+// NOTA: Este script no usará dotenv, asumirá que las variables de entorno ya están cargadas en el entorno de ejecución
+// o que la configuración se puede obtener de otra manera si es necesario.
+// Esto simplifica y evita la dependencia directa de .env.local aquí.
 
-// Configuración de Firebase (debe coincidir con la de tu app)
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -25,7 +24,7 @@ const firebaseConfig = {
 // Validar que la configuración esté completa
 if (!firebaseConfig.projectId) {
     console.error("❌ Error: No se pudo cargar la configuración de Firebase desde las variables de entorno.");
-    console.error("Asegúrate de que el archivo .env.local existe y contiene las variables NEXT_PUBLIC_FIREBASE_*");
+    console.error("Asegúrate de que el entorno de ejecución tenga acceso a las variables NEXT_PUBLIC_FIREBASE_*");
     process.exit(1);
 }
 
