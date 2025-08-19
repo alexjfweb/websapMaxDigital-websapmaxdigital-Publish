@@ -20,20 +20,27 @@ import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useSession } from '@/contexts/session-context';
+import { Skeleton } from '../ui/skeleton';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { currentUser, logout } = useSession();
+  const { currentUser, logout, isLoading } = useSession();
 
   const handleLogout = () => {
     logout();
     router.push('/login');
   };
 
-  if (!currentUser) {
-    // Esto previene renderizar el shell si no hay usuario,
-    // aunque ClientProviders ya debería haber redirigido.
-    return null;
+  if (isLoading || !currentUser) {
+    return (
+        <div className="flex items-center justify-center min-h-screen">
+            <Skeleton className="h-12 w-12 rounded-full" />
+            <div className="space-y-2 ml-4">
+                <Skeleton className="h-4 w-[250px]" />
+                <Skeleton className="h-4 w-[200px]" />
+            </div>
+        </div>
+    );
   }
 
   return (

@@ -4,11 +4,11 @@
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuGroup } from '@/components/ui/dropdown-menu';
-import { Bell, UserCircle, Settings, LogOut, Menu as MenuIcon, LogIn as LogInIcon, Globe, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Bell, UserCircle, Settings, LogOut, Menu as MenuIcon, LogIn as LogInIcon, Globe } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import type { User } from '@/types';
 
 interface AppHeaderProps {
@@ -17,7 +17,9 @@ interface AppHeaderProps {
 }
 
 function ConditionalSidebarTrigger() {
-  const { isMobile } = useSidebar(); 
+  const { isMobile, open, state } = useSidebar();
+  // Solo se debe mostrar el trigger en desktop si la barra está colapsada, o siempre en mobile.
+  // Pero para simplificar y dado que el layout cambia, lo mostraremos solo en mobile.
   if (!isMobile) return null;
 
   return (
@@ -33,8 +35,6 @@ export default function AppHeader({ currentUser, handleLogout }: AppHeaderProps)
   const languages = [
     { code: 'en', name: 'English', flag: '🇬🇧' },
     { code: 'es', name: 'Español', flag: '🇪🇸' },
-    { code: 'pt', name: 'Português', flag: '🇵🇹' },
-    { code: 'fr', name: 'Français', flag: '🇫🇷' },
   ];
 
   return (
@@ -60,18 +60,22 @@ export default function AppHeader({ currentUser, handleLogout }: AppHeaderProps)
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Seleccionar idioma</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem key="es" onSelect={() => {}}>
-              <span className="mr-2">🇪🇸</span>
-              Español
-              <span className="ml-auto text-xs text-muted-foreground">Actual</span>
-            </DropdownMenuItem>
+            {languages.map((lang) => (
+                <DropdownMenuItem key={lang.code} onSelect={() => {}}>
+                <span className="mr-2">{lang.flag}</span>
+                {lang.name}
+                {lang.code === 'es' && <span className="ml-auto text-xs text-muted-foreground">Actual</span>}
+                </DropdownMenuItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
 
+        {currentUser && (
         <Button variant="ghost" size="icon" className="rounded-full">
           <Bell className="h-5 w-5" />
           <span className="sr-only">Notificaciones</span>
         </Button>
+        )}
 
         {currentUser && currentUser.role !== 'guest' ? (
           <DropdownMenu>

@@ -5,7 +5,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import type { User as FirebaseUserType } from 'firebase/auth'; // Renombramos para evitar conflictos
 import type { User } from '@/types';
 import { useRouter, usePathname } from 'next/navigation';
-import { getFirebaseAuth } from '@/lib/firebase-lazy'; // Usar lazy loading
+import { getFirebaseAuth } from '@/lib/firebase-lazy';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, getDoc, Timestamp } from 'firebase/firestore';
 import { toast } from "@/hooks/use-toast";
@@ -47,55 +47,43 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    let unsubscribe: (() => void) | null = null;
-    
-    // Función asíncrona para inicializar la autenticación
-    const initAuthListener = async () => {
+    const initAuth = async () => {
       try {
-        const auth = await getFirebaseAuth(); // Obtener auth de forma lazy
+        const auth = await getFirebaseAuth();
         const { getDb } = await import('@/lib/firebase-lazy');
         const db = await getDb();
-
-        unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-          try {
-            if (firebaseUser) {
-              const userDocRef = doc(db, "users", firebaseUser.uid);
-              const userDocSnap = await getDoc(userDocRef);
-              if (userDocSnap.exists()) {
-                const user = serializeUser(firebaseUser, userDocSnap.data());
-                setCurrentUser(user);
-              } else {
-                console.warn(`No user document found for UID: ${firebaseUser.uid}. Logging out.`);
-                await auth.signOut();
-                setCurrentUser(null);
-              }
+        
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+          if (firebaseUser) {
+            const userDocRef = doc(db, "users", firebaseUser.uid);
+            const userDocSnap = await getDoc(userDocRef);
+            if (userDocSnap.exists()) {
+              const user = serializeUser(firebaseUser, userDocSnap.data());
+              setCurrentUser(user);
             } else {
+              console.warn(`No user document found for UID: ${firebaseUser.uid}. Logging out.`);
+              await auth.signOut();
               setCurrentUser(null);
             }
-          } catch (error) {
-            console.error("Error during auth state change:", error);
+          } else {
             setCurrentUser(null);
-          } finally {
-            setIsLoading(false);
           }
+          setIsLoading(false);
         });
+        return unsubscribe;
       } catch (error) {
         console.error("Failed to initialize Firebase Auth listener:", error);
-        setIsLoading(false); // Detener la carga si Firebase no se puede inicializar
+        setIsLoading(false);
+        return () => {};
       }
     };
-    
-    // CORRECCIÓN: Se elimina la condición que evitaba la inicialización.
-    // El listener de autenticación se iniciará en todas las páginas,
-    // pero de forma asíncrona para no bloquear el renderizado.
-    initAuthListener();
+
+    const unsubscribePromise = initAuth();
 
     return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
+      unsubscribePromise.then(unsubscribe => unsubscribe());
     };
-  }, []); // Se elimina la dependencia del pathname para que se ejecute una sola vez.
+  }, []);
 
   useEffect(() => {
     if (isLoading) return;
@@ -125,6 +113,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const login = (user: User) => {
     setCurrentUser(user);
+    setIsLoading(false);
   };
 
   const value = {
