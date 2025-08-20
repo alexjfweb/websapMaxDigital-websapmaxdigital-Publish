@@ -120,7 +120,7 @@ class LandingPlansService {
   // Obtiene solo los planes públicos y activos para la landing page
   async getPublicPlans(): Promise<LandingPlan[]> {
     const coll = this.getPlansCollection();
-    const q = query(coll, where('isActive', '==', true), where('isPublic', '==', true));
+    const q = query(coll, where('isActive', '==', true), where('isPublic', '==', true), orderBy('order', 'asc'));
     
     const snapshot = await getDocs(q);
     

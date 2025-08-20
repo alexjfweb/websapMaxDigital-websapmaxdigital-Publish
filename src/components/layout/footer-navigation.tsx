@@ -14,11 +14,11 @@ interface FooterNavigationProps {
 }
 
 const iconMap: { [key: string]: React.ElementType } = {
-  LayoutDashboard,
-  ShoppingBag,
-  BookUser,
-  ClipboardList,
-  Share2,
+  'footer-dashboard': LayoutDashboard,
+  'footer-orders': ShoppingBag,
+  'footer-reservations': BookUser,
+  'footer-tables': ClipboardList,
+  'footer-share': Share2,
   // Agrega otros íconos que uses en la config base
 };
 
