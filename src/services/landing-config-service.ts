@@ -1,6 +1,7 @@
 
 // src/services/landing-config-service.ts
 import { getDb } from '@/lib/firebase-lazy';
+import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import { collection, doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { auditService } from './audit-service';
 
@@ -111,6 +112,24 @@ class LandingConfigService {
     if (!db) throw new Error("Firestore (Cliente) no está inicializado.");
     return doc(collection(db, CONFIG_COLLECTION_NAME), MAIN_CONFIG_DOC_ID);
   }
+  
+  private async getImageUrl(path: string): Promise<string> {
+      // Si ya es una URL HTTPS, la devolvemos.
+      if (path.startsWith('http')) {
+          return path;
+      }
+      try {
+          const storage = getStorage();
+          // Asumimos que `path` es el nombre del archivo, construimos la ruta completa.
+          const imageRef = ref(storage, `subsections/${path}`);
+          return await getDownloadURL(imageRef);
+      } catch (error) {
+          console.error(`Error al obtener URL para ${path}:`, error);
+          // Devolver un placeholder en caso de error.
+          return 'https://placehold.co/400x300.png?text=Error';
+      }
+  }
+
 
   async getLandingConfig(): Promise<LandingConfig> {
     try {
@@ -120,24 +139,29 @@ class LandingConfigService {
       
       if (!docSnap.exists()) {
         console.warn("Landing config not found in DB. Returning default config.");
-        // Devolvemos la configuración por defecto para que la UI no se rompa.
-        // En un escenario real, un superadmin debería inicializarla.
         return defaultConfig;
       }
       
       const dbData = docSnap.data();
       
-      const mergedSections = defaultConfig.sections.map(defaultSection => {
+      // Proceso de fusión y obtención de URLs de imágenes
+      const mergedSectionsPromises = defaultConfig.sections.map(async (defaultSection) => {
           const dbSection = dbData.sections?.find((s: LandingSection) => s.id === defaultSection.id);
           if (dbSection) {
-              const mergedSubsections = defaultSection.subsections?.map(defaultSub => {
-                  const dbSub = dbSection.subsections?.find((s: LandingSubsection) => s.id === defaultSub.id);
-                  return { ...defaultSub, ...(dbSub || {}) };
-              });
-              return { ...defaultSection, ...dbSection, subsections: mergedSubsections };
+              const subsectionsWithUrlsPromises = (dbSection.subsections || []).map(async (sub: LandingSubsection) => ({
+                  ...defaultConfig.sections.flatMap(s => s.subsections).find(ds => ds.id === sub.id),
+                  ...sub,
+                  imageUrl: sub.imageUrl ? await this.getImageUrl(sub.imageUrl) : 'https://placehold.co/400x300.png',
+              }));
+              
+              const subsectionsWithUrls = await Promise.all(subsectionsWithUrlsPromises);
+              
+              return { ...defaultSection, ...dbSection, subsections: subsectionsWithUrls };
           }
           return defaultSection;
       });
+
+      const mergedSections = await Promise.all(mergedSectionsPromises);
 
       const finalConfig = {
           ...defaultConfig,
@@ -151,7 +175,6 @@ class LandingConfigService {
 
     } catch(error: any) {
         console.error("Error getting landing config:", error.message, error.stack);
-        // Si hay un error (ej. permisos), devolvemos la config por defecto para evitar que la app se rompa.
         return getDefaultConfig();
     }
   }
