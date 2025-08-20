@@ -79,9 +79,9 @@ const getDefaultConfig = (): LandingConfig => ({
       backgroundColor: '#FFFFFF', textColor: '#1f2937', buttonColor: '#FF4500', buttonText: '', buttonUrl: '', imageUrl: '',
       order: 1, isActive: true, animation: 'fadeIn',
       subsections: [
-        { id: 'sub-1-1', title: 'Pago Móvil', content: 'Agiliza tus mesas, aumenta la rotación y mejora la rentabilidad.', imageUrl: 'gs://websapmax.appspot.com/subsections/feijoada.jpg' },
-        { id: 'sub-1-2', title: 'Menú con Video', content: 'Captura la atención de tus clientes con una experiencia visual única.', imageUrl: 'gs://websapmax.appspot.com/subsections/paella.jpg' },
-        { id: 'sub-1-3', title: 'Gestión Online', content: 'Recibe órdenes desde cualquier lugar, directo a tu cocina.', imageUrl: 'gs://websapmax.appspot.com/subsections/sushi.jpg' },
+        { id: 'sub-1-1', title: 'Pago Móvil', content: 'Agiliza tus mesas, aumenta la rotación y mejora la rentabilidad.', imageUrl: 'gs://websapmax.appspot.com/subsections/pago-movil.jpg' },
+        { id: 'sub-1-2', title: 'Menú con Video', content: 'Captura la atención de tus clientes con una experiencia visual única.', imageUrl: 'gs://websapmax.appspot.com/subsections/menu-video.jpg' },
+        { id: 'sub-1-3', title: 'Gestión Online', content: 'Recibe órdenes desde cualquier lugar, directo a tu cocina.', imageUrl: 'gs://websapmax.appspot.com/subsections/gestion-online.jpg' },
       ],
     },
     {
@@ -113,33 +113,29 @@ class LandingConfigService {
   }
   
   private async getImageUrl(path: string): Promise<string> {
-    if (!path) return 'https://placehold.co/400x300.png?text=No+Image';
+    const placeholder = 'https://placehold.co/400x300.png?text=Imagen';
+    if (!path) return placeholder;
     
     // Si ya es una URL HTTPS, la devolvemos directamente.
     if (path.startsWith('https://')) {
         return path;
     }
     
-    // Si es una ruta de Firebase Storage (gs://), obtenemos la URL de descarga.
-    if (path.startsWith('gs://')) {
-        try {
-            const storage = getStorage();
-            const imageRef = ref(storage, path);
-            return await getDownloadURL(imageRef);
-        } catch (error) {
-            console.error(`Error al obtener URL para la ruta GS "${path}":`, error);
-            return 'https://placehold.co/400x300.png?text=Error+GS';
-        }
+    let storagePath = path;
+    // Si es una ruta de Firebase Storage (gs://), la usamos directamente.
+    if (!path.startsWith('gs://')) {
+        // Si no, asumimos que es un nombre de archivo y construimos la ruta completa.
+        storagePath = `subsections/${path}`;
     }
     
-    // Si no es ninguno de los anteriores, asumimos que es un nombre de archivo en la carpeta 'subsections'.
     try {
-      const storage = getStorage();
-      const imageRef = ref(storage, `subsections/${path}`);
-      return await getDownloadURL(imageRef);
-    } catch (error) {
-      console.error(`Error al obtener URL para el archivo "${path}":`, error);
-      return 'https://placehold.co/400x300.png?text=Error+File';
+        const storage = getStorage();
+        const imageRef = ref(storage, storagePath);
+        return await getDownloadURL(imageRef);
+    } catch (error: any) {
+        console.error(`Error al obtener URL para la ruta "${storagePath}": ${error.code}`);
+        // Devuelve un placeholder si la imagen no se encuentra o hay un error de permisos
+        return placeholder;
     }
   }
 
