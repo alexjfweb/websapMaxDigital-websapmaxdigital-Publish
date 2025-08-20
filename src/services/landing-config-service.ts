@@ -1,4 +1,3 @@
-
 // src/services/landing-config-service.ts
 import { getDb } from '@/lib/firebase-lazy';
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';

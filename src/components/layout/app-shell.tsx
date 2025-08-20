@@ -13,7 +13,6 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar';
 import NavigationMenu from '@/components/layout/navigation-menu';
-import FooterNavigation from '@/components/layout/footer-navigation';
 import { Button } from '@/components/ui/button';
 import { LogOut, Settings, UserCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
