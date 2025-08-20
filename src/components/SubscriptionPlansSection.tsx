@@ -27,31 +27,30 @@ const PLAN_ICONS = [
   { value: 'palette', label: '🎨 Palette', icon: Palette },
 ];
 
-const PLAN_COLORS = [
-  { value: 'blue', class: 'bg-blue-500 border-blue-500' },
-  { value: 'green', class: 'bg-green-500 border-green-500' },
-  { value: 'purple', class: 'bg-purple-500 border-purple-500' },
-  { value: 'orange', class: 'bg-orange-500 border-orange-500' },
-  { value: 'red', class: 'bg-red-500 border-red-500' },
-  { value: 'indigo', class: 'bg-indigo-500 border-indigo-500' },
-  { value: 'gray', class: 'bg-gray-500 border-gray-500' },
-];
+const PLAN_COLORS: Record<string, string> = {
+  blue: 'bg-blue-500 border-blue-500',
+  green: 'bg-green-500 border-green-500',
+  purple: 'bg-purple-500 border-purple-500',
+  orange: 'bg-orange-500 border-orange-500',
+  red: 'bg-red-500 border-red-500',
+  indigo: 'bg-indigo-500 border-indigo-500',
+  gray: 'bg-gray-500 border-gray-500',
+};
 
 const getPlanIcon = (iconValue: string) => {
   const iconData = PLAN_ICONS.find(icon => icon.value === iconValue);
   return iconData ? iconData.icon : Zap;
 };
 
-const getPlanColorClass = (colorValue: string, type: 'bg' | 'border' | 'text') => {
-  const colorData = PLAN_COLORS.find(color => color.value === colorValue);
-  if (!colorData) return 'bg-blue-500 border-blue-500';
-  
-  const [bgClass, borderClass] = colorData.class.split(' ');
-  
-  if (type === 'bg') return bgClass;
-  if (type === 'border') return borderClass;
-  return `text-${colorValue}-500`; 
+const getPlanColorClass = (colorValue: string | undefined, type: 'bg' | 'border') => {
+  const defaultClass = 'bg-blue-500 border-blue-500';
+  const colorClass = colorValue ? PLAN_COLORS[colorValue] : defaultClass;
+  if (!colorClass) return defaultClass.split(' ')[0];
+
+  const [bgClass, borderClass] = colorClass.split(' ');
+  return type === 'bg' ? bgClass : borderClass;
 };
+
 
 interface SubscriptionPlansSectionProps {
   plans: LandingPlan[];
@@ -59,7 +58,6 @@ interface SubscriptionPlansSectionProps {
 
 export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSectionProps) {
 
-  // ✅ CORRECCIÓN: Ordenar los planes en el cliente por el campo 'order'.
   const sortedPlans = React.useMemo(() => {
     if (!Array.isArray(plans)) return [];
     return [...plans].sort((a, b) => (a.order || 99) - (b.order || 99));

@@ -1,12 +1,12 @@
-"use client"; // Convertir a Componente de Cliente
+
+"use client"; 
 
 import React, { Suspense } from 'react';
 import LandingClient from './landing-client';
 import { Skeleton } from '@/components/ui/skeleton';
-import { landingConfigService, LandingConfig } from '@/services/landing-config-service';
-import { useLandingConfig } from '@/hooks/use-landing-config'; // Importar el hook de cliente
+import type { LandingConfig } from '@/services/landing-config-service';
+import { useLandingConfig } from '@/hooks/use-landing-config';
 
-// Componente de carga para la página de inicio
 function LandingPageSkeleton() {
   return (
     <main className="min-h-screen w-full flex flex-col items-center">
@@ -28,20 +28,15 @@ function LandingPageSkeleton() {
   );
 }
 
-// Page ahora es un Componente de Cliente que usa el hook
 export default function Page() {
-  // Usamos el hook para obtener los datos de forma segura en el cliente
   const { landingConfig, isLoading, isError } = useLandingConfig();
 
   if (isLoading || isError) {
-    // Si está cargando o hay un error, mostramos el esqueleto.
-    // El hook maneja los errores internamente.
     return <LandingPageSkeleton />;
   }
   
   return (
     <Suspense fallback={<LandingPageSkeleton />}>
-      {/* Pasamos los datos al componente cliente como props */}
       <LandingClient initialConfig={landingConfig} />
     </Suspense>
   );

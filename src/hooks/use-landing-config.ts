@@ -6,25 +6,20 @@ import { landingConfigService, LandingConfig } from '@/services/landing-config-s
 
 const SWR_KEY = 'landing-page-config';
 
-// El fetcher ahora es una función simple que llama al método del servicio.
 const fetcher = () => landingConfigService.getLandingConfig();
 
-/**
- * Hook para obtener la configuración de la página de inicio.
- * Utiliza SWR para cache, revalidación y manejo de estados de carga/error.
- */
 export function useLandingConfig() {
   const { data, error, isLoading } = useSWR<LandingConfig, Error>(
     SWR_KEY,
     fetcher,
     {
-      revalidateOnFocus: false, // Evita recargas innecesarias
-      shouldRetryOnError: false, // No reintentar si falla la carga inicial
+      revalidateOnFocus: false, 
+      shouldRetryOnError: false, 
     }
   );
 
   return {
-    landingConfig: data || landingConfigService.getDefaultConfig(), // Devuelve config por defecto si data es undefined
+    landingConfig: data || landingConfigService.getDefaultConfig(),
     isLoading,
     isError: !!error,
   };
