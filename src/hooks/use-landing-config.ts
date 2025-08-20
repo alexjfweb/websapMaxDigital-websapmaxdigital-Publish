@@ -21,5 +21,6 @@ export function useLandingConfig() {
     landingConfig: data || landingConfigService.getDefaultConfig(),
     isLoading,
     isError: !!error,
+    error: error || null,
   };
 }

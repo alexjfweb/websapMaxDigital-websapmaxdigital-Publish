@@ -21,11 +21,11 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <body className={inter.className}>
         <SessionProvider>
-          <SidebarProvider>
             <OrderProvider>
-              {children}
+              <SidebarProvider>
+                {children}
+              </SidebarProvider>
             </OrderProvider>
-          </SidebarProvider>
         </SessionProvider>
         <Toaster />
       </body>

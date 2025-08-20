@@ -112,85 +112,71 @@ class LandingConfigService {
   }
   
   private async getImageUrl(path: string): Promise<string> {
-    const placeholder = 'https://placehold.co/400x300.png?text=Imagen';
+    const placeholder = 'https://placehold.co/400x300.png?text=Cargando...';
     if (!path) return placeholder;
     
-    // Si ya es una URL HTTPS, la devolvemos directamente.
     if (path.startsWith('https://')) {
         return path;
     }
     
-    let storagePath = path;
-    // Si es una ruta de Firebase Storage (gs://), la usamos directamente.
-    if (!path.startsWith('gs://')) {
-        // Si no, asumimos que es un nombre de archivo y construimos la ruta completa.
-        storagePath = `subsections/${path}`;
+    // Asumimos que la ruta es 'gs://bucket/object/path'
+    if (path.startsWith('gs://')) {
+      try {
+        const storage = getStorage();
+        const imageRef = ref(storage, path);
+        return await getDownloadURL(imageRef);
+      } catch (error: any) {
+        console.error(`Error al obtener URL para la ruta GS "${path}": ${error.code}`);
+        return placeholder;
+      }
     }
     
-    try {
-        const storage = getStorage();
-        const imageRef = ref(storage, storagePath);
-        return await getDownloadURL(imageRef);
-    } catch (error: any) {
-        console.error(`Error al obtener URL para la ruta "${storagePath}": ${error.code}`);
-        // Devuelve un placeholder si la imagen no se encuentra o hay un error de permisos
-        return placeholder;
-    }
+    // Si no es gs:// ni https://, la consideramos inválida por ahora
+    console.warn(`Ruta de imagen no soportada: ${path}`);
+    return placeholder;
   }
 
 
   async getLandingConfig(): Promise<LandingConfig> {
-    try {
-      const docRef = this.getConfigDocRef();
-      const docSnap = await getDoc(docRef);
-      const defaultConfig = getDefaultConfig();
-      
-      if (!docSnap.exists()) {
-        console.warn("Landing config not found in DB. Returning default config.");
-        return defaultConfig;
-      }
-      
-      const dbData = docSnap.data();
-      
-      const sectionsFromDb = dbData.sections || [];
-      
-      // Proceso de fusión y obtención de URLs de imágenes
-      const mergedSectionsPromises = defaultConfig.sections.map(async (defaultSection) => {
-        const dbSection = sectionsFromDb.find((s: LandingSection) => s.id === defaultSection.id) || defaultSection;
-        
-        const subsectionsWithUrlsPromises = (dbSection.subsections || []).map(async (sub: LandingSubsection) => {
-          const defaultSub = defaultConfig.sections
-            .flatMap(s => s.subsections || [])
-            .find(ds => ds.id === sub.id) || {};
-          
-          return {
-            ...defaultSub,
-            ...sub,
-            imageUrl: await this.getImageUrl(sub.imageUrl || defaultSub.imageUrl),
-          };
-        });
-        
-        const subsectionsWithUrls = await Promise.all(subsectionsWithUrlsPromises);
-        
-        return { ...defaultSection, ...dbSection, subsections: subsectionsWithUrls };
-      });
-
-      const mergedSections = await Promise.all(mergedSectionsPromises);
-
-      const finalConfig = {
-          ...defaultConfig,
-          ...dbData,
-          id: docSnap.id,
-          seo: { ...defaultConfig.seo, ...(dbData?.seo || {}) },
-          sections: mergedSections,
-      } as LandingConfig;
-      
-      return finalConfig;
-
-    } catch(error: any) {
-        console.error("Error getting landing config:", error.message, error.stack);
-        throw error;
+    const docRef = this.getConfigDocRef();
+    const docSnap = await getDoc(docRef);
+    const defaultConfig = getDefaultConfig();
+    
+    if (!docSnap.exists()) {
+      console.warn("Landing config not found in DB. Returning default config.");
+      return defaultConfig;
     }
+    
+    const dbData = docSnap.data();
+    
+    // Fusionar secciones y subsecciones con obtención de URLs
+    const sectionsFromDb = dbData.sections || [];
+    const mergedSectionsPromises = defaultConfig.sections.map(async (defaultSection) => {
+      const dbSection = sectionsFromDb.find((s: LandingSection) => s.id === defaultSection.id) || {};
+      
+      const subsectionsFromDb = dbSection.subsections || defaultSection.subsections || [];
+
+      const subsectionsWithUrlsPromises = subsectionsFromDb.map(async (sub: LandingSubsection) => {
+        return {
+          ...sub,
+          imageUrl: await this.getImageUrl(sub.imageUrl),
+        };
+      });
+      
+      const subsectionsWithUrls = await Promise.all(subsectionsWithUrlsPromises);
+      
+      return { ...defaultSection, ...dbSection, subsections: subsectionsWithUrls };
+    });
+
+    const mergedSections = await Promise.all(mergedSectionsPromises);
+
+    return {
+      ...defaultConfig,
+      ...dbData,
+      id: docSnap.id,
+      seo: { ...defaultConfig.seo, ...(dbData?.seo || {}) },
+      sections: mergedSections,
+    };
   }
 
   async updateLandingConfig(

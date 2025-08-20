@@ -14,7 +14,7 @@ import {
 import type { Company } from '@/types';
 import { auditService } from './audit-service';
 
-export type CreateCompanyInput = Omit<Company, 'id' | 'createdAt' | 'updatedAt' | 'registrationDate' | 'status' | 'planId' | 'subscriptionStatus'>;
+export type CreateCompanyInput = Omit<Company, 'id' | 'createdAt' | 'updatedAt' | 'registrationDate' | 'status' | 'planId' | 'subscriptionStatus' | 'trialEndsAt' >;
 
 const serializeDate = (date: any): string | null => {
   if (!date) return null;
@@ -69,7 +69,7 @@ class CompanyService {
     return docSnap.exists() ? serializeCompany(docSnap.id, docSnap.data()) : null;
   }
   
-  async createCompany(companyData: CreateCompanyInput, user: { uid: string; email: string }): Promise<Company> {
+  async createCompany(companyData: Partial<Company>, user: { uid: string; email: string }): Promise<{id: string}> {
     if (!companyData.name || !companyData.ruc) {
       throw new Error("Company name and RUC are required.");
     }
@@ -81,7 +81,7 @@ class CompanyService {
       status: 'active',
       createdAt: timestamp,
       updatedAt: timestamp,
-      registrationDate: timestamp,
+      registrationDate: new Date().toISOString(),
     });
     
     const newCompany = await this.getCompanyById(docRef.id);
@@ -95,7 +95,7 @@ class CompanyService {
       newData: newCompany,
     });
     
-    return newCompany;
+    return {id: docRef.id};
   }
 
   async updateCompany(companyId: string, companyData: Partial<Company>, user: { uid: string; email: string }): Promise<Company> {

@@ -3,8 +3,8 @@
 import React, { Suspense } from 'react';
 import LandingClient from './landing-client';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { LandingConfig } from '@/services/landing-config-service';
 import { useLandingConfig } from '@/hooks/use-landing-config';
+import { AlertTriangle } from 'lucide-react';
 
 function LandingPageSkeleton() {
   return (
@@ -27,11 +27,27 @@ function LandingPageSkeleton() {
   );
 }
 
-export default function Page() {
-  const { landingConfig, isLoading, isError } = useLandingConfig();
+function ErrorDisplay({ message }: { message: string }) {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-4">
+            <div className="bg-red-50 rounded-lg shadow-lg p-8 max-w-md w-full border border-red-200">
+                <AlertTriangle className="h-16 w-16 mx-auto text-red-500 mb-4" />
+                <h1 className="text-2xl font-bold text-red-800 mb-2">Error al Cargar la Página</h1>
+                <p className="text-red-700">{message}</p>
+            </div>
+        </div>
+    );
+}
 
-  if (isLoading || isError) {
+export default function Page() {
+  const { landingConfig, isLoading, isError, error } = useLandingConfig();
+
+  if (isLoading) {
     return <LandingPageSkeleton />;
+  }
+  
+  if (isError) {
+    return <ErrorDisplay message={error?.message || 'Ocurrió un error inesperado.'} />
   }
   
   return (
