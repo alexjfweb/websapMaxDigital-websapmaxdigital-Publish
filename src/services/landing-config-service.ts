@@ -79,9 +79,9 @@ const getDefaultConfig = (): LandingConfig => ({
       backgroundColor: '#FFFFFF', textColor: '#1f2937', buttonColor: '#FF4500', buttonText: '', buttonUrl: '', imageUrl: '',
       order: 1, isActive: true, animation: 'fadeIn',
       subsections: [
-        { id: 'sub-1-1', title: 'Pago Móvil', content: 'Agiliza tus mesas, aumenta la rotación y mejora la rentabilidad.', imageUrl: 'https://images.pexels.com/photos/6260921/pexels-photo-6260921.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' },
-        { id: 'sub-1-2', title: 'Menú con Video', content: 'Captura la atención de tus clientes con una experiencia visual única.', imageUrl: 'https://images.pexels.com/photos/3756523/pexels-photo-3756523.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' },
-        { id: 'sub-1-3', title: 'Gestión Online', content: 'Recibe órdenes desde cualquier lugar, directo a tu cocina.', imageUrl: 'https://images.pexels.com/photos/1779487/pexels-photo-1779487.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' },
+        { id: 'sub-1-1', title: 'Pago Móvil', content: 'Agiliza tus mesas, aumenta la rotación y mejora la rentabilidad.', imageUrl: 'gs://websapmax.appspot.com/subsections/feijoada.jpg' },
+        { id: 'sub-1-2', title: 'Menú con Video', content: 'Captura la atención de tus clientes con una experiencia visual única.', imageUrl: 'gs://websapmax.appspot.com/subsections/paella.jpg' },
+        { id: 'sub-1-3', title: 'Gestión Online', content: 'Recibe órdenes desde cualquier lugar, directo a tu cocina.', imageUrl: 'gs://websapmax.appspot.com/subsections/sushi.jpg' },
       ],
     },
     {
@@ -89,9 +89,9 @@ const getDefaultConfig = (): LandingConfig => ({
       backgroundColor: '#F9FAFB', textColor: '#1f2937', buttonColor: '#FF4500', buttonText: '', buttonUrl: '', imageUrl: '',
       order: 2, isActive: true, animation: 'fadeIn',
       subsections: [
-        { id: 'sub-2-1', title: 'Marketing', content: 'Atrae a más clientes directamente desde sus teléfonos.', imageUrl: 'https://images.pexels.com/photos/265087/pexels-photo-265087.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' },
-        { id: 'sub-2-2', title: 'QR Bar', content: 'Moderniza tu bar con un menú digital y código QR.', imageUrl: 'https://images.pexels.com/photos/7618146/pexels-photo-7618146.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' },
-        { id: 'sub-2-3', title: 'App Mesa', content: 'Permite que los clientes pidan desde la mesa de forma fácil.', imageUrl: 'https://images.pexels.com/photos/6746816/pexels-photo-6746816.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' },
+        { id: 'sub-2-1', title: 'Marketing', content: 'Atrae a más clientes directamente desde sus teléfonos.', imageUrl: 'gs://websapmax.appspot.com/subsections/marketing.jpg' },
+        { id: 'sub-2-2', title: 'QR Bar', content: 'Moderniza tu bar con un menú digital y código QR.', imageUrl: 'gs://websapmax.appspot.com/subsections/bar.jpg' },
+        { id: 'sub-2-3', title: 'App Mesa', content: 'Permite que los clientes pidan desde la mesa de forma fácil.', imageUrl: 'gs://websapmax.appspot.com/subsections/mesa.jpg' },
       ],
     },
   ],
@@ -107,27 +107,40 @@ const getDefaultConfig = (): LandingConfig => ({
 
 class LandingConfigService {
   private getConfigDocRef() {
-    // Usamos el SDK de cliente, que no necesita credenciales de admin y respeta las reglas de seguridad.
     const db = getDb();
     if (!db) throw new Error("Firestore (Cliente) no está inicializado.");
     return doc(collection(db, CONFIG_COLLECTION_NAME), MAIN_CONFIG_DOC_ID);
   }
   
   private async getImageUrl(path: string): Promise<string> {
-      // Si ya es una URL HTTPS, la devolvemos.
-      if (path.startsWith('http')) {
-          return path;
-      }
-      try {
-          const storage = getStorage();
-          // Asumimos que `path` es el nombre del archivo, construimos la ruta completa.
-          const imageRef = ref(storage, `subsections/${path}`);
-          return await getDownloadURL(imageRef);
-      } catch (error) {
-          console.error(`Error al obtener URL para ${path}:`, error);
-          // Devolver un placeholder en caso de error.
-          return 'https://placehold.co/400x300.png?text=Error';
-      }
+    if (!path) return 'https://placehold.co/400x300.png?text=No+Image';
+    
+    // Si ya es una URL HTTPS, la devolvemos directamente.
+    if (path.startsWith('https://')) {
+        return path;
+    }
+    
+    // Si es una ruta de Firebase Storage (gs://), obtenemos la URL de descarga.
+    if (path.startsWith('gs://')) {
+        try {
+            const storage = getStorage();
+            const imageRef = ref(storage, path);
+            return await getDownloadURL(imageRef);
+        } catch (error) {
+            console.error(`Error al obtener URL para la ruta GS "${path}":`, error);
+            return 'https://placehold.co/400x300.png?text=Error+GS';
+        }
+    }
+    
+    // Si no es ninguno de los anteriores, asumimos que es un nombre de archivo en la carpeta 'subsections'.
+    try {
+      const storage = getStorage();
+      const imageRef = ref(storage, `subsections/${path}`);
+      return await getDownloadURL(imageRef);
+    } catch (error) {
+      console.error(`Error al obtener URL para el archivo "${path}":`, error);
+      return 'https://placehold.co/400x300.png?text=Error+File';
+    }
   }
 
 
@@ -144,21 +157,27 @@ class LandingConfigService {
       
       const dbData = docSnap.data();
       
+      const sectionsFromDb = dbData.sections || [];
+      
       // Proceso de fusión y obtención de URLs de imágenes
       const mergedSectionsPromises = defaultConfig.sections.map(async (defaultSection) => {
-          const dbSection = dbData.sections?.find((s: LandingSection) => s.id === defaultSection.id);
-          if (dbSection) {
-              const subsectionsWithUrlsPromises = (dbSection.subsections || []).map(async (sub: LandingSubsection) => ({
-                  ...defaultConfig.sections.flatMap(s => s.subsections).find(ds => ds.id === sub.id),
-                  ...sub,
-                  imageUrl: sub.imageUrl ? await this.getImageUrl(sub.imageUrl) : 'https://placehold.co/400x300.png',
-              }));
-              
-              const subsectionsWithUrls = await Promise.all(subsectionsWithUrlsPromises);
-              
-              return { ...defaultSection, ...dbSection, subsections: subsectionsWithUrls };
-          }
-          return defaultSection;
+        const dbSection = sectionsFromDb.find((s: LandingSection) => s.id === defaultSection.id) || defaultSection;
+        
+        const subsectionsWithUrlsPromises = (dbSection.subsections || []).map(async (sub: LandingSubsection) => {
+          const defaultSub = defaultConfig.sections
+            .flatMap(s => s.subsections || [])
+            .find(ds => ds.id === sub.id) || {};
+          
+          return {
+            ...defaultSub,
+            ...sub,
+            imageUrl: await this.getImageUrl(sub.imageUrl || defaultSub.imageUrl),
+          };
+        });
+        
+        const subsectionsWithUrls = await Promise.all(subsectionsWithUrlsPromises);
+        
+        return { ...defaultSection, ...dbSection, subsections: subsectionsWithUrls };
       });
 
       const mergedSections = await Promise.all(mergedSectionsPromises);
@@ -175,7 +194,7 @@ class LandingConfigService {
 
     } catch(error: any) {
         console.error("Error getting landing config:", error.message, error.stack);
-        return getDefaultConfig();
+        throw error;
     }
   }
 

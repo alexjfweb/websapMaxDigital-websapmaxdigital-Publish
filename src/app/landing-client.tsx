@@ -77,7 +77,7 @@ export default function LandingClient({ initialConfig }: LandingClientProps) {
   // La carga y el error de la configuración se manejan en el Server Component.
   // Si initialConfig es nulo, el Server Component puede decidir qué renderizar.
   if (!config || !config.seo) {
-    return <ErrorDisplay title="Error de Configuración" message="La configuración inicial no se pudo cargar." />;
+    return <LandingSkeleton />;
   }
   
   return (
