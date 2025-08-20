@@ -1,75 +1,95 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // PUBLIC ACCESS: Configuration and plans for the landing page
+    // LANDING: Allow public read for landing page config and plans
     match /landing_configs/{docId} {
       allow read: if true;
-      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
+      allow write: if request.auth != null && request.auth.token.role == 'superadmin';
     }
-
+    
     match /landingPlans/{planId} {
       allow read: if true;
-      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
+      allow write: if request.auth != null && request.auth.token.role == 'superadmin';
     }
 
-    // SECURE ACCESS: Rules for other collections
-
-    // USERS: Can read/write their own data. Superadmin can read all.
+    // USERS: Secure user data
     match /users/{userId} {
-      allow read: if request.auth.uid == userId || (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin');
-      allow update: if request.auth.uid == userId;
-      // Create and delete might be handled by specific backend functions with admin privileges.
-      allow create, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
-    }
-    
-    // COMPANIES: Only accessible by authenticated users.
-    // Specific logic (e.g., only members of the company) should be handled here.
-    match /companies/{companyId} {
-      allow read, write: if request.auth != null && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == companyId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin');
+      // Any authenticated user can create their own user document
+      allow create: if request.auth != null && request.auth.uid == userId;
+      // Users can only read/update their own data
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      // Superadmins can do anything
+      allow write, delete: if request.auth != null && request.auth.token.role == 'superadmin';
     }
 
-    // DISHES: Readable by public (for menu), writable by company members.
+    // COMPANIES: Secure company data
+    match /companies/{companyId} {
+      // Superadmins can read all companies
+      allow read: if request.auth != null && (request.auth.token.role == 'superadmin' || request.auth.token.companyId == companyId);
+      // Only superadmins can create/delete companies
+      allow create, delete: if request.auth != null && request.auth.token.role == 'superadmin';
+      // Admins can update their own company
+      allow update: if request.auth != null && (request.auth.token.role == 'superadmin' || (request.auth.token.role == 'admin' && request.auth.token.companyId == companyId));
+    }
+    
+    // DISHES, ORDERS, RESERVATIONS, TABLES: Only accessible by company members
     match /dishes/{dishId} {
-        allow read: if true;
-        allow write: if request.auth != null && request.resource.data.companyId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId;
+      allow read: if true; // Public read for menus
+      allow write: if request.auth != null && request.auth.token.companyId == resource.data.companyId;
     }
     
-    // ORDERS, RESERVATIONS, TABLES: Writable by authenticated users, readable by company members.
     match /orders/{orderId} {
-      allow read, write: if request.auth != null;
+        allow create: if true; // Anyone can create an order
+        allow read, update: if request.auth != null && request.auth.token.companyId == resource.data.restaurantId;
+        allow delete: if request.auth != null && request.auth.token.role == 'superadmin';
     }
-    
-    match /reservations/{reservationId} {
-       // Allow public creation of reservations
-      allow create: if true;
-      allow read, update, delete: if request.auth != null;
+
+    match /reservations/{resId} {
+        allow create: if true; // Anyone can create a reservation
+        allow read, update: if request.auth != null && request.auth.token.companyId == resource.data.restaurantId;
+        allow delete: if request.auth != null && request.auth.token.role == 'superadmin';
     }
     
     match /tables/{tableId} {
-        allow read, write: if request.auth != null;
+        allow read: if true; // Public read for tables status
+        allow write: if request.auth != null && request.auth.token.companyId == resource.data.restaurantId;
     }
 
-    // SUPPORT TICKETS: Users can create, admins can read/update.
-    match /supportTickets/{ticketId} {
-        allow create: if request.auth != null;
-        allow read, update: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
-    }
-
-    // GLOBAL AUDIT: Only writable by backend/superadmin logic. Read-only for superadmins.
+    // AUDIT LOGS: Superadmin only
     match /globalAuditLogs/{logId} {
-        allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
-        // Writes should happen from a trusted backend environment.
-        allow write: if false; 
+      allow read, write: if request.auth != null && request.auth.token.role == 'superadmin';
     }
     
-    // PAYMENT CONFIGS: Only superadmin can manage.
-    match /payment_methods/{docId} {
-       allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
+    match /planAuditLogs/{logId} {
+        allow read, write: if request.auth != null && request.auth.token.role == 'superadmin';
     }
 
-    // Default deny all other paths. This rule is implicitly active.
+    // CONFIGURATION: Superadmin only
+    match /configuration/{configId} {
+        allow read, write: if request.auth != null && request.auth.token.role == 'superadmin';
+    }
+    
+    // SUPPORT TICKETS: Users can create, admins can manage
+    match /supportTickets/{ticketId} {
+        allow create: if request.auth != null;
+        allow read, update: if request.auth != null && (request.auth.token.role == 'superadmin' || request.auth.uid == resource.data.userId);
+    }
+    
+     // PAYMENT METHODS & CONFIGS: Secure, superadmin only
+    match /payment_methods/{docId} {
+      allow read, write: if request.auth != null && request.auth.token.role == 'superadmin';
+    }
+    
+    match /payment_configs/{companyId} {
+       allow read, update: if request.auth != null && (request.auth.token.role == 'superadmin' || request.auth.token.companyId == companyId);
+       allow create: if request.auth != null;
+    }
+
+    // Default deny all other reads/writes
+    match /{document=**} {
+      allow read, write: if false;
+    }
   }
 }
