@@ -2,10 +2,9 @@
 "use client";
 
 import * as React from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useSession } from '@/contexts/session-context';
 import AppHeader from './header';
-import { Loader2 } from 'lucide-react';
 import {
   Sidebar,
   SidebarHeader,
@@ -13,7 +12,6 @@ import {
   SidebarFooter,
   SidebarInset,
   SidebarRail,
-  SidebarProvider,
 } from '@/components/ui/sidebar';
 import NavigationMenu from '@/components/layout/navigation-menu';
 import FooterNavigation from '@/components/layout/footer-navigation';
@@ -23,18 +21,8 @@ import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
-function SimpleLoader({ message }: { message: string }) {
-  return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-muted-foreground">{message}</p>
-      </div>
-    </div>
-  );
-}
 
-function ProtectedLayout({ children }: { children: React.ReactNode }) {
+export default function AppShell({ children }: { children: React.ReactNode }) {
     const { currentUser, logout } = useSession();
     const router = useRouter();
 
@@ -43,14 +31,13 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
       router.push('/login');
     };
 
+    // This component now assumes currentUser exists because it's wrapped by AdminLayout
     if (!currentUser) {
-        // This should theoretically not be reached if logic in SessionProvider is correct,
-        // but serves as a final guard.
-        return <SimpleLoader message="Redirigiendo a inicio de sesión..." />;
+        return null; 
     }
 
     return (
-        <SidebarProvider>
+        <>
             <Sidebar collapsible="icon" variant="sidebar" side="left">
                 <SidebarHeader className="p-4 flex flex-col items-center gap-2">
                 <Link href="/" className="flex items-center gap-2 font-semibold text-lg text-primary">
@@ -115,41 +102,6 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
                 </main>
                 <FooterNavigation role={currentUser.role} />
             </SidebarInset>
-        </SidebarProvider>
+        </>
     );
-}
-
-
-export default function AppShell({ children }: { children: React.ReactNode }) {
-  const { currentUser, isLoading } = useSession();
-  const pathname = usePathname();
-  const router = useRouter();
-
-  const isPublicRoute = pathname === '/' || pathname === '/login' || pathname === '/register' || pathname.startsWith('/menu/');
-
-  React.useEffect(() => {
-    if (!isLoading && !currentUser && !isPublicRoute) {
-        router.push('/login');
-    }
-  }, [isLoading, currentUser, isPublicRoute, pathname, router]);
-
-
-  if (isLoading) {
-    return <SimpleLoader message="Verificando sesión..." />;
-  }
-  
-  if(isPublicRoute){
-      return (
-        <div className="flex flex-col min-h-svh">
-            <AppHeader />
-            <main className="flex-1 bg-background">{children}</main>
-        </div>
-      )
-  }
-
-  if(!currentUser){
-      return <SimpleLoader message="Redirigiendo a inicio de sesión..." />;
-  }
-
-  return <ProtectedLayout>{children}</ProtectedLayout>;
 }
