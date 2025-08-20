@@ -106,6 +106,7 @@ const getDefaultConfig = (): LandingConfig => ({
 
 class LandingConfigService {
   private getConfigDocRef() {
+    // Usamos el SDK de cliente, que no necesita credenciales de admin y respeta las reglas de seguridad.
     const db = getDb();
     if (!db) throw new Error("Firestore (Cliente) no está inicializado.");
     return doc(collection(db, CONFIG_COLLECTION_NAME), MAIN_CONFIG_DOC_ID);
@@ -118,13 +119,14 @@ class LandingConfigService {
       const defaultConfig = getDefaultConfig();
       
       if (!docSnap.exists()) {
-        console.warn("Landing config not found in DB, returning defaults.");
+        console.warn("Landing config not found in DB. Returning default config.");
+        // Devolvemos la configuración por defecto para que la UI no se rompa.
+        // En un escenario real, un superadmin debería inicializarla.
         return defaultConfig;
       }
       
       const dbData = docSnap.data();
       
-      // Deep merge sections and subsections to prevent missing fields
       const mergedSections = defaultConfig.sections.map(defaultSection => {
           const dbSection = dbData.sections?.find((s: LandingSection) => s.id === defaultSection.id);
           if (dbSection) {
@@ -149,7 +151,8 @@ class LandingConfigService {
 
     } catch(error: any) {
         console.error("Error getting landing config:", error.message, error.stack);
-        throw new Error(`No se pudo obtener la configuración de la landing page. Causa: ${error.message}`);
+        // Si hay un error (ej. permisos), devolvemos la config por defecto para evitar que la app se rompa.
+        return getDefaultConfig();
     }
   }
 

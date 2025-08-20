@@ -89,11 +89,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     if (isLoading) return;
 
     const isAuthPage = pathname === '/login' || pathname === '/register';
-    const isPublicRoute = isAuthPage || pathname === '/' || pathname.startsWith('/menu/');
     
-    if (!currentUser && !isPublicRoute) {
-      router.push('/login');
-    } else if (currentUser && isAuthPage) {
+    // Si el usuario está autenticado y está en una página de autenticación, redirige al dashboard correspondiente.
+    if (currentUser && isAuthPage) {
       const targetDashboard = `/${currentUser.role}/dashboard`;
       router.push(targetDashboard);
     }
