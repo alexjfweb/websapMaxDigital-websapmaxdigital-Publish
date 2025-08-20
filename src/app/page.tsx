@@ -1,7 +1,10 @@
-"use client";
+"use client"; // Convertir a Componente de Cliente
+
 import React, { Suspense } from 'react';
 import LandingClient from './landing-client';
 import { Skeleton } from '@/components/ui/skeleton';
+import { landingConfigService, LandingConfig } from '@/services/landing-config-service';
+import { useLandingConfig } from '@/hooks/use-landing-config'; // Importar el hook de cliente
 
 // Componente de carga para la página de inicio
 function LandingPageSkeleton() {
@@ -25,13 +28,21 @@ function LandingPageSkeleton() {
   );
 }
 
-
+// Page ahora es un Componente de Cliente que usa el hook
 export default function Page() {
-  // Usamos Suspense para mostrar un esqueleto de carga mientras el componente
-  // cliente (y sus datos de Firebase) se cargan de forma diferida.
+  // Usamos el hook para obtener los datos de forma segura en el cliente
+  const { landingConfig, isLoading, isError } = useLandingConfig();
+
+  if (isLoading || isError) {
+    // Si está cargando o hay un error, mostramos el esqueleto.
+    // El hook maneja los errores internamente.
+    return <LandingPageSkeleton />;
+  }
+  
   return (
     <Suspense fallback={<LandingPageSkeleton />}>
-      <LandingClient />
+      {/* Pasamos los datos al componente cliente como props */}
+      <LandingClient initialConfig={landingConfig} />
     </Suspense>
   );
 }

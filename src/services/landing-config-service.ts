@@ -1,8 +1,10 @@
 
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+// Corrección: Usar únicamente el SDK de Firebase del CLIENTE para operaciones de cliente.
+import { getDb } from '@/lib/firebase-lazy';
+import { collection, doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { auditService } from './audit-service';
-import { db } from '@/lib/firebase'; // Importar la instancia directa de db
 
+// Las interfaces y la configuración por defecto no cambian.
 // Basic structure for a subsection, like a feature card
 export interface LandingSubsection {
   id: string;
@@ -133,10 +135,11 @@ export const getLandingDefaultConfig = (): LandingConfig => ({
 
 class LandingConfigService {
   private getConfigDocRef() {
+    const db = getDb();
     if (!db) {
-      throw new Error("Firestore no está inicializado. No se puede acceder a la configuración.");
+      throw new Error("Firestore (Cliente) no está inicializado.");
     }
-    return doc(db, CONFIG_COLLECTION_NAME, MAIN_CONFIG_DOC_ID);
+    return doc(collection(db, CONFIG_COLLECTION_NAME), MAIN_CONFIG_DOC_ID);
   }
 
   async getLandingConfig(): Promise<LandingConfig> {
@@ -152,23 +155,22 @@ class LandingConfigService {
       
       const dbData = docSnap.data();
       
-      // ✅ CORRECCIÓN: Realizar una fusión profunda y segura, garantizando que `seo` y `sections` siempre existan.
       const finalConfig = {
           ...defaultConfig,
           ...dbData,
           id: docSnap.id,
           seo: { 
               ...defaultConfig.seo, 
-              ...(dbData.seo || {}) 
+              ...(dbData?.seo || {}) 
           },
-          sections: (dbData.sections && Array.isArray(dbData.sections)) ? dbData.sections : defaultConfig.sections,
-      };
+          sections: (dbData?.sections && Array.isArray(dbData.sections)) ? dbData.sections : defaultConfig.sections,
+      } as LandingConfig;
       
       return finalConfig;
 
     } catch(error: any) {
-        console.error("Error getting landing config:", error.message);
-        throw new Error('No se pudo obtener la configuración de la landing page.');
+        console.error("Error getting landing config:", error.message, error.stack);
+        throw new Error(`No se pudo obtener la configuración de la landing page. Causa: ${error.message}`);
     }
   }
 

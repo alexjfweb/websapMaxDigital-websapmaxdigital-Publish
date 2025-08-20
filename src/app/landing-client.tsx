@@ -10,9 +10,14 @@ import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import type { LandingConfig } from '@/services/landing-config-service';
-import { usePublicLandingConfig } from '@/hooks/use-landing-config';
 import { useLandingPlans } from '@/hooks/use-landing-plans';
 import { Skeleton } from '@/components/ui/skeleton';
+
+// Este componente ahora recibe la configuración inicial como una prop.
+interface LandingClientProps {
+  initialConfig: LandingConfig;
+}
+
 
 function LandingSkeleton() {
   return (
@@ -58,13 +63,9 @@ function ErrorDisplay({ title, message, onRetry }: { title: string; message: str
 }
 
 
-export default function LandingClient() {
-  const { 
-    config, 
-    isLoading: isLoadingConfig,
-    error: errorConfig,
-    refetch: retryConfig
-  } = usePublicLandingConfig();
+export default function LandingClient({ initialConfig }: LandingClientProps) {
+  // El hook ya no es necesario para la configuración inicial.
+  const config = initialConfig;
 
   const { 
     plans, 
@@ -73,16 +74,12 @@ export default function LandingClient() {
     refetch: retryPlans 
   } = useLandingPlans(true);
 
-  // ✅ CORRECCIÓN: Si la configuración principal o la de SEO no está lista, muestra el esqueleto.
-  // Esto previene el error "cannot read properties of undefined".
-  if (isLoadingConfig || !config || !config.seo) {
-    return <LandingSkeleton />;
+  // La carga y el error de la configuración se manejan en el Server Component.
+  // Si initialConfig es nulo, el Server Component puede decidir qué renderizar.
+  if (!config || !config.seo) {
+    return <ErrorDisplay title="Error de Configuración" message="La configuración inicial no se pudo cargar." />;
   }
   
-  if (errorConfig) {
-      return <ErrorDisplay title="Error al Cargar la Página" message={errorConfig} onRetry={retryConfig} />;
-  }
-
   return (
     <>
       <Head>
