@@ -1,7 +1,9 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
 import { Toaster } from "@/components/ui/toaster";
-import ClientProviders from '@/contexts/client-providers';
+import { SessionProvider } from '@/contexts/session-context';
+import { OrderProvider } from '@/contexts/order-context';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -18,9 +20,13 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={inter.className}>
-        <ClientProviders>
-          {children}
-        </ClientProviders>
+        <SessionProvider>
+          <SidebarProvider>
+            <OrderProvider>
+              {children}
+            </OrderProvider>
+          </SidebarProvider>
+        </SessionProvider>
         <Toaster />
       </body>
     </html>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from 'react';
@@ -16,14 +15,25 @@ import {
 import NavigationMenu from '@/components/layout/navigation-menu';
 import FooterNavigation from '@/components/layout/footer-navigation';
 import { Button } from '@/components/ui/button';
-import { LogOut, Settings, UserCircle } from 'lucide-react';
+import { LogOut, Settings, UserCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 
+function AdminLoader() {
+    return (
+        <div className="flex min-h-screen w-full items-center justify-center bg-background">
+            <div className="flex flex-col items-center gap-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-muted-foreground">Verificando sesión...</p>
+            </div>
+        </div>
+    );
+}
+
 export default function AppShell({ children }: { children: React.ReactNode }) {
-    const { currentUser, logout } = useSession();
+    const { currentUser, isLoading, logout } = useSession();
     const router = useRouter();
 
     const handleLogout = () => {
@@ -31,9 +41,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       router.push('/login');
     };
 
-    // This component now assumes currentUser exists because it's wrapped by AdminLayout
-    if (!currentUser) {
-        return null; 
+    React.useEffect(() => {
+        if (!isLoading && !currentUser) {
+          router.push('/login');
+        }
+    }, [isLoading, currentUser, router]);
+
+
+    if (isLoading || !currentUser) {
+        return <AdminLoader />;
     }
 
     return (
