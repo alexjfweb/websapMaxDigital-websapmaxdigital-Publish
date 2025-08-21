@@ -5,39 +5,17 @@ import { motion } from 'framer-motion';
 import Head from "next/head";
 import SubscriptionPlansSection from '@/components/SubscriptionPlansSection';
 import type { LandingPlan } from '@/types/plans';
-import { AlertTriangle, Loader2, RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import type { LandingConfig } from '@/services/landing-config-service';
-import { useLandingPlans } from '@/hooks/use-landing-plans';
-import { Skeleton } from '@/components/ui/skeleton';
 
-// Este componente ahora recibe la configuración inicial como una prop.
 interface LandingClientProps {
   initialConfig: LandingConfig;
-}
-
-
-function LandingSkeleton() {
-  return (
-    <main className="min-h-screen w-full flex flex-col items-center">
-      <section className="w-full py-20 flex flex-col items-center">
-        <Skeleton className="h-12 w-2/3 mb-4" />
-        <Skeleton className="h-6 w-1/2 mb-8" />
-        <Skeleton className="h-12 w-40 rounded-full" />
-      </section>
-      <section className="w-full py-16 container mx-auto">
-        <Skeleton className="h-8 w-1/3 mx-auto mb-4" />
-        <Skeleton className="h-5 w-2/3 mx-auto mb-12" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <Skeleton className="h-64 w-full" />
-          <Skeleton className="h-64 w-full" />
-          <Skeleton className="h-64 w-full" />
-        </div>
-      </section>
-    </main>
-  );
+  plans: LandingPlan[];
+  errorPlans: string | null;
+  retryPlans: () => void;
 }
 
 function ErrorDisplay({ title, message, onRetry }: { title: string; message: string; onRetry?: () => void; }) {
@@ -63,22 +41,7 @@ function ErrorDisplay({ title, message, onRetry }: { title: string; message: str
 }
 
 
-export default function LandingClient({ initialConfig }: LandingClientProps) {
-  // El hook ya no es necesario para la configuración inicial.
-  const config = initialConfig;
-
-  const { 
-    plans, 
-    isLoading: isLoadingPlans, 
-    error: errorPlans, 
-    refetch: retryPlans 
-  } = useLandingPlans(true);
-
-  // La carga y el error de la configuración se manejan en el Server Component.
-  // Si initialConfig es nulo, el Server Component puede decidir qué renderizar.
-  if (!config || !config.seo) {
-    return <LandingSkeleton />;
-  }
+export default function LandingClient({ initialConfig: config, plans, errorPlans, retryPlans }: LandingClientProps) {
   
   return (
     <>
@@ -165,9 +128,7 @@ export default function LandingClient({ initialConfig }: LandingClientProps) {
         ))}
         
         <div id="planes">
-          {isLoadingPlans ? (
-            <LandingSkeleton />
-          ) : errorPlans ? (
+          {errorPlans ? (
              <ErrorDisplay title="Error al Cargar Planes" message={errorPlans} onRetry={retryPlans} />
           ) : (
             <SubscriptionPlansSection plans={plans} />

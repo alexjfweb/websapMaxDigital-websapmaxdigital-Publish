@@ -111,28 +111,30 @@ class LandingConfigService {
   }
   
   private async getImageUrl(path: string): Promise<string> {
-    const placeholder = 'https://placehold.co/400x300.png?text=Cargando...';
+    const placeholder = 'https://placehold.co/400x300.png?text=...';
     if (!path) return placeholder;
-    
-    if (path.startsWith('https://')) {
-        return path;
-    }
+    if (path.startsWith('http')) return path;
     
     if (path.startsWith('gs://')) {
       try {
         const storage = getStorage();
         const imageRef = ref(storage, path);
         return await getDownloadURL(imageRef);
-      } catch (error: any) {
-        console.error(`Error al obtener URL para la ruta GS "${path}": ${error.code}`);
+      } catch (error) {
+        console.error(`Error getting download URL for gs:// path "${path}":`, error);
         return placeholder;
       }
     }
     
-    console.warn(`Ruta de imagen no soportada: ${path}`);
-    return placeholder;
+    try {
+        const storage = getStorage();
+        const imageRef = ref(storage, `subsections/${path}`);
+        return await getDownloadURL(imageRef);
+    } catch(e) {
+        console.error(`Could not get URL for file name "${path}":`, e);
+        return placeholder;
+    }
   }
-
 
   async getLandingConfig(): Promise<LandingConfig> {
     const docRef = this.getConfigDocRef();
@@ -146,32 +148,28 @@ class LandingConfigService {
     
     const dbData = docSnap.data();
     
-    const sectionsFromDb = dbData.sections || [];
-    const mergedSectionsPromises = defaultConfig.sections.map(async (defaultSection) => {
-      const dbSection = sectionsFromDb.find((s: LandingSection) => s.id === defaultSection.id) || {};
-      
-      const subsectionsFromDb = dbSection.subsections || defaultSection.subsections || [];
-
-      const subsectionsWithUrlsPromises = subsectionsFromDb.map(async (sub: LandingSubsection) => {
-        return {
-          ...sub,
-          imageUrl: await this.getImageUrl(sub.imageUrl),
-        };
-      });
-      
-      const subsectionsWithUrls = await Promise.all(subsectionsWithUrlsPromises);
-      
-      return { ...defaultSection, ...dbSection, subsections: subsectionsWithUrls };
-    });
-
-    const mergedSections = await Promise.all(mergedSectionsPromises);
+    // Mapea las subsecciones para resolver sus URLs de imagen
+    const resolvedSections = await Promise.all(
+        (dbData.sections || []).map(async (section: LandingSection) => {
+            if (section.subsections && section.subsections.length > 0) {
+                const resolvedSubsections = await Promise.all(
+                    section.subsections.map(async (sub: LandingSubsection) => ({
+                        ...sub,
+                        imageUrl: await this.getImageUrl(sub.imageUrl),
+                    }))
+                );
+                return { ...section, subsections: resolvedSubsections };
+            }
+            return section;
+        })
+    );
 
     return {
       ...defaultConfig,
       ...dbData,
       id: docSnap.id,
+      sections: resolvedSections,
       seo: { ...defaultConfig.seo, ...(dbData?.seo || {}) },
-      sections: mergedSections,
     };
   }
 

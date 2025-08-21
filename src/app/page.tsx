@@ -1,3 +1,4 @@
+
 "use client"; 
 
 import React, { Suspense } from 'react';
@@ -5,6 +6,7 @@ import LandingClient from './landing-client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLandingConfig } from '@/hooks/use-landing-config';
 import { AlertTriangle } from 'lucide-react';
+import { useLandingPlans } from '@/hooks/use-landing-plans';
 
 function LandingPageSkeleton() {
   return (
@@ -27,32 +29,46 @@ function LandingPageSkeleton() {
   );
 }
 
-function ErrorDisplay({ message }: { message: string }) {
+function ErrorDisplay({ message, onRetry }: { message: string, onRetry?: () => void }) {
     return (
         <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-4">
             <div className="bg-red-50 rounded-lg shadow-lg p-8 max-w-md w-full border border-red-200">
                 <AlertTriangle className="h-16 w-16 mx-auto text-red-500 mb-4" />
                 <h1 className="text-2xl font-bold text-red-800 mb-2">Error al Cargar la Página</h1>
                 <p className="text-red-700">{message}</p>
+                {onRetry && <Button onClick={onRetry} className="mt-4">Reintentar</Button>}
             </div>
         </div>
     );
 }
 
-export default function Page() {
-  const { landingConfig, isLoading, isError, error } = useLandingConfig();
+function LandingPageContent() {
+  const { landingConfig, isLoading: isLoadingConfig, isError: isErrorConfig, error: errorConfig } = useLandingConfig();
+  const { plans, isLoading: isLoadingPlans, error: errorPlans, refetch: retryPlans } = useLandingPlans(true);
 
-  if (isLoading) {
+  if (isLoadingConfig || isLoadingPlans) {
     return <LandingPageSkeleton />;
   }
   
-  if (isError) {
-    return <ErrorDisplay message={error?.message || 'Ocurrió un error inesperado.'} />
+  if (isErrorConfig || errorConfig) {
+    return <ErrorDisplay message={errorConfig?.message || 'Ocurrió un error inesperado al cargar la configuración.'} />
   }
   
   return (
+    <LandingClient 
+        initialConfig={landingConfig} 
+        plans={plans}
+        errorPlans={errorPlans}
+        retryPlans={retryPlans}
+    />
+  );
+}
+
+
+export default function Page() {
+  return (
     <Suspense fallback={<LandingPageSkeleton />}>
-      <LandingClient initialConfig={landingConfig} />
+      <LandingPageContent />
     </Suspense>
   );
 }
