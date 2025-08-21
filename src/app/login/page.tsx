@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,7 +20,7 @@ import { toast } from "@/hooks/use-toast";
 import { LogIn, Loader2 } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import React from "react";
-import { getFirebaseAuth } from "@/lib/firebase-lazy";
+import { auth } from "@/lib/firebase"; // Usar la instancia centralizada
 import { signInWithEmailAndPassword } from "firebase/auth";
 
 const loginFormSchema = z.object({
@@ -46,8 +47,6 @@ export default function LoginPage() {
   async function onSubmit(values: z.infer<typeof loginFormSchema>) {
     setIsSubmitting(true);
     try {
-      const auth = await getFirebaseAuth(); // Carga diferida de Firebase Auth
-      
       await signInWithEmailAndPassword(auth, values.email, values.password);
       
       toast({
@@ -55,9 +54,6 @@ export default function LoginPage() {
         description: '¡Bienvenido de nuevo! Redirigiendo...',
       });
       
-      // La redirección se maneja en SessionProvider, que se activará
-      // con el cambio de estado de autenticación.
-      // Forzamos un refresco para asegurar que el contexto se actualice si es necesario.
       router.refresh();
 
     } catch (error: any) {

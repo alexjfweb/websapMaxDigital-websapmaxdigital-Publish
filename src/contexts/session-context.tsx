@@ -2,10 +2,10 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import type { User as FirebaseUserType } from 'firebase/auth'; // Renombramos para evitar conflictos
+import type { User as FirebaseUserType } from 'firebase/auth';
 import type { User } from '@/types';
 import { useRouter, usePathname } from 'next/navigation';
-import { getFirebaseAuth } from '@/lib/firebase-lazy';
+import { auth } from '@/lib/firebase'; // Usar la instancia centralizada
 import { onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, getDoc, Timestamp } from 'firebase/firestore';
 import { toast } from "@/hooks/use-toast";
@@ -47,42 +47,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        const auth = await getFirebaseAuth();
-        const { getDb } = await import('@/lib/firebase-lazy');
-        const db = await getDb();
-        
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-          if (firebaseUser) {
-            const userDocRef = doc(db, "users", firebaseUser.uid);
-            const userDocSnap = await getDoc(userDocRef);
-            if (userDocSnap.exists()) {
-              const user = serializeUser(firebaseUser, userDocSnap.data());
-              setCurrentUser(user);
-            } else {
-              console.warn(`No user document found for UID: ${firebaseUser.uid}. Logging out.`);
-              await auth.signOut();
-              setCurrentUser(null);
-            }
-          } else {
-            setCurrentUser(null);
-          }
-          setIsLoading(false);
-        });
-        return unsubscribe;
-      } catch (error) {
-        console.error("Failed to initialize Firebase Auth listener:", error);
-        setIsLoading(false);
-        return () => {};
+    const db = getFirestore();
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const userDocRef = doc(db, "users", firebaseUser.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          const user = serializeUser(firebaseUser, userDocSnap.data());
+          setCurrentUser(user);
+        } else {
+          console.warn(`No user document found for UID: ${firebaseUser.uid}. Logging out.`);
+          await auth.signOut();
+          setCurrentUser(null);
+        }
+      } else {
+        setCurrentUser(null);
       }
-    };
+      setIsLoading(false);
+    });
 
-    const unsubscribePromise = initAuth();
-
-    return () => {
-      unsubscribePromise.then(unsubscribe => unsubscribe());
-    };
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -90,7 +74,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
     const isAuthPage = pathname === '/login' || pathname === '/register';
     
-    // Si el usuario está autenticado y está en una página de autenticación, redirige al dashboard correspondiente.
     if (currentUser && isAuthPage) {
       const targetDashboard = `/${currentUser.role}/dashboard`;
       router.push(targetDashboard);
@@ -99,7 +82,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-        const auth = await getFirebaseAuth();
         await auth.signOut();
         setCurrentUser(null);
         router.push('/login');

@@ -1,5 +1,6 @@
+
 // src/services/landing-config-service.ts
-import { getDb } from '@/lib/firebase-lazy';
+import { db } from '@/lib/firebase'; // Usar la instancia centralizada
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import { collection, doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { auditService } from './audit-service';
@@ -106,8 +107,6 @@ const getDefaultConfig = (): LandingConfig => ({
 
 class LandingConfigService {
   private getConfigDocRef() {
-    const db = getDb();
-    if (!db) throw new Error("Firestore (Cliente) no está inicializado.");
     return doc(collection(db, CONFIG_COLLECTION_NAME), MAIN_CONFIG_DOC_ID);
   }
   
@@ -119,7 +118,6 @@ class LandingConfigService {
         return path;
     }
     
-    // Asumimos que la ruta es 'gs://bucket/object/path'
     if (path.startsWith('gs://')) {
       try {
         const storage = getStorage();
@@ -131,7 +129,6 @@ class LandingConfigService {
       }
     }
     
-    // Si no es gs:// ni https://, la consideramos inválida por ahora
     console.warn(`Ruta de imagen no soportada: ${path}`);
     return placeholder;
   }
@@ -149,7 +146,6 @@ class LandingConfigService {
     
     const dbData = docSnap.data();
     
-    // Fusionar secciones y subsecciones con obtención de URLs
     const sectionsFromDb = dbData.sections || [];
     const mergedSectionsPromises = defaultConfig.sections.map(async (defaultSection) => {
       const dbSection = sectionsFromDb.find((s: LandingSection) => s.id === defaultSection.id) || {};

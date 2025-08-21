@@ -1,21 +1,12 @@
 
 // src/services/storage-service.ts
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
-import { getFirebaseApp } from '@/lib/firebase-lazy'; // Importar lazy loader
+import { app } from '@/lib/firebase'; // Importar la instancia centralizada
 import imageCompression from 'browser-image-compression';
 
-// Nota: No inicializamos 'storage' aquí para evitar la carga estática.
+const storage = getStorage(app);
 
 class StorageService {
-  private _storage: any = null;
-
-  private async getStorageInstance() {
-    if (!this._storage) {
-      const app = await getFirebaseApp();
-      this._storage = getStorage(app);
-    }
-    return this._storage;
-  }
 
   /**
    * Comprime una imagen antes de subirla.
@@ -52,7 +43,6 @@ class StorageService {
    * @returns Una promesa que se resuelve con la URL de descarga pública del archivo.
    */
   async uploadFile(file: File, path: string): Promise<string> {
-    const storage = await this.getStorageInstance();
     return new Promise((resolve, reject) => {
       if (!(file instanceof File)) {
         const errorMsg = "Error en uploadFile: el argumento no es un objeto File.";
@@ -116,7 +106,6 @@ class StorageService {
    * @param fileUrl La URL completa del archivo a eliminar.
    */
   async deleteFile(fileUrl: string): Promise<void> {
-    const storage = await this.getStorageInstance();
     try {
       const fileRef = ref(storage, fileUrl);
       await deleteObject(fileRef);

@@ -1,25 +1,24 @@
+
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-import { firebaseConfig } from './firebase-config'; // Importar la configuración centralizada
+import { firebaseConfig } from './firebase-config';
 
-// Patrón Singleton para una inicialización segura de Firebase
-function getFirebaseApp(): FirebaseApp {
-  // Validar que la configuración no esté vacía antes de inicializar
-  if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-    console.error("Firebase config is missing or incomplete. Check your .env.local file.");
-    // Esto podría lanzar un error para detener la ejecución si la config es vital
-  }
-  
-  if (!getApps().length) {
-    return initializeApp(firebaseConfig);
-  }
-  return getApp();
+// Patrón Singleton para una inicialización segura y única de Firebase.
+let app: FirebaseApp;
+if (!getApps().length) {
+    if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+        console.error("Firebase config is missing or incomplete. Cannot initialize Firebase. Check your .env.local file.");
+        // En un escenario real, podríamos lanzar un error aquí para detener la ejecución.
+        // Para este entorno, intentaremos continuar, pero es probable que falle.
+    }
+    app = initializeApp(firebaseConfig);
+} else {
+    app = getApp();
 }
 
-const app = getFirebaseApp();
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Exporta las instancias que necesitas en tu aplicación
-export { app, db, auth, getFirebaseApp };
+// Exporta las instancias únicas que se deben usar en toda la aplicación.
+export { app, db, auth };

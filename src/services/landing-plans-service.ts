@@ -13,9 +13,10 @@ import {
   Timestamp,
   serverTimestamp,
 } from 'firebase/firestore';
+import { db } from '@/lib/firebase'; // Usar la instancia centralizada
 import type { LandingPlan, CreatePlanRequest, UpdatePlanRequest, PlanAuditLog } from '@/types/plans';
 import { auditService } from './audit-service';
-import { getDb } from '@/lib/firebase-lazy'; // Usar lazy loading
+
 
 // --- HELPER FUNCTIONS ---
 const generateSlug = (name: string): string => {
@@ -90,12 +91,10 @@ class LandingPlansService {
   private readonly AUDIT_COLLECTION = 'planAuditLogs';
   
   private getPlansCollection() {
-    const db = getDb();
     return collection(db, this.COLLECTION_NAME);
   }
 
   private getAuditCollection() {
-      const db = getDb();
       return collection(db, this.AUDIT_COLLECTION);
   }
 
@@ -209,7 +208,6 @@ class LandingPlansService {
   }
 
   async reorderPlans(planIds: string[], userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<void> {
-    const db = getDb();
     const batch = writeBatch(db);
     const coll = this.getPlansCollection();
 
@@ -244,7 +242,6 @@ class LandingPlansService {
   }
 
   async rollbackPlan(planId: string, auditLogId: string, userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<void> {
-    const db = getDb();
     const auditColl = this.getAuditCollection();
     const auditLogRef = doc(auditColl, auditLogId);
     const auditLogSnap = await getDoc(auditLogRef);

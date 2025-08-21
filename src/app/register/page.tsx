@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,7 +21,7 @@ import { UserPlus, Loader2, Check, X } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { User as FirebaseUser, deleteUser } from "firebase/auth";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { getFirebaseAuth, getDb } from "@/lib/firebase-lazy"; // Usar lazy loading
+import { auth, db } from "@/lib/firebase"; // Usar la instancia centralizada
 import { doc, setDoc } from "firebase/firestore";
 import type { UserRole, User, Company } from "@/types";
 import React, { Suspense, useState, useEffect } from "react";
@@ -106,9 +107,6 @@ function RegisterForm() {
     let firebaseUser: FirebaseUser | null = null;
     
     try {
-      const auth = await getFirebaseAuth(); // Lazy load
-      const db = await getDb(); // Lazy load
-
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       firebaseUser = userCredential.user;
 

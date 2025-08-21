@@ -1,67 +1,62 @@
 
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Permite lectura pública para la configuración de la landing y los planes.
-    // Esto es necesario para que cualquier visitante pueda ver la página de inicio.
+    
+    // Regla global: Nadie puede leer o escribir por defecto.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    // Regla #1: Permitir lectura pública para la configuración de la landing.
     match /landing_configs/{docId} {
       allow read: if true;
-      allow write: if request.auth != null; // Solo usuarios autenticados pueden escribir (ej. superadmin)
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
     }
     
+    // Regla #2: Permitir lectura pública para los planes de la landing.
     match /landingPlans/{planId} {
       allow read: if true;
-      allow write: if request.auth != null; // Solo usuarios autenticados pueden escribir (ej. superadmin)
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
+    }
+
+    // Regla #3: Permitir a los usuarios leer su propio documento.
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      // Solo el superadmin puede crear o modificar usuarios directamente.
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
+    }
+
+    // Regla #4: Proteger las compañías. Solo los usuarios autenticados que pertenecen a la compañía pueden leer sus datos.
+    match /companies/{companyId} {
+        allow read: if request.auth != null && request.auth.uid != null && resource.data.ownerId == request.auth.uid;
+        allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
     }
     
-    // Reglas para los usuarios.
-    // Un usuario puede leer sus propios datos. Nadie más puede.
-    // La creación es pública (registro), pero la actualización y borrado solo la puede hacer el propio usuario.
-    match /users/{userId} {
-      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+    // Regla #5: Los platos de una compañía son públicos si la compañía está activa.
+    match /dishes/{dishId} {
+        allow read: if get(/databases/$(database)/documents/companies/$(resource.data.companyId)).data.status == 'active';
+        allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == resource.data.companyId;
+    }
+
+    // Regla #6: Los pedidos son privados.
+    match /orders/{orderId} {
+      allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == resource.data.restaurantId;
+      // Permitir crear pedidos a cualquiera (público)
       allow create: if true;
     }
     
-    // Reglas para las compañías.
-    // Los datos de una compañía solo pueden ser leídos por sus empleados/admins.
-    match /companies/{companyId} {
-      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == companyId;
-      allow update: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == companyId;
-      allow create: if request.auth != null; // Permitir a usuarios autenticados crear una compañía.
-    }
-    
-    // Reglas para los platos.
-    // Cualquiera puede leerlos (para el menú público).
-    // Solo los empleados de la compañía pueden crearlos, actualizarlos o borrarlos.
-    match /dishes/{dishId} {
-        allow read: if true;
-        allow create, update, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == resource.data.companyId;
-    }
-
-    // Reglas para los pedidos.
-    // Solo los empleados pueden leerlos. 
-    // La creación puede ser anónima si viene del menú público (se ajustará con API segura).
-    match /orders/{orderId} {
-        allow read, update, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == resource.data.restaurantId;
-        allow create: if true;
-    }
-    
-    // Reglas para las reservas.
+    // Regla #7: Las reservas son privadas.
     match /reservations/{reservationId} {
-      allow read, update, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == resource.data.restaurantId;
-      allow create: if true; // Permite que cualquiera cree una reserva.
+      allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == resource.data.restaurantId;
+      // Permitir crear reservas a cualquiera (público)
+      allow create: if true;
     }
     
-     // Reglas para las mesas.
-    match /tables/{tableId} {
-      allow read: if true; // Todos pueden leer el estado de las mesas
-      allow create, update, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == resource.data.restaurantId;
-    }
-    
-    // Denegar todo por defecto para las demás colecciones
-    match /{document=**} {
-      allow read, write: if false;
+    // Regla #8: Los logs de auditoría solo son accesibles por el superadmin.
+    match /globalAuditLogs/{logId} {
+        allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
     }
   }
 }
