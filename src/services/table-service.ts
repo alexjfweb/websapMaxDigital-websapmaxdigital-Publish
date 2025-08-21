@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -14,6 +15,9 @@ import {
   Timestamp
 } from 'firebase/firestore';
 
+// Este servicio ahora está diseñado para ser llamado desde componentes de cliente
+// a través de rutas API, no directamente.
+
 export type TableStatus = 'available' | 'occupied' | 'reserved' | 'out_of_service';
 
 export interface Table {
@@ -29,20 +33,6 @@ export interface Table {
   restaurantId?: string;
 }
 
-export interface TableReservation {
-  id?: string;
-  tableId: string;
-  tableNumber: number;
-  reservationDate: string;
-  reservationTime: string;
-  customerName?: string;
-  customerPhone?: string;
-  partySize: number;
-  status: 'pending' | 'confirmed' | 'cancelled';
-  createdAt?: any;
-  updatedAt?: any;
-}
-
 export interface TableLog {
   id: string;
   tableId: string;
@@ -55,255 +45,69 @@ export interface TableLog {
   createdAt: Timestamp;
 }
 
+
 class TableService {
-  private get tablesCollection() {
-    if (!db) {
-      throw new Error("La base de datos no está disponible.");
-    }
-    return collection(db, 'tables');
-  }
-  private get reservationsCollection() {
-     if (!db) {
-      throw new Error("La base de datos no está disponible.");
-    }
-    return collection(db, 'table_reservations');
-  }
-  private get logsCollection() {
-     if (!db) {
-      throw new Error("La base de datos no está disponible.");
-    }
-    return collection(db, 'table_logs');
-  }
-
-  // CRUD
-  async createTable(tableData: Omit<Table, 'id' | 'createdAt' | 'updatedAt'> & { restaurantId?: string }): Promise<string> {
-    const coll = this.tablesCollection;
-
-    const restaurantId = tableData.restaurantId;
-    if (!restaurantId) {
-        throw new Error("El ID del restaurante es obligatorio para crear una mesa.");
-    }
-    
-    // Validar unicidad de número de mesa por restaurante
-    const q = query(coll, where('restaurantId', '==', restaurantId), where('number', '==', tableData.number), where('isActive', '==', true));
-    const existing = await getDocs(q);
-    if (!existing.empty) {
-      throw new Error(`Ya existe una mesa con el número ${tableData.number} en este restaurante.`);
-    }
-    const tableWithTimestamps = {
-      ...tableData,
-      restaurantId,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    };
-    const docRef = await addDoc(coll, tableWithTimestamps);
-    await this.createLog({
-      tableId: docRef.id,
-      tableNumber: tableData.number,
-      action: 'created',
-      details: `Mesa ${tableData.number} creada con capacidad ${tableData.capacity}`,
-      performedBy: 'admin',
+  
+  async createTable(tableData: Omit<Table, 'id'>): Promise<string> {
+    const response = await fetch('/api/tables', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(tableData),
     });
-    return docRef.id;
+    if (!response.ok) {
+      const { error } = await response.json();
+      throw new Error(error || 'Failed to create table');
+    }
+    const { id } = await response.json();
+    return id;
   }
 
   async updateTable(tableId: string, updates: Partial<Table>): Promise<void> {
-    const coll = this.tablesCollection;
-
-    const tableRef = doc(coll, tableId);
-    const tableDoc = await getDoc(tableRef);
-    if (!tableDoc.exists()) throw new Error('Mesa no encontrada');
-    const previousData = tableDoc.data() as Table;
-    // Validar unicidad si se cambia el número
-    if (updates.number && updates.number !== previousData.number) {
-      const q = query(coll, where('restaurantId', '==', previousData.restaurantId), where('number', '==', updates.number), where('isActive', '==', true));
-      const existing = await getDocs(q);
-      if (!existing.empty) {
-        throw new Error(`Ya existe una mesa con el número ${updates.number} en este restaurante.`);
-      }
-    }
-    await updateDoc(tableRef, { ...updates, updatedAt: serverTimestamp() });
-    await this.createLog({
-      tableId,
-      tableNumber: previousData.number,
-      action: 'updated',
-      details: `Mesa ${previousData.number} actualizada`,
-      performedBy: 'admin',
+     const response = await fetch(`/api/tables/${tableId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
     });
+    if (!response.ok) {
+      const { error } = await response.json();
+      throw new Error(error || 'Failed to update table');
+    }
   }
 
   async deleteTable(tableId: string): Promise<void> {
-    const coll = this.tablesCollection;
-    
-    const tableRef = doc(coll, tableId);
-    const tableDoc = await getDoc(tableRef);
-    if (!tableDoc.exists()) throw new Error('Mesa no encontrada');
-    const tableData = tableDoc.data() as Table;
-    await updateDoc(tableRef, {
-      isActive: false,
-      status: 'out_of_service',
-      updatedAt: serverTimestamp(),
+    const response = await fetch(`/api/tables/${tableId}`, {
+        method: 'DELETE',
     });
-    await this.createLog({
-      tableId,
-      tableNumber: tableData.number,
-      action: 'deleted',
-      details: `Mesa ${tableData.number} eliminada`,
-      performedBy: 'admin',
-    });
+    if (!response.ok) {
+      const { error } = await response.json();
+      throw new Error(error || 'Failed to delete table');
+    }
   }
 
   async getTable(tableId: string): Promise<Table | null> {
-    const coll = this.tablesCollection;
-
-    const tableRef = doc(coll, tableId);
-    const tableDoc = await getDoc(tableRef);
-    if (!tableDoc.exists()) return null;
-    return { id: tableDoc.id, ...tableDoc.data() } as Table;
+    if (!tableId) return null;
+    const response = await fetch(`/api/tables/${tableId}`);
+    if (!response.ok) {
+        if(response.status === 404) return null;
+        throw new Error('Failed to fetch table');
+    }
+    return response.json();
   }
 
   async getAllTables(restaurantId: string): Promise<Table[]> {
-    const coll = this.tablesCollection;
-
-    if (!restaurantId) {
-      throw new Error("El ID del restaurante es obligatorio.");
+    if (!restaurantId) return [];
+    const response = await fetch(`/api/companies/${restaurantId}/tables`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch tables');
     }
-    const q = query(coll, where('isActive', '==', true), where('restaurantId', '==', restaurantId), orderBy('number', 'asc'));
-    
-    const querySnapshot = await getDocs(q);
-    
-    const tables: Table[] = [];
-    querySnapshot.forEach(doc => {
-        const data = doc.data();
-        if (data.number && data.status && data.capacity) {
-            tables.push({ id: doc.id, ...data } as Table);
-        } else {
-            console.warn(`[WARN] La mesa con ID ${doc.id} tiene datos incompletos y será omitida.`);
-        }
-    });
-    
-    return tables;
-}
-
-
-  // Reservas
-  async reserveTable(reservationData: Omit<TableReservation, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
-    const resColl = this.reservationsCollection;
-    const tableColl = this.tablesCollection;
-    
-    const batch = writeBatch(db);
-    const reservationWithTimestamps = {
-      ...reservationData,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    };
-    const reservationRef = doc(resColl);
-    batch.set(reservationRef, reservationWithTimestamps);
-    const tableRef = doc(tableColl, reservationData.tableId);
-    batch.update(tableRef, { status: 'reserved', updatedAt: serverTimestamp() });
-    await batch.commit();
-    await this.createLog({
-      tableId: reservationData.tableId,
-      tableNumber: reservationData.tableNumber,
-      action: 'reserved',
-      previousStatus: 'available',
-      newStatus: 'reserved',
-      details: `Mesa ${reservationData.tableNumber} reservada para ${reservationData.reservationDate} a las ${reservationData.reservationTime}`,
-      performedBy: 'admin',
-    });
-    return reservationRef.id;
+    return response.json();
   }
-
-  async releaseTable(tableId: string): Promise<void> {
-    const tableColl = this.tablesCollection;
-    const resColl = this.reservationsCollection;
-    
-    const batch = writeBatch(db);
-    const tableRef = doc(tableColl, tableId);
-    batch.update(tableRef, { status: 'available', updatedAt: serverTimestamp() });
-    // Cancelar reservas pendientes
-    const reservationsQuery = query(
-      resColl,
-      where('tableId', '==', tableId),
-      where('status', '==', 'pending')
-    );
-    const reservationsSnapshot = await getDocs(reservationsQuery);
-    reservationsSnapshot.docs.forEach(docSnap => {
-      batch.update(docSnap.ref, { status: 'cancelled', updatedAt: serverTimestamp() });
-    });
-    await batch.commit();
-    const tableDoc = await getDoc(tableRef);
-    const tableData = tableDoc.data() as Table;
-    await this.createLog({
-      tableId,
-      tableNumber: tableData.number,
-      action: 'released',
-      previousStatus: 'reserved',
-      newStatus: 'available',
-      details: `Mesa ${tableData.number} liberada`,
-      performedBy: 'admin',
-    });
-  }
-
+  
   async changeTableStatus(tableId: string, newStatus: TableStatus): Promise<void> {
-    const coll = this.tablesCollection;
-
-    const tableRef = doc(coll, tableId);
-    const tableDoc = await getDoc(tableRef);
-    if (!tableDoc.exists()) throw new Error('Mesa no encontrada');
-    const previousData = tableDoc.data() as Table;
-    await updateDoc(tableRef, { status: newStatus, updatedAt: serverTimestamp() });
-    await this.createLog({
-      tableId,
-      tableNumber: previousData.number,
-      action: 'status_changed',
-      previousStatus: previousData.status,
-      newStatus,
-      details: `Estado de mesa ${previousData.number} cambiado de ${previousData.status} a ${newStatus}`,
-      performedBy: 'admin',
-    });
+      await this.updateTable(tableId, { status: newStatus });
   }
-
-  async getTableReservations(tableId?: string): Promise<TableReservation[]> {
-    const coll = this.reservationsCollection;
-
-    let q = query(coll, orderBy('reservationDate', 'desc'), orderBy('reservationTime', 'desc'));
-    if (tableId) {
-      q = query(coll, where('tableId', '==', tableId), orderBy('reservationDate', 'desc'), orderBy('reservationTime', 'desc'));
-    }
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as TableReservation[];
-  }
-
-  // Logs
-  private async createLog(logData: Omit<TableLog, 'id' | 'createdAt'> & { restaurantId?: string }): Promise<void> {
-    const coll = this.logsCollection;
-
-    const logWithRestaurant = logData.restaurantId
-      ? { ...logData, restaurantId: logData.restaurantId, createdAt: serverTimestamp() }
-      : { ...logData, createdAt: serverTimestamp() };
-    await addDoc(coll, logWithRestaurant);
-  }
-
-  async getTableLogs(tableId: string): Promise<TableLog[]> {
-    const coll = this.logsCollection;
-
-    if (!tableId) {
-      throw new Error("El ID de la mesa es obligatorio.");
-    }
-    const q = query(
-      coll,
-      where('tableId', '==', tableId),
-      orderBy('createdAt', 'desc')
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as TableLog[];
-  }
-
-  // Utilidades visuales
+  
+  // Utilidades visuales (se mantienen en el cliente)
   getStatusColor(status: TableStatus): string {
     switch (status) {
       case 'available':
@@ -318,7 +122,7 @@ class TableService {
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   }
-
+  
   getActionText(action: TableLog['action']): string {
     switch (action) {
       case 'created': return 'Mesa Creada';

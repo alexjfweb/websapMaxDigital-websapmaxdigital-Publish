@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -14,117 +15,70 @@ import {
 import type { Company } from '@/types';
 import { auditService } from './audit-service';
 
-export type CreateCompanyInput = Omit<Company, 'id' | 'createdAt' | 'updatedAt' | 'registrationDate' | 'status' | 'planId' | 'subscriptionStatus' | 'trialEndsAt' >;
-
-const serializeDate = (date: any): string | null => {
-  if (!date) return null;
-  if (date instanceof Timestamp) return date.toDate().toISOString();
-  if (date instanceof Date) return date.toISOString();
-  if (typeof date === 'string') {
-      const parsedDate = new Date(date);
-      if (!isNaN(parsedDate.getTime())) {
-          return parsedDate.toISOString();
-      }
-  }
-  if (date && typeof date.seconds === 'number') {
-    return new Date(date.seconds * 1000).toISOString();
-  }
-  return (typeof date === 'string') ? date : null;
-};
+// Este servicio ahora interactúa directamente con la API en lugar de con Firestore,
+// para ser usado por los componentes de cliente.
 
 const serializeCompany = (id: string, data: any): Company => {
   const companyData = data as Partial<Company>;
   return {
     ...companyData,
     id,
-    createdAt: serializeDate(companyData.createdAt) || new Date().toISOString(),
-    updatedAt: serializeDate(companyData.updatedAt) || new Date().toISOString(),
-    registrationDate: serializeDate(companyData.registrationDate) || new Date().toISOString(),
-    trialEndsAt: serializeDate(companyData.trialEndsAt),
+    createdAt: new Date(data.createdAt?.seconds * 1000 || Date.now()).toISOString(),
+    updatedAt: new Date(data.updatedAt?.seconds * 1000 || Date.now()).toISOString(),
+    registrationDate: new Date(data.registrationDate || Date.now()).toISOString(),
+    trialEndsAt: data.trialEndsAt ? new Date(data.trialEndsAt.seconds * 1000).toISOString() : null,
   } as Company;
 };
 
 class CompanyService {
-  private getCompaniesCollection() {
-    if (!db) throw new Error("Database not available");
-    return collection(db, 'companies');
-  }
-
+  
   async getCompanies(): Promise<Company[]> {
-    const coll = this.getCompaniesCollection();
-    const q = query(coll, where("status", "in", ["active", "pending", "inactive"]));
-    try {
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => serializeCompany(doc.id, doc.data()));
-    } catch (error) {
-      console.error('Error fetching companies:', error);
-      return [];
+    const response = await fetch('/api/companies');
+    if (!response.ok) {
+      throw new Error('Failed to fetch companies');
     }
+    const result = await response.json();
+    return result.data;
   }
 
   async getCompanyById(id: string): Promise<Company | null> {
-    if (!id) return null;
-    const docRef = doc(this.getCompaniesCollection(), id);
-    const docSnap = await getDoc(docRef);
-    return docSnap.exists() ? serializeCompany(docSnap.id, docSnap.data()) : null;
+     if (!id) return null;
+    const response = await fetch(`/api/companies/${id}`);
+    if (!response.ok) {
+      if (response.status === 404) return null;
+      throw new Error('Failed to fetch company');
+    }
+    return response.json();
   }
   
   async createCompany(companyData: Partial<Company>, user: { uid: string; email: string }): Promise<{id: string}> {
-    if (!companyData.name || !companyData.ruc) {
-      throw new Error("Company name and RUC are required.");
+    const response = await fetch('/api/companies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyData, user }),
+    });
+    if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.error || 'Failed to create company');
     }
-    
-    const coll = this.getCompaniesCollection();
-    const timestamp = serverTimestamp();
-    const docRef = await addDoc(coll, {
-      ...companyData,
-      status: 'active',
-      createdAt: timestamp,
-      updatedAt: timestamp,
-      registrationDate: new Date().toISOString(),
-    });
-    
-    const newCompany = await this.getCompanyById(docRef.id);
-    if (!newCompany) throw new Error("Failed to retrieve newly created company.");
-    
-    await auditService.log({
-      entity: 'companies',
-      entityId: docRef.id,
-      action: 'created',
-      performedBy: user,
-      newData: newCompany,
-    });
-    
-    return {id: docRef.id};
+    const result = await response.json();
+    return { id: result.companyId };
   }
 
   async updateCompany(companyId: string, companyData: Partial<Company>, user: { uid: string; email: string }): Promise<Company> {
-    const coll = this.getCompaniesCollection();
-    const docRef = doc(coll, companyId);
-    const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) throw new Error("Company does not exist.");
-    
-    const previousData = serializeCompany(docSnap.id, docSnap.data());
-    
-    await updateDoc(docRef, {
-      ...companyData,
-      updatedAt: serverTimestamp(),
+    const response = await fetch(`/api/companies/${companyId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyData, user }),
     });
-
-    const updatedCompany = await this.getCompanyById(companyId);
-    if (!updatedCompany) throw new Error("Failed to retrieve company after update.");
-
-    await auditService.log({
-      entity: 'companies',
-      entityId: companyId,
-      action: 'updated',
-      performedBy: user,
-      previousData,
-      newData: updatedCompany,
-    });
-
-    return updatedCompany;
+     if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.error || 'Failed to update company');
+    }
+    const result = await response.json();
+    return result.data;
   }
 }
 
 export const companyService = new CompanyService();
+export type { Company };

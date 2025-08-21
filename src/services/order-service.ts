@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -9,80 +10,22 @@ import {
 } from 'firebase/firestore';
 import type { Order } from '@/types';
 
-// Función robusta para convertir cualquier formato de fecha a ISO string
-const serializeDate = (date: any): string => {
-  if (!date) return new Date().toISOString();
-  if (date instanceof Timestamp) return date.toDate().toISOString();
-  if (date instanceof Date) return date.toISOString();
-  if (typeof date === 'string') return new Date(date).toISOString();
-  if (date && typeof date === 'object' && date.seconds) {
-    return new Date(date.seconds * 1000).toISOString();
-  }
-  return new Date().toISOString();
-};
-
-
+// Este servicio ahora llama a la API del cliente.
 class OrderService {
-  private get ordersCollection() {
-    if (!db) {
-      console.error("Firebase no está inicializado. No se puede acceder a la colección 'orders'.");
-      throw new Error("La base de datos no está disponible.");
-    }
-    return collection(db, 'orders');
-  }
-
+  
   async getOrdersByCompany(companyId: string): Promise<Order[]> {
-    if (!companyId || typeof companyId !== 'string' || companyId.trim() === '') {
-      console.error('[OrderService] El ID de la compañía es requerido y debe ser una cadena válida. Devolviendo array vacío.');
+    if (!companyId) {
+      console.log('[OrderService] No companyId provided, returning empty array.');
       return [];
     }
-    
-    const coll = this.ordersCollection;
-    
     try {
-      const q = query(
-        coll,
-        where('restaurantId', '==', companyId),
-        orderBy('date', 'desc') 
-      );
-
-      const querySnapshot = await getDocs(q);
-      
-      if (querySnapshot.empty) {
-        return [];
+      const response = await fetch(`/api/companies/${companyId}/orders`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch orders');
       }
-      
-      const orders: Order[] = [];
-
-      querySnapshot.forEach(doc => {
-        const data = doc.data();
-        
-        // Validación básica de datos para evitar errores de renderizado
-        if (!data.cliente?.nombre || !data.date || typeof data.total !== 'number' || !data.status) {
-          console.warn(`[WARN] Documento de pedido ${doc.id} omitido por datos incompletos.`, data);
-          return;
-        }
-
-        const productos = Array.isArray(data.productos) ? data.productos : [];
-
-        orders.push({
-          id: doc.id,
-          customerName: data.cliente.nombre,
-          date: serializeDate(data.date), // Serialización aplicada
-          items: productos.reduce((sum: number, item: any) => sum + (item.cantidad || 0), 0),
-          total: data.total,
-          status: data.status,
-          type: data.mesa ? 'dine-in' : 'delivery',
-          restaurantId: data.restaurantId,
-          productos: productos,
-          cliente: data.cliente,
-          mesa: data.mesa,
-        });
-      });
-      
-      return orders;
-    } catch (error: any) {
-      console.error(`❌ Error al obtener los pedidos para la compañía ${companyId}:`, error);
+      return await response.json();
+    } catch (error) {
+      console.error(`Error fetching orders for company ${companyId}:`, error);
       return [];
     }
   }
