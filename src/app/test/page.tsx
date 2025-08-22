@@ -13,7 +13,7 @@ export default function TestFirestorePage() {
   useEffect(() => {
     async function fetchPlans() {
       try {
-        console.log("Iniciando fetch de planes...");
+        console.log("Iniciando fetch de planes desde 'landingPlans'...");
         const snapshot = await getDocs(collection(db, "landingPlans"));
         if (snapshot.empty) {
           console.log("No se encontraron documentos en 'landingPlans'.");
@@ -43,7 +43,7 @@ export default function TestFirestorePage() {
       {error && <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
         <p className="font-bold">Error:</p> 
         <p>{error}</p>
-        <p className="mt-2 text-sm">Verifica las reglas de seguridad de Firestore y el nombre de la colección.</p>
+        <p className="mt-2 text-sm">Verifica las reglas de seguridad de Firestore y el nombre de la colección en la consola de Firebase.</p>
         </div>
       }
       
