@@ -1,42 +1,26 @@
-
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-  
-    // Permite la lectura pública de imágenes de platos, logos y banners.
-    // Esto es necesario para que el menú público y la landing page funcionen.
-    match /dishes/{companyId}/{allPaths=**} {
-      allow read: if true;
-      allow write: if request.auth != null; // Solo usuarios autenticados pueden subir
-    }
-    
-    match /profiles/{companyId}/{allPaths=**} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
-    
-    // Las imágenes de subsecciones de la landing deben ser públicas
-    match /landing-subsections/{allPaths=**} {
-       allow read: if true;
-       allow write: if request.auth != null; // Asumimos que solo admins suben esto
-    }
-
-    // Permite a los usuarios leer y escribir en su propia carpeta de avatares
-    match /avatars/{userId}/{allPaths=**} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // Permite a los usuarios autenticados subir adjuntos de soporte
-    match /support-attachments/{companyId}/{allPaths=**} {
-      allow read: if request.auth != null; // Solo admins pueden ver
-      allow write: if request.auth != null;
-    }
-
-    // Regla de denegación por defecto para cualquier otra ruta
+    // Permitir la lectura pública de todos los archivos.
+    // Esto es común para imágenes, logos, etc., que deben ser visibles en la app y el menú.
     match /{allPaths=**} {
-      allow read, write: if false;
+      allow read;
+    }
+
+    // Permitir la escritura de imágenes solo en rutas específicas.
+    // Esto previene que usuarios suban archivos a cualquier parte de tu bucket.
+    match /dishes/{companyId}/{allPaths=**} {
+      allow write: if request.auth != null;
+    }
+    match /avatars/{companyId}/{allPaths=**} {
+      allow write: if request.auth != null;
+    }
+    match /qrs/{companyId}/{allPaths=**} {
+        allow write: if request.auth != null;
+    }
+    match /landing-subsections/{allPaths=**} {
+        allow write: if request.auth != null && request.auth.token.role == 'superadmin';
     }
   }
 }
