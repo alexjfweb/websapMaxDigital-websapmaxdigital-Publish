@@ -2,23 +2,33 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-import { firebaseConfig } from './firebase-config';
+import { firebaseConfig, isFirebaseConfigValid } from './firebase-config';
 
 // Patrón Singleton para una inicialización segura y única de Firebase.
+
 let app: FirebaseApp;
-if (!getApps().length) {
-    if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-        console.error("Firebase config is missing or incomplete. Cannot initialize Firebase. Check your .env.local file.");
-        // En un escenario real, podríamos lanzar un error aquí para detener la ejecución.
-        // Para este entorno, intentaremos continuar, pero es probable que falle.
+let db: any; // Declarado como any para permitir la inicialización condicional
+let auth: any; // Declarado como any para permitir la inicialización condicional
+
+const configIsValid = isFirebaseConfigValid();
+
+if (configIsValid) {
+    if (!getApps().length) {
+        app = initializeApp(firebaseConfig);
+    } else {
+        app = getApp();
     }
-    app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    auth = getAuth(app);
 } else {
-    app = getApp();
+    // Si la configuración no es válida, exportamos valores nulos o mocks para evitar que la app crashee,
+    // pero las operaciones de Firebase fallarán y el error ya habrá sido logueado en la consola.
+    console.error("Firebase no fue inicializado debido a configuración inválida.");
+    app = null as any;
+    db = null as any;
+    auth = null as any;
 }
 
-const db = getFirestore(app);
-const auth = getAuth(app);
 
-// Exporta las instancias únicas que se deben usar en toda la aplicación.
+// Exporta las instancias (posiblemente nulas si la config es inválida) para ser usadas en la aplicación.
 export { app, db, auth };
