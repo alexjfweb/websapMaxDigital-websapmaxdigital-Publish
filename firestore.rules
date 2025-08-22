@@ -3,51 +3,63 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Reglas de Acceso Público (solo lectura)
-    // Permite que la página de inicio cargue su contenido y planes para cualquier visitante.
-    match /landing_configs/{docId} {
-      allow read: if true;
-      allow write: if request.auth != null; // Solo usuarios autenticados (superadmins) pueden escribir.
-    }
     
-    match /landingPlans/{docId} {
-      allow read: if true;
-      allow write: if request.auth != null; // Solo usuarios autenticados (superadmins) pueden escribir.
-    }
-
-    // Reglas de Acceso Protegido
-    // Todas las demás colecciones requieren que el usuario haya iniciado sesión.
-    // Esta es una regla general. Se pueden añadir reglas más específicas por colección.
-    match /companies/{companyId} {
-      allow read, write: if request.auth != null;
-    }
-
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    match /dishes/{dishId} {
-      allow read: if true; // Permitir que cualquiera lea los platos
-      allow write: if request.auth != null;
-    }
-    
-    match /orders/{orderId} {
-        allow read, write: if request.auth != null;
-    }
-
-    match /reservations/{reservationId} {
-      allow read, write: if request.auth != null;
-    }
-    
-    match /supportTickets/{ticketId} {
-        allow create: if request.auth != null;
-        allow read, update: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
-    }
-
-    // Regla por defecto para cualquier otra ruta (denegar por defecto si no coincide con las anteriores)
+    // Regla de denegación por defecto para MÁXIMA seguridad
     match /{document=**} {
       allow read, write: if false;
     }
+
+    // Reglas PÚBLICAS (solo lectura)
+    match /landing_configs/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null; // Solo admins/superadmins (a definir)
+    }
+
+    match /landingPlans/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null; // Solo admins/superadmins
+    }
+    
+    // Reglas para la colección de usuarios
+    // Los usuarios pueden leer su propio perfil.
+    // Solo los superadmins pueden crear o modificar cualquier perfil.
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.token.role == 'superadmin';
+      // Permitir que los usuarios actualicen su propio perfil (campos específicos)
+      // allow update: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Reglas para Compañías
+    // Solo usuarios autenticados que pertenecen a una compañía pueden leer sus datos.
+    match /companies/{companyId} {
+      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == companyId;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Reglas para Platos, Pedidos, Mesas, Reservas
+    // Heredan la seguridad de la compañía a la que pertenecen.
+    match /dishes/{dishId} {
+      allow read: if true; // Público para el menú
+      allow write: if request.auth != null && get(/databases/$(database)/documents/companies/$(request.resource.data.companyId)).exists;
+    }
+    
+    match /orders/{orderId} {
+        allow read, write: if request.auth != null; // Simplificado por ahora
+    }
+
+    match /reservations/{reservationId} {
+        allow read, write: if request.auth != null;
+    }
+
+    match /tables/{tableId} {
+        allow read, write: if request.auth != null;
+    }
+
+     match /supportTickets/{ticketId} {
+      allow create: if request.auth != null; // Cualquiera logueado puede crear
+      allow read, write: if request.auth != null && request.auth.token.role == 'superadmin'; // Solo superadmin gestiona
+    }
+
   }
 }
