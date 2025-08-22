@@ -1,26 +1,41 @@
+
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Permitir la lectura pública de todos los archivos.
-    // Esto es común para imágenes, logos, etc., que deben ser visibles en la app y el menú.
+    // Permite la lectura pública de cualquier archivo.
+    // Esto es útil para que las imágenes de platos, logos, etc., se puedan mostrar en la app.
     match /{allPaths=**} {
-      allow read;
+      allow read: if true;
     }
 
-    // Permitir la escritura de imágenes solo en rutas específicas.
-    // Esto previene que usuarios suban archivos a cualquier parte de tu bucket.
-    match /dishes/{companyId}/{allPaths=**} {
+    // Reglas de escritura específicas por ruta.
+    // Solo usuarios autenticados pueden subir archivos a estas carpetas.
+    match /avatars/{companyId}/{fileName} {
       allow write: if request.auth != null;
     }
-    match /avatars/{companyId}/{allPaths=**} {
+
+    match /dishes/{companyId}/{fileName} {
       allow write: if request.auth != null;
     }
-    match /qrs/{companyId}/{allPaths=**} {
-        allow write: if request.auth != null;
+
+    match /qrs/{companyId}/{fileName} {
+      allow write: if request.auth != null;
     }
-    match /landing-subsections/{allPaths=**} {
-        allow write: if request.auth != null && request.auth.token.role == 'superadmin';
+    
+    match /landing-subsections/{subsectionId}/{fileName} {
+       allow write: if request.auth != null;
+    }
+
+    match /support-attachments/{companyId}/{fileName} {
+       allow write: if request.auth != null;
+    }
+    
+    // Denegar escritura en cualquier otra ruta no especificada.
+    // Esta regla no es estrictamente necesaria porque la escritura se deniega por defecto,
+    // pero se incluye para mayor claridad y seguridad.
+    match /{allPaths=**} {
+      allow write: if false;
     }
   }
 }
