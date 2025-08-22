@@ -4,31 +4,33 @@ import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { firebaseConfig, isFirebaseConfigValid } from './firebase-config';
 
-// Patrón Singleton para una inicialización segura y única de Firebase.
+// Patrón Singleton para una inicialización segura y única de Firebase en Next.js.
+// Esto previene errores de "Too Many Requests" y asegura que la conexión sea estable.
 
 let app: FirebaseApp;
-let db: any; // Declarado como any para permitir la inicialización condicional
-let auth: any; // Declarado como any para permitir la inicialización condicional
+let db: any;
+let auth: any;
 
-const configIsValid = isFirebaseConfigValid();
-
-if (configIsValid) {
-    if (!getApps().length) {
-        app = initializeApp(firebaseConfig);
-    } else {
-        app = getApp();
-    }
-    db = getFirestore(app);
-    auth = getAuth(app);
+if (isFirebaseConfigValid()) {
+  // Comprueba si ya existe una instancia de la aplicación para evitar reinicializaciones.
+  if (!getApps().length) {
+    // Si no hay ninguna app, inicializa una nueva.
+    app = initializeApp(firebaseConfig);
+  } else {
+    // Si ya existe, obtén la instancia actual.
+    app = getApp();
+  }
+  
+  db = getFirestore(app);
+  auth = getAuth(app);
 } else {
-    // Si la configuración no es válida, exportamos valores nulos o mocks para evitar que la app crashee,
-    // pero las operaciones de Firebase fallarán y el error ya habrá sido logueado en la consola.
-    console.error("Firebase no fue inicializado debido a configuración inválida.");
-    app = null as any;
-    db = null as any;
-    auth = null as any;
+  // Si la configuración no es válida, se loguea un error crítico en la consola.
+  // La app no funcionará correctamente con Firebase, pero evitamos un crash completo aquí.
+  console.error("CRITICAL ERROR: Firebase config is invalid. Firebase services will not be available.");
+  app = null as any;
+  db = null as any;
+  auth = null as any;
 }
 
-
-// Exporta las instancias (posiblemente nulas si la config es inválida) para ser usadas en la aplicación.
+// Exporta las instancias para ser usadas en toda la aplicación.
 export { app, db, auth };
