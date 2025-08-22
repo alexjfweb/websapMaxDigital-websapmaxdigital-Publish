@@ -18,6 +18,7 @@ class DishService {
   async getDishesByCompany(companyId: string): Promise<Dish[]> {
     if (!companyId) return [];
     try {
+      // Esta es la forma correcta de hacerlo en el cliente, a través de la API
       const response = await fetch(`/api/companies/${companyId}/dishes`);
       if (!response.ok) {
         throw new Error('Failed to fetch dishes from API');
@@ -25,7 +26,7 @@ class DishService {
       return await response.json();
     } catch (error) {
       console.error(`Error fetching dishes for company ${companyId}:`, error);
-      return [];
+      return []; // Devuelve un array vacío en caso de error para no romper la UI
     }
   }
 }

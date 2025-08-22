@@ -14,29 +14,12 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase'; // Usar la instancia centralizada
-import type { LandingPlan, CreatePlanRequest, UpdatePlanRequest, PlanAuditLog } from '@/types/plans';
+import type { LandingPlan, CreatePlanRequest, UpdatePlanRequest, PlanAuditLog } from '@/types';
 import { auditService } from './audit-service';
+import { generateSlug, serializeDate } from '@/lib/utils';
 
 
 // --- HELPER FUNCTIONS ---
-const generateSlug = (name: string): string => {
-  return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-};
-
-const serializeDate = (date: any): string | null => {
-  if (!date) return null;
-  if (date instanceof Timestamp) return date.toDate().toISOString();
-  if (date instanceof Date) return date.toISOString();
-  if (typeof date === 'string') {
-    const d = new Date(date);
-    if (!isNaN(d.getTime())) return d.toISOString();
-  }
-  if (date && typeof date.seconds === 'number') {
-    return new Date(date.seconds * 1000).toISOString();
-  }
-  return null;
-};
-
 const serializePlan = (id: string, data: any): LandingPlan => ({
   id,
   slug: data.slug || '',

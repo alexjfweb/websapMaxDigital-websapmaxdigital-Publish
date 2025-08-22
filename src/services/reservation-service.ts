@@ -24,6 +24,7 @@ class ReservationService {
     if (!data.restaurantId) {
       throw new Error("El ID del restaurante es obligatorio.");
     }
+    // Llamada a la API de backend para crear la reserva
     const response = await fetch('/api/reservations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -39,6 +40,7 @@ class ReservationService {
   
   async getReservationsByCompany(companyId: string): Promise<Reservation[]> {
     if (!companyId) return [];
+     // Llamada a la API de backend para obtener las reservas de una compañía
      const response = await fetch(`/api/companies/${companyId}/reservations`);
      if (!response.ok) {
         throw new Error('Failed to fetch reservations');
@@ -47,6 +49,7 @@ class ReservationService {
   }
   
   async updateReservationStatus(reservationId: string, status: Reservation['status']): Promise<void> {
+    // Llamada a la API de backend para actualizar el estado
     const response = await fetch(`/api/reservations?id=${reservationId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

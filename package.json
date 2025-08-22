@@ -10,14 +10,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "deploy": "npm run build && firebase deploy --only hosting --project websapmax",
-    "deploy:staging": "npm run build && firebase deploy --only hosting --project websapmax-staging",
-    "deploy:production": "npm run build && firebase deploy --only hosting --project websapmax",
-    "predeploy": "npm run typecheck && npm run lint",
-    "cleanup:plans": "node scripts/cleanup-plans.js",
-    "migrate:plans": "node scripts/migrate-plans.js",
-    "migrate:landing-plans": "node src/scripts/init-landing-config.js",
-    "seed:dishes": "node src/scripts/create-sample-dishes.js"
+    "deploy": "npm run build && firebase deploy --only hosting --project websapmax"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.7.0",
