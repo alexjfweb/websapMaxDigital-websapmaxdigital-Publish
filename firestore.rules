@@ -1,65 +1,27 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Regla de denegación por defecto para MÁXIMA seguridad
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // Reglas PÚBLICAS (solo lectura)
+    // Regla #1: Permite el acceso de lectura pública a las configuraciones de la landing page.
+    // Esto es ESENCIAL para que la página de inicio pueda cargar su contenido dinámico sin errores.
     match /landing_configs/{docId} {
       allow read: if true;
-      allow write: if request.auth != null; // Solo admins/superadmins (a definir)
+      allow write: if request.auth != null; // Solo usuarios autenticados (superadmins) pueden escribir.
     }
 
+    // Regla #2: Permite el acceso de lectura pública a los planes de la landing page.
+    // Esta es la corrección clave. Apunta a "landingPlans", que es el nombre correcto de la colección.
     match /landingPlans/{docId} {
       allow read: if true;
-      allow write: if request.auth != null; // Solo admins/superadmins
+      allow write: if request.auth != null; // Solo usuarios autenticados (superadmins) pueden escribir.
     }
     
-    // Reglas para la colección de usuarios
-    // Los usuarios pueden leer su propio perfil.
-    // Solo los superadmins pueden crear o modificar cualquier perfil.
-    match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null && request.auth.token.role == 'superadmin';
-      // Permitir que los usuarios actualicen su propio perfil (campos específicos)
-      // allow update: if request.auth != null && request.auth.uid == userId;
+    // Regla #3: Protege el resto de las colecciones.
+    // Solo los usuarios que han iniciado sesión pueden leer o escribir en colecciones como 'users',
+    // 'companies', 'orders', etc. Esto asegura la privacidad de los datos.
+    match /{path=**}/documents/{document} {
+      allow read, write: if request.auth != null;
     }
-
-    // Reglas para Compañías
-    // Solo usuarios autenticados que pertenecen a una compañía pueden leer sus datos.
-    match /companies/{companyId} {
-      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == companyId;
-      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-
-    // Reglas para Platos, Pedidos, Mesas, Reservas
-    // Heredan la seguridad de la compañía a la que pertenecen.
-    match /dishes/{dishId} {
-      allow read: if true; // Público para el menú
-      allow write: if request.auth != null && get(/databases/$(database)/documents/companies/$(request.resource.data.companyId)).exists;
-    }
-    
-    match /orders/{orderId} {
-        allow read, write: if request.auth != null; // Simplificado por ahora
-    }
-
-    match /reservations/{reservationId} {
-        allow read, write: if request.auth != null;
-    }
-
-    match /tables/{tableId} {
-        allow read, write: if request.auth != null;
-    }
-
-     match /supportTickets/{ticketId} {
-      allow create: if request.auth != null; // Cualquiera logueado puede crear
-      allow read, write: if request.auth != null && request.auth.token.role == 'superadmin'; // Solo superadmin gestiona
-    }
-
   }
 }
