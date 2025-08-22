@@ -44,6 +44,7 @@ function ErrorDisplay({ message, onRetry }: { message: string, onRetry?: () => v
 
 function LandingPageContent() {
   const { landingConfig, isLoading: isLoadingConfig, isError: isErrorConfig, error: errorConfig } = useLandingConfig();
+  // Este hook ahora llama a la API pública, que funcionará con las nuevas reglas
   const { plans, isLoading: isLoadingPlans, error: errorPlans, refetch: retryPlans } = useLandingPlans(true);
 
   if (isLoadingConfig || isLoadingPlans) {

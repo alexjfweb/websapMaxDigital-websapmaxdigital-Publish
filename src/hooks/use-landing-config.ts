@@ -6,6 +6,7 @@ import { landingConfigService, LandingConfig } from '@/services/landing-config-s
 
 const SWR_KEY = 'landing-page-config';
 
+// Este fetcher ahora funcionará porque las reglas de Firestore lo permiten
 const fetcher = () => landingConfigService.getLandingConfig();
 
 export function useLandingConfig() {

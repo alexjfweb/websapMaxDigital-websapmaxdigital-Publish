@@ -7,6 +7,7 @@ import useSWR from 'swr';
 import { landingPlansService } from '@/services/landing-plans-service';
 
 // Fetcher para la API pública (solo planes activos)
+// La API ahora funcionará porque las reglas de Firestore son públicas para lectura.
 const fetcher = async (url: string) => {
     const res = await fetch(url);
     if (!res.ok) {

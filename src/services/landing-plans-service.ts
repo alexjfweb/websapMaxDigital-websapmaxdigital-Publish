@@ -119,6 +119,7 @@ class LandingPlansService {
   // Obtiene solo los planes públicos y activos para la landing page
   async getPublicPlans(): Promise<LandingPlan[]> {
     const coll = this.getPlansCollection();
+    // Esta consulta ahora funcionará gracias a las reglas de Firestore
     const q = query(coll, where('isActive', '==', true), where('isPublic', '==', true), orderBy('order', 'asc'));
     
     const snapshot = await getDocs(q);
