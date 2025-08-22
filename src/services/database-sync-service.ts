@@ -1,3 +1,4 @@
+
 // src/services/database-sync-service.ts
 import { db } from '@/lib/firebase';
 import { collection, doc, writeBatch, serverTimestamp, getDoc } from 'firebase/firestore';
@@ -102,6 +103,17 @@ const syncAll = async (userId: string, userEmail: string): Promise<string> => {
     throw new Error('No se pudo completar la sincronización de la base de datos.');
   }
 };
+
+async function runSync() {
+    console.log("Ejecutando script de sincronización...");
+    const message = await syncAll('system-script', 'script@websapmax.com');
+    console.log(message);
+}
+
+// Ejecutar si se llama directamente con tsx
+if (require.main === module) {
+    runSync();
+}
 
 export const databaseSyncService = {
   syncAll,
