@@ -1,8 +1,8 @@
-
 import './globals.css';
 import { Inter } from 'next/font/google';
 import { Toaster } from "@/components/ui/toaster";
 import { ClientProviders } from '@/contexts/client-providers';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -19,9 +19,11 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={inter.className}>
-        <ClientProviders>
-            {children}
-        </ClientProviders>
+        <ErrorBoundary>
+            <ClientProviders>
+                {children}
+            </ClientProviders>
+        </ErrorBoundary>
         <Toaster />
       </body>
     </html>

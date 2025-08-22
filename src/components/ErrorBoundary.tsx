@@ -11,7 +11,7 @@ const ErrorFallback = ({ reset }: { reset: () => void }) => (
             <AlertTriangle className="h-16 w-16 mx-auto text-destructive mb-4" />
             <h1 className="text-2xl font-bold text-destructive mb-2">Error al Cargar la Aplicación</h1>
             <p className="text-card-foreground mb-4">
-                Hubo un problema al cargar una parte de la aplicación. Esto puede deberse a un problema de red temporal.
+                Hubo un problema al cargar una parte de la aplicación. Esto puede deberse a un problema de red temporal o de permisos.
             </p>
             <Button onClick={reset} className="w-full">
                 Intentar de Nuevo
@@ -50,7 +50,7 @@ class ErrorBoundary extends Component<Props, State> {
 
   public render() {
     if (this.state.hasError) {
-      // Ahora renderiza su propio Fallback
+      // Renderiza el Fallback UI con un botón para reintentar
       return <ErrorFallback reset={this.handleReset} />;
     }
 

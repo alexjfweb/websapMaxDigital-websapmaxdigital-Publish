@@ -1,13 +1,12 @@
-
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import type { User as FirebaseUserType } from 'firebase/auth';
 import type { User } from '@/types';
-import { useRouter } from 'next/navigation';
-import { auth } from '@/lib/firebase';
+import { useRouter, usePathname } from 'next/navigation';
+import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, doc, getDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, Timestamp } from 'firebase/firestore';
 
 interface SessionContextType {
   currentUser: User | null;
@@ -40,13 +39,16 @@ const serializeUser = (firebaseUser: FirebaseUserType, firestoreData: any): User
     return data as User;
 };
 
+// Rutas que no requieren autenticación
+const publicRoutes = ['/', '/login', '/register'];
+
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Start loading until first check is done
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    const db = getFirestore();
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
@@ -73,6 +75,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
     return () => unsubscribe();
   }, []);
+
+  // Redirección del lado del cliente
+  useEffect(() => {
+    if (!isLoading) {
+      const isPublic = publicRoutes.some(route => pathname.startsWith(route) && (route !== '/' || pathname === '/'));
+      
+      if (!currentUser && !isPublic) {
+        router.push('/login');
+      } else if (currentUser && (pathname === '/login' || pathname === '/register')) {
+        const targetDashboard = currentUser.role === 'superadmin' ? '/superadmin/dashboard' : '/admin/dashboard';
+        router.push(targetDashboard);
+      }
+    }
+  }, [currentUser, isLoading, pathname, router]);
 
   const logout = useCallback(async () => {
     try {

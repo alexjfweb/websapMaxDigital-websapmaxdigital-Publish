@@ -1,8 +1,7 @@
-
 "use client";
 
 import * as React from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from '@/contexts/session-context';
 import AppHeader from './header';
 import {
@@ -33,25 +32,48 @@ function AdminLoader() {
     );
 }
 
+// Rutas públicas que no requieren autenticación
+const publicRoutes = ['/', '/login', '/register', '/menu', '/test'];
+
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const { currentUser, isLoading, logout } = useSession();
     const router = useRouter();
+    const pathname = usePathname();
 
     const handleLogout = () => {
       logout();
       router.push('/login');
     };
 
+    // Determina si la ruta actual es pública.
+    // Esto es crucial para no redirigir desde la landing, login, etc.
+    const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route) && (route !== '/' || pathname === '/'));
+
     React.useEffect(() => {
-        if (!isLoading && !currentUser) {
+        // Si no está cargando, no hay usuario Y NO es una ruta pública, redirige al login.
+        if (!isLoading && !currentUser && !isPublicRoute) {
           router.push('/login');
         }
-    }, [isLoading, currentUser, router]);
+    }, [isLoading, currentUser, router, isPublicRoute, pathname]);
 
 
-    if (isLoading || !currentUser) {
+    // Si está cargando la sesión Y no es una ruta pública, muestra el loader.
+    // Permite que las rutas públicas se rendericen de inmediato.
+    if (isLoading && !isPublicRoute) {
         return <AdminLoader />;
     }
+
+    // Si no hay usuario y no es una ruta pública, el useEffect ya habrá redirigido.
+    // Este loader cubre el pequeño lapso hasta que la redirección se complete.
+    if (!currentUser && !isPublicRoute) {
+        return <AdminLoader />;
+    }
+    
+    // Si es una ruta pública o si ya hay un usuario, no se necesita el AppShell de admin.
+    if (isPublicRoute) {
+        return <>{children}</>;
+    }
+
 
     return (
         <>
