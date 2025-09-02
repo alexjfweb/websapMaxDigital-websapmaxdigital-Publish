@@ -19,7 +19,6 @@ import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import FooterNavigation from './footer-navigation';
-import PublicHeader from './public-header';
 
 
 function AdminLoader() {
@@ -33,53 +32,29 @@ function AdminLoader() {
     );
 }
 
-// Rutas públicas que no requieren el layout de administración
-const publicRoutes = ['/', '/login', '/register'];
-
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const { currentUser, isLoading, logout } = useSession();
     const router = useRouter();
-    const pathname = usePathname();
 
     const handleLogout = () => {
       logout();
       router.push('/login');
     };
 
-    // Determina si la ruta actual es una ruta pública o una página de menú dinámica.
-    const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith('/menu/');
+    // Este componente ahora asume que SOLO se renderiza en rutas de admin.
+    // La lógica de redirección sigue siendo importante en el SessionProvider.
     
-    // Redirección del lado del cliente
-    React.useEffect(() => {
-        if (!isLoading && !currentUser && !isPublicRoute) {
-          router.push('/login');
-        }
-    }, [isLoading, currentUser, router, isPublicRoute, pathname]);
-
-    // Muestra un loader para rutas privadas mientras se verifica la sesión.
-    if (isLoading && !isPublicRoute) {
+    if (isLoading) {
         return <AdminLoader />;
     }
 
-    // Para rutas públicas, renderiza un layout simple sin Sidebar.
-    if (isPublicRoute) {
-        // La página de login/register no necesita cabecera, mientras que la landing y el menú sí.
-        const showHeader = pathname === '/' || pathname.startsWith('/menu/');
-        return (
-            <>
-                {showHeader && <PublicHeader />}
-                <main>{children}</main>
-            </>
-        )
-    }
-    
-    // Si no hay usuario y se intenta acceder a una ruta privada, el useEffect ya habrá iniciado la redirección.
-    // Este loader cubre el pequeño lapso hasta que la redirección se complete.
     if (!currentUser) {
+        // Aunque el SessionProvider redirige, podemos mostrar un loader
+        // mientras ocurre la redirección para evitar un parpadeo de contenido.
         return <AdminLoader />;
     }
 
-    // Renderiza el layout de administración completo para rutas privadas.
+    // Renderiza el layout de administración completo.
     return (
         <>
             <Sidebar collapsible="icon" variant="sidebar" side="left">

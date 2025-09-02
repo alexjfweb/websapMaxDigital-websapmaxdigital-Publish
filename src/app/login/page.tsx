@@ -21,6 +21,7 @@ import { useRouter } from 'next/navigation';
 import React from "react";
 import { auth } from "@/lib/firebase"; // Usar la instancia centralizada
 import { signInWithEmailAndPassword } from "firebase/auth";
+import PublicHeader from "@/components/layout/public-header";
 
 const loginFormSchema = z.object({
   email: z.string().email({
@@ -76,7 +77,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background to-accent/10 p-4">
+    <>
+    <PublicHeader />
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background to-accent/10 p-4 pt-16">
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold text-primary">Iniciar sesión</CardTitle>
@@ -128,5 +131,6 @@ export default function LoginPage() {
         </CardFooter>
       </Card>
     </div>
+    </>
   );
 }
