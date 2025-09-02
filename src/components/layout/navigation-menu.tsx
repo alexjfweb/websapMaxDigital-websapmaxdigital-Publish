@@ -39,6 +39,7 @@ const baseSidebarItems: BaseNavItem[] = [
   { id: 'sa-landing-public', href: '/superadmin/landing-public', labelKey: 'Editor Landing', icon: Palette, allowedRoles: ['superadmin'], tooltipKey: 'Editar Landing Pública' },
   { id: 'sa-payment-methods', href: '/superadmin/payment-methods', labelKey: 'Configuración de Pagos', icon: CreditCard, allowedRoles: ['superadmin'], tooltipKey: 'Configurar pasarelas de pago' },
   { id: 'sa-pending-payments', href: '/superadmin/payments', labelKey: 'Pagos Pendientes', icon: CreditCard, allowedRoles: ['superadmin'], tooltipKey: 'Gestionar pagos pendientes' },
+  { id: 'sa-reminders', href: '/superadmin/reminders', labelKey: 'Recordatorios', icon: BellRing, allowedRoles: ['superadmin'], tooltipKey: 'Recordatorios de pago' },
   { id: 'sa-navigation', href: '/superadmin/navigation', labelKey: 'Navegación', icon: Navigation, allowedRoles: ['superadmin'], tooltipKey: 'Configurar navegación' },
   { id: 'sa-support', href: '/superadmin/support', labelKey: 'Soporte', icon: LifeBuoy, allowedRoles: ['superadmin'], tooltipKey: 'Gestión de Soporte' },
   { id: 'sa-audit', href: '/superadmin/audit', labelKey: 'Auditoría', icon: Archive, allowedRoles: ['superadmin'], tooltipKey: 'Registros de auditoría' },
