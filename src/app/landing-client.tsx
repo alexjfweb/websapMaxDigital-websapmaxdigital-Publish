@@ -97,8 +97,16 @@ export default function LandingClient({ initialConfig: config, plans, errorPlans
           >
             <div className="container mx-auto text-center">
               <h2 className="text-3xl font-bold mb-4">{section.title}</h2>
-              <p className="text-lg text-muted-foreground mb-8 max-w-3xl mx-auto">{section.subtitle}</p>
+              <p className="text-lg text-muted-foreground mb-6 max-w-3xl mx-auto">{section.subtitle}</p>
+              {/* CORRECCIÓN: Se agrega el campo de contenido de la sección aquí */}
+              <p className="text-base text-muted-foreground mb-8 max-w-3xl mx-auto whitespace-pre-wrap">{section.content}</p>
               
+              {section.buttonText && section.buttonUrl && (
+                  <Button asChild size="lg" style={{ backgroundColor: section.buttonColor, color: section.textColor }}>
+                    <a href={section.buttonUrl}>{section.buttonText}</a>
+                  </Button>
+              )}
+
               {section.subsections && section.subsections.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
                   {section.subsections.map(sub => (
