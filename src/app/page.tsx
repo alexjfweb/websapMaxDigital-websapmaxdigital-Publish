@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useLandingConfig } from '@/hooks/use-landing-config';
 import { AlertTriangle } from 'lucide-react';
 import { useLandingPlans } from '@/hooks/use-landing-plans';
+import PublicHeader from '@/components/layout/public-header';
 
 function LandingPageSkeleton() {
   return (
@@ -56,12 +57,15 @@ function LandingPageContent() {
   }
   
   return (
-    <LandingClient 
-        initialConfig={landingConfig} 
-        plans={plans}
-        errorPlans={errorPlans}
-        retryPlans={retryPlans}
-    />
+    <>
+        <PublicHeader />
+        <LandingClient 
+            initialConfig={landingConfig} 
+            plans={plans}
+            errorPlans={errorPlans}
+            retryPlans={retryPlans}
+        />
+    </>
   );
 }
 

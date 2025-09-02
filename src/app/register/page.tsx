@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,6 +27,7 @@ import type { UserRole, User, Company } from "@/types";
 import React, { Suspense, useState, useEffect } from "react";
 import { companyService } from "@/services/company-service";
 import ErrorModal from "@/components/ui/error-modal";
+import PublicHeader from "@/components/layout/public-header";
 
 const SUPERADMIN_EMAIL = 'alexjfweb@gmail.com';
 
@@ -171,6 +173,7 @@ function RegisterForm() {
 
   return (
     <>
+    <PublicHeader />
     <ErrorModal isOpen={!!errorState} title={errorState?.title || ""} message={errorState?.message || ""} onClose={() => setErrorState(null)} />
     <div className="flex items-center justify-center min-h-screen pt-20 bg-gradient-to-br from-background to-accent/10 p-4">
       <Card className="w-full max-w-lg shadow-2xl">
