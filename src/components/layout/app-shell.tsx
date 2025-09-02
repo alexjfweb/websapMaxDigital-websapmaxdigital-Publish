@@ -19,6 +19,7 @@ import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import FooterNavigation from './footer-navigation';
+import PublicHeader from './public-header';
 
 
 function AdminLoader() {
@@ -33,7 +34,7 @@ function AdminLoader() {
 }
 
 // Rutas públicas que no requieren autenticación
-const publicRoutes = ['/', '/login', '/register', '/menu', '/test'];
+const publicRoutes = ['/', '/login', '/register', '/menu'];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const { currentUser, isLoading, logout } = useSession();
@@ -46,32 +47,33 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     };
 
     // Determina si la ruta actual es pública.
-    // Esto es crucial para no redirigir desde la landing, login, etc.
-    const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route) && (route !== '/' || pathname === '/'));
+    const isPublicRoute = publicRoutes.some(route => (route === '/' && pathname === '/') || (route !== '/' && pathname.startsWith(route)));
 
     React.useEffect(() => {
-        // Si no está cargando, no hay usuario Y NO es una ruta pública, redirige al login.
         if (!isLoading && !currentUser && !isPublicRoute) {
           router.push('/login');
         }
     }, [isLoading, currentUser, router, isPublicRoute, pathname]);
 
 
-    // Si está cargando la sesión Y no es una ruta pública, muestra el loader.
-    // Permite que las rutas públicas se rendericen de inmediato.
     if (isLoading && !isPublicRoute) {
         return <AdminLoader />;
     }
 
-    // Si no hay usuario y no es una ruta pública, el useEffect ya habrá redirigido.
-    // Este loader cubre el pequeño lapso hasta que la redirección se complete.
-    if (!currentUser && !isPublicRoute) {
-        return <AdminLoader />;
+    // Para rutas públicas, solo renderizamos el PublicHeader y el contenido.
+    if (isPublicRoute) {
+        return (
+            <>
+                <PublicHeader />
+                <main>{children}</main>
+            </>
+        )
     }
     
-    // Si es una ruta pública o si ya hay un usuario, no se necesita el AppShell de admin.
-    if (isPublicRoute) {
-        return <>{children}</>;
+    // Si no hay usuario y no es una ruta pública, el useEffect ya habrá redirigido.
+    // Este loader cubre el pequeño lapso hasta que la redirección se complete.
+    if (!currentUser) {
+        return <AdminLoader />;
     }
 
 

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -142,6 +141,7 @@ function RegisterForm() {
       
       toast({ title: '¡Registro Exitoso!', description: `Serás redirigido para continuar.` });
 
+      // La redirección la maneja el SessionProvider, pero si se elige un plan, se va a checkout
       if (planSlug) {
           router.push(`/admin/checkout?plan=${planSlug}`);
       } else {
@@ -172,16 +172,11 @@ function RegisterForm() {
   return (
     <>
     <ErrorModal isOpen={!!errorState} title={errorState?.title || ""} message={errorState?.message || ""} onClose={() => setErrorState(null)} />
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background to-accent/10 p-4">
+    <div className="flex items-center justify-center min-h-screen pt-20 bg-gradient-to-br from-background to-accent/10 p-4">
       <Card className="w-full max-w-lg shadow-2xl">
          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-16 w-16 text-primary">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
-              </svg>
-            </div>
           <CardTitle className="text-3xl font-bold text-primary">Crear Cuenta</CardTitle>
-          <CardDescription>Registre una nueva cuenta para gestionar su negocio.</CardDescription>
+          <CardDescription>Crea una nueva cuenta para gestionar tu negocio.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>

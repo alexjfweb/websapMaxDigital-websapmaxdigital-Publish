@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -54,6 +53,8 @@ export default function LoginPage() {
         description: '¡Bienvenido de nuevo! Redirigiendo...',
       });
       
+      // La redirección ahora es manejada por el SessionProvider
+      // router.refresh() puede seguir siendo útil para forzar la recarga del estado del servidor
       router.refresh();
 
     } catch (error: any) {
@@ -75,16 +76,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-theme(spacing.16))] bg-gradient-to-br from-background to-accent/10 p-4">
+    <div className="flex items-center justify-center min-h-screen pt-20 bg-gradient-to-br from-background to-accent/10 p-4">
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-16 w-16 text-primary">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
-            </svg>
-          </div>
           <CardTitle className="text-3xl font-bold text-primary">Iniciar sesión</CardTitle>
-          <CardDescription>Por favor, ingresa tu correo electrónico y contraseña para iniciar sesión.</CardDescription>
+          <CardDescription>Ingresa a tu cuenta para gestionar tu restaurante.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
