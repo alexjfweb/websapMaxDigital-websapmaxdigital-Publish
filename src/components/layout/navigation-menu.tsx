@@ -37,6 +37,7 @@ const baseSidebarItems: BaseNavItem[] = [
   { id: 'sa-users', href: '/superadmin/users', labelKey: 'Usuarios', icon: Users, allowedRoles: ['superadmin'], tooltipKey: 'Gestión de usuarios' },
   { id: 'sa-plans', href: '/superadmin/subscription-plans', labelKey: 'Planes', icon: Gem, allowedRoles: ['superadmin'], tooltipKey: 'Gestionar planes' },
   { id: 'sa-landing-public', href: '/superadmin/landing-public', labelKey: 'Editor Landing', icon: Palette, allowedRoles: ['superadmin'], tooltipKey: 'Editar Landing Pública' },
+  { id: 'sa-payment-methods', href: '/superadmin/payment-methods', labelKey: 'Configuración de Pagos', icon: CreditCard, allowedRoles: ['superadmin'], tooltipKey: 'Configurar pasarelas de pago' },
   { id: 'sa-pending-payments', href: '/superadmin/payments', labelKey: 'Pagos Pendientes', icon: CreditCard, allowedRoles: ['superadmin'], tooltipKey: 'Gestionar pagos pendientes' },
   { id: 'sa-navigation', href: '/superadmin/navigation', labelKey: 'Navegación', icon: Navigation, allowedRoles: ['superadmin'], tooltipKey: 'Configurar navegación' },
   { id: 'sa-support', href: '/superadmin/support', labelKey: 'Soporte', icon: LifeBuoy, allowedRoles: ['superadmin'], tooltipKey: 'Gestión de Soporte' },
