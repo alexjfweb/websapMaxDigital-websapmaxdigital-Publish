@@ -1,3 +1,4 @@
+
 // src/services/storage-service.ts
 import imageCompression from 'browser-image-compression';
 
@@ -29,34 +30,32 @@ class StorageService {
     const compressedFile = await this.compressImage(file);
     
     const formData = new FormData();
+    // Asegurarse de que el campo se llame 'file', coincidiendo con la API
     formData.append('file', compressedFile);
     formData.append('path', path);
 
     try {
+      // La llamada a la API sigue siendo la misma, pero la API ahora funciona correctamente
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({ error: 'Error desconocido en la respuesta del servidor.' }));
         throw new Error(errorData.error || `Error en la subida: ${response.statusText}`);
       }
 
       const { url } = await response.json();
+      if (!url) {
+        throw new Error("La respuesta de la API no incluyó una URL.");
+      }
       return url;
 
     } catch (error) {
       console.error("Error al subir el archivo a través del proxy:", error);
       throw error;
     }
-  }
-
-  async deleteFile(fileUrl: string): Promise<void> {
-    // La lógica de eliminación puede seguir siendo directa si las reglas lo permiten,
-    // o también podría ser a través de un endpoint de API si es necesario.
-    // Por ahora, lo mantenemos así, ya que no ha presentado problemas.
-    console.log("La eliminación de archivos desde el cliente no está implementada a través del proxy. Se requiere un endpoint de API si es necesario.");
   }
 }
 

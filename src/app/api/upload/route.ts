@@ -1,50 +1,40 @@
+
 // src/app/api/upload/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { app } from '@/lib/firebase'; // Usamos la instancia de cliente, pero para el SDK de Admin sería mejor.
-import formidable from 'formidable';
-import fs from 'fs';
-import { getAuth } from 'firebase/auth';
+import { app } from '@/lib/firebase';
 
 const storage = getStorage(app);
 
-// Helper para parsear el form
-const formidableParse = async (req: NextRequest): Promise<{ fields: formidable.Fields; files: formidable.Files }> => {
-    return new Promise((resolve, reject) => {
-        const form = formidable({});
-        form.parse(req as any, (err, fields, files) => {
-            if (err) {
-                reject(err);
-            }
-            resolve({ fields, files });
-        });
-    });
-};
-
+// Esta es la nueva implementación del endpoint de subida.
+// Elimina `formidable` y `fs` para trabajar directamente con los datos en memoria,
+// lo que es compatible con entornos serverless y soluciona el error 504.
 export async function POST(req: NextRequest) {
     try {
-        const { files, fields } = await formidableParse(req);
-        
-        const file = files.file?.[0];
-        const path = fields.path?.[0] || 'uploads/';
+        const formData = await req.formData();
+        const file = formData.get('file') as File | null;
+        const path = formData.get('path') as string || 'uploads/';
 
         if (!file) {
             return NextResponse.json({ error: 'No se recibió ningún archivo.' }, { status: 400 });
         }
-        
+
+        // Convertir el archivo a un Buffer para subirlo
+        const fileBuffer = await file.arrayBuffer();
+
         // Crear un nombre de archivo único para evitar sobreescrituras
-        const uniqueFileName = `${Date.now()}-${file.originalFilename?.replace(/[^a-z0-9._-]/gi, '_')}`;
+        const uniqueFileName = `${Date.now()}-${file.name.replace(/[^a-z0-9._-]/gi, '_')}`;
         const storageRef = ref(storage, `${path}${uniqueFileName}`);
-        
-        // Leer el archivo temporal y subirlo a Firebase Storage
-        const fileBuffer = fs.readFileSync(file.filepath);
-        const snapshot = await uploadBytes(storageRef, fileBuffer, { contentType: file.mimetype || 'application/octet-stream' });
+
+        // Subir el buffer a Firebase Storage
+        const snapshot = await uploadBytes(storageRef, fileBuffer, { contentType: file.type || 'application/octet-stream' });
         const downloadURL = await getDownloadURL(snapshot.ref);
 
         return NextResponse.json({ url: downloadURL }, { status: 200 });
 
     } catch (error) {
         console.error('Error en /api/upload:', error);
-        return NextResponse.json({ error: 'Error al subir el archivo.', details: (error as Error).message }, { status: 500 });
+        const errorMessage = (error instanceof Error) ? error.message : 'Error desconocido al subir el archivo.';
+        return NextResponse.json({ error: 'Error interno del servidor al subir el archivo.', details: errorMessage }, { status: 500 });
     }
 }
