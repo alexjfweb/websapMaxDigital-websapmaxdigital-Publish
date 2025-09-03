@@ -2,6 +2,10 @@
 // src/lib/firebase-admin.ts
 import { initializeApp, getApps, cert, ServiceAccount, App } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
+import dotenv from 'dotenv';
+
+// Forzar la carga de las variables de entorno desde .env.local
+dotenv.config();
 
 let adminApp: App | null = null;
 
