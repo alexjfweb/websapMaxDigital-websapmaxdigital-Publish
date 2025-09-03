@@ -1,186 +1,210 @@
-// src/app/api/upload/route.ts
+// src/app/api/upload/route.ts - Versión mínima para debugging
 import { NextRequest, NextResponse } from 'next/server';
-import { getFirebaseStorage, verifyFirebaseConfig } from '@/lib/firebase-admin';
 
 export async function POST(request: NextRequest) {
-  console.log('🚀 API Upload iniciada...');
-  const startTime = Date.now();
+  console.log('🚀 === API UPLOAD INICIADA ===');
+  console.log('⏰ Timestamp:', new Date().toISOString());
 
   try {
-    // 1. Verificar configuración de Firebase
-    console.log('1️⃣ Verificando configuración de Firebase...');
-    const configCheck = verifyFirebaseConfig();
-    
-    if (!configCheck.isValid) {
-      console.error('❌ Configuración de Firebase inválida:', configCheck.error);
-      return NextResponse.json({
-        success: false,
-        error: 'Configuración de Firebase no disponible',
-        details: configCheck.error,
-        step: 'firebase_config_check'
-      }, { status: 500 });
-    }
-
-    console.log('✅ Firebase configurado correctamente:', {
-      projectId: configCheck.projectId,
-      clientEmail: configCheck.clientEmail?.substring(0, 20) + '...'
-    });
-
-    // 2. Obtener archivo del FormData
-    console.log('2️⃣ Extrayendo archivo del FormData...');
+    // Paso 1: Verificar que podemos obtener FormData
+    console.log('1️⃣ Obteniendo FormData...');
     let formData;
     try {
       formData = await request.formData();
-    } catch (error) {
-      console.error('❌ Error al parsear FormData:', error);
+      console.log('✅ FormData obtenido');
+    } catch (error: any) {
+      console.error('❌ Error con FormData:', error);
       return NextResponse.json({
         success: false,
         error: 'Error al procesar FormData',
-        details: error.message,
-        step: 'formdata_parsing'
+        step: 'formdata',
+        details: error.message
       }, { status: 400 });
     }
 
+    // Paso 2: Verificar que hay archivo
+    console.log('2️⃣ Extrayendo archivo...');
     const file = formData.get('file') as File;
     if (!file) {
-      console.error('❌ No se encontró archivo en FormData');
+      console.error('❌ No hay archivo');
       return NextResponse.json({
         success: false,
-        error: 'No se encontró ningún archivo',
-        step: 'file_extraction'
+        error: 'No se encontró archivo',
+        step: 'file_check'
       }, { status: 400 });
     }
 
-    console.log('✅ Archivo extraído:', {
+    console.log('✅ Archivo encontrado:', {
       name: file.name,
       size: file.size,
       type: file.type
     });
 
-    // 3. Validar archivo
-    if (file.size > 10 * 1024 * 1024) { // 10MB máximo
-      console.error('❌ Archivo muy grande:', file.size);
+    // Paso 3: Verificar variables de entorno
+    console.log('3️⃣ Verificando variables de entorno...');
+    const hasServiceKey = !!process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    const hasProjectId = !!process.env.FIREBASE_PROJECT_ID;
+    const hasClientEmail = !!process.env.FIREBASE_CLIENT_EMAIL;
+    const hasPrivateKey = !!process.env.FIREBASE_PRIVATE_KEY;
+
+    console.log('🔍 Variables disponibles:', {
+      hasServiceKey,
+      hasProjectId,
+      hasClientEmail,
+      hasPrivateKey,
+      nodeEnv: process.env.NODE_ENV
+    });
+
+    if (!hasServiceKey && !(hasProjectId && hasClientEmail && hasPrivateKey)) {
+      console.error('❌ Variables de entorno faltantes');
       return NextResponse.json({
         success: false,
-        error: 'El archivo es muy grande (máximo 10MB)',
-        step: 'file_validation'
-      }, { status: 400 });
+        error: 'Variables de entorno de Firebase no configuradas',
+        step: 'env_vars',
+        available: { hasServiceKey, hasProjectId, hasClientEmail, hasPrivateKey }
+      }, { status: 500 });
     }
 
-    // 4. Convertir archivo a buffer
-    console.log('3️⃣ Convirtiendo archivo a buffer...');
-    let buffer;
+    // Paso 4: Probar importación de Firebase
+    console.log('4️⃣ Importando Firebase Admin...');
+    let firebaseAdmin;
+    try {
+      firebaseAdmin = await import('firebase-admin/app');
+      console.log('✅ Firebase Admin importado');
+    } catch (error: any) {
+      console.error('❌ Error importando Firebase:', error);
+      return NextResponse.json({
+        success: false,
+        error: 'Error al importar Firebase Admin',
+        step: 'firebase_import',
+        details: error.message
+      }, { status: 500 });
+    }
+
+    // Paso 5: Preparar credenciales
+    console.log('5️⃣ Preparando credenciales...');
+    let credentials;
+    try {
+      if (hasServiceKey) {
+        credentials = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY!);
+        console.log('✅ Credenciales desde SERVICE_ACCOUNT_KEY');
+      } else {
+        credentials = {
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
+        };
+        console.log('✅ Credenciales desde variables separadas');
+      }
+
+      console.log('📊 Credenciales preparadas:', {
+        projectId: credentials.projectId || credentials.project_id,
+        clientEmail: credentials.clientEmail || credentials.client_email,
+        hasPrivateKey: !!(credentials.privateKey || credentials.private_key)
+      });
+
+    } catch (error: any) {
+      console.error('❌ Error preparando credenciales:', error);
+      return NextResponse.json({
+        success: false,
+        error: 'Error al parsear credenciales',
+        step: 'credentials',
+        details: error.message
+      }, { status: 500 });
+    }
+
+    // Paso 6: Inicializar Firebase
+    console.log('6️⃣ Inicializando Firebase...');
+    let app;
+    try {
+      const { getApps, initializeApp, cert } = firebaseAdmin;
+      
+      if (getApps().length === 0) {
+        app = initializeApp({
+          credential: cert(credentials),
+          storageBucket: `${credentials.projectId || credentials.project_id}.appspot.com`
+        });
+        console.log('✅ Firebase inicializado');
+      } else {
+        app = getApps()[0];
+        console.log('✅ Firebase ya inicializado');
+      }
+    } catch (error: any) {
+      console.error('❌ Error inicializando Firebase:', error);
+      return NextResponse.json({
+        success: false,
+        error: 'Error al inicializar Firebase',
+        step: 'firebase_init',
+        details: error.message
+      }, { status: 500 });
+    }
+
+    // Paso 7: Obtener Storage
+    console.log('7️⃣ Obteniendo Storage...');
+    let storage, bucket;
+    try {
+      const { getStorage } = await import('firebase-admin/storage');
+      storage = getStorage(app);
+      bucket = storage.bucket();
+      console.log('✅ Storage obtenido:', bucket.name);
+    } catch (error: any) {
+      console.error('❌ Error obteniendo Storage:', error);
+      return NextResponse.json({
+        success: false,
+        error: 'Error al obtener Storage',
+        step: 'storage',
+        details: error.message
+      }, { status: 500 });
+    }
+
+    // Paso 8: Procesar y subir archivo
+    console.log('8️⃣ Subiendo archivo...');
     try {
       const arrayBuffer = await file.arrayBuffer();
-      buffer = Buffer.from(arrayBuffer);
-      console.log('✅ Buffer creado:', buffer.length, 'bytes');
-    } catch (error) {
-      console.error('❌ Error al convertir a buffer:', error);
-      return NextResponse.json({
-        success: false,
-        error: 'Error al procesar el archivo',
-        details: error.message,
-        step: 'buffer_conversion'
-      }, { status: 500 });
-    }
-
-    // 5. Preparar Storage
-    console.log('4️⃣ Obteniendo referencia de Storage...');
-    let storage, bucket, fileRef;
-    try {
-      storage = getFirebaseStorage();
-      bucket = storage.bucket();
+      const buffer = Buffer.from(arrayBuffer);
       
       const timestamp = Date.now();
-      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-      const fileName = `uploads/${timestamp}-${sanitizedFileName}`;
-      
-      fileRef = bucket.file(fileName);
-      console.log('✅ Referencias creadas:', {
-        bucketName: bucket.name,
-        fileName: fileName
-      });
-    } catch (error) {
-      console.error('❌ Error al configurar Storage:', error);
-      return NextResponse.json({
-        success: false,
-        error: 'Error al configurar Firebase Storage',
-        details: error.message,
-        step: 'storage_setup'
-      }, { status: 500 });
-    }
+      const fileName = `test-uploads/${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+      const fileRef = bucket.file(fileName);
 
-    // 6. Subir archivo
-    console.log('5️⃣ Subiendo archivo a Firebase Storage...');
-    try {
       await fileRef.save(buffer, {
         metadata: {
           contentType: file.type,
-          metadata: {
-            originalName: file.name,
-            uploadedAt: new Date().toISOString()
-          }
         },
       });
-      console.log('✅ Archivo guardado en Storage');
-    } catch (error) {
-      console.error('❌ Error al subir archivo:', error);
+
+      // Hacer público
+      await fileRef.makePublic();
+      
+      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+      
+      console.log('✅ ¡UPLOAD EXITOSO!', publicUrl);
+      
+      return NextResponse.json({
+        success: true,
+        url: publicUrl,
+        fileName,
+        message: 'Archivo subido exitosamente'
+      });
+
+    } catch (error: any) {
+      console.error('❌ Error subiendo archivo:', error);
       return NextResponse.json({
         success: false,
-        error: 'Error al subir archivo a Storage',
-        details: error.message,
-        step: 'file_upload'
+        error: 'Error al subir archivo',
+        step: 'upload',
+        details: error.message
       }, { status: 500 });
     }
 
-    // 7. Hacer público el archivo
-    console.log('6️⃣ Haciendo archivo público...');
-    try {
-      await fileRef.makePublic();
-      console.log('✅ Archivo hecho público');
-    } catch (error) {
-      console.error('⚠️  Advertencia al hacer público:', error);
-      // No es crítico, continúamos
-    }
-
-    // 8. Generar URL
-    const fileName = fileRef.name;
-    const bucketName = bucket.name;
-    const publicUrl = `https://storage.googleapis.com/${bucketName}/${fileName}`;
-
-    const duration = Date.now() - startTime;
-    console.log(`✅ Upload completado en ${duration}ms:`, publicUrl);
-
-    return NextResponse.json({
-      success: true,
-      url: publicUrl,
-      fileName: fileName,
-      metadata: {
-        originalName: file.name,
-        size: file.size,
-        type: file.type,
-        uploadDuration: duration
-      }
-    });
-
-  } catch (error) {
-    const duration = Date.now() - startTime;
-    console.error(`❌ Error general en API Upload (${duration}ms):`, {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
-
+  } catch (error: any) {
+    console.error('❌ ERROR GENERAL:', error);
     return NextResponse.json({
       success: false,
       error: 'Error interno del servidor',
+      step: 'general',
       details: error.message,
-      step: 'general_error',
-      duration: duration,
-      // Solo en desarrollo
-      ...(process.env.NODE_ENV === 'development' && { 
-        stack: error.stack 
-      })
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     }, { status: 500 });
   }
 }
