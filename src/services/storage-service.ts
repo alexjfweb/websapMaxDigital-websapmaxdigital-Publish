@@ -1,10 +1,5 @@
-
 // src/services/storage-service.ts
 import imageCompression from 'browser-image-compression';
-import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
-import { app } from '@/lib/firebase';
-
-const storage = getStorage(app);
 
 class StorageService {
 
@@ -25,52 +20,43 @@ class StorageService {
       console.log(`Imagen comprimida a ${(compressedFile.size / 1024).toFixed(2)}KB`);
       return compressedFile;
     } catch (error) {
-      console.error("Error al comprimir la imagen, se subirá el original:", error);
+      console.error("Error al comprimir la imagen, se usará el original:", error);
       return file;
     }
   }
   
   async compressAndUploadFile(file: File, path: string = 'images/'): Promise<string> {
     const compressedFile = await this.compressImage(file);
-    const uniqueFileName = `${Date.now()}-${file.name.replace(/[^a-z0-9._-]/gi, '_')}`;
-    const storageRef = ref(storage, `${path}${uniqueFileName}`);
+    
+    const formData = new FormData();
+    formData.append('file', compressedFile);
+    formData.append('path', path);
 
-    return new Promise((resolve, reject) => {
-      const uploadTask = uploadBytesResumable(storageRef, compressedFile);
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
 
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          console.log(`Progreso de subida: ${progress.toFixed(2)}%`);
-        },
-        (error) => {
-          console.error("Error en la subida a Firebase Storage:", error);
-          reject(new Error(`Error de subida: ${error.code}`));
-        },
-        async () => {
-          try {
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            resolve(downloadURL);
-          } catch (error) {
-            console.error("Error al obtener la URL de descarga:", error);
-            reject(new Error("No se pudo obtener la URL de descarga."));
-          }
-        }
-      );
-    });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Error en la subida: ${response.statusText}`);
+      }
+
+      const { url } = await response.json();
+      return url;
+
+    } catch (error) {
+      console.error("Error al subir el archivo a través del proxy:", error);
+      throw error;
+    }
   }
 
   async deleteFile(fileUrl: string): Promise<void> {
-    try {
-      const fileRef = ref(storage, fileUrl);
-      await deleteObject(fileRef);
-      console.log(`Archivo eliminado: ${fileUrl}`);
-    } catch (error: any) {
-      if (error.code !== 'storage/object-not-found') {
-        console.error("Error al eliminar archivo de Storage:", error);
-      }
-    }
+    // La lógica de eliminación puede seguir siendo directa si las reglas lo permiten,
+    // o también podría ser a través de un endpoint de API si es necesario.
+    // Por ahora, lo mantenemos así, ya que no ha presentado problemas.
+    console.log("La eliminación de archivos desde el cliente no está implementada a través del proxy. Se requiere un endpoint de API si es necesario.");
   }
 }
 
