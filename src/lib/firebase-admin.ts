@@ -13,10 +13,9 @@ function initializeFirebaseAdmin(): App {
 
   console.log("🚀 Inicializando Firebase Admin...");
 
-  // SOLUCIÓN DEFINITIVA: No especificar el storageBucket.
-  // El SDK usará automáticamente el bucket por defecto asociado con las credenciales.
   const app = initializeApp({
     credential: cert(firebaseAdminConfig),
+    storageBucket: 'websapmax.appspot.com', // Nombre explícito y correcto del bucket
   });
   
   console.log('✅ Firebase Admin inicializado correctamente.');
