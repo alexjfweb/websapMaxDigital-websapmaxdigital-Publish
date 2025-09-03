@@ -27,7 +27,7 @@ import { useSession } from "@/contexts/session-context";
 export default function AdminProfilePage() {
   const { toast } = useToast();
   const { currentUser } = useSession();
-  const companyId = currentUser.companyId;
+  const companyId = currentUser?.companyId;
 
   const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState<Partial<Company>>({});
@@ -208,8 +208,8 @@ export default function AdminProfilePage() {
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-primary">Perfil del restaurante</h1>
-          <p className="text-lg text-muted-foreground">Administra la información pública de tu restaurante.</p>
+          <h1 className="text-3xl font-bold text-primary">Mi Perfil</h1>
+          <p className="text-lg text-muted-foreground">Administra la información pública de tu negocio.</p>
         </div>
         <div className="flex justify-end space-x-3 pt-2">
             {!isEditing ? (
@@ -231,7 +231,7 @@ export default function AdminProfilePage() {
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="name">Nombre del restaurante</Label>
+              <Label htmlFor="name">Nombre del negocio</Label>
               <Input id="name" value={profileData.name || ''} disabled={!isEditing} onChange={handleInputChange} />
             </div>
             <div className="space-y-2">
@@ -454,3 +454,5 @@ export default function AdminProfilePage() {
     </div>
   );
 }
+
+    

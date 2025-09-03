@@ -56,6 +56,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         return <AdminLoader />;
     }
 
+    const profileLink = currentUser.role === 'superadmin' ? '/superadmin/profile' : '/admin/profile';
+
     // Renderiza el layout de administración completo.
     return (
         <OrderProvider>
@@ -98,7 +100,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     <DropdownMenuSeparator />
                     <DropdownMenuGroup>
                         <DropdownMenuItem asChild>
-                            <Link href="/admin/profile">
+                            <Link href={profileLink}>
                                 <UserCircle className="mr-2 h-4 w-4" />
                                 <span>Perfil</span>
                             </Link>
@@ -128,3 +130,5 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </OrderProvider>
     );
 }
+
+    
