@@ -11,11 +11,12 @@ function initializeFirebaseAdmin(): App {
     return existingApps[0];
   }
 
-  console.log("🚀 Inicializando Firebase Admin con configuración directa...");
+  console.log("🚀 Inicializando Firebase Admin...");
 
+  // SOLUCIÓN DEFINITIVA: No especificar el storageBucket.
+  // El SDK usará automáticamente el bucket por defecto asociado con las credenciales.
   const app = initializeApp({
     credential: cert(firebaseAdminConfig),
-    storageBucket: 'websapmax.appspot.com'
   });
   
   console.log('✅ Firebase Admin inicializado correctamente.');
@@ -39,10 +40,10 @@ export function verifyFirebaseConfig() {
   try {
     // La simple existencia de la config es suficiente ahora
     if (firebaseAdminConfig && firebaseAdminConfig.project_id) {
-        return { isValid: true, error: null, projectId: firebaseAdminConfig.project_id };
+        return { isValid: true, error: null, projectId: firebaseAdminConfig.project_id, clientEmail: firebaseAdminConfig.client_email };
     }
     throw new Error("El objeto firebaseAdminConfig no está definido o es inválido.");
   } catch (error: any) {
-    return { isValid: false, error: error.message, projectId: null };
+    return { isValid: false, error: error.message, projectId: null, clientEmail: null };
   }
 }
