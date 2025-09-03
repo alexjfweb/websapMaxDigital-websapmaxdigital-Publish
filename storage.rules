@@ -3,19 +3,17 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    
-    // Permite la lectura pública de imágenes en estas carpetas.
-    // Cualquiera puede ver los logos, banners, platos, etc.
-    match /(profiles|dishes|qrs|landing-subsections|avatars)/{allPaths=**} {
-      allow read: if true;
-    }
-    
-    // Permite la escritura (subir, actualizar, eliminar) solo a usuarios autenticados.
-    // Esto es una regla general. En producción se podría restringir más, por ejemplo,
-    // que un usuario solo pueda escribir en su propia carpeta.
-    // request.auth != null significa "si el usuario ha iniciado sesión".
+    // Permitir lectura pública de cualquier archivo
     match /{allPaths=**} {
-      allow write: if request.auth != null;
+      allow read;
+    }
+
+    // Permitir escritura (subida) de archivos solo a usuarios autenticados
+    // Se aplica a cualquier ruta dentro del bucket
+    match /{allPaths=**} {
+      allow write: if request.auth != null &&
+                      request.resource.size < 5 * 1024 * 1024 && // Límite de 5MB
+                      request.resource.contentType.matches('image/.*'); // Solo imágenes
     }
   }
 }

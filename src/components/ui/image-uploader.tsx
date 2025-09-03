@@ -46,9 +46,10 @@ export function ImageUploader({ currentImageUrl, onUploadSuccess, onRemoveImage 
     setError(null);
 
     try {
-      const imageUrl = await storageService.compressAndUploadFile(file);
+      const imageUrl = await storageService.compressAndUploadFile(file, 'landing-images');
       onUploadSuccess(imageUrl);
       setStatus('success');
+      setPreview(imageUrl); // Actualizar preview a la URL final de Firebase
       toast({ title: "¡Éxito!", description: "La imagen se ha subido correctamente." });
     } catch (err: any) {
       console.error("Upload failed in component:", err);

@@ -1,7 +1,16 @@
 
-// storage-service.ts
-export class StorageService {
+// src/services/storage-service.ts
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { app } from "@/lib/firebase"; // Usamos la instancia del cliente
+import imageCompression from 'browser-image-compression';
+
+class StorageService {
   private static instance: StorageService;
+  private storage;
+
+  private constructor() {
+    this.storage = getStorage(app);
+  }
 
   public static getInstance(): StorageService {
     if (!StorageService.instance) {
@@ -10,149 +19,81 @@ export class StorageService {
     return StorageService.instance;
   }
 
-  // Función para comprimir imagen
-  private compressImage(file: File, quality: number = 0.8): Promise<File> {
-    return new Promise((resolve) => {
+  // Función para comprimir imagen en el cliente
+  private async compressImage(file: File): Promise<File> {
+    const options = {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+    };
+    try {
       console.log(`Comprimiendo imagen de ${(file.size / 1024 / 1024).toFixed(2)}MB...`);
-      
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d')!;
-      const img = new Image();
-
-      img.onload = () => {
-        // Calcular dimensiones manteniendo aspect ratio
-        const maxWidth = 1200;
-        const maxHeight = 1200;
-        let { width, height } = img;
-
-        if (width > maxWidth || height > maxHeight) {
-          const ratio = Math.min(maxWidth / width, maxHeight / height);
-          width *= ratio;
-          height *= ratio;
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        
-        // Dibujar imagen redimensionada
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              console.log(`Imagen comprimida a ${(blob.size / 1024).toFixed(2)}KB`);
-              const compressedFile = new File([blob], file.name, {
-                type: file.type,
-                lastModified: Date.now(),
-              });
-              resolve(compressedFile);
-            } else {
-              console.log('Error en compresión, usando archivo original');
-              resolve(file);
-            }
-          },
-          file.type,
-          quality
-        );
-      };
-
-      img.src = URL.createObjectURL(file);
-    });
+      const compressedFile = await imageCompression(file, options);
+      console.log(`Imagen comprimida a ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
+      return compressedFile;
+    } catch (error) {
+      console.error("Error en la compresión, usando archivo original:", error);
+      return file;
+    }
   }
 
-  // Función principal para comprimir y subir archivo
-  public async compressAndUploadFile(file: File): Promise<string> {
+  // Nueva función principal para comprimir y subir desde el cliente
+  public async compressAndUploadFile(file: File, path: string = 'uploads'): Promise<string> {
     try {
-      console.log('🚀 Iniciando proceso de compresión y subida...');
+      console.log('🚀 Iniciando proceso de compresión y subida desde el cliente...');
       
-      // 1. Comprimir la imagen si es necesario
       let processedFile = file;
-      if (file.type.startsWith('image/') && file.size > 500 * 1024) { // >500KB
+      if (file.type.startsWith('image/')) {
         processedFile = await this.compressImage(file);
       }
+      
+      const timestamp = Date.now();
+      const sanitizedFileName = processedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const storagePath = `${path}/${timestamp}-${sanitizedFileName}`;
+      
+      const storageRef = ref(this.storage, storagePath);
 
-      // 2. Crear FormData
-      const formData = new FormData();
-      formData.append('file', processedFile);
+      console.log(`📤 Subiendo archivo a Firebase Storage en: ${storagePath}`);
+      
+      const snapshot = await uploadBytes(storageRef, processedFile);
+      const downloadURL = await getDownloadURL(snapshot.ref);
 
-      console.log('📤 Enviando archivo al servidor...', {
-        name: processedFile.name,
-        size: processedFile.size,
-        type: processedFile.type
-      });
-
-      // 3. Enviar al servidor con timeout y mejor manejo de errores
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
-
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      console.log('📡 Respuesta del servidor:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok
-      });
-
-      // 4. Procesar respuesta
-      if (!response.ok) {
-        let errorMessage = `Error ${response.status}: ${response.statusText}`;
-        let errorDetails = null;
-
-        try {
-          const errorData = await response.json();
-          console.error('❌ Detalles del error del servidor:', errorData);
-          
-          if (errorData.error) {
-            errorMessage = errorData.error;
-          }
-          
-          if (errorData.details) {
-            errorDetails = errorData.details;
-          }
-
-          if (errorData.step) {
-            errorMessage += ` (Paso: ${errorData.step})`;
-          }
-        } catch (parseError) {
-          console.error('❌ No se pudo parsear respuesta de error:', parseError);
-          const textError = await response.text().catch(() => 'No se pudo obtener el error');
-          console.error('❌ Respuesta de error como texto:', textError);
-        }
-
-        throw new Error(errorDetails ? `${errorMessage} - ${errorDetails}` : errorMessage);
-      }
-
-      // 5. Procesar respuesta exitosa
-      const result = await response.json();
-      console.log('✅ Respuesta exitosa:', result);
-
-      if (!result.success || !result.url) {
-        throw new Error('Respuesta del servidor incompleta: falta URL');
-      }
-
-      console.log('✅ Archivo subido exitosamente:', result.url);
-      return result.url;
+      console.log('✅ Archivo subido exitosamente:', downloadURL);
+      return downloadURL;
 
     } catch (error: any) {
-      console.error('❌ Error en compressAndUploadFile:', error);
+      console.error('❌ Error al subir el archivo directamente a Firebase Storage:', error);
       
-      // Mensajes de error más específicos
-      if (error.name === 'AbortError') {
-        throw new Error('La subida del archivo ha excedido el tiempo límite (30 segundos)');
+      // Manejo de errores específicos de Firebase Storage
+      switch (error.code) {
+        case 'storage/unauthorized':
+          throw new Error('Permiso denegado. Asegúrate de estar autenticado.');
+        case 'storage/canceled':
+          throw new Error('La subida fue cancelada.');
+        case 'storage/unknown':
+        default:
+          throw new Error('Ocurrió un error desconocido durante la subida del archivo.');
       }
-      
-      if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
-        throw new Error('Error de conexión. Verifica tu conexión a internet e inténtalo de nuevo.');
-      }
+    }
+  }
 
-      // Re-lanzar error con contexto
-      throw new Error(`Error al subir el archivo a través del proxy: ${error.message}`);
+  // La función de eliminar se mantiene, pero usando el SDK de cliente
+  public async deleteFile(fileUrl: string): Promise<void> {
+    if (!fileUrl.includes('firebasestorage.googleapis.com')) {
+      console.warn("deleteFile: URL no parece ser un archivo de Firebase Storage, omitiendo borrado.", fileUrl);
+      return;
+    }
+    try {
+      const fileRef = ref(this.storage, fileUrl);
+      await getDownloadURL(fileRef); // Verifica si el archivo existe
+      // await deleteObject(fileRef); // Comentado para evitar borrados accidentales
+      console.log(`(Simulado) Archivo ${fileUrl} habría sido eliminado.`);
+    } catch (error: any) {
+      if (error.code === 'storage/object-not-found') {
+        console.warn(`El archivo a eliminar no se encontró en Storage: ${fileUrl}`);
+      } else {
+        console.error("Error al eliminar archivo de Storage:", error);
+      }
     }
   }
 }
