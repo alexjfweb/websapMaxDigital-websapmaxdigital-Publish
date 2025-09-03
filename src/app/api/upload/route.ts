@@ -1,11 +1,12 @@
 
+// src/app/api/upload/route.ts - VERSIÓN FINAL CORREGIDA
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
-import { firebaseAdminConfig } from '@/lib/firebase-config'; // Importar la config directamente
+import { firebaseAdminConfig } from '@/lib/firebase-config';
 
 export async function POST(request: NextRequest) {
-  console.log('🚀 API Upload iniciada - Versión final');
+  console.log('🚀 API Upload iniciada - Versión final y robusta');
 
   try {
     // 1. Obtener archivo y ruta del FormData
@@ -28,10 +29,10 @@ export async function POST(request: NextRequest) {
     });
 
     // 2. Usar la configuración de firebase-admin importada
-    if (!firebaseAdminConfig.project_id) {
+    if (!firebaseAdminConfig || !firebaseAdminConfig.project_id) {
        return NextResponse.json({
         success: false,
-        error: 'La configuración de Firebase Admin está incompleta.'
+        error: 'La configuración de Firebase Admin está incompleta en firebase-config.ts.'
       }, { status: 500 });
     }
     
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
     if (getApps().length === 0) {
       app = initializeApp({
         credential: cert(firebaseAdminConfig),
-        storageBucket: `${firebaseAdminConfig.project_id}.appspot.com`
+        storageBucket: 'websapmax.appspot.com',
       });
       console.log('✅ Firebase Admin inicializado');
     } else {
@@ -54,6 +55,16 @@ export async function POST(request: NextRequest) {
     const storage = getStorage(app);
     const bucket = storage.bucket();
     
+    // Verificar si el bucket existe
+    try {
+        const [exists] = await bucket.exists();
+        if (!exists) {
+            throw new Error(`El bucket "${bucket.name}" no existe. Por favor, ve a la Consola de Firebase -> Storage y crea un bucket de almacenamiento.`);
+        }
+    } catch (e) {
+         throw new Error(`Error al verificar el bucket: ${(e as Error).message}`);
+    }
+
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     
