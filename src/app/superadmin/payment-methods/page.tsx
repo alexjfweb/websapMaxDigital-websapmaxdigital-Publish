@@ -17,6 +17,8 @@ import BancolombiaIcon from '@/components/icons/bancolombia-icon';
 import { Skeleton } from '@/components/ui/skeleton';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { storageService } from '@/services/storage-service';
+import Image from 'next/image';
 
 type PlanName = 'básico' | 'estándar' | 'premium';
 
@@ -133,7 +135,13 @@ export default function SuperAdminPaymentMethodsPage() {
   const [activePlan, setActivePlan] = useState<PlanName>('básico');
   const [isSaving, setIsSaving] = useState(false);
   
-  // Vistas previas de QR locales para no depender del estado guardado
+  // Archivos seleccionados pendientes de subir
+  const [qrFiles, setQrFiles] = useState<Record<PlanName, { nequiQr?: File; bancolombiaQr?: File }>>({
+    básico: {},
+    estándar: {},
+    premium: {},
+  });
+  
   const [qrPreviews, setQrPreviews] = useState<Record<PlanName, { nequiQr?: string; bancolombiaQr?: string }>>({
     básico: {},
     estándar: {},
@@ -156,7 +164,6 @@ export default function SuperAdminPaymentMethodsPage() {
           }
           setConfig(mergedConfig);
         } else {
-          // Si no existe, lo creamos con la configuración inicial
           console.log("El documento de configuración de pagos no existe. Creando uno por defecto...");
           await setDoc(docRef, { ...initialConfig, createdAt: serverTimestamp() });
           setConfig(initialConfig);
@@ -188,21 +195,51 @@ export default function SuperAdminPaymentMethodsPage() {
   
   const handleSave = async () => {
     setIsSaving(true);
+    let updatedConfig = { ...config };
+
     try {
+        for (const plan of Object.keys(qrFiles) as PlanName[]) {
+            const planFiles = qrFiles[plan];
+            for (const method of Object.keys(planFiles) as Array<keyof typeof planFiles>) {
+                const file = planFiles[method];
+                if (file) {
+                    toast({ title: `Subiendo QR para ${plan}...`, description: 'Por favor, espera.' });
+                    const currentImageUrl = updatedConfig[plan][method]?.qrImageUrl;
+                    if (currentImageUrl) {
+                        await storageService.deleteFile(currentImageUrl).catch(e => console.warn("Could not delete old file, it might not exist", e));
+                    }
+                    const newUrl = await storageService.compressAndUploadFile(file, `payment_qrs/${plan}/${method}`);
+                    updatedConfig = {
+                        ...updatedConfig,
+                        [plan]: {
+                            ...updatedConfig[plan],
+                            [method]: {
+                                ...updatedConfig[plan][method],
+                                qrImageUrl: newUrl
+                            }
+                        }
+                    };
+                }
+            }
+        }
+        
         const docRef = doc(db, "payment_methods", CONFIG_DOC_ID);
-        await setDoc(docRef, { ...config, lastUpdated: serverTimestamp() }, { merge: true });
+        await setDoc(docRef, { ...updatedConfig, lastUpdated: serverTimestamp() }, { merge: true });
+        setConfig(updatedConfig);
+        setQrFiles({ básico: {}, estándar: {}, premium: {} }); // Limpiar archivos pendientes
         toast({
             title: "Configuración guardada",
             description: "Los métodos de pago han sido actualizados.",
         });
     } catch (e) {
+        console.error("Error al guardar:", e);
         toast({ title: "Error", description: "No se pudo guardar la configuración.", variant: "destructive" });
     } finally {
         setIsSaving(false);
     }
   };
   
-  const handleQrImageUpload = (e: ChangeEvent<HTMLInputElement>, plan: PlanName, method: 'nequiQr' | 'bancolombiaQr') => {
+  const handleQrImageSelection = (e: ChangeEvent<HTMLInputElement>, plan: PlanName, method: 'nequiQr' | 'bancolombiaQr') => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
@@ -213,17 +250,20 @@ export default function SuperAdminPaymentMethodsPage() {
         toast({ title: "Formato no válido", description: "Solo se admiten imágenes JPG o PNG.", variant: "destructive" });
         return;
       }
+      
+      // Guardar el archivo para subirlo después
+      setQrFiles(prev => ({
+        ...prev,
+        [plan]: { ...prev[plan], [method]: file }
+      }));
+      
+      // Mostrar la vista previa
       const reader = new FileReader();
       reader.onloadend = () => {
-        const dataUrl = reader.result as string;
         setQrPreviews(prev => ({
             ...prev,
-            [plan]: {
-                ...prev[plan],
-                [method]: dataUrl,
-            }
+            [plan]: { ...prev[plan], [method]: reader.result as string }
         }));
-        handleConfigChange(plan, method, { qrImageUrl: dataUrl }); 
       };
       reader.readAsDataURL(file);
     }
@@ -231,7 +271,6 @@ export default function SuperAdminPaymentMethodsPage() {
 
 
   const currentPlanConfig = config[activePlan];
-  const currentQrPreviews = qrPreviews[activePlan];
 
   if (isLoading) {
     return (
@@ -304,12 +343,20 @@ export default function SuperAdminPaymentMethodsPage() {
                 >
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="flex-1 space-y-4">
-                            <div>
-                                <Label>Imagen del Código QR (JPG/PNG, máx 5MB)</Label>
+                             <div>
+                                <Label htmlFor={`bancolombia-qr-upload-${activePlan}`}>Imagen del Código QR (JPG/PNG, máx 5MB)</Label>
+                                <Button asChild variant="outline" className="w-full mt-1">
+                                    <label htmlFor={`bancolombia-qr-upload-${activePlan}`} className="cursor-pointer flex items-center gap-2">
+                                        <UploadCloud className="h-4 w-4" />
+                                        Seleccionar o cambiar QR
+                                    </label>
+                                </Button>
                                 <Input 
+                                    id={`bancolombia-qr-upload-${activePlan}`}
                                     type="file" 
+                                    className="hidden"
                                     accept="image/jpeg, image/png"
-                                    onChange={(e) => handleQrImageUpload(e, activePlan, 'bancolombiaQr')} 
+                                    onChange={(e) => handleQrImageSelection(e, activePlan, 'bancolombiaQr')} 
                                 />
                             </div>
                             <div>
@@ -321,12 +368,16 @@ export default function SuperAdminPaymentMethodsPage() {
                                 />
                             </div>
                         </div>
-                        {(currentQrPreviews.bancolombiaQr || currentPlanConfig.bancolombiaQr?.qrImageUrl) && (
-                            <div className="text-center">
-                                <Label>Vista Previa QR</Label>
-                                <img src={currentQrPreviews.bancolombiaQr || currentPlanConfig.bancolombiaQr?.qrImageUrl} alt="Vista previa QR Bancolombia" className="w-32 h-32 mt-2 rounded-md border p-1" />
-                            </div>
-                        )}
+                        <div className="text-center">
+                            <Label>Vista Previa QR</Label>
+                            <Image 
+                                src={qrPreviews[activePlan]?.bancolombiaQr || currentPlanConfig.bancolombiaQr?.qrImageUrl || 'https://placehold.co/128x128.png?text=QR'} 
+                                alt="Vista previa QR Bancolombia" 
+                                width={128}
+                                height={128}
+                                className="w-32 h-32 mt-2 rounded-md border p-1" 
+                            />
+                        </div>
                     </div>
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                         <div>
