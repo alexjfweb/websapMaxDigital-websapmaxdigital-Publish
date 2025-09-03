@@ -1,49 +1,56 @@
-
-// src/app/api/upload/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { adminStorage } from '@/lib/firebase-admin'; // Importar la instancia de admin ya inicializada
+import { adminStorage, verifyFirebaseAdmin } from '@/lib/firebase-admin';
 
-export async function POST(req: NextRequest) {
-    if (!adminStorage) {
-        return NextResponse.json({ error: 'La configuración del servicio de Firebase no está disponible.' }, { status: 500 });
+export async function POST(request: NextRequest) {
+  try {
+    // 1. Verificar que la configuración de Firebase Admin esté lista
+    verifyFirebaseAdmin();
+
+    // 2. Obtener el archivo del FormData
+    const formData = await request.formData();
+    const file = formData.get('file') as File | null;
+    const path = formData.get('path') as string || 'uploads/';
+
+    if (!file) {
+      return NextResponse.json({ error: 'No se encontró ningún archivo para subir' }, { status: 400 });
     }
+    
+    // 3. Convertir el archivo a un Buffer para subirlo
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
-    try {
-        const formData = await req.formData();
-        const file = formData.get('file') as File | null;
-        const path = formData.get('path') as string || 'uploads/';
+    // 4. Generar un nombre de archivo único para evitar sobreescrituras
+    const uniqueFileName = `${Date.now()}-${file.name.replace(/[^a-z0-9._-]/gi, '_')}`;
+    const fullPath = `${path}${uniqueFileName}`;
 
-        if (!file) {
-            return NextResponse.json({ error: 'No se recibió ningún archivo.' }, { status: 400 });
-        }
+    // 5. Subir el archivo a Firebase Storage
+    const bucket = adminStorage!.bucket();
+    const fileRef = bucket.file(fullPath);
 
-        const bucket = adminStorage.bucket();
-        
-        // Crear un nombre de archivo único
-        const uniqueFileName = `${Date.now()}-${file.name.replace(/[^a-z0-9._-]/gi, '_')}`;
-        const fullPath = `${path}${uniqueFileName}`;
+    await fileRef.save(buffer, {
+      metadata: {
+        contentType: file.type,
+      },
+    });
 
-        // Convertir el archivo a un Buffer para subirlo
-        const fileBuffer = Buffer.from(await file.arrayBuffer());
+    // 6. Hacer el archivo público para poder acceder a él a través de una URL
+    await fileRef.makePublic();
 
-        const blob = bucket.file(fullPath);
-        
-        await blob.save(fileBuffer, {
-            metadata: {
-                contentType: file.type,
-            },
-        });
+    // 7. Devolver la URL pública del archivo
+    const publicUrl = fileRef.publicUrl();
 
-        // Hacer el archivo público para obtener la URL
-        await blob.makePublic();
+    return NextResponse.json({ url: publicUrl }, { status: 200 });
 
-        const publicUrl = blob.publicUrl();
-
-        return NextResponse.json({ url: publicUrl }, { status: 200 });
-
-    } catch (error) {
-        console.error('Error en /api/upload:', error);
-        const errorMessage = (error instanceof Error) ? error.message : 'Error desconocido al subir el archivo.';
-        return NextResponse.json({ error: 'Error interno del servidor al subir el archivo.', details: errorMessage }, { status: 500 });
-    }
+  } catch (error: any) {
+    console.error('❌ Error en la API de subida /api/upload:', error);
+    // Devolver un error más detallado para facilitar la depuración
+    return NextResponse.json(
+      { 
+        error: 'Error interno del servidor al subir el archivo.', 
+        details: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
+      { status: 500 }
+    );
+  }
 }
