@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useRef, ChangeEvent } from 'react';
+import React, { useState, useRef, ChangeEvent, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +22,12 @@ export function ImageUploader({ currentImageUrl, onUploadSuccess, onRemoveImage 
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // CORRECCIÓN: Usar useEffect para sincronizar el preview con la prop externa.
+  useEffect(() => {
+    setPreview(currentImageUrl || null);
+  }, [currentImageUrl]);
+
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -72,7 +78,7 @@ export function ImageUploader({ currentImageUrl, onUploadSuccess, onRemoveImage 
     <div className="flex items-center gap-4">
       <div className="relative w-16 h-16 rounded-md border-2 border-dashed flex items-center justify-center bg-muted/50">
         {preview ? (
-          <Image src={preview} alt="Vista previa" layout="fill" objectFit="cover" className="rounded-md" />
+          <Image src={preview} alt="Vista previa" fill objectFit="cover" className="rounded-md" />
         ) : (
           <UploadCloud className="h-6 w-6 text-muted-foreground" />
         )}
