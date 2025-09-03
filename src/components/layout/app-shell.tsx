@@ -19,6 +19,7 @@ import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import FooterNavigation from './footer-navigation';
+import { OrderProvider } from '@/contexts/order-context';
 
 
 function AdminLoader() {
@@ -56,7 +57,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     // Renderiza el layout de administración completo.
     return (
-        <>
+        <OrderProvider>
             <Sidebar collapsible="icon" variant="sidebar" side="left">
                 <SidebarHeader className="p-4 flex flex-col items-center gap-2">
                 <Link href="/" className="flex items-center gap-2 font-semibold text-lg text-primary">
@@ -121,6 +122,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 </main>
                 <FooterNavigation role={currentUser.role} />
             </SidebarInset>
-        </>
+        </OrderProvider>
     );
 }

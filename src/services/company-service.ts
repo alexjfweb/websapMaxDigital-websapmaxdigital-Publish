@@ -1,4 +1,3 @@
-
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -46,8 +45,12 @@ const serializeCompany = (doc: any): Company => {
 };
 
 class CompanyService {
-  private companiesCollection = collection(db, 'companies');
-  private usersCollection = collection(db, 'users');
+  private get companiesCollection() {
+    return collection(db, 'companies');
+  }
+  private get usersCollection() {
+    return collection(db, 'users');
+  }
 
   private async isRucUnique(ruc: string, excludeId?: string): Promise<boolean> {
     const q = query(this.companiesCollection, where('ruc', '==', ruc));
@@ -115,22 +118,25 @@ class CompanyService {
         let companyId: string | null = null;
         const userId = adminUserData.uid!;
 
-        // --- Fase de Lectura y Validación (dentro de la transacción) ---
+        // Fase de Lectura y Validación (dentro de la transacción)
         if (!isSuperAdminFlow) {
           if (!companyData.name || !companyData.ruc) {
             throw new Error("El nombre de la empresa y el RUC son obligatorios.");
           }
-          // Validación de RUC único DENTRO de la transacción
-          const rucQuery = query(this.companiesCollection, where('ruc', '==', companyData.ruc));
+          const companiesRef = collection(db, 'companies');
+          const rucQuery = query(companiesRef, where('ruc', '==', companyData.ruc));
           const rucSnapshot = await transaction.get(rucQuery);
           if (!rucSnapshot.empty) {
             throw new Error(`Ya existe una empresa con el RUC ${companyData.ruc}.`);
           }
         }
         
-        // --- Fase de Escritura (dentro de la transacción) ---
+        // Fase de Escritura (dentro de la transacción)
+        const usersRef = collection(db, 'users');
+
         if (!isSuperAdminFlow) {
-          const companyDocRef = doc(this.companiesCollection);
+          const companiesRef = collection(db, 'companies');
+          const companyDocRef = doc(companiesRef);
           companyId = companyDocRef.id;
 
           const newCompanyData = {
@@ -145,7 +151,7 @@ class CompanyService {
           transaction.set(companyDocRef, newCompanyData);
         }
 
-        const userDocRef = doc(this.usersCollection, userId);
+        const userDocRef = doc(usersRef, userId);
         const newUserDoc: Omit<User, 'id'> = {
           uid: userId,
           email: adminUserData.email!,
@@ -165,7 +171,7 @@ class CompanyService {
         return { companyId, userId };
       });
 
-      // --- Fase de Post-transacción (Logging) ---
+      // Fase de Post-transacción (Logging)
       if (companyId) {
         await auditService.log({
           entity: 'companies', entityId: companyId, action: 'created',
@@ -183,7 +189,6 @@ class CompanyService {
 
     } catch (error) {
         console.error("Error en la transacción de creación de compañía y usuario:", error);
-        // Re-lanza el error para que el componente de UI pueda manejarlo.
         throw error;
     }
   }
@@ -224,7 +229,6 @@ class CompanyService {
   }
 
   async deleteCompany(companyId: string, user: { uid: string; email: string }): Promise<void> {
-    // Soft delete: just change status to 'inactive'
     await this.updateCompany(companyId, { status: 'inactive' }, user);
   }
 }
