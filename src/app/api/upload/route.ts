@@ -24,6 +24,7 @@ if (serviceAccountString) {
 }
 
 // Inicializa la app de admin de Firebase si no se ha hecho antes.
+// CORRECCIÓN: Se usa el nombre de bucket correcto.
 if (serviceAccount && !getApps().some(app => app.name === 'admin-sdk')) {
   initializeApp({
     credential: cert(serviceAccount),
