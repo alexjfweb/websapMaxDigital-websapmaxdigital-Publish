@@ -115,18 +115,15 @@ export default function LandingPublicPage() {
   
   const updateSubsection = (sectionIndex: number, subIndex: number, field: string, value: any) => {
     setFormData(prev => {
-        if (!prev) return null;
-
-        // Crear una copia profunda para asegurar la inmutabilidad
-        const newFormData = JSON.parse(JSON.stringify(prev));
-
-        if (newFormData.sections?.[sectionIndex]?.subsections?.[subIndex]) {
-            newFormData.sections[sectionIndex].subsections[subIndex][field] = value;
-        }
-
-        return newFormData;
+      if (!prev) return null;
+      // Crear una copia profunda para asegurar la inmutabilidad
+      const newFormData = JSON.parse(JSON.stringify(prev));
+      if (newFormData.sections?.[sectionIndex]?.subsections?.[subIndex]) {
+        newFormData.sections[sectionIndex].subsections[subIndex][field] = value;
+      }
+      return newFormData;
     });
-};
+  };
 
 
   const addSection = () => {
@@ -271,7 +268,17 @@ export default function LandingPublicPage() {
                 <CardContent><div className="border rounded-lg p-4 bg-gray-50"><div className="text-center py-12" style={{ backgroundColor: formData.heroBackgroundColor, color: formData.heroTextColor}}><h1 className="text-4xl font-bold mb-4">{formData.heroTitle}</h1><p className="text-xl mb-8">{formData.heroSubtitle}</p><button className="px-8 py-3 rounded-lg font-semibold" style={{ backgroundColor: formData.heroButtonColor, color: '#ffffff' }}>{formData.heroButtonText}</button></div>
                     {formData.sections.filter(s => s.isActive).map((section) => (<div key={section.id} className="py-12 px-4" style={{ backgroundColor: section.backgroundColor, color: section.textColor}}><div className="max-w-4xl mx-auto text-center"><h2 className="text-3xl font-bold mb-4">{section.title}</h2>{section.subtitle && (<p className="text-xl mb-6">{section.subtitle}</p>)}<p className="mb-8">{section.content}</p><button className="px-6 py-2 rounded-lg font-semibold" style={{ backgroundColor: section.buttonColor, color: '#ffffff' }}>{section.buttonText}</button></div>
                         {section.mediaType && section.mediaType !== 'none' && section.mediaUrl && (<div className={`mb-6 w-full flex justify-center ${section.mediaPosition === 'top' ? 'order-first' : section.mediaPosition === 'left' ? 'md:flex-row flex-col' : 'md:flex-row-reverse flex-col'}`}> {section.mediaType === 'image' ? (<img src={section.mediaUrl} alt="media" className="rounded-lg max-w-xs w-full h-auto object-cover" />) : (<video src={section.mediaUrl} controls className="rounded-lg max-w-xs w-full h-auto object-cover" />)}</div>)}
-                        {(section.subsections || []).length > 0 && (<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">{section.subsections.map(sub => (<div key={sub.id} className="bg-white rounded-lg shadow p-4 flex flex-col items-center">{sub.imageUrl && <img src={sub.imageUrl} alt="sub" className="mb-2 w-20 h-20 object-cover rounded-full" />}<h4 className="font-bold text-lg mb-1">{sub.title}</h4><p className="text-sm text-center">{sub.content}</p></div>))}</div>)}
+                        {(section.subsections || []).length > 0 && (
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                            {section.subsections.map(sub => (
+                              <div key={sub.id} className="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                                {sub.imageUrl && <Image src={sub.imageUrl} alt={sub.title || 'Sub-section image'} width={80} height={80} className="mb-2 w-20 h-20 object-cover rounded-full" />}
+                                <h4 className="font-bold text-lg mb-1">{sub.title}</h4>
+                                <p className="text-sm text-center">{sub.content}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>))}
                     <div className="py-12 px-4 bg-gray-100"><div className="max-w-4xl mx-auto text-center"><h2 className="text-3xl font-bold mb-8">Planes de Suscripción</h2><p className="text-gray-600 mb-8">Esta sección es fija y no se puede editar</p><div className="grid grid-cols-1 md:grid-cols-3 gap-6"><div className="bg-white p-6 rounded-lg shadow"><h3 className="text-xl font-bold mb-2">Plan Básico</h3><p className="text-gray-600 mb-4">$29/mes</p></div><div className="bg-white p-6 rounded-lg shadow"><h3 className="text-xl font-bold mb-2">Plan Profesional</h3><p className="text-gray-600 mb-4">$59/mes</p></div><div className="bg-white p-6 rounded-lg shadow"><h3 className="text-xl font-bold mb-2">Plan Empresarial</h3><p className="text-gray-600 mb-4">$99/mes</p></div></div></div></div></div></CardContent>
               </Card>
