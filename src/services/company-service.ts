@@ -12,7 +12,8 @@ import {
   Timestamp,
   addDoc,
   WriteBatch,
-  writeBatch
+  writeBatch,
+  runTransaction
 } from 'firebase/firestore';
 import type { Company, User } from '@/types';
 import { auditService } from './audit-service';
@@ -109,38 +110,43 @@ class CompanyService {
     adminUserData: Partial<Omit<User, 'id'>>,
     isSuperAdminFlow: boolean = false
   ): Promise<{ companyId: string | null; userId: string }> {
-      const batch = writeBatch(db);
-      
-      let companyId: string | null = null;
-      const userId = adminUserData.uid!;
+    try {
+      const { companyId, userId } = await runTransaction(db, async (transaction) => {
+        let companyId: string | null = null;
+        const userId = adminUserData.uid!;
 
-      // Si no es superadmin, crea la compañía
-      if (!isSuperAdminFlow) {
+        // --- Fase de Lectura y Validación (dentro de la transacción) ---
+        if (!isSuperAdminFlow) {
           if (!companyData.name || !companyData.ruc) {
-              throw new Error("El nombre de la empresa y el RUC son obligatorios.");
+            throw new Error("El nombre de la empresa y el RUC son obligatorios.");
           }
-          if (!await this.isRucUnique(companyData.ruc)) {
-              throw new Error(`Ya existe una empresa con el RUC ${companyData.ruc}.`);
+          // Validación de RUC único DENTRO de la transacción
+          const rucQuery = query(this.companiesCollection, where('ruc', '==', companyData.ruc));
+          const rucSnapshot = await transaction.get(rucQuery);
+          if (!rucSnapshot.empty) {
+            throw new Error(`Ya existe una empresa con el RUC ${companyData.ruc}.`);
           }
-
+        }
+        
+        // --- Fase de Escritura (dentro de la transacción) ---
+        if (!isSuperAdminFlow) {
           const companyDocRef = doc(this.companiesCollection);
           companyId = companyDocRef.id;
 
           const newCompanyData = {
-              ...companyData,
-              status: 'active',
-              subscriptionStatus: companyData.planId && companyData.planId !== 'plan-gratuito' ? 'pending_payment' : 'trialing',
-              trialEndsAt: companyData.planId && companyData.planId !== 'plan-gratuito' ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-              registrationDate: new Date().toISOString(),
-              createdAt: serverTimestamp(),
-              updatedAt: serverTimestamp(),
+            ...companyData,
+            status: 'active',
+            subscriptionStatus: companyData.planId && companyData.planId !== 'plan-gratuito' ? 'pending_payment' : 'trialing',
+            trialEndsAt: companyData.planId && companyData.planId !== 'plan-gratuito' ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            registrationDate: new Date().toISOString(),
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
           };
-          batch.set(companyDocRef, newCompanyData);
-      }
+          transaction.set(companyDocRef, newCompanyData);
+        }
 
-      // Siempre crea el documento del usuario
-      const userDocRef = doc(this.usersCollection, userId);
-      const newUserDoc: Omit<User, 'id'> = {
+        const userDocRef = doc(this.usersCollection, userId);
+        const newUserDoc: Omit<User, 'id'> = {
           uid: userId,
           email: adminUserData.email!,
           firstName: adminUserData.firstName!,
@@ -153,27 +159,33 @@ class CompanyService {
           isActive: true,
           avatarUrl: `https://placehold.co/100x100.png?text=${adminUserData.firstName!.charAt(0)}`,
           username: adminUserData.email!.split('@')[0],
-      };
-      batch.set(userDocRef, newUserDoc);
+        };
+        transaction.set(userDocRef, newUserDoc);
 
-      // Ejecutar la transacción atómica
-      await batch.commit();
+        return { companyId, userId };
+      });
 
-      // Log de auditoría después de que todo se haya completado exitosamente
+      // --- Fase de Post-transacción (Logging) ---
       if (companyId) {
-          await auditService.log({
-              entity: 'companies', entityId: companyId, action: 'created',
-              performedBy: { uid: userId, email: adminUserData.email! }, newData: companyData,
-              details: `Compañía creada durante el registro del admin.`
-          });
+        await auditService.log({
+          entity: 'companies', entityId: companyId, action: 'created',
+          performedBy: { uid: userId, email: adminUserData.email! }, newData: companyData,
+          details: `Compañía creada durante el registro del admin.`
+        });
       }
       await auditService.log({
-          entity: 'users', entityId: userId, action: 'created',
-          performedBy: { uid: userId, email: adminUserData.email! }, newData: adminUserData,
-          details: `Usuario creado durante el registro.`
+        entity: 'users', entityId: userId, action: 'created',
+        performedBy: { uid: userId, email: adminUserData.email! }, newData: adminUserData,
+        details: `Usuario creado durante el registro.`
       });
 
       return { companyId, userId };
+
+    } catch (error) {
+        console.error("Error en la transacción de creación de compañía y usuario:", error);
+        // Re-lanza el error para que el componente de UI pueda manejarlo.
+        throw error;
+    }
   }
 
   async updateCompany(companyId: string, updates: Partial<Company>, user: { uid: string; email: string }): Promise<Company> {
