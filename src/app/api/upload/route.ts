@@ -1,5 +1,5 @@
 
-// src/app/api/upload/route.ts - VERSIÓN FINAL CORREGIDA
+// src/app/api/upload/route.ts - VERSIÓN CORREGIDA CON BUCKET CORRECTO
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
@@ -38,12 +38,12 @@ export async function POST(request: NextRequest) {
     
     console.log('🔑 Usando proyecto:', firebaseAdminConfig.project_id);
 
-    // 3. Inicializar Firebase Admin
+    // 3. Inicializar Firebase Admin - BUCKET CORREGIDO
     let app;
     if (getApps().length === 0) {
       app = initializeApp({
         credential: cert(firebaseAdminConfig),
-        storageBucket: 'websapmax.appspot.com',
+        storageBucket: 'websapmax.firebasestorage.app',
       });
       console.log('✅ Firebase Admin inicializado');
     } else {
