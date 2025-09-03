@@ -1,13 +1,21 @@
 
 // src/lib/firebase.ts
 
-// Esta es la versión simplificada del archivo de inicialización de Firebase.
-// Ahora delegamos la lógica de inicialización "lazy" al nuevo archivo firebase-lazy.ts
-// para asegurar que las instancias de Firebase estén disponibles cuando se necesiten,
-// previniendo errores de inicialización.
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getFirestore } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import { firebaseConfig, isFirebaseConfigValid } from './firebase-config';
 
-// Exportamos las funciones 'getter' del módulo lazy, que será el punto de entrada
-// estándar para acceder a los servicios de Firebase en toda la aplicación.
-// Esto nos da un punto único y robusto de gestión de la conexión.
+// Asegurarse de que la configuración sea válida antes de proceder.
+if (!isFirebaseConfigValid()) {
+  throw new Error("La configuración de Firebase no es válida. Por favor, revisa el archivo src/lib/firebase-config.ts");
+}
 
-export { getFirebaseApp as app, getDb, getFirebaseAuth as auth } from './firebase-lazy';
+// Inicializa Firebase App solo una vez.
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+
+// Obtiene y exporta las instancias de los servicios de Firebase.
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+export { app, auth, db };
