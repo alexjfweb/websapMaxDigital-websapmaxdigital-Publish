@@ -156,3 +156,6 @@ export class StorageService {
     }
   }
 }
+
+// Exportar la instancia singleton
+export const storageService = StorageService.getInstance();

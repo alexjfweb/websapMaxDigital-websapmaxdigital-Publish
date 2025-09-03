@@ -1,3 +1,4 @@
+
 // src/lib/firebase-admin.ts
 import { initializeApp, getApps, cert, ServiceAccount, App } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
@@ -31,7 +32,7 @@ function getServiceAccountCredentials(): ServiceAccount {
         clientEmail: parsed.client_email,
         privateKey: parsed.private_key,
       } as ServiceAccount;
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error al parsear FIREBASE_SERVICE_ACCOUNT_KEY:', error);
       throw new Error(`Error al parsear las credenciales JSON: ${error.message}`);
     }
@@ -72,7 +73,7 @@ function initializeFirebaseAdmin(): App {
     console.log(`📧 Service Account: ${credentials.clientEmail}`);
     
     return app;
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Error crítico al inicializar Firebase Admin:', error);
     throw error;
   }
@@ -93,7 +94,7 @@ export function getFirebaseStorage() {
     const storage = getStorage(app);
     console.log('✅ Storage obtenido correctamente');
     return storage;
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Error al obtener Firebase Storage:', error);
     throw error;
   }
@@ -112,7 +113,7 @@ export function verifyFirebaseConfig() {
       appName: app.name,
       hasStorage: true
     };
-  } catch (error) {
+  } catch (error: any) {
     return {
       isValid: false,
       error: error.message
