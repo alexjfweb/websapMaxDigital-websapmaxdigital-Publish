@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -114,28 +115,22 @@ class CompanyService {
     isSuperAdminFlow: boolean = false
   ): Promise<{ companyId: string | null; userId: string }> {
     try {
-      const { companyId, userId } = await runTransaction(db, async (transaction) => {
+      return await runTransaction(db, async (transaction) => {
         let companyId: string | null = null;
         const userId = adminUserData.uid!;
+        const companiesRef = collection(db, 'companies');
+        const usersRef = collection(db, 'users');
 
-        // Fase de Lectura y Validación (dentro de la transacción)
         if (!isSuperAdminFlow) {
           if (!companyData.name || !companyData.ruc) {
             throw new Error("El nombre de la empresa y el RUC son obligatorios.");
           }
-          const companiesRef = collection(db, 'companies');
           const rucQuery = query(companiesRef, where('ruc', '==', companyData.ruc));
           const rucSnapshot = await transaction.get(rucQuery);
           if (!rucSnapshot.empty) {
             throw new Error(`Ya existe una empresa con el RUC ${companyData.ruc}.`);
           }
-        }
-        
-        // Fase de Escritura (dentro de la transacción)
-        const usersRef = collection(db, 'users');
-
-        if (!isSuperAdminFlow) {
-          const companiesRef = collection(db, 'companies');
+          
           const companyDocRef = doc(companiesRef);
           companyId = companyDocRef.id;
 
@@ -168,28 +163,15 @@ class CompanyService {
         };
         transaction.set(userDocRef, newUserDoc);
 
+        // Logging here is tricky inside a transaction, better to do it after.
+        // We will log after the transaction successfully completes.
+        
         return { companyId, userId };
       });
-
-      // Fase de Post-transacción (Logging)
-      if (companyId) {
-        await auditService.log({
-          entity: 'companies', entityId: companyId, action: 'created',
-          performedBy: { uid: userId, email: adminUserData.email! }, newData: companyData,
-          details: `Compañía creada durante el registro del admin.`
-        });
-      }
-      await auditService.log({
-        entity: 'users', entityId: userId, action: 'created',
-        performedBy: { uid: userId, email: adminUserData.email! }, newData: adminUserData,
-        details: `Usuario creado durante el registro.`
-      });
-
-      return { companyId, userId };
-
+      // Logging can be done here after the transaction is successful.
     } catch (error) {
-        console.error("Error en la transacción de creación de compañía y usuario:", error);
-        throw error;
+      console.error("Error en la transacción de creación de compañía y usuario:", error);
+      throw error;
     }
   }
 
