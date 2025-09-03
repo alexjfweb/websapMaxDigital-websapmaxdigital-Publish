@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -96,9 +97,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuGroup>
-                        <DropdownMenuItem disabled>
-                        <UserCircle className="mr-2 h-4 w-4" />
-                        <span>Perfil</span>
+                        <DropdownMenuItem asChild>
+                            <Link href="/admin/profile">
+                                <UserCircle className="mr-2 h-4 w-4" />
+                                <span>Perfil</span>
+                            </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem disabled>
                         <Settings className="mr-2 h-4 w-4" />
