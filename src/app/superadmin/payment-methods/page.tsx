@@ -317,11 +317,11 @@ export default function SuperAdminPaymentMethodsPage() {
                             <Label>Número Nequi</Label>
                             <Input 
                                 type="text" 
-                                pattern="\d{10}"
+                                pattern="\\d{10}"
                                 maxLength={10}
                                 title="Debe ser un número de 10 dígitos"
                                 value={currentPlanConfig.nequi?.accountNumber || ''} 
-                                onChange={(e) => handleConfigChange(activePlan, 'nequi', { accountNumber: e.target.value.replace(/\D/g, '') })} 
+                                onChange={(e) => handleConfigChange(activePlan, 'nequi', { accountNumber: e.target.value.replace(/\\D/g, '') })} 
                             />
                         </div>
                         <div>
@@ -349,21 +349,21 @@ export default function SuperAdminPaymentMethodsPage() {
                                     <label htmlFor={`bancolombia-qr-upload-${activePlan}`} className="cursor-pointer flex items-center gap-2">
                                         <UploadCloud className="h-4 w-4" />
                                         Seleccionar o cambiar QR
+                                        <Input 
+                                            id={`bancolombia-qr-upload-${activePlan}`}
+                                            type="file" 
+                                            className="hidden"
+                                            accept="image/jpeg, image/png"
+                                            onChange={(e) => handleQrImageSelection(e, activePlan, 'bancolombiaQr')} 
+                                        />
                                     </label>
                                 </Button>
-                                <Input 
-                                    id={`bancolombia-qr-upload-${activePlan}`}
-                                    type="file" 
-                                    className="hidden"
-                                    accept="image/jpeg, image/png"
-                                    onChange={(e) => handleQrImageSelection(e, activePlan, 'bancolombiaQr')} 
-                                />
                             </div>
                             <div>
                                 <Label>Número de cuenta asociado *</Label>
                                 <Input
                                     value={currentPlanConfig.bancolombiaQr?.accountNumber || ''}
-                                    onChange={(e) => handleConfigChange(activePlan, 'bancolombiaQr', { accountNumber: e.target.value.replace(/\D/g, '') })}
+                                    onChange={(e) => handleConfigChange(activePlan, 'bancolombiaQr', { accountNumber: e.target.value.replace(/\\D/g, '') })}
                                     placeholder="1234567890"
                                 />
                             </div>
@@ -471,5 +471,3 @@ export default function SuperAdminPaymentMethodsPage() {
     </div>
   );
 }
-
-    
