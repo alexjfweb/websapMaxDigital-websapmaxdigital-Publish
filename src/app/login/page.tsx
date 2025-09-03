@@ -78,59 +78,59 @@ export default function LoginPage() {
 
   return (
     <>
-    <PublicHeader />
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background to-accent/10 p-4 pt-16">
-      <Card className="w-full max-w-md shadow-2xl">
-        <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold text-primary">Iniciar sesión</CardTitle>
-          <CardDescription>Ingresa a tu cuenta para gestionar tu restaurante.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Correo electrónico</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="you@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contraseña</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" className="w-full text-lg py-3" disabled={isSubmitting}>
-                {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LogIn className="mr-2 h-5 w-5" />}
-                {isSubmitting ? 'Iniciando sesión...' : 'Iniciar sesión'}
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-        <CardFooter className="flex flex-col items-center space-y-2">
-           <Link href="#" className="text-sm text-primary hover:underline">¿Olvidaste tu contraseña?</Link>
-          <p className="text-sm text-muted-foreground">
-            ¿No tienes una cuenta? <Link href="/register" className="font-medium text-primary hover:underline">
-              Regístrate
-            </Link>
-          </p>
-        </CardFooter>
-      </Card>
-    </div>
+      <PublicHeader />
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-accent/10 p-4">
+        <Card className="w-full max-w-md shadow-2xl">
+          <CardHeader className="text-center">
+            <CardTitle className="text-3xl font-bold text-primary">Iniciar sesión</CardTitle>
+            <CardDescription>Ingresa a tu cuenta para gestionar tu restaurante.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Correo electrónico</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="you@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contraseña</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" className="w-full text-lg py-3" disabled={isSubmitting}>
+                  {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <LogIn className="mr-2 h-5 w-5" />}
+                  {isSubmitting ? 'Iniciando sesión...' : 'Iniciar sesión'}
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+          <CardFooter className="flex flex-col items-center space-y-2">
+            <Link href="#" className="text-sm text-primary hover:underline">¿Olvidaste tu contraseña?</Link>
+            <p className="text-sm text-muted-foreground">
+              ¿No tienes una cuenta? <Link href="/register" className="font-medium text-primary hover:underline">
+                Regístrate
+              </Link>
+            </p>
+          </CardFooter>
+        </Card>
+      </div>
     </>
   );
 }
