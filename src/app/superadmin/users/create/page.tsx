@@ -22,8 +22,8 @@ import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Save } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { getFirebaseAuth, getDb } from "@/lib/firebase-lazy"; // Usar lazy loading
-import { doc, setDoc } from "firebase/firestore"; // Importar doc y setDoc
+import { getFirebaseAuth, getDb } from "@/lib/firebase-lazy";
+import { doc, setDoc } from "firebase/firestore";
 import type { User, UserRole } from "@/types";
 
 const createUserFormSchema = z.object({
@@ -55,8 +55,8 @@ export default function SuperAdminCreateUserPage() {
 
   async function onSubmit(values: z.infer<typeof createUserFormSchema>) {
     try {
-      const auth = getFirebaseAuth(); // Obtener auth
-      const db = getDb(); // Obtener db
+      const auth = getFirebaseAuth();
+      const db = getDb();
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
 
@@ -73,7 +73,6 @@ export default function SuperAdminCreateUserPage() {
         registrationDate: new Date().toISOString(),
       };
 
-      // Guardar detalles del usuario en Firestore
       await setDoc(doc(db, "users", firebaseUser.uid), newUser);
       
       toast({
@@ -243,3 +242,5 @@ export default function SuperAdminCreateUserPage() {
     </div>
   );
 }
+
+    

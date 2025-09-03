@@ -1,5 +1,5 @@
 
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase-lazy';
 import {
   collection,
   doc,
@@ -11,7 +11,6 @@ import {
   serverTimestamp,
   Timestamp,
   addDoc,
-  WriteBatch,
   writeBatch,
   runTransaction
 } from 'firebase/firestore';
@@ -47,10 +46,10 @@ const serializeCompany = (doc: any): Company => {
 
 class CompanyService {
   private get companiesCollection() {
-    return collection(db, 'companies');
+    return collection(getDb(), 'companies');
   }
   private get usersCollection() {
-    return collection(db, 'users');
+    return collection(getDb(), 'users');
   }
 
   private async isRucUnique(ruc: string, excludeId?: string): Promise<boolean> {
@@ -115,6 +114,7 @@ class CompanyService {
     isSuperAdminFlow: boolean = false
   ): Promise<{ companyId: string | null; userId: string }> {
     try {
+      const db = getDb();
       return await runTransaction(db, async (transaction) => {
         let companyId: string | null = null;
         const userId = adminUserData.uid!;
@@ -162,13 +162,9 @@ class CompanyService {
           username: adminUserData.email!.split('@')[0],
         };
         transaction.set(userDocRef, newUserDoc);
-
-        // Logging here is tricky inside a transaction, better to do it after.
-        // We will log after the transaction successfully completes.
         
         return { companyId, userId };
       });
-      // Logging can be done here after the transaction is successful.
     } catch (error) {
       console.error("Error en la transacción de creación de compañía y usuario:", error);
       throw error;
@@ -216,3 +212,5 @@ class CompanyService {
 }
 
 export const companyService = new CompanyService();
+
+    
