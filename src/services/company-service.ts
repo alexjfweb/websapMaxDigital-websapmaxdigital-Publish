@@ -16,37 +16,29 @@ import {
 } from 'firebase/firestore';
 import type { Company, User } from '@/types';
 import { auditService } from './audit-service';
-
-export interface CreateCompanyInput {
-  name: string;
-  ruc: string;
-  location: string;
-  email?: string;
-  phone?: string;
-  phoneFixed?: string;
-  addressStreet?: string;
-  addressNeighborhood?: string;
-  addressState?: string;
-  addressPostalCode?: string;
-  companyType?: string;
-  planId?: string;
-}
+import { serializeDate } from '@/lib/utils'; // Importar la nueva utilidad
 
 const serializeCompany = (doc: any): Company => {
   const data = doc.data();
+  // Usar la nueva utilidad para serializar fechas de forma segura
   return {
     id: doc.id,
     ...data,
-    createdAt: data.createdAt?.toDate().toISOString(),
-    updatedAt: data.updatedAt?.toDate().toISOString(),
-    registrationDate: data.registrationDate ? new Date(data.registrationDate).toISOString() : new Date().toISOString(),
-    trialEndsAt: data.trialEndsAt ? data.trialEndsAt instanceof Timestamp ? data.trialEndsAt.toDate().toISOString() : new Date(data.trialEndsAt).toISOString() : null,
+    createdAt: serializeDate(data.createdAt),
+    updatedAt: serializeDate(data.updatedAt),
+    registrationDate: serializeDate(data.registrationDate) || new Date().toISOString(),
+    trialEndsAt: serializeDate(data.trialEndsAt),
   };
 };
 
 class CompanyService {
-  private companiesCollection = collection(db, 'companies');
-  private usersCollection = collection(db, 'users');
+  private get companiesCollection() {
+    return collection(db, 'companies');
+  }
+
+  private get usersCollection() {
+    return collection(db, 'users');
+  }
   
   async isRucUnique(ruc: string, excludeId?: string): Promise<boolean> {
     const q = query(this.companiesCollection, where('ruc', '==', ruc));
@@ -109,46 +101,60 @@ class CompanyService {
     adminUserData: Partial<Omit<User, 'id'>>,
     isSuperAdminFlow: boolean = false
   ): Promise<{ companyId: string | null; userId: string }> {
-    const batch = writeBatch(db);
-    let companyId: string | null = null;
-    const userId = adminUserData.uid!;
-    
-    if (!isSuperAdminFlow) {
-        const companyDocRef = doc(this.companiesCollection);
-        companyId = companyDocRef.id;
+      return runTransaction(db, async (transaction) => {
+        const userId = adminUserData.uid!;
+        let companyId: string | null = null;
+        
+        // 1. Validar RUC dentro de la transacción
+        if (!isSuperAdminFlow && companyData.ruc) {
+            const companiesRef = this.companiesCollection;
+            const rucQuery = query(companiesRef, where('ruc', '==', companyData.ruc));
+            const rucSnapshot = await transaction.get(rucQuery);
+            if (!rucSnapshot.empty) {
+                throw new Error(`El RUC "${companyData.ruc}" ya está registrado.`);
+            }
+        }
 
-        const newCompanyData = {
-            ...companyData,
+        // 2. Crear documento de compañía (si no es superadmin)
+        if (!isSuperAdminFlow) {
+            const companyDocRef = doc(this.companiesCollection);
+            companyId = companyDocRef.id;
+
+            const newCompanyData = {
+                ...companyData,
+                status: 'active',
+                subscriptionStatus: companyData.planId && companyData.planId !== 'plan-gratuito' ? 'pending_payment' : 'trialing',
+                trialEndsAt: companyData.planId && companyData.planId !== 'plan-gratuito' ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                registrationDate: new Date().toISOString(),
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            };
+            transaction.set(companyDocRef, newCompanyData);
+        }
+
+        // 3. Crear documento de usuario
+        const userDocRef = doc(this.usersCollection, userId);
+        const newUserDoc: Omit<User, 'id'> = {
+            uid: userId,
+            email: adminUserData.email!,
+            firstName: adminUserData.firstName!,
+            lastName: adminUserData.lastName!,
+            role: adminUserData.role!,
+            companyId: companyId || undefined,
+            businessName: companyData.name || '',
             status: 'active',
-            subscriptionStatus: companyData.planId && companyData.planId !== 'plan-gratuito' ? 'pending_payment' : 'trialing',
-            trialEndsAt: companyData.planId && companyData.planId !== 'plan-gratuito' ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
             registrationDate: new Date().toISOString(),
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
+            isActive: true,
+            avatarUrl: `https://placehold.co/100x100.png?text=${adminUserData.firstName!.charAt(0)}`,
+            username: adminUserData.email!.split('@')[0],
         };
-        batch.set(companyDocRef, newCompanyData);
-    }
-    
-    const userDocRef = doc(this.usersCollection, userId);
-    const newUserDoc: Omit<User, 'id'> = {
-        uid: userId,
-        email: adminUserData.email!,
-        firstName: adminUserData.firstName!,
-        lastName: adminUserData.lastName!,
-        role: adminUserData.role!,
-        companyId: companyId || undefined,
-        businessName: companyData.name || '',
-        status: 'active',
-        registrationDate: new Date().toISOString(),
-        isActive: true,
-        avatarUrl: `https://placehold.co/100x100.png?text=${adminUserData.firstName!.charAt(0)}`,
-        username: adminUserData.email!.split('@')[0],
-    };
-    batch.set(userDocRef, newUserDoc);
+        transaction.set(userDocRef, newUserDoc);
 
-    await batch.commit();
-
-    return { companyId, userId };
+        return { companyId, userId };
+    }).catch(error => {
+        console.error("Error en la transacción de creación de compañía y usuario:", error);
+        throw error; // Relanzar para que el llamador pueda manejarlo
+    });
   }
 
   async updateCompany(companyId: string, updates: Partial<Company>, user: { uid: string; email: string }): Promise<Company> {
