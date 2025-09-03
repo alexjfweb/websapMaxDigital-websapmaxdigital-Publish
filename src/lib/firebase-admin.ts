@@ -8,10 +8,22 @@ let adminApp: App | null = null;
 function getServiceAccountCredentials(): ServiceAccount {
   console.log('🔍 Obteniendo credenciales de Firebase...');
   
-  // Método 1: JSON completo en variable de entorno
+  // Método 1: Variables separadas (MÉTODO PREFERIDO Y MÁS CONFIABLE)
+  if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+    console.log('📝 Usando variables de entorno separadas');
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
+    console.log('✅ Variables de entorno separadas encontradas');
+    return {
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: privateKey,
+    } as ServiceAccount;
+  }
+  
+  // Método 2: JSON completo en variable de entorno (Fallback)
   if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
     try {
-      console.log('📝 Usando FIREBASE_SERVICE_ACCOUNT_KEY');
+      console.log('📝 Usando FIREBASE_SERVICE_ACCOUNT_KEY como fallback');
       const parsed = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
       console.log('✅ Service account JSON parseado correctamente');
       return {
@@ -23,18 +35,6 @@ function getServiceAccountCredentials(): ServiceAccount {
       console.error('❌ Error al parsear FIREBASE_SERVICE_ACCOUNT_KEY:', error);
       throw new Error(`Error al parsear las credenciales JSON: ${error.message}`);
     }
-  }
-  
-  // Método 2: Variables separadas
-  if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
-    console.log('📝 Usando variables de entorno separadas');
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
-    console.log('✅ Variables de entorno encontradas');
-    return {
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: privateKey,
-    } as ServiceAccount;
   }
   
   // Si llegamos aquí, no hay credenciales válidas
