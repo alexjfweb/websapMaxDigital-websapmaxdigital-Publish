@@ -1,15 +1,27 @@
 
 // src/app/api/upload/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { app } from '@/lib/firebase';
+import { initializeApp, getApps, cert, getApp } from 'firebase-admin/app';
+import { getStorage as getAdminStorage } from 'firebase-admin/storage';
 
-const storage = getStorage(app);
+// Esto solo se ejecutará en el entorno del servidor (backend)
+const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
+  ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+  : null;
 
-// Esta es la nueva implementación del endpoint de subida.
-// Elimina `formidable` y `fs` para trabajar directamente con los datos en memoria,
-// lo que es compatible con entornos serverless y soluciona el error 504.
+// Inicializa la app de admin de Firebase si no se ha hecho antes.
+if (serviceAccount && !getApps().some(app => app.name === 'admin-sdk')) {
+  initializeApp({
+    credential: cert(serviceAccount),
+    storageBucket: 'websapmax.appspot.com'
+  }, 'admin-sdk');
+}
+
 export async function POST(req: NextRequest) {
+    if (!serviceAccount) {
+        return NextResponse.json({ error: 'La configuración del servicio de Firebase no está disponible.' }, { status: 500 });
+    }
+
     try {
         const formData = await req.formData();
         const file = formData.get('file') as File | null;
@@ -19,18 +31,39 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'No se recibió ningún archivo.' }, { status: 400 });
         }
 
-        // Convertir el archivo a un Buffer para subirlo
-        const fileBuffer = await file.arrayBuffer();
+        // Convertir el archivo a un Buffer para subirlo con el Admin SDK
+        const fileBuffer = Buffer.from(await file.arrayBuffer());
 
-        // Crear un nombre de archivo único para evitar sobreescrituras
+        // Usar la app de admin inicializada
+        const adminApp = getApp('admin-sdk');
+        const bucket = getAdminStorage(adminApp).bucket();
+        
+        // Crear un nombre de archivo único
         const uniqueFileName = `${Date.now()}-${file.name.replace(/[^a-z0-9._-]/gi, '_')}`;
-        const storageRef = ref(storage, `${path}${uniqueFileName}`);
+        const fullPath = `${path}${uniqueFileName}`;
 
-        // Subir el buffer a Firebase Storage
-        const snapshot = await uploadBytes(storageRef, fileBuffer, { contentType: file.type || 'application/octet-stream' });
-        const downloadURL = await getDownloadURL(snapshot.ref);
+        const blob = bucket.file(fullPath);
+        const blobStream = blob.createWriteStream({
+            metadata: {
+                contentType: file.type,
+            },
+        });
 
-        return NextResponse.json({ url: downloadURL }, { status: 200 });
+        return await new Promise((resolve, reject) => {
+            blobStream.on('error', (err) => {
+                console.error("Error en blobStream:", err);
+                reject(NextResponse.json({ error: 'Error al subir el archivo.', details: err.message }, { status: 500 }));
+            });
+
+            blobStream.on('finish', async () => {
+                // Hacer el archivo público
+                await blob.makePublic();
+                const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fullPath}`;
+                resolve(NextResponse.json({ url: publicUrl }, { status: 200 }));
+            });
+
+            blobStream.end(fileBuffer);
+        });
 
     } catch (error) {
         console.error('Error en /api/upload:', error);

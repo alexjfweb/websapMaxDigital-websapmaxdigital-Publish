@@ -4,6 +4,7 @@ import imageCompression from 'browser-image-compression';
 
 class StorageService {
 
+  // Esta función se ejecuta en el CLIENTE (navegador)
   private async compressImage(file: File): Promise<File> {
     const options = {
       maxSizeMB: 1,
@@ -25,17 +26,16 @@ class StorageService {
       return file;
     }
   }
-  
+
+  // Esta función se ejecuta en el CLIENTE y llama a nuestra API de backend
   async compressAndUploadFile(file: File, path: string = 'images/'): Promise<string> {
     const compressedFile = await this.compressImage(file);
     
     const formData = new FormData();
-    // Asegurarse de que el campo se llame 'file', coincidiendo con la API
     formData.append('file', compressedFile);
     formData.append('path', path);
 
     try {
-      // La llamada a la API sigue siendo la misma, pero la API ahora funciona correctamente
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
@@ -56,6 +56,13 @@ class StorageService {
       console.error("Error al subir el archivo a través del proxy:", error);
       throw error;
     }
+  }
+
+  async deleteFile(fileUrl: string): Promise<void> {
+    // Para el cliente, la eliminación también debería pasar por una API de backend
+    // por razones de seguridad.
+    console.log("Solicitud de eliminación para:", fileUrl);
+    // await fetch('/api/delete-file', { method: 'POST', body: JSON.stringify({ url: fileUrl }) });
   }
 }
 
