@@ -1,57 +1,129 @@
-import { initializeApp, getApps, cert, ServiceAccount } from 'firebase-admin/app';
+// src/lib/firebase-admin.ts
+import { initializeApp, getApps, cert, ServiceAccount, App } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
 
-// Función para obtener las credenciales
+let adminApp: App | null = null;
+
+// Función para obtener credenciales con mejor manejo de errores
 function getServiceAccountCredentials(): ServiceAccount {
-  // Método 1: Si tienes el JSON completo en una sola línea
-  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  console.log('🔍 Obteniendo credenciales de Firebase...');
+  
+  // Método 1: JSON completo en variable de entorno
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
     try {
-      // Reemplazamos \\n por \n para asegurar que los saltos de línea en la clave privada sean correctos
-      const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT.replace(/\\n/g, '\n');
-      return JSON.parse(serviceAccountJson);
+      console.log('📝 Usando FIREBASE_SERVICE_ACCOUNT_KEY');
+      const parsed = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+      console.log('✅ Service account JSON parseado correctamente');
+      return {
+        projectId: parsed.project_id,
+        clientEmail: parsed.client_email,
+        privateKey: parsed.private_key,
+      } as ServiceAccount;
     } catch (error) {
-      console.error('Error al parsear FIREBASE_SERVICE_ACCOUNT:', error);
-      // Continuar para probar el método 2
+      console.error('❌ Error al parsear FIREBASE_SERVICE_ACCOUNT_KEY:', error);
+      throw new Error(`Error al parsear las credenciales JSON: ${error.message}`);
     }
   }
   
-  // Método 2: Variables separadas (más confiable)
+  // Método 2: Variables separadas
   if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+    console.log('📝 Usando variables de entorno separadas');
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
+    console.log('✅ Variables de entorno encontradas');
     return {
       projectId: process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      privateKey: privateKey,
     } as ServiceAccount;
   }
   
-  throw new Error('No se encontraron las credenciales de Firebase Admin. Verifica tus variables de entorno.');
+  // Si llegamos aquí, no hay credenciales válidas
+  const availableVars = {
+    FIREBASE_SERVICE_ACCOUNT_KEY: !!process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
+    FIREBASE_PROJECT_ID: !!process.env.FIREBASE_PROJECT_ID,
+    FIREBASE_CLIENT_EMAIL: !!process.env.FIREBASE_CLIENT_EMAIL,
+    FIREBASE_PRIVATE_KEY: !!process.env.FIREBASE_PRIVATE_KEY,
+  };
+  
+  console.error('❌ Variables de entorno disponibles:', availableVars);
+  throw new Error('No se encontraron credenciales válidas de Firebase. Verifica tu archivo .env.local');
 }
 
-// Inicializar Firebase Admin
-let adminApp;
-if (getApps().length === 0) {
+// Función para inicializar Firebase Admin de manera segura
+function initializeFirebaseAdmin(): App {
   try {
+    // Si ya existe una app, la devolvemos
+    const existingApps = getApps();
+    if (existingApps.length > 0) {
+      console.log('♻️  Reutilizando instancia existente de Firebase Admin');
+      return existingApps[0];
+    }
+
+    console.log('🚀 Inicializando nueva instancia de Firebase Admin...');
     const credentials = getServiceAccountCredentials();
-    adminApp = initializeApp({
+    
+    const app = initializeApp({
       credential: cert(credentials),
       storageBucket: `${credentials.projectId}.appspot.com`
     });
-    console.log('✅ Firebase Admin inicializado correctamente');
+
+    console.log('✅ Firebase Admin inicializado exitosamente');
+    console.log(`📊 Proyecto: ${credentials.projectId}`);
+    console.log(`📧 Service Account: ${credentials.clientEmail}`);
+    
+    return app;
   } catch (error) {
-    console.error('❌ Error fatal al inicializar Firebase Admin. La aplicación no podrá funcionar correctamente sin esto.', error);
-    // En un entorno de producción, podrías querer que la aplicación no se inicie si esto falla.
-  }
-} else {
-  adminApp = getApps()[0];
-}
-
-// Exportar servicios solo si la inicialización fue exitosa
-export const adminStorage = adminApp ? getStorage(adminApp) : null;
-export { adminApp };
-
-// Función de verificación para usar en los endpoints
-export function verifyFirebaseAdmin() {
-  if (!adminApp || !adminStorage) {
-    throw new Error('La configuración del servicio de Firebase Admin no está disponible. Revisa los logs del servidor para más detalles.');
+    console.error('❌ Error crítico al inicializar Firebase Admin:', error);
+    throw error;
   }
 }
+
+// Función para obtener la instancia de Firebase Admin
+export function getFirebaseAdmin(): App {
+  if (!adminApp) {
+    adminApp = initializeFirebaseAdmin();
+  }
+  return adminApp;
+}
+
+// Función para obtener el Storage
+export function getFirebaseStorage() {
+  try {
+    const app = getFirebaseAdmin();
+    const storage = getStorage(app);
+    console.log('✅ Storage obtenido correctamente');
+    return storage;
+  } catch (error) {
+    console.error('❌ Error al obtener Firebase Storage:', error);
+    throw error;
+  }
+}
+
+// Función de verificación para debugging
+export function verifyFirebaseConfig() {
+  try {
+    const credentials = getServiceAccountCredentials();
+    const app = getFirebaseAdmin();
+    
+    return {
+      isValid: true,
+      projectId: credentials.projectId,
+      clientEmail: credentials.clientEmail,
+      appName: app.name,
+      hasStorage: true
+    };
+  } catch (error) {
+    return {
+      isValid: false,
+      error: error.message
+    };
+  }
+}
+
+// Exportar directamente para compatibilidad
+export const adminStorage = {
+  bucket: () => {
+    const storage = getFirebaseStorage();
+    return storage.bucket();
+  }
+};
