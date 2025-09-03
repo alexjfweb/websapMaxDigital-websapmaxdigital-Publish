@@ -3,11 +3,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps, cert, getApp } from 'firebase-admin/app';
 import { getStorage as getAdminStorage } from 'firebase-admin/storage';
+import * as dotenv from 'dotenv';
+
+// Cargar las variables de entorno desde .env.local
+dotenv.config();
 
 // Esto solo se ejecutará en el entorno del servidor (backend)
-const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
-  ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-  : null;
+const serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT;
+let serviceAccount: any;
+
+if (serviceAccountString) {
+  try {
+    serviceAccount = JSON.parse(serviceAccountString);
+  } catch (e) {
+    console.error("Error al parsear FIREBASE_SERVICE_ACCOUNT:", e);
+    serviceAccount = null;
+  }
+} else {
+  console.error("La variable de entorno FIREBASE_SERVICE_ACCOUNT no está definida.");
+}
 
 // Inicializa la app de admin de Firebase si no se ha hecho antes.
 if (serviceAccount && !getApps().some(app => app.name === 'admin-sdk')) {
@@ -56,10 +70,15 @@ export async function POST(req: NextRequest) {
             });
 
             blobStream.on('finish', async () => {
-                // Hacer el archivo público
-                await blob.makePublic();
-                const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fullPath}`;
-                resolve(NextResponse.json({ url: publicUrl }, { status: 200 }));
+                try {
+                    // Hacer el archivo público
+                    await blob.makePublic();
+                    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fullPath}`;
+                    resolve(NextResponse.json({ url: publicUrl }, { status: 200 }));
+                } catch (err: any) {
+                     console.error("Error al hacer el archivo público:", err);
+                     reject(NextResponse.json({ error: 'Error al obtener la URL del archivo.', details: err.message }, { status: 500 }));
+                }
             });
 
             blobStream.end(fileBuffer);
