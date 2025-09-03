@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -13,7 +14,7 @@ import {
   WriteBatch,
   writeBatch
 } from 'firebase/firestore';
-import type { Company } from '@/types';
+import type { Company, User } from '@/types';
 import { auditService } from './audit-service';
 
 export interface CreateCompanyInput {
@@ -39,12 +40,13 @@ const serializeCompany = (doc: any): Company => {
     createdAt: data.createdAt?.toDate().toISOString(),
     updatedAt: data.updatedAt?.toDate().toISOString(),
     registrationDate: data.registrationDate ? new Date(data.registrationDate).toISOString() : new Date().toISOString(),
-    trialEndsAt: data.trialEndsAt ? data.trialEndsAt.toDate().toISOString() : null,
+    trialEndsAt: data.trialEndsAt ? data.trialEndsAt instanceof Timestamp ? data.trialEndsAt.toDate().toISOString() : new Date(data.trialEndsAt).toISOString() : null,
   };
 };
 
 class CompanyService {
   private companiesCollection = collection(db, 'companies');
+  private usersCollection = collection(db, 'users');
 
   private async isRucUnique(ruc: string, excludeId?: string): Promise<boolean> {
     const q = query(this.companiesCollection, where('ruc', '==', ruc));
@@ -100,6 +102,78 @@ class CompanyService {
     });
 
     return createdCompany;
+  }
+
+  async createCompanyWithAdminUser(
+    companyData: Partial<Omit<Company, 'id'>>,
+    adminUserData: Partial<Omit<User, 'id'>>,
+    isSuperAdminFlow: boolean = false
+  ): Promise<{ companyId: string | null; userId: string }> {
+      const batch = writeBatch(db);
+      
+      let companyId: string | null = null;
+      const userId = adminUserData.uid!;
+
+      // Si no es superadmin, crea la compañía
+      if (!isSuperAdminFlow) {
+          if (!companyData.name || !companyData.ruc) {
+              throw new Error("El nombre de la empresa y el RUC son obligatorios.");
+          }
+          if (!await this.isRucUnique(companyData.ruc)) {
+              throw new Error(`Ya existe una empresa con el RUC ${companyData.ruc}.`);
+          }
+
+          const companyDocRef = doc(this.companiesCollection);
+          companyId = companyDocRef.id;
+
+          const newCompanyData = {
+              ...companyData,
+              status: 'active',
+              subscriptionStatus: companyData.planId && companyData.planId !== 'plan-gratuito' ? 'pending_payment' : 'trialing',
+              trialEndsAt: companyData.planId && companyData.planId !== 'plan-gratuito' ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+              registrationDate: new Date().toISOString(),
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+          };
+          batch.set(companyDocRef, newCompanyData);
+      }
+
+      // Siempre crea el documento del usuario
+      const userDocRef = doc(this.usersCollection, userId);
+      const newUserDoc: Omit<User, 'id'> = {
+          uid: userId,
+          email: adminUserData.email!,
+          firstName: adminUserData.firstName!,
+          lastName: adminUserData.lastName!,
+          role: adminUserData.role!,
+          companyId: companyId || undefined,
+          businessName: companyData.name || '',
+          status: 'active',
+          registrationDate: new Date().toISOString(),
+          isActive: true,
+          avatarUrl: `https://placehold.co/100x100.png?text=${adminUserData.firstName!.charAt(0)}`,
+          username: adminUserData.email!.split('@')[0],
+      };
+      batch.set(userDocRef, newUserDoc);
+
+      // Ejecutar la transacción atómica
+      await batch.commit();
+
+      // Log de auditoría después de que todo se haya completado exitosamente
+      if (companyId) {
+          await auditService.log({
+              entity: 'companies', entityId: companyId, action: 'created',
+              performedBy: { uid: userId, email: adminUserData.email! }, newData: companyData,
+              details: `Compañía creada durante el registro del admin.`
+          });
+      }
+      await auditService.log({
+          entity: 'users', entityId: userId, action: 'created',
+          performedBy: { uid: userId, email: adminUserData.email! }, newData: adminUserData,
+          details: `Usuario creado durante el registro.`
+      });
+
+      return { companyId, userId };
   }
 
   async updateCompany(companyId: string, updates: Partial<Company>, user: { uid: string; email: string }): Promise<Company> {

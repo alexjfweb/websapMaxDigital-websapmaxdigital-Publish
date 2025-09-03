@@ -21,9 +21,8 @@ import { UserPlus, Loader2, Check, X } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { User as FirebaseUser, deleteUser } from "firebase/auth";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth, db } from "@/lib/firebase"; // Usar la instancia centralizada
-import { doc, setDoc } from "firebase/firestore";
-import type { UserRole, User, Company } from "@/types";
+import { auth } from "@/lib/firebase"; // Usar la instancia centralizada
+import type { User, UserRole, Company } from "@/types";
 import React, { Suspense, useState, useEffect } from "react";
 import { companyService } from "@/services/company-service";
 import ErrorModal from "@/components/ui/error-modal";
@@ -32,7 +31,7 @@ import PublicHeader from "@/components/layout/public-header";
 const SUPERADMIN_EMAIL = 'alexjfweb@gmail.com';
 
 const registerFormSchema = z.object({
-  name: z.string().min(2, { message: "El nombre es obligatorio." }),
+  firstName: z.string().min(2, { message: "El nombre es obligatorio." }),
   lastName: z.string().min(2, { message: "El apellido es obligatorio." }),
   businessName: z.string().optional(),
   ruc: z.string().optional(),
@@ -87,7 +86,7 @@ function RegisterForm() {
     resolver: zodResolver(registerFormSchema),
     mode: "onTouched",
     defaultValues: {
-      name: "", lastName: "", businessName: "", ruc: "", email: "", password: "", confirmPassword: "",
+      firstName: "", lastName: "", businessName: "", ruc: "", email: "", password: "", confirmPassword: "",
     },
   });
 
@@ -111,35 +110,36 @@ function RegisterForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       firebaseUser = userCredential.user;
 
-      let companyId: string | null = null;
       const role: UserRole = isSuperAdminFlow ? 'superadmin' : 'admin';
       
+      const adminUserData = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email!,
+          firstName: values.firstName,
+          lastName: values.lastName,
+          role: role,
+      };
+
       if (role === 'admin') {
         if (!values.businessName || !values.ruc) {
             throw new Error("El nombre de la empresa y el RUC son necesarios para administradores.");
         }
         
-        const companyData: Omit<Company, 'id' | 'createdAt' | 'updatedAt'> = {
-            name: values.businessName, email: values.email, ruc: values.ruc, status: 'active',
-            registrationDate: new Date().toISOString(),
-            planId: planSlug || 'plan-gratuito',
-            subscriptionStatus: planSlug ? 'pending_payment' : 'trialing',
-            trialEndsAt: planSlug ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-            location: '',
+        const companyData = {
+            name: values.businessName,
+            email: values.email,
+            ruc: values.ruc,
+            planId: planSlug || 'plan-gratuito', // Asigna el plan o uno gratuito por defecto
         };
-        
-        const createdCompany = await companyService.createCompany(companyData, { uid: firebaseUser.uid, email: firebaseUser.email! });
-        companyId = createdCompany.id;
+
+        // Usar el nuevo método atómico del servicio
+        await companyService.createCompanyWithAdminUser(companyData, adminUserData);
+
+      } else { // Si es SuperAdmin
+         // Solo crea el documento del usuario, ya que no hay compañía.
+         // En una implementación real, se podría reutilizar una función 'createUserDocument'
+         await companyService.createCompanyWithAdminUser({} as any, adminUserData, true);
       }
-      
-      const userData: Omit<User, 'id'> = {
-        uid: firebaseUser.uid, email: firebaseUser.email || values.email, username: values.email.split('@')[0],
-        firstName: values.name, lastName: values.lastName, role: role, companyId: companyId || undefined,
-        businessName: values.businessName || '', status: 'active', registrationDate: new Date().toISOString(),
-        isActive: true, avatarUrl: `https://placehold.co/100x100.png?text=${values.name.charAt(0)}`,
-      };
-      
-      await setDoc(doc(db, "users", firebaseUser.uid), userData);
       
       toast({ title: '¡Registro Exitoso!', description: `Serás redirigido para continuar.` });
 
@@ -147,12 +147,13 @@ function RegisterForm() {
       if (planSlug) {
           router.push(`/admin/checkout?plan=${planSlug}`);
       } else {
-          router.push('/login');
+          router.push('/login'); // O al dashboard si el SessionProvider ya lo maneja
       }
 
     } catch (error) {
       console.error("Error detallado en el registro:", error);
       
+      // Si la creación del usuario en Auth fue exitosa pero el resto falló, se revierte.
       if (firebaseUser) {
         try { await deleteUser(firebaseUser); console.log("↩️ Usuario de Auth revertido exitosamente."); } 
         catch (revertError) { console.error("🔴 Error CRÍTICO al revertir la creación del usuario de Auth:", revertError); }
@@ -185,7 +186,7 @@ function RegisterForm() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Ej. Juan" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Ej. Juan" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Apellido</FormLabel><FormControl><Input placeholder="Ej. Pérez" {...field} /></FormControl><FormMessage /></FormItem>)} />
               </div>
               <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Correo Electrónico</FormLabel><FormControl><Input type="email" placeholder="su@correo.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
