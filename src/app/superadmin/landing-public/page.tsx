@@ -116,19 +116,17 @@ export default function LandingPublicPage() {
   const updateSubsection = (sectionIndex: number, subIndex: number, field: string, value: any) => {
     setFormData(prev => {
         if (!prev) return null;
-        
-        const newSections = JSON.parse(JSON.stringify(prev.sections)); // Deep copy
-        
-        if (newSections[sectionIndex] && newSections[sectionIndex].subsections && newSections[sectionIndex].subsections[subIndex]) {
-            newSections[sectionIndex].subsections[subIndex][field] = value;
+
+        // Crear una copia profunda para asegurar la inmutabilidad
+        const newFormData = JSON.parse(JSON.stringify(prev));
+
+        if (newFormData.sections?.[sectionIndex]?.subsections?.[subIndex]) {
+            newFormData.sections[sectionIndex].subsections[subIndex][field] = value;
         }
 
-        return {
-            ...prev,
-            sections: newSections,
-        };
+        return newFormData;
     });
-  };
+};
 
 
   const addSection = () => {
@@ -246,6 +244,7 @@ export default function LandingPublicPage() {
                             <ImageUploader
                                 currentImageUrl={sub.imageUrl}
                                 onUploadSuccess={(url) => updateSubsection(index, subIdx, 'imageUrl', url)}
+                                onRemoveImage={() => updateSubsection(index, subIdx, 'imageUrl', '')}
                             />
                             </div></div></Card>))}
                             <Button size="sm" variant="outline" onClick={() => {const newSub = { id: `sub-${Date.now()}`, title: '', content: '', imageUrl: '' }; updateSection(index, 'subsections', [...(section.subsections || []), newSub]);}}><Plus className="mr-2 h-4 w-4"/>Agregar subsección</Button></div></div>
