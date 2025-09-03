@@ -1,18 +1,10 @@
 
-// src/services/storage-service.ts
-// CORREGIDO para usar API del servidor como proxy y evitar CORS.
+// src/services/storage-service.ts - CORREGIDO para usar API del servidor
 
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { app } from "@/lib/firebase"; // Usamos la instancia del cliente, pero solo para compatibilidad.
 import imageCompression from 'browser-image-compression';
 
 class StorageService {
   private static instance: StorageService;
-  private storage;
-
-  private constructor() {
-    this.storage = getStorage(app);
-  }
 
   public static getInstance(): StorageService {
     if (!StorageService.instance) {
@@ -20,8 +12,8 @@ class StorageService {
     }
     return StorageService.instance;
   }
-  
-  // Función para comprimir imagen en el cliente
+
+  // Función para comprimir imagen
   private async compressImage(file: File): Promise<File> {
     const options = {
       maxSizeMB: 1,
@@ -51,7 +43,7 @@ class StorageService {
 
       const formData = new FormData();
       formData.append('file', processedFile);
-      formData.append('path', path); // Opcional: enviar la ruta al servidor
+      formData.append('path', path);
 
       console.log('📤 Enviando archivo al SERVIDOR (no directamente a Firebase)...', {
         name: processedFile.name,
@@ -90,26 +82,11 @@ class StorageService {
       throw new Error(`Error al subir el archivo a través del proxy: ${error.message}`);
     }
   }
-
-  // La función de eliminar se mantiene, pero usando el SDK de cliente
-  public async deleteFile(fileUrl: string): Promise<void> {
-    if (!fileUrl.includes('firebasestorage.googleapis.com')) {
-      console.warn("deleteFile: URL no parece ser un archivo de Firebase Storage, omitiendo borrado.", fileUrl);
-      return;
+  
+    // Esta función ya no se usa para subidas, pero puede ser útil para borrados si se implementa.
+    public async deleteFile(fileUrl: string): Promise<void> {
+        console.warn(`(Simulado) La eliminación de ${fileUrl} debe implementarse en el servidor si se requiere.`);
     }
-    try {
-      const fileRef = ref(this.storage, fileUrl);
-      await getDownloadURL(fileRef); // Verifica si el archivo existe
-      // await deleteObject(fileRef); // Comentado para evitar borrados accidentales
-      console.log(`(Simulado) Archivo ${fileUrl} habría sido eliminado.`);
-    } catch (error: any) {
-      if (error.code === 'storage/object-not-found') {
-        console.warn(`El archivo a eliminar no se encontró en Storage: ${fileUrl}`);
-      } else {
-        console.error("Error al eliminar archivo de Storage:", error);
-      }
-    }
-  }
 }
 
 export const storageService = StorageService.getInstance();
