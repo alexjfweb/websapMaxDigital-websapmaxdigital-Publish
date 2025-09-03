@@ -8,10 +8,18 @@ let adminApp: App | null = null;
 
 function initializeFirebaseAdmin(): App {
   if (getApps().length > 0) {
+    // Si ya hay una app inicializada, la reutilizamos.
+    // Esto es importante para evitar errores en entornos de desarrollo con hot-reloading.
     return getApps()[0];
   }
 
-  console.log("🚀 Inicializando Firebase Admin con configuración explícita...");
+  console.log("🚀 Inicializando Firebase Admin SDK...");
+
+  // Validar que la configuración importada no esté vacía
+  if (!firebaseAdminConfig || !firebaseAdminConfig.project_id) {
+    console.error("❌ ERROR: La configuración de firebaseAdminConfig está vacía o es inválida.");
+    throw new Error("La configuración de Firebase Admin no está definida en firebase-config.ts");
+  }
 
   try {
     const app = initializeApp({
@@ -19,37 +27,19 @@ function initializeFirebaseAdmin(): App {
       storageBucket: 'websapmax.appspot.com', // Nombre explícito y correcto del bucket
     });
     
-    console.log('✅ Firebase Admin inicializado correctamente.');
+    console.log('✅ Firebase Admin inicializado correctamente para el proyecto:', app.name);
     return app;
 
   } catch (error: any) {
     console.error("❌ ERROR CRÍTICO AL INICIALIZAR FIREBASE ADMIN:", error.message);
-    // Relanzar el error para que sea visible en los logs del servidor
     throw new Error(`Fallo en la inicialización de Firebase Admin: ${error.message}`);
   }
 }
 
+// Función principal para obtener la instancia de la app de admin.
 export function getFirebaseAdmin(): App {
   if (!adminApp) {
     adminApp = initializeFirebaseAdmin();
   }
   return adminApp;
-}
-
-export function getFirebaseStorage() {
-  const app = getFirebaseAdmin();
-  return getStorage(app);
-}
-
-// Función de verificación simplificada
-export function verifyFirebaseConfig() {
-  try {
-    // La simple existencia de la config es suficiente ahora
-    if (firebaseAdminConfig && firebaseAdminConfig.project_id) {
-        return { isValid: true, error: null, projectId: firebaseAdminConfig.project_id, clientEmail: firebaseAdminConfig.client_email };
-    }
-    throw new Error("El objeto firebaseAdminConfig no está definido o es inválido.");
-  } catch (error: any) {
-    return { isValid: false, error: error.message, projectId: null, clientEmail: null };
-  }
 }

@@ -1,7 +1,9 @@
 
 // src/services/storage-service.ts
+// CORREGIDO para usar API del servidor como proxy y evitar CORS.
+
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { app } from "@/lib/firebase"; // Usamos la instancia del cliente
+import { app } from "@/lib/firebase"; // Usamos la instancia del cliente, pero solo para compatibilidad.
 import imageCompression from 'browser-image-compression';
 
 class StorageService {
@@ -18,7 +20,7 @@ class StorageService {
     }
     return StorageService.instance;
   }
-
+  
   // Función para comprimir imagen en el cliente
   private async compressImage(file: File): Promise<File> {
     const options = {
@@ -37,43 +39,55 @@ class StorageService {
     }
   }
 
-  // Nueva función principal para comprimir y subir desde el cliente
+  // Función principal CORREGIDA - usando API del servidor
   public async compressAndUploadFile(file: File, path: string = 'uploads'): Promise<string> {
     try {
-      console.log('🚀 Iniciando proceso de compresión y subida desde el cliente...');
+      console.log('🚀 Iniciando proceso de compresión y subida...');
       
       let processedFile = file;
       if (file.type.startsWith('image/')) {
         processedFile = await this.compressImage(file);
       }
-      
-      const timestamp = Date.now();
-      const sanitizedFileName = processedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-      const storagePath = `${path}/${timestamp}-${sanitizedFileName}`;
-      
-      const storageRef = ref(this.storage, storagePath);
 
-      console.log(`📤 Subiendo archivo a Firebase Storage en: ${storagePath}`);
-      
-      const snapshot = await uploadBytes(storageRef, processedFile);
-      const downloadURL = await getDownloadURL(snapshot.ref);
+      const formData = new FormData();
+      formData.append('file', processedFile);
+      formData.append('path', path); // Opcional: enviar la ruta al servidor
 
-      console.log('✅ Archivo subido exitosamente:', downloadURL);
-      return downloadURL;
+      console.log('📤 Enviando archivo al SERVIDOR (no directamente a Firebase)...', {
+        name: processedFile.name,
+        size: processedFile.size,
+        type: processedFile.type
+      });
+
+      // CRUCIAL: Enviar a NUESTRA API
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      console.log('📡 Respuesta del servidor:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error('❌ Detalles del error del servidor:', result);
+        throw new Error(result.error || `Error ${response.status}`);
+      }
+
+      if (!result.success || !result.url) {
+        throw new Error('Respuesta del servidor inválida o incompleta');
+      }
+
+      console.log('✅ Archivo subido exitosamente a través del servidor:', result.url);
+      return result.url;
 
     } catch (error: any) {
-      console.error('❌ Error al subir el archivo directamente a Firebase Storage:', error);
-      
-      // Manejo de errores específicos de Firebase Storage
-      switch (error.code) {
-        case 'storage/unauthorized':
-          throw new Error('Permiso denegado. Asegúrate de estar autenticado.');
-        case 'storage/canceled':
-          throw new Error('La subida fue cancelada.');
-        case 'storage/unknown':
-        default:
-          throw new Error('Ocurrió un error desconocido durante la subida del archivo.');
-      }
+      console.error('❌ Error en compressAndUploadFile:', error);
+      throw new Error(`Error al subir el archivo a través del proxy: ${error.message}`);
     }
   }
 
@@ -98,5 +112,4 @@ class StorageService {
   }
 }
 
-// Exportar la instancia singleton
 export const storageService = StorageService.getInstance();
