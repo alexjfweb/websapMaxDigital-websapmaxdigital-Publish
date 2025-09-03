@@ -1,4 +1,3 @@
-
 // src/lib/firebase-admin.ts
 import { initializeApp, getApps, cert, ServiceAccount, App } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
@@ -65,7 +64,7 @@ function initializeFirebaseAdmin(): App {
     
     const app = initializeApp({
       credential: cert(credentials),
-      storageBucket: `${credentials.projectId}.appspot.com`
+      storageBucket: 'websapmax.appspot.com'
     });
 
     console.log('✅ Firebase Admin inicializado exitosamente');
