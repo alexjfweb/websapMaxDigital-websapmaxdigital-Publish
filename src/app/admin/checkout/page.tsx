@@ -54,7 +54,10 @@ async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<Av
     if (!plan || !plan.slug) return { stripe: false, mercadopago: false, manual: false };
     
     // Extrae el nombre clave del plan desde el slug, ej: 'plan-basico' -> 'básico'
-    const planNameKey = plan.slug.split('-')[1] as 'básico' | 'estándar' | 'premium' || 'básico';
+    const planNameKey = plan.slug.includes('basico') ? 'básico'
+                      : plan.slug.includes('estandar') ? 'estándar'
+                      : plan.slug.includes('premium') ? 'premium'
+                      : 'básico';
 
     try {
         const docRef = doc(db, "payment_methods", CONFIG_DOC_ID);
