@@ -21,7 +21,7 @@ import { UserPlus, Loader2, Check, X } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { User as FirebaseUser, deleteUser } from "firebase/auth";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase"; // Usar la instancia centralizada
+import { auth, db } from "@/lib/firebase"; // Usar la instancia centralizada
 import type { User, UserRole, Company } from "@/types";
 import React, { Suspense, useState, useEffect } from "react";
 import { companyService } from "@/services/company-service";
@@ -107,12 +107,22 @@ function RegisterForm() {
     let firebaseUser: FirebaseUser | null = null;
     
     try {
+      const role: UserRole = isSuperAdminFlow ? 'superadmin' : 'admin';
+
+      // 1. Validar RUC antes de cualquier otra cosa (si no es superadmin)
+      if (role === 'admin' && values.ruc) {
+        const isUnique = await companyService.isRucUnique(values.ruc);
+        if (!isUnique) {
+          throw new Error(`El RUC "${values.ruc}" ya está registrado.`);
+        }
+      }
+      
+      // 2. Crear usuario en Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       firebaseUser = userCredential.user;
 
-      const role: UserRole = isSuperAdminFlow ? 'superadmin' : 'admin';
-      
-      const adminUserData = {
+      // 3. Preparar los datos y guardarlos en Firestore
+      const adminUserData: Partial<Omit<User, 'id'>> = {
           uid: firebaseUser.uid,
           email: firebaseUser.email!,
           firstName: values.firstName,
@@ -121,42 +131,35 @@ function RegisterForm() {
       };
 
       if (role === 'admin') {
-        if (!values.businessName || !values.ruc) {
-            throw new Error("El nombre de la empresa y el RUC son necesarios para administradores.");
-        }
-        
-        const companyData = {
+        const companyData: Partial<Omit<Company, 'id'>> = {
             name: values.businessName,
             email: values.email,
             ruc: values.ruc,
-            planId: planSlug || 'plan-gratuito', // Asigna el plan o uno gratuito por defecto
+            planId: planSlug || 'plan-gratuito',
         };
-
-        // Usar el nuevo método atómico del servicio
         await companyService.createCompanyWithAdminUser(companyData, adminUserData);
-
       } else { // Si es SuperAdmin
-         // Solo crea el documento del usuario, ya que no hay compañía.
-         // En una implementación real, se podría reutilizar una función 'createUserDocument'
-         await companyService.createCompanyWithAdminUser({} as any, adminUserData, true);
+         await companyService.createCompanyWithAdminUser({}, adminUserData, true);
       }
       
       toast({ title: '¡Registro Exitoso!', description: `Serás redirigido para continuar.` });
 
-      // La redirección la maneja el SessionProvider, pero si se elige un plan, se va a checkout
       if (planSlug) {
           router.push(`/admin/checkout?plan=${planSlug}`);
       } else {
-          router.push('/login'); // O al dashboard si el SessionProvider ya lo maneja
+          router.push('/login');
       }
 
     } catch (error) {
       console.error("Error detallado en el registro:", error);
       
-      // Si la creación del usuario en Auth fue exitosa pero el resto falló, se revierte.
       if (firebaseUser) {
-        try { await deleteUser(firebaseUser); console.log("↩️ Usuario de Auth revertido exitosamente."); } 
-        catch (revertError) { console.error("🔴 Error CRÍTICO al revertir la creación del usuario de Auth:", revertError); }
+        try { 
+          await deleteUser(firebaseUser); 
+          console.log("↩️ Usuario de Auth revertido exitosamente."); 
+        } catch (revertError) { 
+          console.error("🔴 Error CRÍTICO al revertir la creación del usuario de Auth:", revertError); 
+        }
       }
 
       const err = error as { code?: string; message?: string };
