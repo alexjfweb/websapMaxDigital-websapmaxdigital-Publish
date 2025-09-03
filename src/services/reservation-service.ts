@@ -13,6 +13,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import type { Reservation } from '@/types';
+import { serializeDate } from '@/lib/utils';
 
 type CreateReservationInput = Omit<Reservation, 'id' | 'createdAt' | 'updatedAt' | 'status'>;
 
@@ -40,12 +41,27 @@ class ReservationService {
   
   async getReservationsByCompany(companyId: string): Promise<Reservation[]> {
     if (!companyId) return [];
-     // Llamada a la API de backend para obtener las reservas de una compañía
-     const response = await fetch(`/api/companies/${companyId}/reservations`);
-     if (!response.ok) {
-        throw new Error('Failed to fetch reservations');
-     }
-     return response.json();
+    
+    // CORRECCIÓN: Se consulta directamente a Firestore en lugar de llamar a una API
+    const reservationsCollection = collection(db, 'reservations');
+    const q = query(
+        reservationsCollection,
+        where('restaurantId', '==', companyId),
+        orderBy('dateTime', 'desc') // Ordenar por fecha de la reserva
+    );
+    
+    const snapshot = await getDocs(q);
+    
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            dateTime: serializeDate(data.dateTime)!,
+            createdAt: serializeDate(data.createdAt)!,
+            updatedAt: serializeDate(data.updatedAt)!,
+        } as Reservation;
+    });
   }
   
   async updateReservationStatus(reservationId: string, status: Reservation['status']): Promise<void> {
