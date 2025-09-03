@@ -3,39 +3,19 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Permite la lectura pública de cualquier archivo.
-    // Esto es útil para que las imágenes de platos, logos, etc., se puedan mostrar en la app.
-    match /{allPaths=**} {
+    
+    // Permite la lectura pública de imágenes en estas carpetas.
+    // Cualquiera puede ver los logos, banners, platos, etc.
+    match /(profiles|dishes|qrs|landing-subsections|avatars)/{allPaths=**} {
       allow read: if true;
     }
-
-    // Reglas de escritura específicas por ruta.
-    // Solo usuarios autenticados pueden subir archivos a estas carpetas.
-    match /avatars/{companyId}/{fileName} {
-      allow write: if request.auth != null;
-    }
-
-    match /dishes/{companyId}/{fileName} {
-      allow write: if request.auth != null;
-    }
-
-    match /qrs/{companyId}/{fileName} {
-      allow write: if request.auth != null;
-    }
     
-    match /landing-subsections/{subsectionId}/{fileName} {
-       allow write: if request.auth != null;
-    }
-
-    match /support-attachments/{companyId}/{fileName} {
-       allow write: if request.auth != null;
-    }
-    
-    // Denegar escritura en cualquier otra ruta no especificada.
-    // Esta regla no es estrictamente necesaria porque la escritura se deniega por defecto,
-    // pero se incluye para mayor claridad y seguridad.
+    // Permite la escritura (subir, actualizar, eliminar) solo a usuarios autenticados.
+    // Esto es una regla general. En producción se podría restringir más, por ejemplo,
+    // que un usuario solo pueda escribir en su propia carpeta.
+    // request.auth != null significa "si el usuario ha iniciado sesión".
     match /{allPaths=**} {
-      allow write: if false;
+      allow write: if request.auth != null;
     }
   }
 }
