@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useRef, ChangeEvent, useEffect } from 'react';
+import React, { useState, useRef, ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -17,17 +17,10 @@ interface ImageUploaderProps {
 
 export function ImageUploader({ currentImageUrl, onUploadSuccess, onRemoveImage }: ImageUploaderProps) {
   const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(currentImageUrl || null);
   const [status, setStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-
-  // CORRECCIÓN: Usar useEffect para sincronizar el preview con la prop externa.
-  useEffect(() => {
-    setPreview(currentImageUrl || null);
-  }, [currentImageUrl]);
-
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -37,7 +30,6 @@ export function ImageUploader({ currentImageUrl, onUploadSuccess, onRemoveImage 
         return;
       }
       setFile(selectedFile);
-      setPreview(URL.createObjectURL(selectedFile));
       setStatus('idle');
     }
   };
@@ -55,7 +47,8 @@ export function ImageUploader({ currentImageUrl, onUploadSuccess, onRemoveImage 
       const imageUrl = await storageService.compressAndUploadFile(file, 'landing-images');
       onUploadSuccess(imageUrl);
       setStatus('success');
-      setPreview(imageUrl); // Actualizar preview a la URL final de Firebase
+      setFile(null); // Limpiar archivo después de la subida
+      if(fileInputRef.current) fileInputRef.current.value = ""; // Limpiar el input
       toast({ title: "¡Éxito!", description: "La imagen se ha subido correctamente." });
     } catch (err: any) {
       console.error("Upload failed in component:", err);
@@ -67,18 +60,20 @@ export function ImageUploader({ currentImageUrl, onUploadSuccess, onRemoveImage 
   
   const handleRemove = () => {
     setFile(null);
-    setPreview(null);
     setStatus('idle');
     setError(null);
     if(onRemoveImage) onRemoveImage();
     if(fileInputRef.current) fileInputRef.current.value = "";
   };
+  
+  // La vista previa ahora se determina por `file` (local) o `currentImageUrl` (remoto)
+  const previewUrl = file ? URL.createObjectURL(file) : currentImageUrl;
 
   return (
     <div className="flex items-center gap-4">
       <div className="relative w-16 h-16 rounded-md border-2 border-dashed flex items-center justify-center bg-muted/50">
-        {preview ? (
-          <Image src={preview} alt="Vista previa" fill objectFit="cover" className="rounded-md" />
+        {previewUrl ? (
+          <Image src={previewUrl} alt="Vista previa" fill style={{ objectFit: 'cover' }} className="rounded-md" />
         ) : (
           <UploadCloud className="h-6 w-6 text-muted-foreground" />
         )}
@@ -106,7 +101,7 @@ export function ImageUploader({ currentImageUrl, onUploadSuccess, onRemoveImage 
               Subir
             </Button>
           )}
-           {preview && (
+           {previewUrl && (
             <Button variant="destructive" size="sm" onClick={handleRemove}>
                 <Trash2 className="mr-2 h-4 w-4" /> Quitar
             </Button>
