@@ -91,11 +91,10 @@ class LandingPlansService {
     return snapshot.empty;
   }
 
-  // Obtiene TODOS los planes, para el panel de admin
+  // Obtiene TODOS los planes, para el panel de admin, sin ordenar desde la BD
   async getPlans(): Promise<LandingPlan[]> {
     const coll = this.getPlansCollection();
-    const q = query(coll, orderBy('order', 'asc'));
-    const snapshot = await getDocs(q);
+    const snapshot = await getDocs(coll); // Consulta simple sin 'orderBy'
     return snapshot.docs.map(doc => serializePlan(doc.id, doc.data()));
   }
 

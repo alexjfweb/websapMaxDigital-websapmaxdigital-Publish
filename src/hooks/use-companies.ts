@@ -18,7 +18,7 @@ const fetcher = async (): Promise<CompaniesWithPlans> => {
   try {
     const [companies, plans] = await Promise.all([
       companyService.getCompanies(),
-      landingPlansService.getPlans(),
+      landingPlansService.getPlans(), // Esta función ya no ordenará los datos
     ]);
 
     return { companies, plans };
@@ -37,6 +37,8 @@ export function useCompanies() {
   // Procesamos los datos para añadir el nombre del plan a cada compañía
   const companiesWithPlanNames = data ? data.companies.map(company => {
     const plan = data.plans.find(p => p.id === company.planId);
+    // Ordenamos los planes aquí en el cliente
+    const sortedPlans = [...data.plans].sort((a, b) => (a.order || 0) - (b.order || 0));
     return {
       ...company,
       planName: plan ? plan.name : (company.planId || 'No asignado'),
