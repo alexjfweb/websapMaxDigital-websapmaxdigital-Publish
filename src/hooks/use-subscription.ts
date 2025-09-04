@@ -44,6 +44,7 @@ export function useSubscription() {
 
   // Lógica para encontrar el plan actual de la compañía.
   // Se busca en la lista completa de planes obtenida, asegurando consistencia.
+  // CORRECCIÓN: Se busca tanto por `id` como por `slug` para máxima compatibilidad.
   const currentPlan = company?.planId 
     ? allPlans.find(p => p.id === company.planId || p.slug === company.planId) || null 
     : null;

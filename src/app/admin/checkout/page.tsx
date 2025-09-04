@@ -54,10 +54,7 @@ async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<Av
     if (!plan || !plan.slug) return { stripe: false, mercadopago: false, manual: false };
     
     // Extrae el nombre clave del plan desde el slug, ej: 'plan-basico' -> 'básico'
-    const planNameKey = plan.slug.includes('basico') ? 'básico'
-                      : plan.slug.includes('estandar') ? 'estándar'
-                      : plan.slug.includes('premium') ? 'premium'
-                      : 'básico';
+    const planNameKey = plan.slug.split('-')[1] || 'básico';
 
     try {
         const docRef = doc(db, "payment_methods", CONFIG_DOC_ID);
@@ -125,7 +122,7 @@ function CheckoutContent() {
             <div className="text-center py-10">
                 <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
                 <h2 className="mt-4 text-lg font-medium">No se pudo cargar la página de pago</h2>
-                <p className="mt-2 text-sm text-muted-foreground">{error?.message || 'El plan solicitado no es válido o hubo un problema de conexión.'}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{error || 'El plan solicitado no es válido o hubo un problema de conexión.'}</p>
                  <Button asChild className="mt-6">
                     <Link href="/admin/subscription">Volver a Suscripciones</Link>
                 </Button>
@@ -155,7 +152,7 @@ function CheckoutContent() {
         try {
             await companyService.updateCompany(currentUser.companyId, {
                 subscriptionStatus: 'pending_payment',
-                planId: selectedPlan.id
+                planId: selectedPlan.slug // Usamos el slug para consistencia
             }, currentUser);
             
             setShowSuccessModal(true);
@@ -182,7 +179,7 @@ function CheckoutContent() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    planId: selectedPlan.slug,
+                    planId: selectedPlan.slug, // Siempre usamos el slug
                     companyId: currentUser.companyId,
                     provider: provider
                 })
@@ -314,7 +311,7 @@ function CheckoutContent() {
                                              <AccordionContent className="space-y-4 pt-3">
                                                 <div className="text-center space-y-2">
                                                     <p className="text-sm">Escanea el código QR desde la App Bancolombia para realizar el pago.</p>
-                                                    <Image src={availablePayments.qrUrl || ''} alt="QR Bancolombia" width={150} height={150} className="mx-auto rounded-md border" />
+                                                    <Image src={availablePayments.qrUrl || ''} alt="QR Bancolombia" width={150} height={150} className="mx-auto rounded-md border" data-ai-hint="payment QR code"/>
                                                     <p className="text-xs text-muted-foreground">Titular: Websapmax SAS <br/> NIT: 900.123.456-7</p>
                                                 </div>
                                                  <Button className="w-full" size="lg" onClick={handleConfirmManualPayment}>
