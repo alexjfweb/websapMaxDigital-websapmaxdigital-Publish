@@ -121,17 +121,14 @@ function RegisterForm() {
           role: role,
       };
 
-      if (role === 'admin') {
-        const companyData: Partial<Omit<Company, 'id'>> = {
-            name: values.businessName,
-            email: values.email,
-            ruc: values.ruc,
-            planId: planSlug || 'plan-gratuito',
-        };
-        await companyService.createCompanyWithAdminUser(companyData, adminUserData);
-      } else { // Si es SuperAdmin
-         await companyService.createCompanyWithAdminUser({}, adminUserData, true);
-      }
+      const companyData: Partial<Omit<Company, 'id'>> = {
+        name: values.businessName,
+        email: values.email,
+        ruc: values.ruc,
+        planId: planSlug || 'plan-gratuito',
+      };
+      
+      await companyService.createCompanyWithAdminUser(companyData, adminUserData, isSuperAdminFlow);
       
       toast({ title: '¡Registro Exitoso!', description: `Serás redirigido para continuar.` });
 

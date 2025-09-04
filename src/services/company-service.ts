@@ -16,8 +16,8 @@ import {
 } from 'firebase/firestore';
 import type { Company, User } from '@/types';
 import { auditService } from './audit-service';
-import { serializeDate } from '@/lib/utils'; // Importar la nueva utilidad
-import { getDb } from '@/lib/firebase-lazy'; // Importar la función del lazy loader
+import { serializeDate } from '@/lib/utils';
+import { getDb } from '@/lib/firebase-lazy';
 
 const serializeCompany = (doc: any): Company => {
   const data = doc.data();
@@ -102,18 +102,16 @@ class CompanyService {
     adminUserData: Partial<Omit<User, 'id'>>,
     isSuperAdminFlow: boolean = false
   ): Promise<{ companyId: string | null; userId: string }> {
-      // Usar getDb() para asegurar que la instancia esté lista
       const firestore = getDb();
       
       return runTransaction(firestore, async (transaction) => {
         const userId = adminUserData.uid!;
         let companyId: string | null = null;
         
-        // Referencias a las colecciones usando la instancia `firestore` de la transacción
         const companiesColRef = collection(firestore, 'companies');
         const usersColRef = collection(firestore, 'users');
 
-        // 1. Validar RUC dentro de la transacción
+        // 1. Validar RUC dentro de la transacción (si no es superadmin)
         if (!isSuperAdminFlow && companyData.ruc) {
             const rucQuery = query(companiesColRef, where('ruc', '==', companyData.ruc));
             const rucSnapshot = await transaction.get(rucQuery);
@@ -124,7 +122,7 @@ class CompanyService {
 
         // 2. Crear documento de compañía (si no es superadmin)
         if (!isSuperAdminFlow) {
-            const companyDocRef = doc(companiesColRef); // Crea la referencia con un ID nuevo
+            const companyDocRef = doc(companiesColRef); 
             companyId = companyDocRef.id;
 
             const newCompanyData = {
@@ -160,7 +158,7 @@ class CompanyService {
         return { companyId, userId };
     }).catch(error => {
         console.error("Error en la transacción de creación de compañía y usuario:", error);
-        throw error; // Relanzar para que el llamador pueda manejarlo
+        throw error;
     });
   }
 
