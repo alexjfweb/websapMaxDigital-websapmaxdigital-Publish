@@ -1,40 +1,37 @@
-
 // src/lib/firebase-lazy.ts
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
+import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getAuth, type Auth } from 'firebase/auth';
 import { firebaseConfig, isFirebaseConfigValid } from './firebase-config';
 
-let appInstance: ReturnType<typeof initializeApp> | null = null;
-let authInstance: ReturnType<typeof getAuth> | null = null;
-let dbInstance: ReturnType<typeof getFirestore> | null = null;
+interface FirebaseServices {
+    app: FirebaseApp;
+    auth: Auth;
+    db: Firestore;
+}
 
-function initializeFirebase() {
+let services: FirebaseServices | null = null;
+
+function initializeFirebase(): FirebaseServices {
   if (getApps().length === 0) {
     if (!isFirebaseConfigValid()) {
       throw new Error("La configuración de Firebase es inválida. Revisa firebase-config.ts");
     }
-    appInstance = initializeApp(firebaseConfig);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    return { app, auth, db };
   } else {
-    appInstance = getApp();
+    const app = getApp();
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    return { app, auth, db };
   }
-  
-  authInstance = getAuth(appInstance);
-  dbInstance = getFirestore(appInstance);
 }
 
-// Exporta funciones que devuelven la instancia, asegurando que estén inicializadas.
-export const getFirebaseAuth = (): ReturnType<typeof getAuth> => {
-    if (!authInstance) initializeFirebase();
-    return authInstance!;
-};
-
-export const getDb = (): ReturnType<typeof getFirestore> => {
-    if (!dbInstance) initializeFirebase();
-    return dbInstance!;
-};
-
-export const getFirebaseApp = (): ReturnType<typeof initializeApp> => {
-    if(!appInstance) initializeFirebase();
-    return appInstance!;
+export function getFirebaseServices(): FirebaseServices {
+    if (!services) {
+        services = initializeFirebase();
+    }
+    return services;
 }

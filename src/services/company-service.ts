@@ -17,7 +17,7 @@ import {
 import type { Company, User } from '@/types';
 import { auditService } from './audit-service';
 import { serializeDate } from '@/lib/utils';
-import { getDb } from '@/lib/firebase-lazy';
+import { getFirebaseServices } from '@/lib/firebase-lazy';
 
 const serializeCompany = (doc: any): Company => {
   const data = doc.data();
@@ -34,11 +34,13 @@ const serializeCompany = (doc: any): Company => {
 
 class CompanyService {
   private get companiesCollection() {
-    return collection(getDb(), 'companies');
+    const { db } = getFirebaseServices();
+    return collection(db, 'companies');
   }
 
   private get usersCollection() {
-    return collection(getDb(), 'users');
+    const { db } = getFirebaseServices();
+    return collection(db, 'users');
   }
   
   async isRucUnique(ruc: string, excludeId?: string): Promise<boolean> {
@@ -102,7 +104,7 @@ class CompanyService {
     adminUserData: Partial<Omit<User, 'id'>>,
     isSuperAdminFlow: boolean = false
   ): Promise<{ companyId: string | null; userId: string }> {
-      const firestore = getDb();
+      const { db: firestore } = getFirebaseServices(); // Asegura la instancia de la BD
       
       return runTransaction(firestore, async (transaction) => {
         const userId = adminUserData.uid!;

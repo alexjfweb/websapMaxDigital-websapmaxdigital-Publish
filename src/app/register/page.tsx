@@ -20,7 +20,7 @@ import { UserPlus, Loader2, Check, X } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { User as FirebaseUser, deleteUser } from "firebase/auth";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth, db } from "@/lib/firebase"; // Usar la instancia centralizada
+import { auth } from "@/lib/firebase"; // Usar la instancia centralizada
 import type { User, UserRole, Company } from "@/types";
 import React, { Suspense, useState, useEffect } from "react";
 import { companyService } from "@/services/company-service";
