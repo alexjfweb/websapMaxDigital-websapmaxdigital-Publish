@@ -120,6 +120,7 @@ function RegisterForm() {
           firstName: values.firstName,
           lastName: values.lastName,
           role: role,
+          avatarUrl: `https://placehold.co/100x100.png?text=${values.firstName.substring(0,1).toUpperCase()}`
       };
 
       const companyData: Partial<Omit<Company, 'id'>> = {
@@ -155,6 +156,8 @@ function RegisterForm() {
       let errorMessage = err.message || 'Hubo un error al crear la cuenta.';
       if (err.code === 'auth/email-already-in-use') {
         errorMessage = "El correo electrónico que ingresaste ya está en uso.";
+      } else if (err.message && err.message.includes("El RUC")) {
+        errorMessage = err.message;
       }
       
       setErrorState({ title: "Error de Registro", message: errorMessage });
