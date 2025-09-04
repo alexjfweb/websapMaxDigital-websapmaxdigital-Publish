@@ -18,21 +18,22 @@ interface SubscriptionInfo {
   };
 }
 
-// Fetcher optimizado: obtiene la compañía y luego el plan específico y todos los planes públicos.
+// Fetcher optimizado: obtiene la compañía y luego todos los planes (no solo los públicos)
 const fetchSubscriptionData = async (companyId: string) => {
   const company = await companyService.getCompanyById(companyId);
   if (!company) {
     // Si no hay compañía, no podemos obtener el plan.
-    return { company: null, currentPlan: null, allPublicPlans: await landingPlansService.getPublicPlans() };
+    // Devolvemos todos los planes para la sección "Explora"
+    return { company: null, currentPlan: null, allPlans: await landingPlansService.getPlans() };
   }
 
-  // Ahora, obtenemos tanto el plan específico del usuario como todos los planes públicos.
-  const [currentPlan, allPublicPlans] = await Promise.all([
-    company.planId ? landingPlansService.getPlanBySlug(company.planId) : Promise.resolve(null),
-    landingPlansService.getPublicPlans()
-  ]);
+  // Ahora, obtenemos todos los planes para poder encontrar el plan actual por slug
+  const allPlans = await landingPlansService.getPlans();
+  
+  // La lógica para encontrar el plan actual es más robusta ahora
+  const currentPlan = allPlans.find(p => p.slug === company.planId) || null;
 
-  return { company, currentPlan, allPublicPlans };
+  return { company, currentPlan, allPlans };
 };
 
 
@@ -46,9 +47,12 @@ export function useSubscription() {
     { revalidateOnFocus: false }
   );
 
-  const { company = null, currentPlan = null, allPublicPlans = [] } = data || {};
+  const { company = null, currentPlan = null, allPlans = [] } = data || {};
   
   const isLoading = isSessionLoading || (!!companyId && isDataLoading);
+
+  // Filtrar los planes públicos para la sección "Explora"
+  const publicPlans = allPlans.filter(p => p.isPublic);
 
   const permissions = {
     canManageEmployees: ['estandar', 'premium', 'profesional'].includes(currentPlan?.slug?.split('-')[1] || ''),
@@ -59,10 +63,10 @@ export function useSubscription() {
   return {
     subscription: {
       company: company,
-      plan: currentPlan, // Usa directamente el plan ya filtrado y obtenido.
+      plan: currentPlan,
       permissions,
     },
-    allPlans: allPublicPlans, // Usa la lista de planes públicos para la sección "Explora".
+    allPlans: publicPlans, // Devolver solo los públicos para la UI de exploración
     isLoading,
     error,
   };
