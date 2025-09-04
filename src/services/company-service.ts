@@ -104,58 +104,48 @@ class CompanyService {
     adminUserData: Partial<Omit<User, 'id'>>,
     isSuperAdminFlow: boolean = false
   ): Promise<{ companyId: string | null; userId: string }> {
-    const firestore = getDb();
+    const db = getDb(); // Obtener la instancia de la base de datos
+    const companiesColRef = collection(db, 'companies'); // Crear referencia a la colección
+    const usersColRef = collection(db, 'users');
     
-    return runTransaction(firestore, async (transaction) => {
-      // DEBUG: Verificar todos los datos antes del error
-      console.log('=== DEBUGGING LÍNEA POR LÍNEA ===');
-      console.log('1. companyData:', JSON.stringify(companyData, null, 2));
-      console.log('2. adminUserData:', JSON.stringify(adminUserData, null, 2));
-      console.log('3. isSuperAdminFlow:', isSuperAdminFlow);
-      
-      // Esta es aproximadamente la línea 118 - AÑADIR DEBUG AQUÍ
-      console.log('4. Antes de obtener userId...');
-      const userId = adminUserData?.uid;
-      console.log('5. userId obtenido:', userId);
-      
-      if (!userId) {
+    try {
+      return runTransaction(db, async (transaction) => {
+        const userId = adminUserData.uid!;
+        if (!userId) {
           throw new Error('userId es undefined - adminUserData.uid no existe');
-      }
-      
-      let companyId: string | null = null;
-      
-      const companiesColRef = collection(firestore, 'companies');
-      const usersColRef = collection(firestore, 'users');
-
-      // Validar RUC si no es superadmin
-      if (!isSuperAdminFlow && companyData.ruc) {
+        }
+        
+        let companyId: string | null = null;
+        
+        // Validar RUC si no es superadmin
+        if (!isSuperAdminFlow && companyData.ruc) {
           const rucQuery = query(companiesColRef, where('ruc', '==', companyData.ruc));
-          const rucSnapshot = await transaction.get(rucQuery);
+          const rucSnapshot = await transaction.get(rucQuery); // Usar la referencia de la colección
           if (!rucSnapshot.empty) {
-              throw new Error(`El RUC "${companyData.ruc}" ya está registrado.`);
+            throw new Error(`El RUC "${companyData.ruc}" ya está registrado.`);
           }
-      }
-
-      // Crear compañía si no es superadmin
-      if (!isSuperAdminFlow) {
+        }
+        
+        // Crear compañía si no es superadmin
+        if (!isSuperAdminFlow) {
           const companyDocRef = doc(companiesColRef); 
           companyId = companyDocRef.id;
-
+          
           const newCompanyData = {
-              ...companyData,
-              status: 'active',
-              subscriptionStatus: companyData.planId && companyData.planId !== 'plan-gratuito' ? 'pending_payment' : 'trialing',
-              trialEndsAt: companyData.planId && companyData.planId !== 'plan-gratuito' ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-              registrationDate: new Date().toISOString(),
-              createdAt: serverTimestamp(),
-              updatedAt: serverTimestamp(),
+            ...companyData,
+            status: 'active',
+            subscriptionStatus: companyData.planId && companyData.planId !== 'plan-gratuito' ? 'pending_payment' : 'trialing',
+            trialEndsAt: companyData.planId && companyData.planId !== 'plan-gratuito' ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            registrationDate: new Date().toISOString(),
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
           };
           transaction.set(companyDocRef, newCompanyData);
-      }
-
-      // Crear el documento del usuario
-      const userDocRef = doc(usersColRef, userId);
-      const newUserDoc: Omit<User, 'id'> = {
+        }
+        
+        // Crear el documento del usuario
+        const userDocRef = doc(usersColRef, userId);
+        const newUserDoc: Omit<User, 'id'> = {
           uid: userId,
           email: adminUserData.email!,
           firstName: adminUserData.firstName!,
@@ -168,12 +158,17 @@ class CompanyService {
           isActive: true,
           avatarUrl: adminUserData.avatarUrl || `https://placehold.co/100x100.png?text=${adminUserData.firstName!.charAt(0)}`,
           username: adminUserData.email!.split('@')[0],
-      };
-      transaction.set(userDocRef, newUserDoc);
-
-      return { companyId, userId };
-    });
+        };
+        transaction.set(userDocRef, newUserDoc);
+        
+        return { companyId, userId };
+      });
+    } catch (error) {
+      console.error('Error en la transacción de creación de compañía y usuario:', error);
+      throw error;
+    }
   }
+
 
   async updateCompany(companyId: string, updates: Partial<Company>, user: { uid: string; email: string }): Promise<Company> {
     const db = getDb();
