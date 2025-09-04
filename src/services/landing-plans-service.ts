@@ -116,6 +116,20 @@ class LandingPlansService {
     const docSnap = await getDoc(docRef);
     return docSnap.exists() ? serializePlan(docSnap.id, docSnap.data()) : null;
   }
+  
+  async getPlanBySlug(slug: string): Promise<LandingPlan | null> {
+    if (!slug) return null;
+    const coll = this.getPlansCollection();
+    const q = query(coll, where('slug', '==', slug), where('isActive', '==', true));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+        console.warn(`[getPlanBySlug] No active plan found for slug: ${slug}`);
+        return null;
+    }
+    const docSnap = snapshot.docs[0];
+    return serializePlan(docSnap.id, docSnap.data());
+  }
+
 
   async createPlan(data: CreatePlanRequest, userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<LandingPlan> {
     let slug = generateSlug(data.name);

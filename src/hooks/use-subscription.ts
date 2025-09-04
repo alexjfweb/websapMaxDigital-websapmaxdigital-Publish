@@ -18,13 +18,23 @@ interface SubscriptionInfo {
   };
 }
 
+// Fetcher optimizado: obtiene la compañía y luego el plan específico y todos los planes públicos.
 const fetchSubscriptionData = async (companyId: string) => {
-  const [company, allPlans] = await Promise.all([
-    companyService.getCompanyById(companyId),
-    landingPlansService.getPlans()
+  const company = await companyService.getCompanyById(companyId);
+  if (!company) {
+    // Si no hay compañía, no podemos obtener el plan.
+    return { company: null, currentPlan: null, allPublicPlans: await landingPlansService.getPublicPlans() };
+  }
+
+  // Ahora, obtenemos tanto el plan específico del usuario como todos los planes públicos.
+  const [currentPlan, allPublicPlans] = await Promise.all([
+    company.planId ? landingPlansService.getPlanBySlug(company.planId) : Promise.resolve(null),
+    landingPlansService.getPublicPlans()
   ]);
-  return { company, allPlans };
+
+  return { company, currentPlan, allPublicPlans };
 };
+
 
 export function useSubscription() {
   const { currentUser, isLoading: isSessionLoading } = useSession();
@@ -36,13 +46,8 @@ export function useSubscription() {
     { revalidateOnFocus: false }
   );
 
-  const { company = null, allPlans = [] } = data || {};
-
-  // CORRECCIÓN: Lógica de búsqueda de plan más robusta.
-  const currentPlan = company?.planId
-    ? allPlans.find(p => p.id === company.planId || p.slug === company.planId) || null
-    : null;
-
+  const { company = null, currentPlan = null, allPublicPlans = [] } = data || {};
+  
   const isLoading = isSessionLoading || (!!companyId && isDataLoading);
 
   const permissions = {
@@ -51,15 +56,13 @@ export function useSubscription() {
     canCustomizeBranding: !!currentPlan && currentPlan.price > 0 && currentPlan.slug !== 'plan-gratis-lite',
   };
   
-  const publicPlans = allPlans.filter(p => p.isPublic);
-
   return {
     subscription: {
       company: company,
-      plan: currentPlan,
+      plan: currentPlan, // Usa directamente el plan ya filtrado y obtenido.
       permissions,
     },
-    allPlans: publicPlans,
+    allPlans: allPublicPlans, // Usa la lista de planes públicos para la sección "Explora".
     isLoading,
     error,
   };
