@@ -17,6 +17,7 @@ import {
 import type { Company, User } from '@/types';
 import { auditService } from './audit-service';
 import { serializeDate } from '@/lib/utils'; // Importar la nueva utilidad
+import { getDb } from '@/lib/firebase-lazy'; // Importar la función del lazy loader
 
 const serializeCompany = (doc: any): Company => {
   const data = doc.data();
@@ -33,11 +34,11 @@ const serializeCompany = (doc: any): Company => {
 
 class CompanyService {
   private get companiesCollection() {
-    return collection(db, 'companies');
+    return collection(getDb(), 'companies');
   }
 
   private get usersCollection() {
-    return collection(db, 'users');
+    return collection(getDb(), 'users');
   }
   
   async isRucUnique(ruc: string, excludeId?: string): Promise<boolean> {
@@ -101,12 +102,16 @@ class CompanyService {
     adminUserData: Partial<Omit<User, 'id'>>,
     isSuperAdminFlow: boolean = false
   ): Promise<{ companyId: string | null; userId: string }> {
-      return runTransaction(db, async (transaction) => {
+      // Usar getDb() para asegurar que la instancia esté lista
+      const firestore = getDb();
+      
+      return runTransaction(firestore, async (transaction) => {
         const userId = adminUserData.uid!;
         let companyId: string | null = null;
         
-        const companiesColRef = collection(db, 'companies');
-        const usersColRef = collection(db, 'users');
+        // Referencias a las colecciones usando la instancia `firestore` de la transacción
+        const companiesColRef = collection(firestore, 'companies');
+        const usersColRef = collection(firestore, 'users');
 
         // 1. Validar RUC dentro de la transacción
         if (!isSuperAdminFlow && companyData.ruc) {
