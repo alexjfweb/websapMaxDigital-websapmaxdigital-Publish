@@ -8,10 +8,14 @@ import type { LandingPlan } from '@/services/landing-plans-service';
 import type { Company } from '@/types';
 
 // Helper para obtener la URL base de la aplicación
-// ✅ CORRECCIÓN DEFINITIVA: Se establece la URL base de forma estática y prioritaria.
 function getBaseUrl() {
-  // Se prioriza la URL específica del entorno de desarrollo para evitar cualquier ambigüedad.
-  return 'https://9000-firebase-studio-1748450787904.cluster-ux5mmlia3zhhask7riihruxydo.cloudworkstations.dev';
+  // Prioriza la variable de entorno de Vercel si existe
+  const vercelUrl = process.env.VERCEL_URL;
+  if (vercelUrl) return `https://${vercelUrl}`;
+
+  // Fallback para entornos locales o de desarrollo
+  const localUrl = 'http://localhost:9003';
+  return process.env.NEXT_PUBLIC_BASE_URL || localUrl;
 }
 
 const CONFIG_DOC_ID = 'main_payment_methods';
@@ -19,36 +23,15 @@ const CONFIG_DOC_ID = 'main_payment_methods';
 
 // Handler para la creación de sesiones de checkout
 export async function POST(request: NextRequest) {
-  console.log('🚀🚀🚀 API ROUTE HIT - POST /api/payments/create-checkout-session');
-  console.log('🔍 === DEPURACIÓN CHECKOUT ===');
+  console.log('🚀 API ROUTE HIT - POST /api/payments/create-checkout-session');
   
   try {
     const body = await request.json();
-    console.log('🔍 Método:', request.method);
-    console.log('🔍 Body completo:', JSON.stringify(body, null, 2));
-    console.log('🔍 Plan ID recibido:', body.planId);
-    console.log('🔍 Tipo de planId:', typeof body.planId);
+    const { planId, companyId, provider } = body;
 
-    let { companyId, provider } = body;
-    let rawPlanId = body.planId;
-
-    if (!rawPlanId || !companyId || !provider) {
+    if (!planId || !companyId || !provider) {
       console.error('🔴 [Checkout API] - Error: Faltan parámetros. planId, companyId y provider son requeridos.');
       return NextResponse.json({ error: 'Faltan parámetros: planId, companyId y provider son requeridos.' }, { status: 400 });
-    }
-    
-    // Mapeo temporal para corregir IDs inconsistentes como 'bsico'
-    const planIdMap: Record<string, string> = {
-      'bsico': 'plan-basico',
-      'basico': 'plan-basico',
-      'estndar': 'plan-estandar',
-      'estandar': 'plan-estandar',
-      'premium': 'plan-premium'
-    };
-
-    const planId = planIdMap[rawPlanId] || rawPlanId;
-    if (planId !== rawPlanId) {
-       console.log(`🔄 Plan ID mapeado de '${rawPlanId}' a '${planId}'`);
     }
 
     console.log(`[Checkout API] - Procesando para companyId: ${companyId}, planSlug: ${planId}, provider: ${provider}`);
@@ -80,7 +63,6 @@ export async function POST(request: NextRequest) {
     }
     
     const allPlansConfig = paymentMethodsDoc.data();
-    // Extraer el nombre clave del plan desde el slug, ej: 'plan-basico' -> 'básico'
     const planNameKey = plan.slug?.split('-')[1] as 'básico' | 'estándar' | 'premium' || 'básico';
     const paymentMethodsConfig = allPlansConfig[planNameKey];
 
@@ -132,11 +114,12 @@ export async function POST(request: NextRequest) {
         }],
         mode: 'subscription',
         customer: customerId,
-        success_url: `${baseUrl}/admin/subscription?payment=success&provider=stripe`,
+        success_url: `${baseUrl}/admin/subscription?payment=success&provider=stripe&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/admin/checkout?plan=${plan.slug}&payment=cancelled`,
         metadata: {
           companyId,
           planId: planSnap.id,
+          planSlug: plan.slug,
         },
       });
 
@@ -167,9 +150,9 @@ export async function POST(request: NextRequest) {
           body: {
             preapproval_plan_id: plan.mp_preapproval_plan_id,
             payer_email: company.email,
-            back_url: `${baseUrl}/admin/subscription?payment=success`,
+            back_url: `${baseUrl}/admin/subscription?payment=success&provider=mercadopago`,
             reason: `Suscripción al Plan ${plan.name} de WebSapMax`,
-            external_reference: `${companyId}|${planSnap.id}`,
+            external_reference: `${companyId}|${plan.slug}`, // CORREGIDO: Enviar el slug
           }
       });
       
