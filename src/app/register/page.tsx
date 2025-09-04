@@ -107,20 +107,12 @@ function RegisterForm() {
     
     try {
       const role: UserRole = isSuperAdminFlow ? 'superadmin' : 'admin';
-
-      // 1. Validar RUC antes de cualquier otra cosa (si no es superadmin)
-      if (role === 'admin' && values.ruc) {
-        const isUnique = await companyService.isRucUnique(values.ruc);
-        if (!isUnique) {
-          throw new Error(`El RUC "${values.ruc}" ya está registrado.`);
-        }
-      }
       
-      // 2. Crear usuario en Firebase Authentication
+      // 1. Crear usuario en Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       firebaseUser = userCredential.user;
 
-      // 3. Preparar los datos y guardarlos en Firestore
+      // 2. Preparar los datos y guardarlos en Firestore
       const adminUserData: Partial<Omit<User, 'id'>> = {
           uid: firebaseUser.uid,
           email: firebaseUser.email!,

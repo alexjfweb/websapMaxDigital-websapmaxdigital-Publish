@@ -105,12 +105,12 @@ class CompanyService {
         const userId = adminUserData.uid!;
         let companyId: string | null = null;
         
-        const companiesCollectionRef = collection(db, 'companies');
-        const usersCollectionRef = collection(db, 'users');
+        const companiesColRef = collection(db, 'companies');
+        const usersColRef = collection(db, 'users');
 
         // 1. Validar RUC dentro de la transacción
         if (!isSuperAdminFlow && companyData.ruc) {
-            const rucQuery = query(companiesCollectionRef, where('ruc', '==', companyData.ruc));
+            const rucQuery = query(companiesColRef, where('ruc', '==', companyData.ruc));
             const rucSnapshot = await transaction.get(rucQuery);
             if (!rucSnapshot.empty) {
                 throw new Error(`El RUC "${companyData.ruc}" ya está registrado.`);
@@ -119,7 +119,7 @@ class CompanyService {
 
         // 2. Crear documento de compañía (si no es superadmin)
         if (!isSuperAdminFlow) {
-            const companyDocRef = doc(companiesCollectionRef);
+            const companyDocRef = doc(companiesColRef); // Crea la referencia con un ID nuevo
             companyId = companyDocRef.id;
 
             const newCompanyData = {
@@ -135,7 +135,7 @@ class CompanyService {
         }
 
         // 3. Crear documento de usuario
-        const userDocRef = doc(usersCollectionRef, userId);
+        const userDocRef = doc(usersColRef, userId);
         const newUserDoc: Omit<User, 'id'> = {
             uid: userId,
             email: adminUserData.email!,
