@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
         cancel_url: `${baseUrl}/admin/checkout?plan=${plan.slug}&payment=cancelled`,
         metadata: {
           companyId,
-          planId: planSnap.id,
+          planId: plan.slug, // CORREGIDO: Usar el slug como identificador consistente
           planSlug: plan.slug,
         },
       });
