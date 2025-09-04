@@ -18,16 +18,15 @@ interface SubscriptionInfo {
   };
 }
 
-// Fetcher unificado para obtener la compañía y TODOS los planes públicos
+// Fetcher unificado para obtener la compañía y TODOS los planes (no solo los públicos)
 const fetchSubscriptionData = async (companyId: string) => {
-  // Ambas llamadas se ejecutan en paralelo para mayor eficiencia
-  const [company, publicPlans] = await Promise.all([
+  // CORRECCIÓN: Se obtienen TODOS los planes, no solo los públicos.
+  // Esto es crucial para que el sistema encuentre planes asignados que no son "públicos" (ej. 'plan-gratis-lite')
+  const [company, allPlans] = await Promise.all([
     companyService.getCompanyById(companyId),
-    // CORRECCIÓN DEFINITIVA: Usar solo los planes públicos para la búsqueda.
-    // Esto asegura que la información del plan actual coincida con la de los planes explorables.
-    landingPlansService.getPublicPlans()
+    landingPlansService.getPlans()
   ]);
-  return { company, allPlans: publicPlans };
+  return { company, allPlans };
 };
 
 export function useSubscription() {
@@ -45,7 +44,7 @@ export function useSubscription() {
   const { company = null, allPlans = [] } = data || {};
 
   // Lógica para encontrar el plan actual de la compañía.
-  // Se busca en la lista de planes públicos, asegurando consistencia.
+  // La búsqueda ahora es más robusta al buscar por slug o por ID.
   const currentPlan = company?.planId
     ? allPlans.find(p => p.id === company.planId || p.slug === company.planId) || null
     : null;
@@ -66,7 +65,7 @@ export function useSubscription() {
       plan: currentPlan,
       permissions,
     },
-    // Se exporta la lista completa de planes para que la UI pueda mostrar las otras opciones.
+    // Se exporta la lista completa de planes para que la UI pueda filtrar y mostrar solo los públicos.
     allPlans,
     isLoading,
     error,
