@@ -41,12 +41,11 @@ export async function POST(request: NextRequest) {
     const q = query(plansCollection, where('slug', '==', planId), where('isActive', '==', true));
     const planQuerySnap = await getDocs(q);
     
-    let planSnap = planQuerySnap.docs[0];
-
-    if (!planSnap) {
+    if (planQuerySnap.empty) {
         console.warn(`[Checkout API] - No se encontró el plan con slug '${planId}'.`);
         return NextResponse.json({ error: `Plan con slug '${planId}' no encontrado o inactivo.` }, { status: 404 });
     }
+    const planSnap = planQuerySnap.docs[0];
     const plan = { id: planSnap.id, ...planSnap.data() } as LandingPlan;
 
     const companySnap = await getDoc(doc(db, 'companies', companyId));
