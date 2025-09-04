@@ -127,11 +127,15 @@ class CompanyService {
         const companyDocRef = doc(companiesColRef); 
         companyId = companyDocRef.id;
 
+        // CORRECCIÓN: Asegurarse que planId se maneja bien
+        const planId = companyData.planId || 'plan-gratuito';
+
         const newCompanyData = {
           ...companyData,
+          planId: planId, // Asignar el plan correcto
           status: 'active',
-          subscriptionStatus: companyData.planId && companyData.planId !== 'plan-gratuito' ? 'pending_payment' : 'trialing',
-          trialEndsAt: companyData.planId && companyData.planId !== 'plan-gratuito' ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          subscriptionStatus: planId !== 'plan-gratuito' ? 'pending_payment' : 'trialing',
+          trialEndsAt: planId !== 'plan-gratuito' ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
           registrationDate: new Date().toISOString(),
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
