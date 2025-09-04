@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { Trash2, Upload, Plus } from 'lucide-react'
+import { ImageUploader } from '@/components/ui/image-uploader';
+
 
 interface Subsection {
   id: string
@@ -39,28 +41,17 @@ export default function LandingPublicPage() {
     }))
   }
 
-  const handleSubsectionChange = (id: string, field: keyof Subsection, value: string | null) => {
-    setLandingData(prev => ({
-      ...prev,
-      subsections: prev.subsections.map(sub =>
-        sub.id === id ? { ...sub, [field]: value } : sub
-      )
-    }))
-  }
-
-  const handleImageUpload = (file: File, subsectionId?: string) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const imageUrl = e.target?.result as string
-      
-      if (subsectionId) {
-        handleSubsectionChange(subsectionId, 'image', imageUrl)
-      } else {
-        setLandingData(prev => ({ ...prev, mainImage: imageUrl }))
-      }
-    }
-    reader.readAsDataURL(file)
-  }
+  const updateSubsection = (id: string, field: keyof Omit<Subsection, 'id'>, value: any) => {
+    setLandingData(prev => {
+      const newSections = prev.subsections.map(sub => {
+        if (sub.id === id) {
+          return { ...sub, [field]: value };
+        }
+        return sub;
+      });
+      return { ...prev, subsections: newSections };
+    });
+  };
 
   const addSubsection = () => {
     const newSubsection: Subsection = {
@@ -82,13 +73,6 @@ export default function LandingPublicPage() {
     }))
   }
 
-  const removeImage = (subsectionId?: string) => {
-    if (subsectionId) {
-      handleSubsectionChange(subsectionId, 'image', null)
-    } else {
-      setLandingData(prev => ({ ...prev, mainImage: null }))
-    }
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -104,7 +88,7 @@ export default function LandingPublicPage() {
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Título Principal</label>
+                    <label className="block text-sm font-medium mb-2">Título Principal</label>
                     <Input
                       value={landingData.title}
                       onChange={(e) => handleInputChange('title', e.target.value)}
@@ -113,7 +97,7 @@ export default function LandingPublicPage() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-1">Subtítulo</label>
+                    <label className="block text-sm font-medium mb-2">Subtítulo</label>
                     <Input
                       value={landingData.subtitle}
                       onChange={(e) => handleInputChange('subtitle', e.target.value)}
@@ -122,7 +106,7 @@ export default function LandingPublicPage() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-1">Descripción</label>
+                    <label className="block text-sm font-medium mb-2">Descripción</label>
                     <Textarea
                       value={landingData.description}
                       onChange={(e) => handleInputChange('description', e.target.value)}
@@ -131,38 +115,13 @@ export default function LandingPublicPage() {
                     />
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Imagen Principal</label>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0]
-                          if (file) handleImageUpload(file)
-                        }}
-                        className="hidden"
-                        id="main-image-upload"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => document.getElementById('main-image-upload')?.click()}
-                      >
-                        <Upload className="w-4 h-4 mr-2" />
-                        Seleccionar
-                      </Button>
-                      {landingData.mainImage && (
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => removeImage()}
-                        >
-                          Quitar
-                        </Button>
-                      )}
-                    </div>
+                   <div>
+                      <label className="block text-sm font-medium mb-2">Imagen Principal</label>
+                       <ImageUploader 
+                          currentImageUrl={landingData.mainImage || undefined}
+                          onUploadSuccess={(url) => handleInputChange('mainImage', url)}
+                          onRemoveImage={() => handleInputChange('mainImage', '')}
+                       />
                   </div>
                 </div>
               </CardContent>
@@ -196,50 +155,24 @@ export default function LandingPublicPage() {
                       <div className="space-y-3">
                         <Input
                           value={subsection.title}
-                          onChange={(e) => handleSubsectionChange(subsection.id, 'title', e.target.value)}
+                          onChange={(e) => updateSubsection(subsection.id, 'title', e.target.value)}
                           placeholder="Título de la subsección"
                         />
                         
                         <Textarea
                           value={subsection.content}
-                          onChange={(e) => handleSubsectionChange(subsection.id, 'content', e.target.value)}
+                          onChange={(e) => updateSubsection(subsection.id, 'content', e.target.value)}
                           placeholder="Contenido de la subsección"
                           rows={2}
                         />
                         
                         <div>
                           <label className="block text-sm font-medium mb-1">Imagen</label>
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0]
-                                if (file) handleImageUpload(file, subsection.id)
-                              }}
-                              className="hidden"
-                              id={`image-upload-${subsection.id}`}
-                            />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => document.getElementById(`image-upload-${subsection.id}`)?.click()}
-                            >
-                              <Upload className="w-4 h-4 mr-2" />
-                              Seleccionar
-                            </Button>
-                            {subsection.image && (
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => removeImage(subsection.id)}
-                              >
-                                Quitar
-                              </Button>
-                            )}
-                          </div>
+                           <ImageUploader 
+                              currentImageUrl={subsection.image || undefined}
+                              onUploadSuccess={(url) => updateSubsection(subsection.id, 'image', url)}
+                              onRemoveImage={() => updateSubsection(subsection.id, 'image', '')}
+                           />
                         </div>
                       </div>
                     </CardContent>
@@ -297,22 +230,21 @@ export default function LandingPublicPage() {
                         <div
                           key={subsection.id}
                           className={`flex flex-col ${
-                            index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'
+                            index % 2 === 0 ? 'lg:flex-row' : 'lg:flex-row-reverse'
                           } gap-6 items-center`}
                         >
                           {subsection.image && (
-                            <div className="w-full md:w-1/2 flex-shrink-0">
-                              <div className="relative h-40 w-full">
+                            <div className="w-full lg:w-1/2 flex-shrink-0">
                                 <img
                                   src={subsection.image}
                                   alt={subsection.title || 'Imagen de subsección'}
-                                  className="absolute inset-0 w-full h-full object-cover rounded-lg shadow-md"
+                                  className="w-full h-40 object-cover rounded-lg shadow-md"
+                                  style={{ display: 'block' }}
                                 />
-                               </div>
                             </div>
                           )}
                           
-                          <div className={`w-full ${subsection.image ? 'md:w-1/2' : 'md:w-full'}`}>
+                          <div className={`w-full ${subsection.image ? 'lg:w-1/2' : 'lg:w-full'}`}>
                             {subsection.title && (
                               <h3 className="text-xl font-semibold text-gray-900 mb-3">
                                 {subsection.title}
