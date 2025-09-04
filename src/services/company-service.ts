@@ -104,33 +104,41 @@ class CompanyService {
     adminUserData: Partial<Omit<User, 'id'>>,
     isSuperAdminFlow: boolean = false
   ): Promise<{ companyId: string | null; userId: string }> {
-    const db = getDb(); // Obtener la instancia de la base de datos
-    const companiesColRef = collection(db, 'companies'); // Crear referencia a la colección
+    const { db } = getDb();
+    const companiesColRef = collection(db, 'companies');
     const usersColRef = collection(db, 'users');
+
+    // Mover la validación del RUC fuera de la transacción
+    if (!isSuperAdminFlow && companyData.ruc) {
+      const rucQuery = query(companiesColRef, where('ruc', '==', companyData.ruc));
+      const rucSnapshot = await getDocs(rucQuery);
+      if (!rucSnapshot.empty) {
+        throw new Error(`El RUC "${companyData.ruc}" ya está registrado.`);
+      }
+    }
     
-    try {
-      return runTransaction(db, async (transaction) => {
-        const userId = adminUserData.uid!;
+    return runTransaction(db, async (transaction) => {
+      try {
+        console.log('=== DEBUGGING LÍNEA POR LÍNEA ===');
+        console.log('1. companyData:', JSON.stringify(companyData, null, 2));
+        console.log('2. adminUserData:', JSON.stringify(adminUserData, null, 2));
+        console.log('3. isSuperAdminFlow:', isSuperAdminFlow);
+        
+        console.log('4. Antes de obtener userId...');
+        const userId = adminUserData?.uid;
+        console.log('5. userId obtenido:', userId);
+        
         if (!userId) {
           throw new Error('userId es undefined - adminUserData.uid no existe');
         }
         
         let companyId: string | null = null;
-        
-        // Validar RUC si no es superadmin
-        if (!isSuperAdminFlow && companyData.ruc) {
-          const rucQuery = query(companiesColRef, where('ruc', '==', companyData.ruc));
-          const rucSnapshot = await transaction.get(rucQuery); // Usar la referencia de la colección
-          if (!rucSnapshot.empty) {
-            throw new Error(`El RUC "${companyData.ruc}" ya está registrado.`);
-          }
-        }
-        
+
         // Crear compañía si no es superadmin
         if (!isSuperAdminFlow) {
           const companyDocRef = doc(companiesColRef); 
           companyId = companyDocRef.id;
-          
+
           const newCompanyData = {
             ...companyData,
             status: 'active',
@@ -142,7 +150,7 @@ class CompanyService {
           };
           transaction.set(companyDocRef, newCompanyData);
         }
-        
+
         // Crear el documento del usuario
         const userDocRef = doc(usersColRef, userId);
         const newUserDoc: Omit<User, 'id'> = {
@@ -160,13 +168,16 @@ class CompanyService {
           username: adminUserData.email!.split('@')[0],
         };
         transaction.set(userDocRef, newUserDoc);
-        
+
         return { companyId, userId };
-      });
-    } catch (error) {
-      console.error('Error en la transacción de creación de compañía y usuario:', error);
-      throw error;
-    }
+
+      } catch (error: any) {
+        console.error('ERROR CAPTURADO EN TRANSACCIÓN:', error);
+        console.error('Tipo de error:', typeof error);
+        console.error('Stack completo:', error.stack);
+        throw error;
+      }
+    });
   }
 
 
