@@ -26,7 +26,7 @@ import { useSession } from "@/contexts/session-context";
 
 export default function AdminProfilePage() {
   const { toast } = useToast();
-  const { currentUser } = useSession();
+  const { currentUser } from useSession();
   const companyId = currentUser?.companyId;
 
   const [isEditing, setIsEditing] = useState(false);
@@ -454,3 +454,5 @@ export default function AdminProfilePage() {
     </div>
   );
 }
+
+    
