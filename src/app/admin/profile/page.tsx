@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,7 +25,7 @@ import { useSession } from "@/contexts/session-context";
 
 export default function AdminProfilePage() {
   const { toast } = useToast();
-  const { currentUser } from useSession();
+  const { currentUser } = useSession();
   const companyId = currentUser?.companyId;
 
   const [isEditing, setIsEditing] = useState(false);
@@ -454,5 +453,3 @@ export default function AdminProfilePage() {
     </div>
   );
 }
-
-    
