@@ -1,4 +1,5 @@
 
+
 import {
   collection,
   doc,
@@ -12,6 +13,7 @@ import {
   where,
   Timestamp,
   serverTimestamp,
+  deleteDoc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase'; // Usar la instancia centralizada
 import type { LandingPlan, CreatePlanRequest, UpdatePlanRequest, PlanAuditLog } from '@/types';
@@ -201,7 +203,26 @@ class LandingPlansService {
   }
 
   async deletePlan(id: string, userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<void> {
-    await this.updatePlan(id, { isActive: false, isPublic: false }, userId, userEmail, ipAddress, userAgent);
+    const coll = this.getPlansCollection();
+    const docRef = doc(coll, id);
+    const originalDoc = await this.getPlanById(id);
+
+    if (!originalDoc) {
+      throw new Error(`Plan with id ${id} not found.`);
+    }
+
+    await deleteDoc(docRef);
+
+    await auditService.log({
+        entity: 'landingPlans',
+        entityId: id,
+        action: 'deleted',
+        performedBy: { uid: userId, email: userEmail },
+        previousData: cleanupObject(originalDoc),
+        details: `Plan "${originalDoc.name}" permanentemente eliminado.`,
+        ipAddress,
+        userAgent
+    });
   }
 
   async reorderPlans(planIds: string[], userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<void> {
