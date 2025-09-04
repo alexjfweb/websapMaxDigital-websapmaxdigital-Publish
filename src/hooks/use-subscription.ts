@@ -19,19 +19,29 @@ interface SubscriptionInfo {
 }
 
 // Fetcher optimizado: obtiene la compañía y luego todos los planes (no solo los públicos)
-const fetchSubscriptionData = async (companyId: string) => {
+const fetchSubscriptionData = async (companyId: string): Promise<{ company: Company | null, currentPlan: LandingPlan | null, allPlans: LandingPlan[] }> => {
   const company = await companyService.getCompanyById(companyId);
-  if (!company) {
-    // Si no hay compañía, no podemos obtener el plan.
-    // Devolvemos todos los planes para la sección "Explora"
-    return { company: null, currentPlan: null, allPlans: await landingPlansService.getPlans() };
+  const allPlans = await landingPlansService.getPlans(); // Obtener todos los planes para una búsqueda robusta
+
+  if (!company || !company.planId) {
+    // Si no hay compañía o no tiene planId, no podemos determinar el plan actual.
+    return { company, currentPlan: null, allPlans };
   }
 
-  // Ahora, obtenemos todos los planes para poder encontrar el plan actual por slug
-  const allPlans = await landingPlansService.getPlans();
+  // La lógica para encontrar el plan actual es más robusta ahora.
+  // Buscamos el plan que coincida con el planId de la compañía.
+  const currentPlan = allPlans.find(p => p.slug === company.planId || p.id === company.planId) || null;
   
-  // La lógica para encontrar el plan actual es más robusta ahora
-  const currentPlan = allPlans.find(p => p.slug === company.planId) || null;
+  // CORRECCIÓN CLAVE:
+  // Si la compañía tiene un planId asignado (por ejemplo, después de que el admin lo activa)
+  // pero el plan no se encuentra en la lista (lo cual no debería ocurrir, pero por si acaso),
+  // no debemos tratarlo como si no tuviera plan.
+  // El problema principal es que el estado "pending_payment" es un estado válido de suscripción
+  // que debe ser mostrado. El filtrado de planes públicos se hace más adelante.
+  
+  if (company.planId && !currentPlan) {
+      console.warn(`Advertencia: La compañía ${company.id} tiene un planId "${company.planId}" que no corresponde a ningún plan existente.`);
+  }
 
   return { company, currentPlan, allPlans };
 };
@@ -52,7 +62,8 @@ export function useSubscription() {
   const isLoading = isSessionLoading || (!!companyId && isDataLoading);
 
   // Filtrar los planes públicos para la sección "Explora"
-  const publicPlans = allPlans.filter(p => p.isPublic);
+  // Esta lógica se mantiene para asegurar que solo se muestren ofertas comerciales.
+  const publicPlans = allPlans.filter(p => p.isPublic && p.isActive);
 
   const permissions = {
     canManageEmployees: ['estandar', 'premium', 'profesional'].includes(currentPlan?.slug?.split('-')[1] || ''),
@@ -66,7 +77,7 @@ export function useSubscription() {
       plan: currentPlan,
       permissions,
     },
-    allPlans: publicPlans, // Devolver solo los públicos para la UI de exploración
+    allPlans: publicPlans,
     isLoading,
     error,
   };
