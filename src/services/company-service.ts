@@ -103,16 +103,20 @@ class CompanyService {
     adminUserData: Partial<Omit<User, 'id'>>,
     isSuperAdminFlow: boolean = false
   ): Promise<{ companyId: string | null; userId: string }> {
-      const { db } = getFirebaseServices();
-      
-      return runTransaction(db, async (transaction) => {
+    const { db } = getFirebaseServices();
+    
+    return runTransaction(db, async (transaction) => {
+      try {
+        console.log('=== DEBUG TRANSACCIÓN ===');
+        console.log('companyData:', companyData);
+        console.log('adminUserData:', adminUserData);
+
         const userId = adminUserData.uid!;
         let companyId: string | null = null;
         
         const companiesColRef = collection(db, 'companies');
         const usersColRef = collection(db, 'users');
 
-        // 1. Validar RUC dentro de la transacción (si no es superadmin)
         if (!isSuperAdminFlow && companyData.ruc) {
             const rucQuery = query(companiesColRef, where('ruc', '==', companyData.ruc));
             const rucSnapshot = await transaction.get(rucQuery);
@@ -121,7 +125,6 @@ class CompanyService {
             }
         }
 
-        // 2. Crear documento de compañía (si no es superadmin)
         if (!isSuperAdminFlow) {
             const companyDocRef = doc(companiesColRef); 
             companyId = companyDocRef.id;
@@ -138,7 +141,6 @@ class CompanyService {
             transaction.set(companyDocRef, newCompanyData);
         }
 
-        // 3. Crear documento de usuario
         const userDocRef = doc(usersColRef, userId);
         const newUserDoc: Omit<User, 'id'> = {
             uid: userId,
@@ -151,15 +153,18 @@ class CompanyService {
             status: 'active',
             registrationDate: new Date().toISOString(),
             isActive: true,
-            avatarUrl: `https://placehold.co/100x100.png?text=${adminUserData.firstName!.charAt(0)}`,
+            avatarUrl: adminUserData.avatarUrl,
             username: adminUserData.email!.split('@')[0],
         };
         transaction.set(userDocRef, newUserDoc);
 
         return { companyId, userId };
-    }).catch(error => {
-        console.error("Error en la transacción de creación de compañía y usuario:", error);
-        throw error;
+
+      } catch (error: any) {
+          console.error('Error específico en transacción:', error);
+          console.error('Stack trace:', error.stack);
+          throw error;
+      }
     });
   }
 
