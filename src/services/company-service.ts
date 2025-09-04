@@ -1,5 +1,4 @@
 
-
 import {
   collection,
   doc,
@@ -18,7 +17,7 @@ import {
 import type { Company, User } from '@/types';
 import { auditService } from './audit-service';
 import { serializeDate } from '@/lib/utils';
-import { getDb } from '@/lib/firebase-lazy';
+import { db } from '@/lib/firebase'; // <--- CAMBIO CLAVE: Import directo
 
 const serializeCompany = (doc: any): Company => {
   const data = doc.data();
@@ -36,7 +35,6 @@ const serializeCompany = (doc: any): Company => {
 class CompanyService {
   
   async isRucUnique(ruc: string, excludeId?: string): Promise<boolean> {
-    const db  = getDb();
     const companiesCollection = collection(db, 'companies');
     const q = query(companiesCollection, where('ruc', '==', ruc));
     const snapshot = await getDocs(q);
@@ -46,7 +44,6 @@ class CompanyService {
   }
 
   async getCompanies(): Promise<Company[]> {
-    const db = getDb();
     const companiesCollection = collection(db, 'companies');
     const snapshot = await getDocs(companiesCollection);
     return snapshot.docs.map(serializeCompany);
@@ -54,7 +51,6 @@ class CompanyService {
 
   async getCompanyById(id: string): Promise<Company | null> {
     if (!id) return null;
-    const db = getDb();
     const companiesCollection = collection(db, 'companies');
     const docRef = doc(companiesCollection, id);
     const docSnap = await getDoc(docRef);
@@ -63,7 +59,6 @@ class CompanyService {
   }
   
   async createCompany(companyData: Partial<Company>, user: { uid: string; email: string }): Promise<Company> {
-    const db = getDb();
     const companiesCollection = collection(db, 'companies');
     if (!companyData.name || !companyData.ruc) {
       throw new Error("El nombre de la empresa y el RUC son obligatorios.");
@@ -104,12 +99,10 @@ class CompanyService {
     adminUserData: Partial<Omit<User, 'id'>>,
     isSuperAdminFlow: boolean = false
   ): Promise<{ companyId: string | null; userId: string }> {
-    const { db } = getDb();
-    const companiesColRef = collection(db, 'companies');
-    const usersColRef = collection(db, 'users');
-
+    
     // Mover la validación del RUC fuera de la transacción
     if (!isSuperAdminFlow && companyData.ruc) {
+      const companiesColRef = collection(db, 'companies');
       const rucQuery = query(companiesColRef, where('ruc', '==', companyData.ruc));
       const rucSnapshot = await getDocs(rucQuery);
       if (!rucSnapshot.empty) {
@@ -118,71 +111,58 @@ class CompanyService {
     }
     
     return runTransaction(db, async (transaction) => {
-      try {
-        console.log('=== DEBUGGING LÍNEA POR LÍNEA ===');
-        console.log('1. companyData:', JSON.stringify(companyData, null, 2));
-        console.log('2. adminUserData:', JSON.stringify(adminUserData, null, 2));
-        console.log('3. isSuperAdminFlow:', isSuperAdminFlow);
-        
-        console.log('4. Antes de obtener userId...');
-        const userId = adminUserData?.uid;
-        console.log('5. userId obtenido:', userId);
-        
-        if (!userId) {
-          throw new Error('userId es undefined - adminUserData.uid no existe');
-        }
-        
-        let companyId: string | null = null;
+      // Crear las referencias de colecciones DENTRO de la transacción
+      const companiesColRef = collection(db, 'companies');
+      const usersColRef = collection(db, 'users');
 
-        // Crear compañía si no es superadmin
-        if (!isSuperAdminFlow) {
-          const companyDocRef = doc(companiesColRef); 
-          companyId = companyDocRef.id;
-
-          const newCompanyData = {
-            ...companyData,
-            status: 'active',
-            subscriptionStatus: companyData.planId && companyData.planId !== 'plan-gratuito' ? 'pending_payment' : 'trialing',
-            trialEndsAt: companyData.planId && companyData.planId !== 'plan-gratuito' ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-            registrationDate: new Date().toISOString(),
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-          };
-          transaction.set(companyDocRef, newCompanyData);
-        }
-
-        // Crear el documento del usuario
-        const userDocRef = doc(usersColRef, userId);
-        const newUserDoc: Omit<User, 'id'> = {
-          uid: userId,
-          email: adminUserData.email!,
-          firstName: adminUserData.firstName!,
-          lastName: adminUserData.lastName!,
-          role: adminUserData.role!,
-          companyId: companyId || undefined,
-          businessName: companyData.name || '',
-          status: 'active',
-          registrationDate: new Date().toISOString(),
-          isActive: true,
-          avatarUrl: adminUserData.avatarUrl || `https://placehold.co/100x100.png?text=${adminUserData.firstName!.charAt(0)}`,
-          username: adminUserData.email!.split('@')[0],
-        };
-        transaction.set(userDocRef, newUserDoc);
-
-        return { companyId, userId };
-
-      } catch (error: any) {
-        console.error('ERROR CAPTURADO EN TRANSACCIÓN:', error);
-        console.error('Tipo de error:', typeof error);
-        console.error('Stack completo:', error.stack);
-        throw error;
+      const userId = adminUserData?.uid;
+      if (!userId) {
+        throw new Error('userId es undefined - adminUserData.uid no existe');
       }
+      
+      let companyId: string | null = null;
+
+      // Crear compañía si no es superadmin
+      if (!isSuperAdminFlow) {
+        const companyDocRef = doc(companiesColRef); 
+        companyId = companyDocRef.id;
+
+        const newCompanyData = {
+          ...companyData,
+          status: 'active',
+          subscriptionStatus: companyData.planId && companyData.planId !== 'plan-gratuito' ? 'pending_payment' : 'trialing',
+          trialEndsAt: companyData.planId && companyData.planId !== 'plan-gratuito' ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          registrationDate: new Date().toISOString(),
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+        transaction.set(companyDocRef, newCompanyData);
+      }
+
+      // Crear el documento del usuario
+      const userDocRef = doc(usersColRef, userId);
+      const newUserDoc: Omit<User, 'id'> = {
+        uid: userId,
+        email: adminUserData.email!,
+        firstName: adminUserData.firstName!,
+        lastName: adminUserData.lastName!,
+        role: adminUserData.role!,
+        companyId: companyId || undefined,
+        businessName: companyData.name || '',
+        status: 'active',
+        registrationDate: new Date().toISOString(),
+        isActive: true,
+        avatarUrl: adminUserData.avatarUrl || `https://placehold.co/100x100.png?text=${adminUserData.firstName!.charAt(0)}`,
+        username: adminUserData.email!.split('@')[0],
+      };
+      transaction.set(userDocRef, newUserDoc);
+
+      return { companyId, userId };
     });
   }
 
 
   async updateCompany(companyId: string, updates: Partial<Company>, user: { uid: string; email: string }): Promise<Company> {
-    const db = getDb();
     const companiesCollection = collection(db, 'companies');
     const docRef = doc(companiesCollection, companyId);
     const originalDocSnap = await getDoc(docRef);
