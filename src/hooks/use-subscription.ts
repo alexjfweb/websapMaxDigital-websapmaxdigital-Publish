@@ -18,14 +18,16 @@ interface SubscriptionInfo {
   };
 }
 
-// Fetcher unificado para obtener la compañía y todos los planes
+// Fetcher unificado para obtener la compañía y TODOS los planes públicos
 const fetchSubscriptionData = async (companyId: string) => {
   // Ambas llamadas se ejecutan en paralelo para mayor eficiencia
-  const [company, allPlans] = await Promise.all([
+  const [company, publicPlans] = await Promise.all([
     companyService.getCompanyById(companyId),
-    landingPlansService.getPlans() // Obtiene *todos* los planes disponibles para el admin
+    // CORRECCIÓN DEFINITIVA: Usar solo los planes públicos para la búsqueda.
+    // Esto asegura que la información del plan actual coincida con la de los planes explorables.
+    landingPlansService.getPublicPlans()
   ]);
-  return { company, allPlans };
+  return { company, allPlans: publicPlans };
 };
 
 export function useSubscription() {
@@ -43,10 +45,9 @@ export function useSubscription() {
   const { company = null, allPlans = [] } = data || {};
 
   // Lógica para encontrar el plan actual de la compañía.
-  // Se busca en la lista completa de planes obtenida, asegurando consistencia.
-  // CORRECCIÓN: Se busca tanto por `id` como por `slug` para máxima compatibilidad.
-  const currentPlan = company?.planId 
-    ? allPlans.find(p => p.id === company.planId || p.slug === company.planId) || null 
+  // Se busca en la lista de planes públicos, asegurando consistencia.
+  const currentPlan = company?.planId
+    ? allPlans.find(p => p.id === company.planId || p.slug === company.planId) || null
     : null;
 
   // La carga general depende de si la sesión está cargando o si estamos esperando los datos.
