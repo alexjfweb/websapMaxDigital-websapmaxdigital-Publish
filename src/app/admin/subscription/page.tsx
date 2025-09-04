@@ -2,7 +2,6 @@
 "use client";
 
 import { useSubscription } from "@/hooks/use-subscription";
-import { useLandingPlans } from "@/hooks/use-landing-plans";
 import { useEmployees } from "@/hooks/use-employees";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -83,13 +82,12 @@ function PlanCard({ plan, isCurrent, isPopular }: { plan: LandingPlan, isCurrent
 
 
 export default function SubscriptionPage() {
-    const { subscription, isLoading: isLoadingSubscription, error: errorSubscription } = useSubscription();
-    const { plans: allPlans, isLoading: isLoadingPlans, error: errorPlans } = useLandingPlans(true);
+    const { subscription, allPlans, isLoading: isLoadingSubscription, error: errorSubscription } = useSubscription();
     const { employees, isLoading: isLoadingEmployees } = useEmployees(subscription?.company?.id);
     const [isSupportDialogOpen, setIsSupportDialogOpen] = useState(false);
 
-    const isLoading = isLoadingSubscription || isLoadingPlans || isLoadingEmployees;
-    const error = errorSubscription || errorPlans;
+    const isLoading = isLoadingSubscription || isLoadingEmployees;
+    const error = errorSubscription;
 
     const getStatusInfo = (status: Company['subscriptionStatus']) => {
         const statusMap: Record<string, { text: string; className: string }> = {
@@ -122,7 +120,7 @@ export default function SubscriptionPage() {
     const statusInfo = company ? getStatusInfo(company.subscriptionStatus) : null;
     
     // Los planes de mejora son todos los planes públicos que no son el plan actual del usuario
-    const otherPlans = (allPlans || []).filter(p => p.id !== plan?.id);
+    const otherPlans = (allPlans || []).filter(p => p.isPublic && p.id !== plan?.id);
 
     return (
         <>

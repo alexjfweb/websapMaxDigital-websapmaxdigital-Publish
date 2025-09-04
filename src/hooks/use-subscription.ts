@@ -5,8 +5,6 @@ import useSWR from 'swr';
 import { useSession } from '@/contexts/session-context';
 import type { Company } from '@/types';
 import type { LandingPlan } from '@/services/landing-plans-service';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { companyService } from '@/services/company-service';
 import { landingPlansService } from '@/services/landing-plans-service';
 
@@ -20,43 +18,51 @@ interface SubscriptionInfo {
   };
 }
 
+// Fetcher unificado para obtener la compañía y todos los planes
+const fetchSubscriptionData = async (companyId: string) => {
+  const [company, allPlans] = await Promise.all([
+    companyService.getCompanyById(companyId),
+    landingPlansService.getPlans() // Obtiene todos los planes, para el panel de admin
+  ]);
+  return { company, allPlans };
+};
+
 export function useSubscription() {
   const { currentUser, isLoading: isSessionLoading } = useSession();
   const companyId = currentUser?.companyId;
 
-  // SWR hook to fetch company data, already serialized by the service
-  const { data: company, error: companyError, isLoading: isCompanyLoading } = useSWR<Company | null>(
-    companyId ? `company/${companyId}` : null,
-    () => companyService.getCompanyById(companyId!)
+  // SWR hook para obtener todos los datos necesarios con una sola llamada de fetcher
+  const { data, error, isLoading: isDataLoading } = useSWR(
+    companyId ? `subscription/${companyId}` : null,
+    () => fetchSubscriptionData(companyId!),
+    { revalidateOnFocus: false }
   );
 
-  const planId = company?.planId;
+  const { company, allPlans = [] } = data || {};
 
-  // SWR hook to fetch plan data, already serialized by the service
-  const { data: plan, error: planError, isLoading: isPlanLoading } = useSWR<LandingPlan | null>(
-    planId ? `plan/${planId}` : null,
-    () => landingPlansService.getPlanById(planId!)
-  );
+  // Busca el plan actual del usuario dentro de la lista completa de planes
+  const currentPlan = company?.planId 
+    ? allPlans.find(p => p.id === company.planId) || null 
+    : null;
 
-  // La carga general depende de la sesión y de las cargas de datos condicionales.
-  const isLoading = isSessionLoading || (companyId && isCompanyLoading) || (planId && isPlanLoading);
+  // La carga general depende de la sesión y de la obtención de datos
+  const isLoading = isSessionLoading || (!!companyId && isDataLoading);
 
   const permissions = {
-    // La gestión de empleados está disponible en planes 'estándar', 'premium' y 'profesional'.
-    canManageEmployees: ['estandar', 'premium', 'profesional'].includes(plan?.slug?.split('-')[1] || ''),
-    // Ejemplo: Analíticas avanzadas solo para premium y superior.
-    canUseAdvancedAnalytics: ['premium', 'profesional'].includes(plan?.slug?.split('-')[1] || ''),
-    // La personalización de marca está disponible en cualquier plan con un precio > 0.
-    canCustomizeBranding: !!plan && plan.price > 0 && plan.slug !== 'plan-gratis-lite',
+    canManageEmployees: ['estandar', 'premium', 'profesional'].includes(currentPlan?.slug?.split('-')[1] || ''),
+    canUseAdvancedAnalytics: ['premium', 'profesional'].includes(currentPlan?.slug?.split('-')[1] || ''),
+    canCustomizeBranding: !!currentPlan && currentPlan.price > 0 && currentPlan.slug !== 'plan-gratis-lite',
   };
 
   return {
     subscription: {
       company: company || null,
-      plan: plan || null,
+      plan: currentPlan,
       permissions,
     },
+    // También exportamos allPlans para que la UI pueda usarlo en la lista de "otros planes"
+    allPlans,
     isLoading,
-    error: companyError || planError,
+    error,
   };
 }
