@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -137,9 +136,9 @@ function RegisterForm() {
             ruc: values.ruc,
             planId: planSlug || 'plan-gratuito',
         };
-        await companyService.createCompanyWithAdminUser(db, companyData, adminUserData);
+        await companyService.createCompanyWithAdminUser(companyData, adminUserData);
       } else { // Si es SuperAdmin
-         await companyService.createCompanyWithAdminUser(db, {}, adminUserData, true);
+         await companyService.createCompanyWithAdminUser({}, adminUserData, true);
       }
       
       toast({ title: '¡Registro Exitoso!', description: `Serás redirigido para continuar.` });

@@ -1,4 +1,3 @@
-
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -98,17 +97,16 @@ class CompanyService {
   }
 
   async createCompanyWithAdminUser(
-    firestoreDb: Firestore, // Se recibe la instancia de la BD
     companyData: Partial<Omit<Company, 'id'>>,
     adminUserData: Partial<Omit<User, 'id'>>,
     isSuperAdminFlow: boolean = false
   ): Promise<{ companyId: string | null; userId: string }> {
-      return runTransaction(firestoreDb, async (transaction) => {
+      return runTransaction(db, async (transaction) => {
         const userId = adminUserData.uid!;
         let companyId: string | null = null;
         
-        const companiesCollectionRef = collection(firestoreDb, 'companies');
-        const usersCollectionRef = collection(firestoreDb, 'users');
+        const companiesCollectionRef = collection(db, 'companies');
+        const usersCollectionRef = collection(db, 'users');
 
         // 1. Validar RUC dentro de la transacción
         if (!isSuperAdminFlow && companyData.ruc) {
