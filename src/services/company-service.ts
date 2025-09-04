@@ -12,7 +12,8 @@ import {
   Timestamp,
   addDoc,
   writeBatch,
-  runTransaction
+  runTransaction,
+  type Firestore
 } from 'firebase/firestore';
 import type { Company, User } from '@/types';
 import { auditService } from './audit-service';
@@ -97,18 +98,21 @@ class CompanyService {
   }
 
   async createCompanyWithAdminUser(
+    firestoreDb: Firestore, // Se recibe la instancia de la BD
     companyData: Partial<Omit<Company, 'id'>>,
     adminUserData: Partial<Omit<User, 'id'>>,
     isSuperAdminFlow: boolean = false
   ): Promise<{ companyId: string | null; userId: string }> {
-      return runTransaction(db, async (transaction) => {
+      return runTransaction(firestoreDb, async (transaction) => {
         const userId = adminUserData.uid!;
         let companyId: string | null = null;
         
+        const companiesCollectionRef = collection(firestoreDb, 'companies');
+        const usersCollectionRef = collection(firestoreDb, 'users');
+
         // 1. Validar RUC dentro de la transacción
         if (!isSuperAdminFlow && companyData.ruc) {
-            const companiesRef = this.companiesCollection;
-            const rucQuery = query(companiesRef, where('ruc', '==', companyData.ruc));
+            const rucQuery = query(companiesCollectionRef, where('ruc', '==', companyData.ruc));
             const rucSnapshot = await transaction.get(rucQuery);
             if (!rucSnapshot.empty) {
                 throw new Error(`El RUC "${companyData.ruc}" ya está registrado.`);
@@ -117,7 +121,7 @@ class CompanyService {
 
         // 2. Crear documento de compañía (si no es superadmin)
         if (!isSuperAdminFlow) {
-            const companyDocRef = doc(this.companiesCollection);
+            const companyDocRef = doc(companiesCollectionRef);
             companyId = companyDocRef.id;
 
             const newCompanyData = {
@@ -133,7 +137,7 @@ class CompanyService {
         }
 
         // 3. Crear documento de usuario
-        const userDocRef = doc(this.usersCollection, userId);
+        const userDocRef = doc(usersCollectionRef, userId);
         const newUserDoc: Omit<User, 'id'> = {
             uid: userId,
             email: adminUserData.email!,

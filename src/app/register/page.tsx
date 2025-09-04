@@ -137,9 +137,9 @@ function RegisterForm() {
             ruc: values.ruc,
             planId: planSlug || 'plan-gratuito',
         };
-        await companyService.createCompanyWithAdminUser(companyData, adminUserData);
+        await companyService.createCompanyWithAdminUser(db, companyData, adminUserData);
       } else { // Si es SuperAdmin
-         await companyService.createCompanyWithAdminUser({}, adminUserData, true);
+         await companyService.createCompanyWithAdminUser(db, {}, adminUserData, true);
       }
       
       toast({ title: '¡Registro Exitoso!', description: `Serás redirigido para continuar.` });
