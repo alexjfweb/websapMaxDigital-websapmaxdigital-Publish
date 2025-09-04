@@ -39,7 +39,7 @@ export default function LandingPublicPage() {
     }))
   }
 
-  const handleSubsectionChange = (id: string, field: keyof Subsection, value: string) => {
+  const handleSubsectionChange = (id: string, field: keyof Subsection, value: string | null) => {
     setLandingData(prev => ({
       ...prev,
       subsections: prev.subsections.map(sub =>
@@ -84,7 +84,7 @@ export default function LandingPublicPage() {
 
   const removeImage = (subsectionId?: string) => {
     if (subsectionId) {
-      handleSubsectionChange(subsectionId, 'image', '')
+      handleSubsectionChange(subsectionId, 'image', null)
     } else {
       setLandingData(prev => ({ ...prev, mainImage: null }))
     }
@@ -104,7 +104,7 @@ export default function LandingPublicPage() {
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Título Principal</label>
+                    <label className="block text-sm font-medium mb-1">Título Principal</label>
                     <Input
                       value={landingData.title}
                       onChange={(e) => handleInputChange('title', e.target.value)}
@@ -113,7 +113,7 @@ export default function LandingPublicPage() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-2">Subtítulo</label>
+                    <label className="block text-sm font-medium mb-1">Subtítulo</label>
                     <Input
                       value={landingData.subtitle}
                       onChange={(e) => handleInputChange('subtitle', e.target.value)}
@@ -122,7 +122,7 @@ export default function LandingPublicPage() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-2">Descripción</label>
+                    <label className="block text-sm font-medium mb-1">Descripción</label>
                     <Textarea
                       value={landingData.description}
                       onChange={(e) => handleInputChange('description', e.target.value)}
@@ -132,7 +132,7 @@ export default function LandingPublicPage() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-2">Imagen Principal</label>
+                    <label className="block text-sm font-medium mb-1">Imagen Principal</label>
                     <div className="flex items-center space-x-2">
                       <input
                         type="file"
@@ -301,12 +301,14 @@ export default function LandingPublicPage() {
                           } gap-6 items-center`}
                         >
                           {subsection.image && (
-                            <div className="w-full md:w-1/2">
-                              <img
-                                src={subsection.image}
-                                alt={subsection.title || 'Imagen de subsección'}
-                                className="w-full h-40 object-cover rounded-lg shadow-md"
-                              />
+                            <div className="w-full md:w-1/2 flex-shrink-0">
+                              <div className="relative h-40 w-full">
+                                <img
+                                  src={subsection.image}
+                                  alt={subsection.title || 'Imagen de subsección'}
+                                  className="absolute inset-0 w-full h-full object-cover rounded-lg shadow-md"
+                                />
+                               </div>
                             </div>
                           )}
                           
