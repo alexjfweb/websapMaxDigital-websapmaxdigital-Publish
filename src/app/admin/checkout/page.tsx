@@ -57,7 +57,8 @@ async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<Av
     if (!plan?.slug) return defaultPayments;
 
     const rawPlanKey = plan.slug.split('-')[1] || 'básico';
-    const planNameKey = rawPlanKey === 'estandar' ? 'estándar' : rawPlanKey;
+    // CORRECCIÓN: No convertir 'estandar' a 'estándar' aquí. Usar la clave directa.
+    const planNameKey = rawPlanKey;
 
     try {
         const docRef = doc(db, "payment_methods", CONFIG_DOC_ID);
@@ -65,7 +66,8 @@ async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<Av
 
         if (docSnap.exists()) {
             const allConfig = docSnap.data();
-            const planConfig = allConfig[planNameKey];
+            // Buscar la configuración del plan, puede ser 'estandar' o 'estándar' si así se guardó.
+            const planConfig = allConfig[planNameKey] || allConfig[planNameKey.replace('a', 'á')];
             
             if (!planConfig) return defaultPayments;
 
@@ -368,5 +370,7 @@ export default function CheckoutPage() {
         </Suspense>
     );
 }
+
+    
 
     
