@@ -46,7 +46,7 @@ interface AvailablePayments {
   mercadopago: boolean;
   manual: boolean;
   bancolombiaQr?: { enabled: boolean; qrImageUrl?: string };
-  nequiQr?: { enabled: boolean; qrImageUrl?: string }; // Corregido: nequiQr para mantener consistencia
+  nequiQr?: { enabled: boolean; qrImageUrl?: string };
 }
 
 const CONFIG_DOC_ID = 'main_payment_methods';
@@ -71,8 +71,8 @@ async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<Av
             // **LA CORRECCIÓN DEFINITIVA**
             // El pago manual está disponible si CUALQUIERA de los métodos manuales por QR está habilitado.
             const isManualEnabled = 
-                planConfig?.bancolombiaQr?.enabled || 
-                planConfig?.nequiQr?.enabled;
+                (planConfig?.bancolombiaQr?.enabled ?? false) || 
+                (planConfig?.nequiQr?.enabled ?? false);
 
             return {
                 stripe: planConfig?.stripe?.enabled ?? false,
@@ -355,5 +355,3 @@ export default function CheckoutPage() {
         </Suspense>
     );
 }
-
-    
