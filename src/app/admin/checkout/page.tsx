@@ -45,9 +45,8 @@ interface AvailablePayments {
   stripe: boolean;
   mercadopago: boolean;
   manual: boolean;
-  qrUrl?: string;
   bancolombiaQr?: { enabled: boolean; qrImageUrl?: string };
-  nequi?: { enabled: boolean; qrImageUrl?: string };
+  nequiQr?: { enabled: boolean; qrImageUrl?: string }; // Corregido: nequiQr para mantener consistencia
 }
 
 const CONFIG_DOC_ID = 'main_payment_methods';
@@ -70,10 +69,9 @@ async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<Av
             if (!planConfig) return defaultPayments;
 
             // **LA CORRECCIÓN DEFINITIVA**
-            // El pago manual está disponible si CUALQUIERA de los métodos manuales está habilitado.
+            // El pago manual está disponible si CUALQUIERA de los métodos manuales por QR está habilitado.
             const isManualEnabled = 
                 planConfig?.bancolombiaQr?.enabled || 
-                planConfig?.nequi?.enabled ||
                 planConfig?.nequiQr?.enabled;
 
             return {
@@ -81,7 +79,7 @@ async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<Av
                 mercadopago: planConfig?.mercadoPago?.enabled ?? false,
                 manual: isManualEnabled,
                 bancolombiaQr: planConfig?.bancolombiaQr,
-                nequi: planConfig?.nequiQr, 
+                nequiQr: planConfig?.nequiQr, 
             };
         }
     } catch (error) {
@@ -321,10 +319,16 @@ function CheckoutContent() {
                                         <AccordionItem value="manual">
                                             <AccordionTrigger className="font-semibold text-base">Pago Manual (QR)</AccordionTrigger>
                                              <AccordionContent className="space-y-4 pt-3">
-                                                {availablePayments.bancolombiaQr?.enabled && (
+                                                {availablePayments.bancolombiaQr?.enabled && availablePayments.bancolombiaQr.qrImageUrl && (
                                                     <div className="text-center space-y-2">
                                                         <p className="text-sm">Escanea el código QR desde la App Bancolombia.</p>
-                                                        <Image src={availablePayments.bancolombiaQr.qrImageUrl || ''} alt="QR Bancolombia" width={150} height={150} className="mx-auto rounded-md border" data-ai-hint="payment QR code"/>
+                                                        <Image src={availablePayments.bancolombiaQr.qrImageUrl} alt="QR Bancolombia" width={150} height={150} className="mx-auto rounded-md border" data-ai-hint="payment QR code"/>
+                                                    </div>
+                                                )}
+                                                {availablePayments.nequiQr?.enabled && availablePayments.nequiQr.qrImageUrl && (
+                                                    <div className="text-center space-y-2">
+                                                        <p className="text-sm">Escanea el código QR desde tu app Nequi.</p>
+                                                        <Image src={availablePayments.nequiQr.qrImageUrl} alt="QR Nequi" width={150} height={150} className="mx-auto rounded-md border" data-ai-hint="payment QR code"/>
                                                     </div>
                                                 )}
                                                  <Button className="w-full" size="lg" onClick={handleConfirmManualPayment}>
@@ -351,3 +355,5 @@ export default function CheckoutPage() {
         </Suspense>
     );
 }
+
+    
