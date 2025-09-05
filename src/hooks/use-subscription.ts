@@ -61,7 +61,8 @@ export function useSubscription() {
   const planSlugPart = currentPlan?.slug?.toLowerCase().split('-')[1] || '';
 
   const permissions = {
-    canManageEmployees: ['estandar', 'premium', 'profesional'].includes(planSlugPart),
+    // CORRECIÓN: Se incluye 'basico' en la lista de planes con permiso para gestionar empleados.
+    canManageEmployees: ['basico', 'estandar', 'premium', 'profesional'].includes(planSlugPart),
     canUseAdvancedAnalytics: ['premium', 'profesional'].includes(planSlugPart),
     canCustomizeBranding: !!currentPlan && currentPlan.price > 0 && currentPlan.slug !== 'plan-gratis-lite',
   };
