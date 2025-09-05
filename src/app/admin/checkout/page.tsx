@@ -62,9 +62,11 @@ async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<Av
 
         if (docSnap.exists()) {
             const allConfig = docSnap.data();
-            const planNameKey = plan.slug.split('-')[1] || 'básico';
+            // CORRECCIÓN: Usar el slug sin "plan-" para la clave. No convertir a "estándar" con tilde.
+            const rawPlanKey = plan.slug.split('-')[1] || 'básico';
+            const planNameKey = rawPlanKey; // Sin conversión de tilde
 
-            // Seleccionar la configuración del plan directamente
+            // Buscar la configuración del plan directamente
             const planConfig = allConfig[planNameKey];
             
             if (!planConfig) {
@@ -80,6 +82,21 @@ async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<Av
 
             // La sección manual solo aparece si AL MENOS UNO de los métodos manuales está activo
             const isManualEnabled = isBancolombiaQrEnabled || isNequiQrEnabled;
+            
+            // Log de depuración solicitado
+            console.log('=== DEBUG PAYMENT METHODS ===');
+            console.log('plan.slug:', plan.slug);
+            console.log('rawPlanKey:', rawPlanKey);
+            console.log('planNameKey:', planNameKey);
+            console.log('allConfig keys:', Object.keys(allConfig));
+            console.log('planConfig found:', !!planConfig);
+            console.log('--- Calculated Booleans ---');
+            console.log('isStripeEnabled:', isStripeEnabled);
+            console.log('isBancolombiaQrEnabled:', isBancolombiaQrEnabled);
+            console.log('isNequiQrEnabled:', isNequiQrEnabled);
+            console.log('isManualEnabled:', isManualEnabled);
+            console.log('============================');
+
 
             return {
                 stripe: isStripeEnabled,
@@ -371,3 +388,5 @@ export default function CheckoutPage() {
         </Suspense>
     );
 }
+
+    
