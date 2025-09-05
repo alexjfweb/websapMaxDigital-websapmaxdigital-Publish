@@ -20,40 +20,47 @@ type CreateReservationInput = Omit<Reservation, 'id' | 'createdAt' | 'updatedAt'
 
 class ReservationService {
 
-  // Este método sigue siendo necesario para el formulario público de reservas.
+  // Este método es para el cliente (frontend) y llama a la API.
   async createReservation(data: CreateReservationInput): Promise<string> {
     if (!data.restaurantId) {
       throw new Error("El ID del restaurante es obligatorio.");
     }
-    
-    // CORRECCIÓN: Construir una URL absoluta para la llamada a la API
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-    const apiUrl = `${baseUrl}/api/reservations`;
 
-    // Llamada a la API de backend para crear la reserva
-    const response = await fetch(apiUrl, {
+    const response = await fetch('/api/reservations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
     
     if (!response.ok) {
-        const result = await response.json();
+        const result = await response.json().catch(() => ({ error: 'Error desconocido al crear la reserva.' }));
         throw new Error(result.error || 'Failed to create reservation');
     }
     const result = await response.json();
     return result.id;
   }
+
+  // Este método es para el servidor (backend) y escribe en Firestore.
+  async createReservationInDB(data: CreateReservationInput): Promise<string> {
+    const newReservationData = {
+      ...data,
+      status: 'pending' as const,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+    const reservationsCollection = collection(db, 'reservations');
+    const docRef = await addDoc(reservationsCollection, newReservationData);
+    return docRef.id;
+  }
   
   async getReservationsByCompany(companyId: string): Promise<Reservation[]> {
     if (!companyId) return [];
     
-    // CORRECCIÓN: Se consulta directamente a Firestore en lugar de llamar a una API
     const reservationsCollection = collection(db, 'reservations');
     const q = query(
         reservationsCollection,
         where('restaurantId', '==', companyId),
-        orderBy('dateTime', 'desc') // Ordenar por fecha de la reserva
+        orderBy('dateTime', 'desc')
     );
     
     const snapshot = await getDocs(q);
@@ -71,16 +78,9 @@ class ReservationService {
   }
   
   async updateReservationStatus(reservationId: string, status: Reservation['status']): Promise<void> {
-    // Llamada a la API de backend para actualizar el estado
-    const response = await fetch(`/api/reservations?id=${reservationId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-    });
-    if (!response.ok) {
-        const result = await response.json();
-        throw new Error(result.error || 'Failed to update reservation status');
-    }
+    const reservationsCollection = collection(db, 'reservations');
+    const reservationRef = doc(reservationsCollection, reservationId);
+    await updateDoc(reservationRef, { status, updatedAt: serverTimestamp() });
   }
 }
 

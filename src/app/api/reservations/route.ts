@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const reservationId = await reservationService.createReservation(body);
+    // Aquí el servicio del backend crea la reserva en Firestore
+    const reservationId = await reservationService.createReservationInDB(body);
     return NextResponse.json({ id: reservationId }, { status: 201 });
   } catch (error: any) {
     console.error("[API POST /reservations] Error:", error.message);
