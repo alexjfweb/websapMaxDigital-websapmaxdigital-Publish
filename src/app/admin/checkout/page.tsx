@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Suspense, useState, useEffect } from 'react';
@@ -50,12 +51,12 @@ interface AvailablePayments {
 
 const CONFIG_DOC_ID = 'main_payment_methods';
 
+// VERSIÓN CORREGIDA Y ROBUSTA
 async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<AvailablePayments> {
     const defaultPayments: AvailablePayments = { stripe: false, mercadopago: false, manual: false };
     if (!plan?.slug) return defaultPayments;
 
     const rawPlanKey = plan.slug.split('-')[1] || 'básico';
-    // Maneja el caso de "estándar" con tilde
     const planNameKey = rawPlanKey === 'estandar' ? 'estándar' : rawPlanKey;
 
     try {
@@ -68,13 +69,15 @@ async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<Av
             
             if (!planConfig) return defaultPayments;
 
-            const isStripeEnabled = planConfig?.stripe?.enabled === true;
-            const isMercadoPagoEnabled = planConfig?.mercadoPago?.enabled === true;
-            const isBancolombiaQrEnabled = planConfig?.bancolombiaQr?.enabled === true;
-            const isNequiQrEnabled = planConfig?.nequiQr?.enabled === true;
+            // Comprobaciones explícitas y seguras
+            const isStripeEnabled = !!planConfig.stripe?.enabled;
+            const isMercadoPagoEnabled = !!planConfig.mercadoPago?.enabled;
+            const isBancolombiaQrEnabled = !!planConfig.bancolombiaQr?.enabled;
+            const isNequiQrEnabled = !!planConfig.nequiQr?.enabled;
 
+            // La sección manual solo aparece si AL MENOS UNO de los métodos manuales está activo
             const isManualEnabled = isBancolombiaQrEnabled || isNequiQrEnabled;
-            
+
             return {
                 stripe: isStripeEnabled,
                 mercadopago: isMercadoPagoEnabled,
