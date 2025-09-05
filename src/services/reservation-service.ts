@@ -25,12 +25,18 @@ class ReservationService {
     if (!data.restaurantId) {
       throw new Error("El ID del restaurante es obligatorio.");
     }
+    
+    // CORRECCIÓN: Construir una URL absoluta para la llamada a la API
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    const apiUrl = `${baseUrl}/api/reservations`;
+
     // Llamada a la API de backend para crear la reserva
-    const response = await fetch('/api/reservations', {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
+    
     if (!response.ok) {
         const result = await response.json();
         throw new Error(result.error || 'Failed to create reservation');
