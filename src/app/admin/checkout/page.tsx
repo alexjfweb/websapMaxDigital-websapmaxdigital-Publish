@@ -53,8 +53,9 @@ const CONFIG_DOC_ID = 'main_payment_methods';
 async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<AvailablePayments> {
     if (!plan || !plan.slug) return { stripe: false, mercadopago: false, manual: false };
     
-    // Extrae el nombre clave del plan desde el slug, ej: 'plan-basico' -> 'básico'
-    const planNameKey = plan.slug.split('-')[1] || 'básico';
+    // CORRECCIÓN: Asegurar que la clave coincida con la base de datos ('estándar' con tilde)
+    const rawPlanKey = plan.slug.split('-')[1] || 'básico';
+    const planNameKey = rawPlanKey === 'estandar' ? 'estándar' : rawPlanKey;
 
     try {
         const docRef = doc(db, "payment_methods", CONFIG_DOC_ID);
