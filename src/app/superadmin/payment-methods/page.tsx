@@ -106,11 +106,11 @@ const PaymentMethodCard: React.FC<{
             </div>
             </CardHeader>
             {config.enabled && (
-            <CardContent className="space-y-4">
+            <CardContent>
                 <div className="space-y-3 p-4 border bg-muted/50 rounded-lg">
                     {children}
                 </div>
-                <div>
+                <div className="mt-4">
                 <Label>Instrucción para el cliente</Label>
                 <Textarea
                     value={config.instructions}
