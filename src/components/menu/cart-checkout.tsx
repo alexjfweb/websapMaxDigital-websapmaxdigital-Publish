@@ -126,13 +126,16 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
 
 
   useEffect(() => {
-    setLoadingMesas(true);
-    tableService.getAllTables(restaurantId).then((todas) => {
-      setMesas(todas.filter(m => m.isActive && m.status === 'available'));
-    }).finally(() => setLoadingMesas(false));
+    if (restaurantId) {
+      setLoadingMesas(true);
+      tableService.getAllTables(restaurantId).then((todas) => {
+        setMesas(todas.filter(m => m.isActive && m.status === 'available'));
+      }).finally(() => setLoadingMesas(false));
+    }
   }, [restaurantId]);
 
   const handleConfirmAndSend = async () => {
+    // 1. Validaciones previas
     if (cart.length === 0) {
       toast({ title: 'Carrito vacío', description: 'Agrega productos antes de continuar.', variant: 'destructive' });
       return;
@@ -147,13 +150,17 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
       setAccordionOpen('payment');
       return;
     }
+    if (!restaurantId) {
+        toast({ title: 'Error de configuración', description: 'No se pudo identificar el restaurante. Contacta a soporte.', variant: 'destructive' });
+        return;
+    }
 
-    let pedidoGuardado = false;
+    // 2. Guardar pedido en la base de datos
     try {
       const mesaObj = mesas.find(m => m.id === mesaSeleccionada);
       
       const newOrderData: any = {
-        restaurantId,
+        restaurantId: restaurantId, // **CORRECCIÓN CLAVE**
         productos: cart.map(item => ({ id: item.id, nombre: item.name, cantidad: item.quantity, precio: item.price })),
         cliente: {
           nombre: cliente.nombre,
@@ -183,13 +190,14 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
       if (mesaObj) {
         await tableService.changeTableStatus(mesaObj.id!, 'occupied');
       }
-      pedidoGuardado = true;
+
     } catch (err) {
       console.error("Error al registrar pedido:", err);
-      toast({ title: 'Error al registrar pedido', description: 'No se pudo guardar el pedido en el sistema.', variant: 'destructive' });
-      return;
+      toast({ title: 'Error al registrar pedido', description: 'No se pudo guardar el pedido en el sistema. Por favor, intenta de nuevo.', variant: 'destructive' });
+      return; // **CORRECCIÓN CLAVE**: Detener la ejecución si el guardado falla
     }
-
+    
+    // 3. Si el guardado fue exitoso, proceder a enviar por WhatsApp
     const productos = cart.map(item => `• ${item.quantity}x ${item.name} – $${(item.price * item.quantity).toFixed(2)}`).join('\n');
     const totalStr = (cart.reduce((acc, item) => acc + item.price * item.quantity, 0) + envio).toFixed(2);
     const metodo = paymentMethods.find(m => m.key === selectedPayment)?.label || '';
@@ -203,12 +211,13 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
       (cliente.notas ? `📝 *Notas del Cliente:*\n${cliente.notas}` : '');
     const phone = restaurantProfile?.phone || '';
     const url = `https://api.whatsapp.com/send?phone=${phone.replace(/\D/g, '')}&text=${encodeURIComponent(mensaje)}`;
+    
     window.open(url, '_blank');
-    toast({ title: 'Pedido preparado', description: 'Redirigiendo a WhatsApp...', variant: 'success' });
-    if (pedidoGuardado) {
-      if (onClear) onClear();
-      if (onClose) onClose();
-    }
+    
+    toast({ title: 'Pedido Enviado', description: 'Tu pedido se guardó y se envió por WhatsApp.', variant: 'success' });
+    
+    if (onClear) onClear();
+    if (onClose) onClose();
   };
 
   const handleShare = () => {
