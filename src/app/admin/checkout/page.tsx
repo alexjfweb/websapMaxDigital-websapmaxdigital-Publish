@@ -80,8 +80,14 @@ async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<Av
                 stripe: isStripeEnabled,
                 mercadopago: isMercadoPagoEnabled,
                 manual: isManualEnabled,
-                bancolombiaQr: isBancolombiaQrEnabled ? planConfig.bancolombiaQr : { enabled: false },
-                nequiQr: isNequiQrEnabled ? planConfig.nequiQr : { enabled: false },
+                bancolombiaQr: { 
+                    enabled: isBancolombiaQrEnabled,
+                    qrImageUrl: planConfig.bancolombiaQr?.qrImageUrl
+                },
+                nequiQr: { 
+                    enabled: isNequiQrEnabled,
+                    qrImageUrl: planConfig.nequiQr?.qrImageUrl
+                },
             };
         }
     } catch (error) {
@@ -288,7 +294,7 @@ function CheckoutContent() {
                             </CardHeader>
                             <CardContent>
                                 <Accordion type="single" collapsible className="w-full" defaultValue="automatic">
-                                    {availablePayments.stripe || availablePayments.mercadopago ? (
+                                    {(availablePayments.stripe || availablePayments.mercadopago) ? (
                                     <AccordionItem value="automatic">
                                         <AccordionTrigger className="font-semibold text-base">Pago Automático (Recomendado)</AccordionTrigger>
                                         <AccordionContent className="space-y-3 pt-3">
@@ -315,7 +321,7 @@ function CheckoutContent() {
                                         </AccordionContent>
                                     </AccordionItem>
                                     ) : (
-                                        <p className="text-sm text-muted-foreground text-center py-4">No hay métodos de pago automáticos habilitados para este plan.</p>
+                                        !availablePayments.manual && <p className="text-sm text-muted-foreground text-center py-4">No hay métodos de pago habilitados para este plan.</p>
                                     )}
                                      {availablePayments.manual && (
                                         <AccordionItem value="manual">
