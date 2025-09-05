@@ -65,12 +65,12 @@ async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<Av
             
             // CORRECCIÓN: Lógica de parsing del slug robusta.
             const rawPlanKey = plan.slug.replace(/^plan-/, '').replace(/-$/, '') || 'básico';
-            const planNameKey = rawPlanKey;
-
-            const planConfig = allConfig[planNameKey];
             
+            // CORRECCIÓN: Lógica de búsqueda robusta que contempla inconsistencias.
+            const planConfig = allConfig[rawPlanKey] || allConfig['estándar'] || allConfig['estandar'] || allConfig[rawPlanKey.replace('estandar', 'estándar')];
+
             if (!planConfig) {
-                 console.warn(`No payment config found for plan key: ${planNameKey}`);
+                 console.warn(`No payment config found for plan key: ${rawPlanKey}`);
                  return defaultPayments;
             }
             
@@ -375,4 +375,3 @@ export default function CheckoutPage() {
 }
 
     
-
