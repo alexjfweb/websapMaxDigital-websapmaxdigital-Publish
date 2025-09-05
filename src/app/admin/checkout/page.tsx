@@ -51,14 +51,10 @@ interface AvailablePayments {
 
 const CONFIG_DOC_ID = 'main_payment_methods';
 
-// VERSIÓN CORREGIDA Y ROBUSTA FINAL
+// VERSIÓN CORREGIDA FINAL Y ROBUSTA
 async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<AvailablePayments> {
     const defaultPayments: AvailablePayments = { stripe: false, mercadopago: false, manual: false };
     if (!plan?.slug) return defaultPayments;
-
-    const rawPlanKey = plan.slug.split('-')[1] || 'básico';
-    // CORRECCIÓN: No convertir 'estandar' a 'estándar' aquí. Usar la clave directa.
-    const planNameKey = rawPlanKey;
 
     try {
         const docRef = doc(db, "payment_methods", CONFIG_DOC_ID);
@@ -66,11 +62,16 @@ async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<Av
 
         if (docSnap.exists()) {
             const allConfig = docSnap.data();
-            // Buscar la configuración del plan, puede ser 'estandar' o 'estándar' si así se guardó.
-            const planConfig = allConfig[planNameKey] || allConfig[planNameKey.replace('a', 'á')];
-            
-            if (!planConfig) return defaultPayments;
+            const planNameKey = plan.slug.split('-')[1] || 'básico';
 
+            // Seleccionar la configuración del plan directamente
+            const planConfig = allConfig[planNameKey];
+            
+            if (!planConfig) {
+                 console.warn(`No payment config found for plan key: ${planNameKey}`);
+                 return defaultPayments;
+            }
+            
             // Comprobaciones explícitas y seguras
             const isStripeEnabled = !!planConfig.stripe?.enabled;
             const isMercadoPagoEnabled = !!planConfig.mercadoPago?.enabled;
@@ -370,9 +371,3 @@ export default function CheckoutPage() {
         </Suspense>
     );
 }
-
-    
-
-    
-
-    
