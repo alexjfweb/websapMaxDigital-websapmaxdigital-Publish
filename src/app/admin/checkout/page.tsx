@@ -53,9 +53,10 @@ const CONFIG_DOC_ID = 'main_payment_methods';
 
 async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<AvailablePayments> {
     const defaultPayments: AvailablePayments = { stripe: false, mercadopago: false, manual: false };
-    if (!plan || !plan.slug) return defaultPayments;
-    
+    if (!plan?.slug) return defaultPayments;
+
     const rawPlanKey = plan.slug.split('-')[1] || 'básico';
+    // Maneja el caso de "estándar" con tilde
     const planNameKey = rawPlanKey === 'estandar' ? 'estándar' : rawPlanKey;
 
     try {
@@ -68,18 +69,19 @@ async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<Av
             
             if (!planConfig) return defaultPayments;
 
-            // **LA CORRECCIÓN DEFINITIVA**
-            // El pago manual está disponible si CUALQUIERA de los métodos manuales por QR está habilitado.
-            const isManualEnabled = 
-                (planConfig?.bancolombiaQr?.enabled ?? false) || 
-                (planConfig?.nequiQr?.enabled ?? false);
+            const isStripeEnabled = planConfig?.stripe?.enabled === true;
+            const isMercadoPagoEnabled = planConfig?.mercadoPago?.enabled === true;
+            const isBancolombiaQrEnabled = planConfig?.bancolombiaQr?.enabled === true;
+            const isNequiQrEnabled = planConfig?.nequiQr?.enabled === true;
 
+            const isManualEnabled = isBancolombiaQrEnabled || isNequiQrEnabled;
+            
             return {
-                stripe: planConfig?.stripe?.enabled ?? false,
-                mercadopago: planConfig?.mercadoPago?.enabled ?? false,
+                stripe: isStripeEnabled,
+                mercadopago: isMercadoPagoEnabled,
                 manual: isManualEnabled,
-                bancolombiaQr: planConfig?.bancolombiaQr,
-                nequiQr: planConfig?.nequiQr, 
+                bancolombiaQr: isBancolombiaQrEnabled ? planConfig.bancolombiaQr : { enabled: false },
+                nequiQr: isNequiQrEnabled ? planConfig.nequiQr : { enabled: false },
             };
         }
     } catch (error) {
