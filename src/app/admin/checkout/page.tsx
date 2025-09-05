@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Suspense, useState, useEffect } from 'react';
@@ -321,7 +320,7 @@ function CheckoutContent() {
                                         </AccordionContent>
                                     </AccordionItem>
                                     ) : (
-                                        !availablePayments.manual && <p className="text-sm text-muted-foreground text-center py-4">No hay métodos de pago habilitados para este plan.</p>
+                                        !availablePayments.manual && <p className="text-sm text-muted-foreground text-center py-4">No hay métodos de pago automáticos habilitados para este plan.</p>
                                     )}
                                      {availablePayments.manual && (
                                         <AccordionItem value="manual">
