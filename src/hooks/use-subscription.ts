@@ -32,7 +32,7 @@ const fetchSubscriptionData = async (companyId: string): Promise<{ company: Comp
   // Buscamos el plan que coincida con el planId de la compañía.
   const currentPlan = allPlans.find(p => p.slug === company.planId || p.id === company.planId) || null;
   
-  if (company.planId && !currentPlan) {
+  if (company.planId && !currentPlan && (company.subscriptionStatus === 'active' || company.subscriptionStatus === 'pending_payment')) {
       console.warn(`Advertencia: La compañía ${company.id} tiene un planId "${company.planId}" que no corresponde a ningún plan existente.`);
   }
 
@@ -57,12 +57,12 @@ export function useSubscription() {
   // Filtrar los planes públicos para la sección "Explora"
   const publicPlans = allPlans.filter(p => p.isPublic && p.isActive);
 
-  // CORRECCIÓN: Convertir el slug a minúsculas antes de la comprobación
+  // Lógica de permisos corregida y robustecida
   const planSlugPart = currentPlan?.slug?.toLowerCase().split('-')[1] || '';
-
+  
   const permissions = {
-    // CORRECIÓN: Se incluye 'basico' en la lista de planes con permiso para gestionar empleados.
-    canManageEmployees: ['basico', 'estandar', 'premium', 'profesional'].includes(planSlugPart),
+    // Un plan permite gestionar empleados si NO es el gratuito Y NO es el básico.
+    canManageEmployees: !!currentPlan && currentPlan.price > 0 && !['plan-gratuito', 'plan-gratis-lite', 'plan-basico'].includes(currentPlan.slug),
     canUseAdvancedAnalytics: ['premium', 'profesional'].includes(planSlugPart),
     canCustomizeBranding: !!currentPlan && currentPlan.price > 0 && currentPlan.slug !== 'plan-gratis-lite',
   };
@@ -78,3 +78,4 @@ export function useSubscription() {
     error,
   };
 }
+
