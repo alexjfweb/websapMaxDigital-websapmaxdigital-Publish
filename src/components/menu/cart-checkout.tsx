@@ -17,6 +17,12 @@ import { tableService, Table } from '@/services/table-service';
 import { db } from "@/lib/firebase";
 import { collection, addDoc, doc, serverTimestamp } from "firebase/firestore";
 import type { Company } from '@/types';
+import NequiIcon from '@/components/icons/nequi-icon';
+import DaviplataIcon from '@/components/icons/daviplata-icon';
+import BancolombiaIcon from '@/components/icons/bancolombia-icon';
+import WhatsAppIcon from "@/components/icons/whatsapp-icon";
+import { usePlanLimits } from "@/hooks/use-plan-limits";
+
 
 // Tipos para los productos del carrito
 interface CartItem {
@@ -99,16 +105,21 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
 
   const paymentMethods = useMemo(() => {
     const methods = [];
-    if (restaurantProfile?.paymentMethods?.codEnabled) {
-        methods.push({ key: "cash", label: "Pago Contra Entrega", instructions: "Paga en efectivo al recibir tu pedido." });
+    if (!restaurantProfile?.paymentMethods) return [];
+
+    const pm = restaurantProfile.paymentMethods;
+
+    if (pm.codEnabled) {
+      methods.push({ key: "cash", label: "Pago Contra Entrega", icon: <CreditCard className="h-5 w-5" /> });
     }
-    if (restaurantProfile?.paymentMethods?.bancolombia?.enabled && restaurantProfile.paymentMethods.bancolombia.bancolombiaQrImageUrl) {
-        methods.push({ key: "qr", label: "Paga con Código QR", instructions: "Escanea este QR con tu app bancaria.", qrUrl: restaurantProfile.paymentMethods.bancolombia.bancolombiaQrImageUrl });
+    if (pm.nequi?.enabled) {
+      methods.push({ key: 'nequi', label: 'Paga con Nequi', icon: <NequiIcon className="h-5 w-5" />, details: pm.nequi });
     }
-    if (restaurantProfile?.paymentMethods?.nequi?.enabled || restaurantProfile?.paymentMethods?.daviplata?.enabled) {
-        let nequiInfo = restaurantProfile?.paymentMethods?.nequi?.enabled ? `Nequi: ${restaurantProfile.paymentMethods.nequi.accountNumber}` : '';
-        let daviplataInfo = restaurantProfile?.paymentMethods?.daviplata?.enabled ? `Daviplata: ${restaurantProfile.paymentMethods.daviplata.accountNumber}` : '';
-        methods.push({ key: "nequi_daviplata", label: "Paga con Nequi/Daviplata", instructions: `Envía el total a ${[nequiInfo, daviplataInfo].filter(Boolean).join(' o ')}.` });
+    if (pm.daviplata?.enabled) {
+      methods.push({ key: 'daviplata', label: 'Paga con Daviplata', icon: <DaviplataIcon className="h-5 w-5" />, details: pm.daviplata });
+    }
+    if (pm.bancolombia?.enabled) {
+      methods.push({ key: 'bancolombia', label: 'Paga con Bancolombia QR', icon: <BancolombiaIcon className="h-5 w-5" />, details: pm.bancolombia });
     }
     return methods;
   }, [restaurantProfile]);
@@ -220,6 +231,35 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
       toast({ title: 'Error', description: 'No se pudo copiar el pedido.', variant: 'destructive' });
     });
   };
+  
+  const renderPaymentDetails = () => {
+    const method = paymentMethods.find(m => m.key === selectedPayment);
+    if (!method || !method.details) return null;
+
+    const { nequiQrImageUrl, bancolombiaQrImageUrl, daviplataQrImageUrl, accountNumber, accountHolder } = method.details;
+    const qrUrl = nequiQrImageUrl || bancolombiaQrImageUrl || daviplataQrImageUrl;
+
+    return (
+        <div className="mt-2 p-3 rounded-md bg-muted border text-sm text-center space-y-2">
+            <p className="font-semibold">Paga a la siguiente cuenta:</p>
+            {accountHolder && <p><strong>Titular:</strong> {accountHolder}</p>}
+            {accountNumber && <p><strong>Cuenta:</strong> {accountNumber}</p>}
+            {qrUrl && (
+                <>
+                    <p className="font-semibold mt-2">O escanea el código QR:</p>
+                    <Image 
+                        src={qrUrl}
+                        alt={`Código QR para ${method.label}`}
+                        width={150}
+                        height={150}
+                        className="mx-auto rounded-lg border"
+                        data-ai-hint="payment QR code"
+                    />
+                </>
+            )}
+        </div>
+    );
+  };
 
   return (
     <>
@@ -301,26 +341,12 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
                           onChange={() => setSelectedPayment(method.key)}
                           className="accent-primary h-4 w-4"
                         />
+                        {method.icon}
                         <span className="flex-1 font-medium">{method.label}</span>
                         {selectedPayment === method.key && <Check className="h-5 w-5 text-green-600" />}
                       </label>
                     ))}
-                    {selectedPayment && (
-                      <div className="mt-2 p-3 rounded-md bg-muted border text-sm">
-                        <div className="font-medium mb-1">Instrucciones:</div>
-                        <div className="mb-2">{paymentMethods.find(m => m.key === selectedPayment)?.instructions}</div>
-                        {selectedPayment === "qr" && paymentMethods.find(m => m.key === "qr")?.qrUrl && (
-                          <Image 
-                            src={paymentMethods.find(m => m.key === "qr")?.qrUrl || ''} 
-                            alt="QR de Pago" 
-                            width={112} 
-                            height={112} 
-                            className="w-28 h-28 mx-auto rounded border" 
-                            data-ai-hint="payment QR code"
-                          />
-                        )}
-                      </div>
-                    )}
+                    {renderPaymentDetails()}
                   </div>
                 </AccordionContent>
               </AccordionItem>
