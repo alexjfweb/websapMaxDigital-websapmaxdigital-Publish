@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Plus, Search, MoreHorizontal, Edit, Trash2, Eye, Clock, Users, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table as UITable, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -17,16 +17,23 @@ import { TableLogsDialog } from "./table-logs-dialog";
 import { useTables } from "@/hooks/use-tables";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/contexts/session-context";
+import { usePlanLimits } from "@/hooks/use-plan-limits";
+import { useSubscription } from "@/hooks/use-subscription";
+import LimitReachedDialog from "@/components/LimitReachedDialog";
 
 export default function TablesPage() {
   const { currentUser } = useSession();
   const companyId = currentUser.companyId;
   const { tables, isLoading, isError, error, refreshTables } = useTables(companyId);
+  const { limits, isLimitsLoading } = usePlanLimits();
+  const { subscription, isLoading: isSubscriptionLoading } = useSubscription();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTable, setEditingTable] = useState<Table | null>(null);
   const [selectedTableForLogs, setSelectedTableForLogs] = useState<Table | null>(null);
+  const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
   const { toast } = useToast();
 
   const filteredTables = useMemo(() => {
@@ -45,6 +52,14 @@ export default function TablesPage() {
     return filtered;
   }, [tables, searchTerm, statusFilter]);
 
+  const handleOpenNewTableForm = () => {
+    if (limits.reached.tables) {
+        setIsLimitModalOpen(true);
+    } else {
+        setEditingTable(null);
+        setIsFormOpen(true);
+    }
+  };
 
   const handleStatusChange = async (tableId: string, newStatus: Table["status"]) => {
     try {
@@ -187,19 +202,25 @@ export default function TablesPage() {
   }
 
   return (
+    <>
+    <LimitReachedDialog 
+        isOpen={isLimitModalOpen}
+        onClose={() => setIsLimitModalOpen(false)}
+        limitType="mesas"
+        limit={limits.max.tables}
+        planName={subscription?.plan?.name || ''}
+    />
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Gestión de Mesas</h1>
-          <p className="text-muted-foreground">Administra las mesas del restaurante</p>
+          <p className="text-muted-foreground">Administra las mesas del restaurante. Límite del plan: {limits.current.tables}/{limits.max.tables < 0 ? 'Ilimitadas' : limits.max.tables}</p>
         </div>
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditingTable(null)}>
-              <Plus className="w-4 h-4 mr-2" />Nueva Mesa
-            </Button>
-          </DialogTrigger>
+          <Button onClick={handleOpenNewTableForm}>
+            <Plus className="w-4 h-4 mr-2" />Nueva Mesa
+          </Button>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>{editingTable ? "Editar Mesa" : "Nueva Mesa"}</DialogTitle>
@@ -353,5 +374,6 @@ export default function TablesPage() {
         />
       )}
     </div>
+    </>
   );
 }

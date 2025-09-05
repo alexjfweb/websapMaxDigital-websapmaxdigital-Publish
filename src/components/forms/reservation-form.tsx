@@ -32,6 +32,7 @@ import BancolombiaIcon from "@/components/icons/bancolombia-icon"
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import WhatsAppIcon from "@/components/icons/whatsapp-icon"
+import { usePlanLimits } from "@/hooks/use-plan-limits"
 
 const reservationFormSchema = z.object({
   customerName: z.string().min(2, { message: "El nombre completo debe tener al menos 2 caracteres." }),
@@ -46,10 +47,9 @@ const reservationFormSchema = z.object({
 
 type ReservationFormData = z.infer<typeof reservationFormSchema>;
 
-// Generar franjas horarias (ej. cada 30 minutos de 12 PM a 9 PM)
 const generateTimeSlots = () => {
   const slots = [];
-  for (let hour = 12; hour <= 21; hour++) { // De 12:00 a 21:00
+  for (let hour = 12; hour <= 21; hour++) {
     for (let minute = 0; minute < 60; minute += 30) {
       const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
       slots.push(time);
@@ -59,7 +59,6 @@ const generateTimeSlots = () => {
 };
 const timeSlots = generateTimeSlots();
 
-
 export default function ReservationForm({ restaurantId, restaurantProfile, onSuccess }: { 
     restaurantId: string; 
     restaurantProfile: Company | null;
@@ -68,6 +67,7 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [reservationData, setReservationData] = useState<ReservationFormData | null>(null);
+  const { limits, isLimitsLoading } = usePlanLimits();
 
   const paymentMethods = useMemo(() => {
     const methods = [];
@@ -100,6 +100,15 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
   const selectedPaymentMethod = form.watch("paymentMethod");
 
   async function onValidSubmit(values: ReservationFormData) {
+    if (limits.reached.reservations) {
+        toast({
+            title: "Límite de Reservas Alcanzado",
+            description: `Este restaurante ha alcanzado el límite de ${limits.max.reservations} reservas para este mes. Por favor, contacte directamente al restaurante.`,
+            variant: "destructive",
+            duration: 8000,
+        });
+        return;
+    }
     setReservationData(values);
     setIsConfirmModalOpen(true);
   }
@@ -130,7 +139,6 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
             notes: reservationData.notes || '',
         });
 
-        // Preparamos el mensaje de WhatsApp
         const paymentMethodLabel = paymentMethods.find(p => p.key === reservationData.paymentMethod)?.label || 'No especificado';
         const message = `✨ *Nueva Solicitud de Reserva* ✨\n\n` +
                         `*Restaurante:* ${restaurantProfile?.name}\n\n` +
@@ -297,7 +305,7 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
                         selected={field.value}
                         onSelect={field.onChange}
                         disabled={(date) =>
-                            date < new Date(new Date().setHours(0,0,0,0)) // Deshabilitar fechas pasadas
+                            date < new Date(new Date().setHours(0,0,0,0))
                         }
                         initialFocus
                     />
@@ -375,7 +383,7 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
+        <Button type="submit" className="w-full" disabled={isSubmitting || isLimitsLoading}>
            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
            {isSubmitting ? 'Procesando...' : 'Solicitar Reserva'}
         </Button>
