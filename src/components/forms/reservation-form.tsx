@@ -141,7 +141,7 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
 
         const paymentMethodLabel = paymentMethods.find(p => p.key === reservationData.paymentMethod)?.label || 'No especificado';
         const message = `✨ *Nueva Solicitud de Reserva* ✨\n\n` +
-                        `*Restaurante:* ${restaurantProfile?.name}\n\n` +
+                        `*Restaurante:* ${restaurantProfile?.name || 'Nombre no disponible'}\n\n` +
                         `*Cliente:* ${reservationData.customerName}\n` +
                         `*Teléfono:* ${reservationData.customerPhone}\n` +
                         `*Fecha:* ${format(combinedDateTime, "EEEE, d 'de' MMMM", { locale: es })}\n` +
@@ -174,45 +174,46 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
     }
   }
 
-
   const renderPaymentDetails = () => {
     if (!selectedPaymentMethod) return null;
 
     const pm = restaurantProfile?.paymentMethods;
 
-    if (selectedPaymentMethod === 'nequi' && pm?.nequi?.enabled) {
-      return (
-        <div className="mt-4 p-3 bg-muted rounded-md border text-sm">
-          <p><strong>Pagar a Nequi:</strong> {pm.nequi.accountNumber}</p>
-          <p><strong>Titular:</strong> {pm.nequi.accountHolder}</p>
-        </div>
-      );
-    }
-    if (selectedPaymentMethod === 'daviplata' && pm?.daviplata?.enabled) {
-      return (
-        <div className="mt-4 p-3 bg-muted rounded-md border text-sm">
-          <p><strong>Pagar a Daviplata:</strong> {pm.daviplata.accountNumber}</p>
-          <p><strong>Titular:</strong> {pm.daviplata.accountHolder}</p>
-        </div>
-      );
-    }
-    if (selectedPaymentMethod === 'bancolombia_qr' && pm?.bancolombia?.enabled && pm.bancolombia.bancolombiaQrImageUrl) {
-        return (
-            <div className="mt-4 p-3 bg-muted rounded-md border text-center">
-                <p className="font-semibold mb-2">Escanea para pagar con Bancolombia</p>
-                <Image 
-                    src={pm.bancolombia.bancolombiaQrImageUrl}
-                    alt="Código QR Bancolombia"
-                    width={150}
-                    height={150}
-                    className="mx-auto rounded-lg"
-                    data-ai-hint="payment QR code"
-                />
-            </div>
-        )
-    }
+    let details = null;
+    let qrUrl = null;
 
-    return null;
+    if (selectedPaymentMethod === 'nequi' && pm?.nequi?.enabled) {
+      details = pm.nequi;
+      qrUrl = pm.nequi.nequiQrImageUrl;
+    } else if (selectedPaymentMethod === 'daviplata' && pm?.daviplata?.enabled) {
+      details = pm.daviplata;
+      qrUrl = pm.daviplata.daviplataQrImageUrl;
+    } else if (selectedPaymentMethod === 'bancolombia_qr' && pm?.bancolombia?.enabled) {
+      details = pm.bancolombia;
+      qrUrl = pm.bancolombia.bancolombiaQrImageUrl;
+    }
+    
+    if (!details) return null;
+
+    return (
+      <div className="mt-4 p-3 bg-muted rounded-md border text-sm text-center">
+        {details.accountHolder && <p><strong>Titular:</strong> {details.accountHolder}</p>}
+        {details.accountNumber && <p><strong>Pagar a:</strong> {details.accountNumber}</p>}
+        {qrUrl && (
+          <>
+            <p className="font-semibold my-2">O escanea el código QR:</p>
+            <Image 
+              src={qrUrl}
+              alt={`Código QR para ${selectedPaymentMethod}`}
+              width={150}
+              height={150}
+              className="mx-auto rounded-lg border"
+              data-ai-hint="payment QR code"
+            />
+          </>
+        )}
+      </div>
+    );
   }
 
   return (
