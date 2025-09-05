@@ -36,6 +36,7 @@ export default function AdminProfilePage() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [nequiQrPreview, setNequiQrPreview] = useState<string | null>(null);
+  const [daviplataQrPreview, setDaviplataQrPreview] = useState<string | null>(null);
   const [bancolombiaQrPreview, setBancolombiaQrPreview] = useState<string | null>(null);
   
   useEffect(() => {
@@ -54,6 +55,7 @@ export default function AdminProfilePage() {
           if(data.logoUrl) setLogoPreview(data.logoUrl);
           if(data.bannerUrl) setBannerPreview(data.bannerUrl);
           if(data.paymentMethods?.nequi?.nequiQrImageUrl) setNequiQrPreview(data.paymentMethods.nequi.nequiQrImageUrl);
+          if(data.paymentMethods?.daviplata?.daviplataQrImageUrl) setDaviplataQrPreview(data.paymentMethods.daviplata.daviplataQrImageUrl);
           if(data.paymentMethods?.bancolombia?.bancolombiaQrImageUrl) setBancolombiaQrPreview(data.paymentMethods.bancolombia.bancolombiaQrImageUrl);
         } else {
           console.log("No such document! Creating a default profile structure.");
@@ -141,13 +143,26 @@ export default function AdminProfilePage() {
     }
   };
 
-  const handleQrImageUpload = async (event: ChangeEvent<HTMLInputElement>, method: 'nequi' | 'bancolombia') => {
+  const handleQrImageUpload = async (event: ChangeEvent<HTMLInputElement>, method: 'nequi' | 'bancolombia' | 'daviplata') => {
     if (!companyId) return;
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const setPreview = method === 'nequi' ? setNequiQrPreview : setBancolombiaQrPreview;
-    const fieldName = method === 'nequi' ? 'nequiQrImageUrl' : 'bancolombiaQrImageUrl';
+    let setPreview, fieldName;
+    switch(method) {
+        case 'nequi':
+            setPreview = setNequiQrPreview;
+            fieldName = 'nequiQrImageUrl';
+            break;
+        case 'bancolombia':
+            setPreview = setBancolombiaQrPreview;
+            fieldName = 'bancolombiaQrImageUrl';
+            break;
+        case 'daviplata':
+            setPreview = setDaviplataQrPreview;
+            fieldName = 'daviplataQrImageUrl';
+            break;
+    }
 
     setPreview(URL.createObjectURL(file));
     setIsSaving(true);
@@ -374,6 +389,18 @@ export default function AdminProfilePage() {
                          <div className="space-y-1">
                             <Label htmlFor="daviplataAccountNumber">Número de cuenta</Label>
                             <Input id="daviplataAccountNumber" value={profileData.paymentMethods?.daviplata?.accountNumber || ''} disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('daviplata', 'accountNumber', e.target.value)} />
+                        </div>
+                        <div className="space-y-1 col-span-2">
+                            <Label>Imagen del Código QR</Label>
+                            <div className="flex items-center gap-4 mt-1">
+                                <Image src={daviplataQrPreview || "https://placehold.co/100x100.png?text=QR"} alt="QR Daviplata" width={96} height={96} className="h-24 w-24 rounded-md border object-cover" data-ai-hint="payment QR code"/>
+                                <Button variant="outline" asChild disabled={!isEditing}>
+                                    <Label htmlFor="daviplata-qr-upload" className="cursor-pointer">
+                                        <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
+                                        <Input id="daviplata-qr-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleQrImageUpload(e, 'daviplata')} disabled={!isEditing} />
+                                    </Label>
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 )}
