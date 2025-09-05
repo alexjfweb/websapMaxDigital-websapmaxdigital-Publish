@@ -51,7 +51,7 @@ interface AvailablePayments {
 
 const CONFIG_DOC_ID = 'main_payment_methods';
 
-// VERSIÓN CORREGIDA Y ROBUSTA
+// VERSIÓN CORREGIDA Y ROBUSTA FINAL
 async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<AvailablePayments> {
     const defaultPayments: AvailablePayments = { stripe: false, mercadopago: false, manual: false };
     if (!plan?.slug) return defaultPayments;
@@ -296,7 +296,7 @@ function CheckoutContent() {
                             </CardHeader>
                             <CardContent>
                                 <Accordion type="single" collapsible className="w-full" defaultValue="automatic">
-                                    {(availablePayments.stripe || availablePayments.mercadopago) ? (
+                                    {(availablePayments.stripe || availablePayments.mercadopago) && (
                                     <AccordionItem value="automatic">
                                         <AccordionTrigger className="font-semibold text-base">Pago Automático (Recomendado)</AccordionTrigger>
                                         <AccordionContent className="space-y-3 pt-3">
@@ -322,9 +322,8 @@ function CheckoutContent() {
                                             )}
                                         </AccordionContent>
                                     </AccordionItem>
-                                    ) : (
-                                        !availablePayments.manual && <p className="text-sm text-muted-foreground text-center py-4">No hay métodos de pago automáticos habilitados para este plan.</p>
                                     )}
+                                    
                                      {availablePayments.manual && (
                                         <AccordionItem value="manual">
                                             <AccordionTrigger className="font-semibold text-base">Pago Manual (QR)</AccordionTrigger>
@@ -347,6 +346,10 @@ function CheckoutContent() {
                                             </AccordionContent>
                                         </AccordionItem>
                                      )}
+
+                                     {!availablePayments.stripe && !availablePayments.mercadopago && !availablePayments.manual && (
+                                        <p className="text-sm text-muted-foreground text-center py-4">No hay métodos de pago habilitados para este plan.</p>
+                                     )}
                                 </Accordion>
                             </CardContent>
                         </Card>
@@ -365,3 +368,5 @@ export default function CheckoutPage() {
         </Suspense>
     );
 }
+
+    
