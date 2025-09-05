@@ -46,14 +46,16 @@ interface AvailablePayments {
   mercadopago: boolean;
   manual: boolean;
   qrUrl?: string;
+  bancolombiaQr?: { enabled: boolean; qrImageUrl?: string };
+  nequi?: { enabled: boolean; qrImageUrl?: string };
 }
 
 const CONFIG_DOC_ID = 'main_payment_methods';
 
 async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<AvailablePayments> {
-    if (!plan || !plan.slug) return { stripe: false, mercadopago: false, manual: false };
+    const defaultPayments: AvailablePayments = { stripe: false, mercadopago: false, manual: false };
+    if (!plan || !plan.slug) return defaultPayments;
     
-    // CORRECCIÓN: Asegurar que la clave coincida con la base de datos ('estándar' con tilde)
     const rawPlanKey = plan.slug.split('-')[1] || 'básico';
     const planNameKey = rawPlanKey === 'estandar' ? 'estándar' : rawPlanKey;
 
@@ -64,18 +66,29 @@ async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<Av
         if (docSnap.exists()) {
             const allConfig = docSnap.data();
             const planConfig = allConfig[planNameKey];
+            
+            if (!planConfig) return defaultPayments;
+
+            // **LA CORRECCIÓN DEFINITIVA**
+            // El pago manual está disponible si CUALQUIERA de los métodos manuales está habilitado.
+            const isManualEnabled = 
+                planConfig?.bancolombiaQr?.enabled || 
+                planConfig?.nequi?.enabled ||
+                planConfig?.nequiQr?.enabled;
+
             return {
                 stripe: planConfig?.stripe?.enabled ?? false,
                 mercadopago: planConfig?.mercadoPago?.enabled ?? false,
-                manual: planConfig?.bancolombiaQr?.enabled ?? false,
-                qrUrl: planConfig?.bancolombiaQr?.qrImageUrl ?? "https://placehold.co/200x200.png?text=QR"
+                manual: isManualEnabled,
+                bancolombiaQr: planConfig?.bancolombiaQr,
+                nequi: planConfig?.nequiQr, 
             };
         }
     } catch (error) {
         console.error("Error fetching payment methods config:", error);
     }
 
-    return { stripe: false, mercadopago: false, manual: false };
+    return defaultPayments;
 }
 
 
@@ -101,14 +114,12 @@ function CheckoutContent() {
     }, [selectedPlan]);
     
     useEffect(() => {
-        // CORRECCIÓN: Solo mostrar el toast y limpiar la URL si los parámetros de pago están presentes.
         if (paymentStatus === 'cancelled' || paymentStatus === 'failure') {
             toast({
                 title: 'Pago Cancelado o Fallido',
                 description: 'El proceso de pago no se completó. Por favor, intenta de nuevo.',
                 variant: 'destructive'
             });
-            // Elimina solo los parámetros de pago, manteniendo el plan, para evitar el bucle.
             router.replace(`/admin/checkout?plan=${planSlug}`, { scroll: false });
         }
     }, [paymentStatus, router, planSlug, toast]);
@@ -153,7 +164,7 @@ function CheckoutContent() {
         try {
             await companyService.updateCompany(currentUser.companyId, {
                 subscriptionStatus: 'pending_payment',
-                planId: selectedPlan.slug // Usamos el slug para consistencia
+                planId: selectedPlan.slug
             }, currentUser);
             
             setShowSuccessModal(true);
@@ -180,7 +191,7 @@ function CheckoutContent() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    planId: selectedPlan.slug, // Siempre usamos el slug
+                    planId: selectedPlan.slug,
                     companyId: currentUser.companyId,
                     provider: provider
                 })
@@ -310,11 +321,12 @@ function CheckoutContent() {
                                         <AccordionItem value="manual">
                                             <AccordionTrigger className="font-semibold text-base">Pago Manual (QR)</AccordionTrigger>
                                              <AccordionContent className="space-y-4 pt-3">
-                                                <div className="text-center space-y-2">
-                                                    <p className="text-sm">Escanea el código QR desde la App Bancolombia para realizar el pago.</p>
-                                                    <Image src={availablePayments.qrUrl || ''} alt="QR Bancolombia" width={150} height={150} className="mx-auto rounded-md border" data-ai-hint="payment QR code"/>
-                                                    <p className="text-xs text-muted-foreground">Titular: Websapmax SAS <br/> NIT: 900.123.456-7</p>
-                                                </div>
+                                                {availablePayments.bancolombiaQr?.enabled && (
+                                                    <div className="text-center space-y-2">
+                                                        <p className="text-sm">Escanea el código QR desde la App Bancolombia.</p>
+                                                        <Image src={availablePayments.bancolombiaQr.qrImageUrl || ''} alt="QR Bancolombia" width={150} height={150} className="mx-auto rounded-md border" data-ai-hint="payment QR code"/>
+                                                    </div>
+                                                )}
                                                  <Button className="w-full" size="lg" onClick={handleConfirmManualPayment}>
                                                     He realizado el pago
                                                 </Button>
