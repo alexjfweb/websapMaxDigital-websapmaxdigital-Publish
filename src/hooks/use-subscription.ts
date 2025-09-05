@@ -32,13 +32,6 @@ const fetchSubscriptionData = async (companyId: string): Promise<{ company: Comp
   // Buscamos el plan que coincida con el planId de la compañía.
   const currentPlan = allPlans.find(p => p.slug === company.planId || p.id === company.planId) || null;
   
-  // CORRECCIÓN CLAVE:
-  // Si la compañía tiene un planId asignado (por ejemplo, después de que el admin lo activa)
-  // pero el plan no se encuentra en la lista (lo cual no debería ocurrir, pero por si acaso),
-  // no debemos tratarlo como si no tuviera plan.
-  // El problema principal es que el estado "pending_payment" es un estado válido de suscripción
-  // que debe ser mostrado. El filtrado de planes públicos se hace más adelante.
-  
   if (company.planId && !currentPlan) {
       console.warn(`Advertencia: La compañía ${company.id} tiene un planId "${company.planId}" que no corresponde a ningún plan existente.`);
   }
@@ -62,12 +55,14 @@ export function useSubscription() {
   const isLoading = isSessionLoading || (!!companyId && isDataLoading);
 
   // Filtrar los planes públicos para la sección "Explora"
-  // Esta lógica se mantiene para asegurar que solo se muestren ofertas comerciales.
   const publicPlans = allPlans.filter(p => p.isPublic && p.isActive);
 
+  // CORRECCIÓN: Convertir el slug a minúsculas antes de la comprobación
+  const planSlugPart = currentPlan?.slug?.toLowerCase().split('-')[1] || '';
+
   const permissions = {
-    canManageEmployees: ['estandar', 'premium', 'profesional'].includes(currentPlan?.slug?.split('-')[1] || ''),
-    canUseAdvancedAnalytics: ['premium', 'profesional'].includes(currentPlan?.slug?.split('-')[1] || ''),
+    canManageEmployees: ['estandar', 'premium', 'profesional'].includes(planSlugPart),
+    canUseAdvancedAnalytics: ['premium', 'profesional'].includes(planSlugPart),
     canCustomizeBranding: !!currentPlan && currentPlan.price > 0 && currentPlan.slug !== 'plan-gratis-lite',
   };
   
