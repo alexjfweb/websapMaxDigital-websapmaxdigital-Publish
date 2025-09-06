@@ -9,11 +9,12 @@ import type { Company } from '@/types';
 
 // Helper para obtener la URL base de la aplicación de forma robusta
 function getBaseUrl() {
-  // Prioriza la variable de entorno si está definida
+  // Prioriza la variable de entorno si está definida para producción
   if (process.env.NEXT_PUBLIC_BASE_URL) {
     return process.env.NEXT_PUBLIC_BASE_URL;
   }
-  // Fallback para el entorno de producción de Firebase Studio si no hay variable de entorno
+  // Fallback para el entorno de producción de Firebase si no hay variable de entorno
+  // Esta URL es un ejemplo, deberías ajustarla a tu dominio real de producción.
   if (process.env.NODE_ENV === 'production') {
     return 'https://websapmax.web.app';
   }
