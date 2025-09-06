@@ -13,8 +13,7 @@ function getBaseUrl() {
   if (process.env.NEXT_PUBLIC_BASE_URL) {
     return process.env.NEXT_PUBLIC_BASE_URL;
   }
-  // Fallback para el entorno de producción de Firebase si no hay variable de entorno
-  // Esta URL es un ejemplo, deberías ajustarla a tu dominio real de producción.
+  // Fallback para el entorno de producción de Firebase si no hay variable de entorno.
   if (process.env.NODE_ENV === 'production') {
     return 'https://websapmax.web.app';
   }
