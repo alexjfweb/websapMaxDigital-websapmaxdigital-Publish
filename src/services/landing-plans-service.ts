@@ -15,7 +15,7 @@ import {
   serverTimestamp,
   deleteDoc,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase'; // Usar la instancia centralizada
+import { getDb } from '@/lib/firebase-lazy'; // Usar la instancia centralizada y diferida
 import type { LandingPlan, CreatePlanRequest, UpdatePlanRequest, PlanAuditLog } from '@/types/plans';
 import { auditService } from './audit-service';
 import { generateSlug, serializeDate } from '@/lib/utils';
@@ -76,11 +76,11 @@ class LandingPlansService {
   private readonly AUDIT_COLLECTION = 'planAuditLogs';
   
   private getPlansCollection() {
-    return collection(db, this.COLLECTION_NAME);
+    return collection(getDb(), this.COLLECTION_NAME);
   }
 
   private getAuditCollection() {
-      return collection(db, this.AUDIT_COLLECTION);
+      return collection(getDb(), this.AUDIT_COLLECTION);
   }
 
   private async validateSlug(slug: string, excludeId?: string): Promise<boolean> {
@@ -226,7 +226,7 @@ class LandingPlansService {
   }
 
   async reorderPlans(planIds: string[], userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<void> {
-    const batch = writeBatch(db);
+    const batch = writeBatch(getDb());
     const coll = this.getPlansCollection();
 
     planIds.forEach((id, index) => {

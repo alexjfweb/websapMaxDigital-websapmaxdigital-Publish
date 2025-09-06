@@ -18,7 +18,7 @@ import { useSession } from '@/contexts/session-context';
 import MercadoPagoIcon from '@/components/icons/mercadopago-icon';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { LandingPlan } from '@/services/landing-plans-service';
+import type { LandingPlan } from '@/types/plans';
 import SuccessModal from '@/components/ui/success-modal';
 
 function CheckoutSkeleton() {
@@ -373,5 +373,3 @@ export default function CheckoutPage() {
         </Suspense>
     );
 }
-
-    
