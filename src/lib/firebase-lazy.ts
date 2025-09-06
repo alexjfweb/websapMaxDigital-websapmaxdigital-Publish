@@ -44,7 +44,7 @@ export function getDb(): Firestore {
   return getFirebaseServices().db;
 }
 
-export function getAuthInstance(): Auth {
+export function getFirebaseAuth(): Auth {
   return getFirebaseServices().auth;
 }
 
