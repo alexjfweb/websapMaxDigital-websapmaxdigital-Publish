@@ -1,7 +1,7 @@
 
 "use client";
 
-import useSWR from 'swr';
+import useSWR, { mutate } from 'swr';
 import { navigationService, NavItemConfig, NavConfig } from '@/services/navigation-service';
 
 // Key for SWR to cache the navigation config
@@ -18,22 +18,24 @@ const SWR_KEY = 'navigation-config';
  */
 export function useNavigationConfig(baseSidebarItems: any[] = [], baseFooterItems: any[] = []) {
   // Fetcher function that SWR will use, passing base items to it.
-  const fetcher = (key: string): Promise<NavConfig> => {
+  const fetcher = async (key: string): Promise<NavConfig> => {
       if (key === SWR_KEY) {
-          return navigationService.getNavigationConfig({ sidebarItems: baseSidebarItems, footerItems: baseFooterItems });
+          const config = await navigationService.getNavigationConfig({ sidebarItems: baseSidebarItems, footerItems: baseFooterItems });
+          // CORRECCIÓN: Si la configuración está vacía, la inicializa en la BD y la devuelve
+          // para que no se muestre vacía la primera vez.
+          if (config.sidebarItems.length === 0) {
+              console.log("No navigation config found, initializing with defaults.");
+              await navigationService.initializeDefaultConfig(baseSidebarItems, baseFooterItems);
+              // Vuelve a buscar la configuración recién creada
+              return await navigationService.getNavigationConfig({ sidebarItems: baseSidebarItems, footerItems: baseFooterItems });
+          }
+          return config;
       }
       throw new Error('Invalid key for navigation config fetcher');
   };
   
-  const { data, error, isLoading, mutate } = useSWR(SWR_KEY, fetcher, {
+  const { data, error, isLoading } = useSWR(SWR_KEY, fetcher, {
     revalidateOnFocus: false, // Avoid re-fetching on window focus
-    onSuccess: (data) => {
-        if (!data || data.sidebarItems.length === 0) {
-            // If DB is empty, initialize it with the base items
-            console.log("No navigation config found, initializing with defaults.");
-            navigationService.initializeDefaultConfig(baseSidebarItems, baseFooterItems);
-        }
-    }
   });
 
   /**
@@ -59,8 +61,8 @@ export function useNavigationConfig(baseSidebarItems: any[] = [], baseFooterItem
   };
 
   const defaultConfig: NavConfig = { 
-    sidebarItems: baseSidebarItems.map((item, index) => ({ ...item, order: index, id: item.id || `temp-${index}` })), 
-    footerItems: baseFooterItems.map((item, index) => ({ ...item, order: index, id: item.id || `temp-footer-${index}` })) 
+    sidebarItems: baseSidebarItems.map((item, index) => ({ ...item, order: index, id: item.id || `temp-${index}`, visible: true, label: item.labelKey, tooltip: item.tooltipKey || item.labelKey, href: item.href, roles: item.allowedRoles })), 
+    footerItems: baseFooterItems.map((item, index) => ({ ...item, order: index, id: item.id || `temp-footer-${index}`, visible: true, label: item.labelKey, tooltip: item.tooltipKey || item.labelKey, href: item.href, roles: item.allowedRoles })) 
   };
 
   return {
