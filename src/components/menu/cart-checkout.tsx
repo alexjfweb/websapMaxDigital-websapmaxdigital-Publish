@@ -461,7 +461,7 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
           </CardContent>
           <CardFooter className="flex flex-col gap-3 p-6 border-t bg-primary/5 rounded-b-2xl">
             <Button className="w-full bg-green-500 hover:bg-green-600 text-white text-lg py-4 rounded-lg flex items-center justify-center gap-2" onClick={handleConfirmAndSend}>
-              <CheckCircle className="h-6 w-6" /> Confirmar Pedido y Contactar por WhatsApp
+              <WhatsAppIcon className="h-6 w-6" /> Pedir por WhatsApp
             </Button>
             <div className="flex justify-center w-full">
               <Button variant="outline" className="text-primary border-primary text-lg py-4 rounded-lg mt-1 w-full max-w-xs" onClick={handleShare} disabled={cart.length === 0}>

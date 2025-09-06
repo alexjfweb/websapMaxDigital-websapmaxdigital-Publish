@@ -434,7 +434,7 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
                 className="w-full bg-green-500 hover:bg-green-600 text-lg py-6"
              >
                 {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <WhatsAppIcon className="mr-2 h-5 w-5" />}
-                {isSubmitting ? 'Confirmando...' : 'Confirmar y Enviar por WhatsApp'}
+                {isSubmitting ? 'Confirmando...' : 'Pedir por WhatsApp'}
              </Button>
             <Button variant="outline" onClick={() => setIsConfirmModalOpen(false)} disabled={isSubmitting}>
                 Volver y Editar
