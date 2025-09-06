@@ -90,7 +90,7 @@ export default function AdminProfilePage() {
     }));
   };
 
-  const handlePaymentMethodChange = (method: 'nequi' | 'daviplata' | 'bancolombia' | 'mercadoPago', field: string, value: string | boolean) => {
+  const handlePaymentMethodChange = (method: 'nequi' | 'daviplata' | 'bancolombia' | 'mercadoPago' | 'stripe', field: string, value: string | boolean) => {
     setProfileData(prev => ({
         ...prev,
         paymentMethods: {
@@ -487,9 +487,37 @@ export default function AdminProfilePage() {
                     </div>
                 )}
             </div>
+            
+            {/* Stripe */}
+            <div className="space-y-3 p-4 border rounded-lg">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <CreditCard className="h-6 w-6"/>
+                        <Label htmlFor="stripeEnabled" className="font-semibold">Stripe</Label>
+                    </div>
+                    <Switch 
+                        id="stripeEnabled" 
+                        checked={profileData.paymentMethods?.stripe?.enabled || false}
+                        onCheckedChange={(checked) => handlePaymentMethodChange('stripe', 'enabled', checked)}
+                        disabled={!isEditing}
+                    />
+                </div>
+                {profileData.paymentMethods?.stripe?.enabled && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        <div className="space-y-1">
+                            <Label htmlFor="stripePublicKey">Public Key</Label>
+                            <Input id="stripePublicKey" placeholder="pk_test_..." value={profileData.paymentMethods?.stripe?.publicKey || ''} disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('stripe', 'publicKey', e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                            <Label htmlFor="stripeSecretKey">Secret Key</Label>
+                            <Input id="stripeSecretKey" type="password" placeholder="sk_test_..." value={profileData.paymentMethods?.stripe?.secretKey || ''} disabled={!isEditing} onChange={(e) => handlePaymentMethodChange('stripe', 'secretKey', e.target.value)} />
+                        </div>
+                    </div>
+                )}
+            </div>
+
         </CardContent>
       </Card>
     </div>
   );
 }
-

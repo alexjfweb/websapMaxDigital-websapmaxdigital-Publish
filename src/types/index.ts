@@ -55,6 +55,11 @@ export interface RestaurantProfile {
         publicKey?: string;
         accessToken?: string;
     };
+    stripe?: {
+        enabled: boolean;
+        publicKey?: string;
+        secretKey?: string;
+    };
   };
 }
 
@@ -178,6 +183,11 @@ export interface Company {
         enabled: boolean;
         publicKey?: string;
         accessToken?: string;
+    };
+    stripe?: {
+        enabled: boolean;
+        publicKey?: string;
+        secretKey?: string;
     };
   };
   corporateColors?: {
