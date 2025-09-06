@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Stripe } from 'stripe';
 import { MercadoPagoConfig, PreApproval } from 'mercadopago';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import type { LandingPlan } from '@/services/landing-plans-service';
 import type { Company } from '@/types';
 
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`[Checkout API] - Procesando para companyId: ${companyId}, planSlug: ${planId}, provider: ${provider}`);
-
+    const db = getDb();
     // 1. Obtener detalles del plan y la empresa
     const plansCollection = collection(db, 'landingPlans');
     const q = query(plansCollection, where('slug', '==', planId), where('isActive', '==', true));

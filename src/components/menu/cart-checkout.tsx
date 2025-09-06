@@ -14,7 +14,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent as UiDialogContent, DialogHeader as UiDialogHeader, DialogTitle as UiDialogTitle, DialogDescription as UiDialogDescription, DialogFooter as UiDialogFooter } from '@/components/ui/dialog';
 import { tableService, Table } from '@/services/table-service';
-import { db } from "@/lib/firebase";
+import { getDb } from "@/lib/firebase";
 import { collection, addDoc, doc, serverTimestamp } from "firebase/firestore";
 import type { Company } from '@/types';
 import NequiIcon from '@/components/icons/nequi-icon';
@@ -184,7 +184,8 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
           tableNumber: mesaObj.number,
         };
       }
-
+      
+      const db = getDb();
       await addDoc(collection(db, "orders"), newOrderData);
       
       if (mesaObj) {

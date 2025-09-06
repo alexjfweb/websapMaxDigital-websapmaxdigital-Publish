@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import NequiIcon from '@/components/icons/nequi-icon';
 import BancolombiaIcon from '@/components/icons/bancolombia-icon';
 import { Skeleton } from '@/components/ui/skeleton';
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { storageService } from '@/services/storage-service';
 import Image from 'next/image';
@@ -152,6 +152,7 @@ export default function SuperAdminPaymentMethodsPage() {
     const fetchConfig = async () => {
       setIsLoading(true);
       try {
+        const db = getDb();
         const docRef = doc(db, "payment_methods", CONFIG_DOC_ID);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
@@ -165,7 +166,8 @@ export default function SuperAdminPaymentMethodsPage() {
           setConfig(mergedConfig);
         } else {
           console.log("El documento de configuración de pagos no existe. Creando uno por defecto...");
-          await setDoc(docRef, { ...initialConfig, createdAt: serverTimestamp() });
+          const db = getDb();
+          await setDoc(doc(db, "payment_methods", CONFIG_DOC_ID), { ...initialConfig, createdAt: serverTimestamp() });
           setConfig(initialConfig);
           toast({ title: "Configuración Inicial Creada", description: "Se ha creado un archivo de configuración de pagos por defecto."});
         }
@@ -223,6 +225,7 @@ export default function SuperAdminPaymentMethodsPage() {
             }
         }
         
+        const db = getDb();
         const docRef = doc(db, "payment_methods", CONFIG_DOC_ID);
         await setDoc(docRef, { ...updatedConfig, lastUpdated: serverTimestamp() }, { merge: true });
         setConfig(updatedConfig);

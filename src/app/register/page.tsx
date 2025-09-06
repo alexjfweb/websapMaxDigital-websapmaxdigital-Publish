@@ -21,7 +21,7 @@ import { UserPlus, Loader2, Check, X } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { User as FirebaseUser, deleteUser } from "firebase/auth";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase"; // Usar la instancia centralizada
+import { getFirebaseAuth } from "@/lib/firebase"; // Usar la instancia centralizada
 import type { User, UserRole, Company } from "@/types";
 import React, { Suspense, useState, useEffect } from "react";
 import { companyService } from "@/services/company-service";
@@ -109,6 +109,7 @@ function RegisterForm() {
     try {
       const role: UserRole = isSuperAdminFlow ? 'superadmin' : 'admin';
       
+      const auth = getFirebaseAuth();
       // 1. Crear usuario en Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       firebaseUser = userCredential.user;
