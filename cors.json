@@ -6,7 +6,8 @@
       "https://9000-firebase-studio-1748450787904.cluster-ux5mmlia3zhhask7riihruxydo.cloudworkstations.dev",
       "http://localhost:3000",
       "http://localhost:9002",
-      "http://localhost:9003"
+      "http://localhost:9003",
+      "https://studio-three-eta-78.vercel.app"
     ],
     "method": [
       "GET",
