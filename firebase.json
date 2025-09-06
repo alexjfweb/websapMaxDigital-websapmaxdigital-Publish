@@ -25,7 +25,7 @@
     ]
   },
   "hosting": {
-    "public": ".next/standalone/out",
+    "public": "out",
     "ignore": [
       "firebase.json",
       "**/.*",
@@ -34,11 +34,8 @@
     "rewrites": [
       {
         "source": "**",
-        "function": "nextServer"
+        "destination": "/index.html"
       }
     ]
-  },
-  "functions": {
-    "source": "functions"
   }
 }
