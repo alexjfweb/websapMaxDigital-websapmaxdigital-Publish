@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import { useToast } from '@/hooks/use-toast';
 import { Save, GripVertical } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useNavigationConfig, NavConfig } from '@/hooks/use-navigation-config';
+import { useNavigationConfig } from '@/hooks/use-navigation-config';
 import type { NavItemConfig } from '@/services/navigation-service';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -74,17 +74,17 @@ const DraggableNavTable: React.FC<DraggableNavTableProps> = ({ items, onDragEnd,
 
 
 export default function NavigationSettingsPage() {
-  const { navConfig, setNavConfig, isLoading, isError, saveConfig } = useNavigationConfig();
-  const [isSaving, setIsSaving] = useState(false);
+  const { navConfig, setNavConfig, isLoading, isError, saveConfig, isSaving } = useNavigationConfig();
   const { toast } = useToast();
   
-  const handleDragEnd = useCallback((result: DropResult, type: 'sidebar' | 'footer') => {
+  const handleDragEnd = (result: DropResult, type: 'sidebar' | 'footer') => {
     if (!result.destination) return;
     
     setNavConfig(prevConfig => {
+        if (!prevConfig) return null;
         const items = Array.from(type === 'sidebar' ? prevConfig.sidebarItems : prevConfig.footerItems);
         const [reorderedItem] = items.splice(result.source.index, 1);
-        items.splice(result.destination.index, 0, reorderedItem);
+        items.splice(result.destination!.index, 0, reorderedItem);
         const updatedItems = items.map((item, index) => ({ ...item, order: index }));
 
         return {
@@ -92,20 +92,20 @@ export default function NavigationSettingsPage() {
             [type === 'sidebar' ? 'sidebarItems' : 'footerItems']: updatedItems
         };
     });
-  }, [setNavConfig]);
+  };
 
-  const handleFieldChange = useCallback((id: string, field: 'label' | 'tooltip' | 'visible', value: string | boolean, type: 'sidebar' | 'footer') => {
+  const handleFieldChange = (id: string, field: 'label' | 'tooltip' | 'visible', value: string | boolean, type: 'sidebar' | 'footer') => {
     setNavConfig(prevConfig => {
+        if (!prevConfig) return null;
         const key = type === 'sidebar' ? 'sidebarItems' : 'footerItems';
         const updatedItems = prevConfig[key].map(item =>
             item.id === id ? { ...item, [field]: value } : item
         );
         return { ...prevConfig, [key]: updatedItems };
     });
-  }, [setNavConfig]);
+  };
 
   const handleSaveChanges = async () => {
-    setIsSaving(true);
     try {
       await saveConfig();
       toast({
@@ -118,8 +118,6 @@ export default function NavigationSettingsPage() {
         description: 'No se pudo guardar la configuración.',
         variant: 'destructive',
       });
-    } finally {
-        setIsSaving(false);
     }
   };
 
@@ -172,7 +170,7 @@ export default function NavigationSettingsPage() {
               </TabsList>
               <TabsContent value="sidebar" className="mt-4">
                  <DraggableNavTable 
-                    items={navConfig.sidebarItems}
+                    items={navConfig?.sidebarItems || []}
                     onDragEnd={(result) => handleDragEnd(result, 'sidebar')}
                     onFieldChange={(id, field, value) => handleFieldChange(id, field, value, 'sidebar')}
                     droppableId="sidebarItems"
@@ -180,7 +178,7 @@ export default function NavigationSettingsPage() {
               </TabsContent>
               <TabsContent value="footer" className="mt-4">
                  <DraggableNavTable 
-                    items={navConfig.footerItems}
+                    items={navConfig?.footerItems || []}
                     onDragEnd={(result) => handleDragEnd(result, 'footer')}
                     onFieldChange={(id, field, value) => handleFieldChange(id, field, value, 'footer')}
                     droppableId="footerItems"
