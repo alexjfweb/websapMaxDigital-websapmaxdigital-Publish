@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
@@ -47,10 +48,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
-  const auth = getFirebaseAuth();
-  const db = getDb();
-
+  
   useEffect(() => {
+    const auth = getFirebaseAuth();
+    const db = getDb();
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
@@ -76,7 +77,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [auth, db]);
+  }, []);
 
   // Redirección del lado del cliente
   useEffect(() => {
@@ -94,13 +95,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
+        const auth = getFirebaseAuth();
         await auth.signOut();
         setCurrentUser(null);
         router.push('/login');
     } catch (error) {
         console.error("Error logging out:", error);
     }
-  }, [router, auth]);
+  }, [router]);
 
   const value = {
     currentUser,
