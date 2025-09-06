@@ -12,6 +12,7 @@ import {
   SidebarFooter,
   SidebarInset,
   SidebarRail,
+  useSidebar, 
 } from '@/components/ui/sidebar';
 import NavigationMenu from '@/components/layout/navigation-menu';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,7 @@ function AdminLoader() {
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const { currentUser, isLoading, logout } = useSession();
+    const { setOpenMobile } = useSidebar();
     const router = useRouter();
 
     const handleLogout = () => {
@@ -58,6 +60,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     const profileLink = currentUser.role === 'superadmin' ? '/superadmin/profile' : '/admin/profile';
 
+    const handleMobileLinkClick = () => {
+        setOpenMobile(false);
+    };
+
     // Renderiza el layout de administración completo.
     return (
         <OrderProvider>
@@ -79,7 +85,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 </div>
                 </SidebarHeader>
                 <SidebarContent className="flex-grow">
-                <NavigationMenu role={currentUser.role} />
+                <NavigationMenu role={currentUser.role} onLinkClick={handleMobileLinkClick} />
                 </SidebarContent>
                 <SidebarFooter className="p-2 mt-auto">
                 <DropdownMenu>

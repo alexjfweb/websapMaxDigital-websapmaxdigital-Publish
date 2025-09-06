@@ -81,9 +81,10 @@ const iconMap = [...baseSidebarItems, ...baseFooterItems].reduce((map, item) => 
 
 interface NavigationMenuProps {
   role: string;
+  onLinkClick?: () => void;
 }
 
-export default function NavigationMenu({ role }: NavigationMenuProps) {
+export default function NavigationMenu({ role, onLinkClick }: NavigationMenuProps) {
   const pathname = usePathname();
   const { navConfig, isLoading, isError } = useNavigationConfig(baseSidebarItems, baseFooterItems);
 
@@ -112,7 +113,7 @@ export default function NavigationMenu({ role }: NavigationMenuProps) {
         
         return (
           <SidebarMenuItem key={item.id}>
-            <SidebarMenuButton asChild isActive={isActive} tooltip={item.tooltip}>
+            <SidebarMenuButton asChild isActive={isActive} tooltip={item.tooltip} onClick={onLinkClick}>
               <Link href={item.href}>
                 <IconComponent />
                 <span>{item.label}</span>
