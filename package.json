@@ -3,6 +3,9 @@
   "name": "nextn",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
     "dev": "next dev --port 9003",
     "build": "next build",
