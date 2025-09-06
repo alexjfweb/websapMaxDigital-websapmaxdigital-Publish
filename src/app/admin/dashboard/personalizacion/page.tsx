@@ -44,7 +44,7 @@ const layoutOptions = [
 
 export default function PersonalizacionMenuPage() {
   const { currentUser } = useSession();
-  const companyId = currentUser.companyId;
+  const companyId = currentUser?.companyId;
 
   const [styles, setStyles] = useState(defaultStyles);
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
