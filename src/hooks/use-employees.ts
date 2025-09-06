@@ -9,9 +9,6 @@ import { getDb } from '@/lib/firebase';
 
 const fetchEmployees = async (companyId: string): Promise<User[]> => {
   const db = getDb();
-  if (!db) {
-    throw new Error("La base de datos no está disponible.");
-  }
   const q = query(
     collection(db, "users"), 
     where("companyId", "==", companyId), 

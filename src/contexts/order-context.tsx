@@ -70,9 +70,6 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
 
   const addOrder = useCallback(async (orderData: Omit<Order, 'id' | 'date'>) => {
     const db = getDb();
-    if (!db) {
-      throw new Error("La base de datos no está disponible.");
-    }
     const orderWithTimestamp = {
       ...orderData,
       date: serverTimestamp(),
@@ -85,9 +82,6 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
 
   const updateOrder = useCallback(async (id: string, updates: Partial<Order>) => {
      const db = getDb();
-     if (!db) {
-      throw new Error("La base de datos no está disponible.");
-    }
     const orderRef = doc(db, 'orders', id);
     const updatePayload: any = { ...updates };
     

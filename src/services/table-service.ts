@@ -153,6 +153,7 @@ class TableService {
     }
 
     private async logAction(tableId: string, tableNumber: number, logData: Partial<TableLog>, restaurantId?: string) {
+        const db = getDb();
         await addDoc(this.logsCollection, {
             tableId,
             tableNumber,

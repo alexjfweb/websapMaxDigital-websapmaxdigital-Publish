@@ -8,9 +8,6 @@ import { getDb } from '@/lib/firebase';
 
 const fetcher = async (): Promise<User[]> => {
   const db = getDb();
-  if (!db) {
-    throw new Error("La base de datos no está disponible.");
-  }
   
   const usersCollection = collection(db, "users");
   const q = query(usersCollection, orderBy("registrationDate", "desc"));
