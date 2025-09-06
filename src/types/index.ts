@@ -188,6 +188,7 @@ export interface Company {
   customShareMessage?: string;
   customShareImageUrl?: string;
   stripeCustomerId?: string; // Nuevo campo
+  baseShippingCost?: number; // Nuevo campo para costo de envío
 }
 // Sistema de Gestión de Mesas
 export interface Table {

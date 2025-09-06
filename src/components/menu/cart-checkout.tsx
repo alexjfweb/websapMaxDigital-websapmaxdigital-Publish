@@ -55,7 +55,7 @@ function validateEmail(email: string) {
 
 
 export default function CartCheckout({ cart, onQuantity, onRemove, onClear, restaurantId, restaurantProfile, onClose }: CartCheckoutProps) {
-  const envio = cart.length > 0 ? 5.0 : 0;
+  const envio = restaurantProfile?.baseShippingCost && cart.length > 0 ? restaurantProfile.baseShippingCost : 0;
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const total = subtotal + envio;
   const { toast } = useToast() || { toast: () => {} };
@@ -227,14 +227,14 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
       return;
     }
     const productos = cart.map(item => `- ${item.quantity}x ${item.name} – $${(item.price * item.quantity).toFixed(2)}`).join('\n');
-    const total = (cart.reduce((acc, item) => acc + item.price * item.quantity, 0) + envio).toFixed(2);
+    const totalStr = (cart.reduce((acc, item) => acc + item.price * item.quantity, 0) + envio).toFixed(2);
     const resumen =
       `🛍️ Pedido WebSapMax\n` +
       `Cliente: ${cliente.nombre || '-'}\n` +
       `Tel: ${cliente.telefono || '-'}\n` +
       `Dirección: ${cliente.direccion || '-'}\n` +
       `Productos:\n${productos}\n` +
-      `Total: $${total}`;
+      `Total: $${totalStr}`;
     navigator.clipboard.writeText(resumen).then(() => {
       toast({ title: 'Pedido copiado', description: 'Resumen copiado al portapapeles.', variant: 'success' });
     }).catch(() => {

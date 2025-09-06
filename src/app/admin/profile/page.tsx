@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { UploadCloud, Save, Edit, Trash2, XCircle, Clipboard, Globe, Share2, Facebook, Instagram, Twitter, MessageCircle, Loader2, CreditCard, Music, MessageSquare as MessageSquareIcon } from "lucide-react";
+import { UploadCloud, Save, Edit, Trash2, XCircle, Clipboard, Globe, Share2, Facebook, Instagram, Twitter, MessageCircle, Loader2, CreditCard, Music, MessageSquare as MessageSquareIcon, Truck } from "lucide-react";
 import React, { useState, type ChangeEvent, useEffect } from "react";
 import Image from "next/image";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -73,8 +73,10 @@ export default function AdminProfilePage() {
   }, [companyId, toast]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { id, value } = e.target;
-    setProfileData(prev => ({ ...prev, [id]: value }));
+    const { id, value, type } = e.target;
+    // Si el input es de tipo 'number', convierte el valor a número
+    const finalValue = (e.target as HTMLInputElement).type === 'number' ? parseFloat(value) : value;
+    setProfileData(prev => ({ ...prev, [id]: finalValue }));
   };
 
   const handleSocialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -264,6 +266,13 @@ export default function AdminProfilePage() {
             <Label htmlFor="email">Correo electrónico</Label>
             <Input id="email" type="email" value={profileData.email || ''} disabled={!isEditing} onChange={handleInputChange} />
           </div>
+           <div className="space-y-2">
+                <Label htmlFor="baseShippingCost">Costo de Envío Base</Label>
+                <div className="relative">
+                    <Truck className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input id="baseShippingCost" type="number" step="0.01" value={profileData.baseShippingCost || 0} disabled={!isEditing} onChange={handleInputChange} className="pl-10" />
+                </div>
+            </div>
           <div className="space-y-2">
             <Label htmlFor="description">Descripción</Label>
             <Textarea id="description" value={profileData.description || ''} rows={4} disabled={!isEditing} onChange={handleInputChange} />
@@ -483,3 +492,4 @@ export default function AdminProfilePage() {
     </div>
   );
 }
+
