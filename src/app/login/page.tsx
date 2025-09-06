@@ -19,7 +19,7 @@ import { toast } from "@/hooks/use-toast";
 import { LogIn, Loader2 } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import React from "react";
-import { auth } from "@/lib/firebase"; // Usar la instancia centralizada
+import { getFirebaseAuth } from "@/lib/firebase"; // Usar la instancia centralizada
 import { signInWithEmailAndPassword } from "firebase/auth";
 import PublicHeader from "@/components/layout/public-header";
 
@@ -47,6 +47,7 @@ export default function LoginPage() {
   async function onSubmit(values: z.infer<typeof loginFormSchema>) {
     setIsSubmitting(true);
     try {
+      const auth = getFirebaseAuth();
       await signInWithEmailAndPassword(auth, values.email, values.password);
       
       toast({

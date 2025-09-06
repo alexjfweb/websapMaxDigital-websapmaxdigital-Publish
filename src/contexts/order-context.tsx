@@ -1,7 +1,7 @@
 "use client";
 import React, { createContext, useContext, useState, ReactNode, useCallback } from "react";
 import useSWR from 'swr';
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { collection, addDoc, updateDoc, doc, Timestamp, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import type { Order } from '@/types'; 
 import { useSession } from "./session-context";
@@ -28,6 +28,7 @@ export const useOrderContext = () => {
 const fetcher = async ([_, companyId]: [string, string]): Promise<Order[]> => {
   if (!companyId) return [];
 
+  const db = getDb();
   const ordersQuery = query(
     collection(db, "orders"),
     where("restaurantId", "==", companyId)
@@ -67,6 +68,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const addOrder = useCallback(async (orderData: Omit<Order, 'id' | 'date'>) => {
+    const db = getDb();
     if (!db) {
       throw new Error("La base de datos no está disponible.");
     }
@@ -81,6 +83,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
   }, [mutate, shouldFetch]);
 
   const updateOrder = useCallback(async (id: string, updates: Partial<Order>) => {
+     const db = getDb();
      if (!db) {
       throw new Error("La base de datos no está disponible.");
     }

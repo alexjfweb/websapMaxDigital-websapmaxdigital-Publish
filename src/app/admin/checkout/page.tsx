@@ -17,7 +17,7 @@ import { companyService } from '@/services/company-service';
 import { useSession } from '@/contexts/session-context';
 import MercadoPagoIcon from '@/components/icons/mercadopago-icon';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import type { LandingPlan } from '@/types/plans';
 import SuccessModal from '@/components/ui/success-modal';
 
@@ -53,6 +53,7 @@ const CONFIG_DOC_ID = 'main_payment_methods';
 
 // VERSIÓN CORREGIDA Y ROBUSTA FINAL
 async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<AvailablePayments> {
+    const db = getDb();
     const defaultPayments: AvailablePayments = { stripe: false, mercadopago: false, manual: false };
     if (!plan?.slug) return defaultPayments;
 
@@ -111,7 +112,7 @@ function CheckoutContent() {
     const planSlug = searchParams.get('plan');
     const paymentStatus = searchParams.get('payment');
     
-    const { plans, isLoading, error } = useLandingPlans();
+    const { plans, isLoading, error } = useLandingPlans(true);
     const { toast } = useToast();
     const { currentUser } = useSession();
     const [isProcessingPayment, setIsProcessingPayment] = useState<null | 'stripe' | 'mercadopago'>(null);

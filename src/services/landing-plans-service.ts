@@ -15,7 +15,7 @@ import {
   serverTimestamp,
   deleteDoc,
 } from 'firebase/firestore';
-import { getDb } from '@/lib/firebase-lazy'; // Usar la instancia centralizada y diferida
+import { getDb } from '@/lib/firebase'; // Usar la instancia centralizada y diferida
 import type { LandingPlan, CreatePlanRequest, UpdatePlanRequest, PlanAuditLog } from '@/types/plans';
 import { auditService } from './audit-service';
 import { generateSlug, serializeDate } from '@/lib/utils';

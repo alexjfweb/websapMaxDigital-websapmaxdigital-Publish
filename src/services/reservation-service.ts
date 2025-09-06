@@ -1,5 +1,5 @@
 
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import {
   collection,
   doc,
@@ -42,6 +42,7 @@ class ReservationService {
 
   // Este método es para el servidor (backend) y escribe en Firestore.
   async createReservationInDB(data: CreateReservationInput): Promise<string> {
+    const db = getDb();
     const newReservationData = {
       ...data,
       status: 'pending' as const,
@@ -56,6 +57,7 @@ class ReservationService {
   async getReservationsByCompany(companyId: string): Promise<Reservation[]> {
     if (!companyId) return [];
     
+    const db = getDb();
     const reservationsCollection = collection(db, 'reservations');
     const q = query(
         reservationsCollection,
@@ -78,6 +80,7 @@ class ReservationService {
   }
   
   async updateReservationStatus(reservationId: string, status: Reservation['status']): Promise<void> {
+    const db = getDb();
     const reservationsCollection = collection(db, 'reservations');
     const reservationRef = doc(reservationsCollection, reservationId);
     await updateDoc(reservationRef, { status, updatedAt: serverTimestamp() });

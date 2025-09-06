@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +12,7 @@ import type { User } from "@/types";
 import { storageService } from "@/services/storage-service";
 import { Skeleton } from "@/components/ui/skeleton";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { getDb } from "@/lib/firebase";
 import { useSession } from "@/contexts/session-context";
 
 export default function SuperAdminProfilePage() {
@@ -35,6 +34,7 @@ export default function SuperAdminProfilePage() {
       }
       setIsLoading(true);
       try {
+        const db = getDb();
         const docRef = doc(db, "users", currentUser.id);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
@@ -48,7 +48,7 @@ export default function SuperAdminProfilePage() {
         setIsLoading(false);
       }
     }
-    fetchProfile();
+    if(currentUser) fetchProfile();
   }, [currentUser, toast]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,6 +83,7 @@ export default function SuperAdminProfilePage() {
     if (!currentUser) return;
     setIsSaving(true);
     try {
+        const db = getDb();
         const docRef = doc(db, "users", currentUser.id);
         await setDoc(docRef, profileData, { merge: true });
         
@@ -173,5 +174,4 @@ export default function SuperAdminProfilePage() {
     </div>
   );
 }
-
     

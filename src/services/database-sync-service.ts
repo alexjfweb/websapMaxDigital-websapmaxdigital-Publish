@@ -1,6 +1,6 @@
 
 // src/services/database-sync-service.ts
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { collection, doc, writeBatch, serverTimestamp, getDoc } from 'firebase/firestore';
 import { landingConfigService } from './landing-config-service';
 import { landingPlansService } from './landing-plans-service';
@@ -51,6 +51,7 @@ const examplePlans = [
 
 
 const syncAll = async (userId: string, userEmail: string): Promise<string> => {
+  const db = getDb();
   if (!db) {
     throw new Error("La base de datos no está disponible. La sincronización falló.");
   }

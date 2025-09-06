@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import type { User as FirebaseUserType } from 'firebase/auth';
 import type { User } from '@/types';
 import { useRouter, usePathname } from 'next/navigation';
-import { auth, db } from '@/lib/firebase';
+import { getFirebaseAuth, getDb } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, Timestamp } from 'firebase/firestore';
 
@@ -47,6 +47,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+  const auth = getFirebaseAuth();
+  const db = getDb();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -74,7 +76,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [auth, db]);
 
   // Redirección del lado del cliente
   useEffect(() => {
@@ -98,7 +100,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     } catch (error) {
         console.error("Error logging out:", error);
     }
-  }, [router]);
+  }, [router, auth]);
 
   const value = {
     currentUser,

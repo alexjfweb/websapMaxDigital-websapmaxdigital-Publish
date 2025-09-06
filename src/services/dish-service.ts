@@ -1,5 +1,5 @@
 
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase'; // Usar la instancia centralizada y diferida
 import {
   collection,
   query,
@@ -16,7 +16,10 @@ import { serializeDate } from '@/lib/utils';
 // El servicio ahora contiene la lógica de Firestore directamente.
 class DishService {
 
-  private dishesCollection = collection(db, 'dishes');
+  private get dishesCollection() {
+    const db = getDb();
+    return collection(db, 'dishes');
+  }
 
   async getDishesByCompany(companyId: string): Promise<Dish[]> {
     if (!companyId) {

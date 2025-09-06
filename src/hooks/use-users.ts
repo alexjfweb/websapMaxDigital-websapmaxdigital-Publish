@@ -4,9 +4,10 @@
 import useSWR from 'swr';
 import type { User } from '@/types';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 
 const fetcher = async (): Promise<User[]> => {
+  const db = getDb();
   if (!db) {
     throw new Error("La base de datos no está disponible.");
   }

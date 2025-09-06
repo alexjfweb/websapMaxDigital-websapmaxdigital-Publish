@@ -25,7 +25,7 @@ import { addDays, isWithinInterval, parseISO } from "date-fns";
 import { storageService } from "@/services/storage-service";
 import { useSession } from "@/contexts/session-context";
 import { collection, getDocs, query, where, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { getDb } from "@/lib/firebase";
 import { useSubscription } from '@/hooks/use-subscription';
 import UpgradePlanCard from "@/components/UpgradePlanCard";
 import { usePlanLimits } from "@/hooks/use-plan-limits";
@@ -33,7 +33,7 @@ import LimitReachedDialog from "@/components/LimitReachedDialog";
 
 export default function AdminEmployeesPage() {
   const { currentUser } = useSession();
-  const companyId = currentUser.companyId;
+  const companyId = currentUser?.companyId;
   const { toast } = useToast();
   const [employees, setEmployees] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,6 +52,7 @@ export default function AdminEmployeesPage() {
     if (!companyId) return;
     setIsLoading(true);
     try {
+      const db = getDb();
       const q = query(collection(db, "users"), where("companyId", "==", companyId), where("role", "==", "employee"));
       const querySnapshot = await getDocs(q);
       const fetchedEmployees: User[] = [];
@@ -67,7 +68,7 @@ export default function AdminEmployeesPage() {
   };
 
   useEffect(() => {
-    fetchEmployees();
+    if(companyId) fetchEmployees();
   }, [companyId]);
 
   const employeeFormSchema = z.object({
@@ -140,6 +141,7 @@ export default function AdminEmployeesPage() {
     }
     setIsSubmitting(true);
     try {
+        const db = getDb();
         let avatarUrl = editingEmployee?.avatarUrl;
 
         if (values.avatar instanceof File) {
@@ -195,6 +197,7 @@ export default function AdminEmployeesPage() {
 
   const handleDeleteEmployee = async (employeeId: string) => {
     try {
+      const db = getDb();
       await deleteDoc(doc(db, "users", employeeId));
       toast({ title: "Empleado Eliminado", description: "El empleado ha sido eliminado del sistema.", variant: "destructive" });
       fetchEmployees();

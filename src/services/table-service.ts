@@ -1,5 +1,5 @@
 
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import {
   collection,
   doc,
@@ -48,8 +48,14 @@ export interface TableLog {
 
 
 class TableService {
-    private tablesCollection = collection(db, 'tables');
-    private logsCollection = collection(db, 'tableLogs');
+    private get tablesCollection() {
+      const db = getDb();
+      return collection(db, 'tables');
+    }
+    private get logsCollection() {
+      const db = getDb();
+      return collection(db, 'tableLogs');
+    }
 
     private async validateTableNumber(number: number, restaurantId: string, excludeId?: string): Promise<boolean> {
         const q = query(this.tablesCollection, where('restaurantId', '==', restaurantId), where('number', '==', number));

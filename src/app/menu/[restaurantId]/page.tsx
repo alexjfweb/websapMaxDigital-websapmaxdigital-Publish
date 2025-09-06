@@ -13,7 +13,7 @@ import RestaurantInfoDisplay from '@/components/menu/restaurant-info-display';
 import DishItem from '@/components/menu/dish-item';
 import CartCheckout from '@/components/menu/cart-checkout';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import ReservationForm from '@/components/forms/reservation-form';
 import { useDishes } from '@/hooks/use-dishes';
@@ -106,6 +106,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
     setIsLoading(true);
 
     const fetchRestaurantData = async () => {
+      const db = getDb();
       try {
         const companyDocRef = doc(db, "companies", restaurantId);
         const companySnapshot = await getDoc(companyDocRef);

@@ -20,7 +20,7 @@ import type { Company } from "@/types";
 import { storageService } from "@/services/storage-service";
 import { Skeleton } from "@/components/ui/skeleton";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { getDb } from "@/lib/firebase";
 import { useSession } from "@/contexts/session-context";
 
 export default function AdminProfilePage() {
@@ -47,6 +47,7 @@ export default function AdminProfilePage() {
       }
       setIsLoading(true);
       try {
+        const db = getDb();
         const docRef = doc(db, "companies", companyId);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
@@ -186,6 +187,7 @@ export default function AdminProfilePage() {
     if (!companyId) return;
     setIsSaving(true);
     try {
+        const db = getDb();
         const docRef = doc(db, "companies", companyId);
         await setDoc(docRef, { ...profileData, id: companyId, updatedAt: new Date().toISOString() }, { merge: true });
         

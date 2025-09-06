@@ -1,6 +1,6 @@
 
 // src/services/landing-config-service.ts
-import { getDb } from '@/lib/firebase-lazy'; // Usar la instancia diferida
+import { getDb } from '@/lib/firebase'; // Usar la instancia diferida
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import { collection, doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { auditService } from './audit-service';

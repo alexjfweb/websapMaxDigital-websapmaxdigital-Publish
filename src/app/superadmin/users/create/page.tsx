@@ -22,7 +22,7 @@ import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Save } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { getFirebaseAuth, getDb } from "@/lib/firebase-lazy";
+import { getFirebaseAuth, getDb } from "@/lib/firebase";
 import { doc, setDoc } from "firebase/firestore";
 import type { User, UserRole } from "@/types";
 
@@ -242,5 +242,3 @@ export default function SuperAdminCreateUserPage() {
     </div>
   );
 }
-
-    

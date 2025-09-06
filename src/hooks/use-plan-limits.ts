@@ -4,7 +4,7 @@
 import useSWR from 'swr';
 import { useSession } from '@/contexts/session-context';
 import { useSubscription } from '@/hooks/use-subscription';
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 
 interface PlanLimits {
@@ -26,6 +26,7 @@ interface PlanLimits {
 }
 
 const fetchCurrentUsage = async (companyId: string): Promise<{ tables: number; reservations: number; employees: number }> => {
+  const db = getDb();
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 

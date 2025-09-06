@@ -1,4 +1,4 @@
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, serverTimestamp, where, orderBy, limit, Timestamp } from 'firebase/firestore';
 
 // Definición de la estructura de un log de auditoría
@@ -59,6 +59,7 @@ class AuditService {
    * Registra una nueva entrada de auditoría.
    */
   async log(data: LogInput): Promise<string> {
+    const db = getDb();
     try {
       // Limpiar el objeto de datos antes de enviarlo a Firestore
       const cleanedData = this.cleanupObject(data);
@@ -82,6 +83,7 @@ class AuditService {
    * Obtiene los logs de auditoría con opciones de filtrado.
    */
   async getLogs(options: { entity?: string; action?: string; limit?: number } = {}): Promise<AuditLog[]> {
+    const db = getDb();
     const coll = collection(db, this.AUDIT_COLLECTION);
     const queryConstraints: any[] = [orderBy('timestamp', 'desc')];
     

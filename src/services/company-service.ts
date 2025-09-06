@@ -17,7 +17,7 @@ import {
 import type { Company, User } from '@/types';
 import { auditService } from './audit-service';
 import { serializeDate } from '@/lib/utils';
-import { db } from '@/lib/firebase'; // <--- CAMBIO CLAVE: Import directo
+import { getDb } from '@/lib/firebase-lazy'; // <--- CAMBIO CLAVE: Import diferido
 
 const serializeCompany = (doc: any): Company => {
   const data = doc.data();
@@ -34,9 +34,13 @@ const serializeCompany = (doc: any): Company => {
 
 class CompanyService {
   
+  private get companiesCollection() {
+    const db = getDb();
+    return collection(db, 'companies');
+  }
+
   async isRucUnique(ruc: string, excludeId?: string): Promise<boolean> {
-    const companiesCollection = collection(db, 'companies');
-    const q = query(companiesCollection, where('ruc', '==', ruc));
+    const q = query(this.companiesCollection, where('ruc', '==', ruc));
     const snapshot = await getDocs(q);
     if (snapshot.empty) return true;
     if (excludeId) return snapshot.docs.every(doc => doc.id === excludeId);
@@ -44,22 +48,19 @@ class CompanyService {
   }
 
   async getCompanies(): Promise<Company[]> {
-    const companiesCollection = collection(db, 'companies');
-    const snapshot = await getDocs(companiesCollection);
+    const snapshot = await getDocs(this.companiesCollection);
     return snapshot.docs.map(serializeCompany);
   }
 
   async getCompanyById(id: string): Promise<Company | null> {
     if (!id) return null;
-    const companiesCollection = collection(db, 'companies');
-    const docRef = doc(companiesCollection, id);
+    const docRef = doc(this.companiesCollection, id);
     const docSnap = await getDoc(docRef);
     if (!docSnap.exists()) return null;
     return serializeCompany(docSnap);
   }
   
   async createCompany(companyData: Partial<Company>, user: { uid: string; email: string }): Promise<Company> {
-    const companiesCollection = collection(db, 'companies');
     if (!companyData.name || !companyData.ruc) {
       throw new Error("El nombre de la empresa y el RUC son obligatorios.");
     }
@@ -76,7 +77,7 @@ class CompanyService {
       updatedAt: serverTimestamp(),
     };
     
-    const docRef = await addDoc(companiesCollection, newCompanyData);
+    const docRef = await addDoc(this.companiesCollection, newCompanyData);
     const createdCompany = await this.getCompanyById(docRef.id);
 
     if (!createdCompany) {
@@ -99,6 +100,8 @@ class CompanyService {
     adminUserData: Partial<Omit<User, 'id'>>,
     isSuperAdminFlow: boolean = false
   ): Promise<{ companyId: string | null; userId: string }> {
+    
+    const db = getDb();
     
     // Mover la validación del RUC fuera de la transacción
     if (!isSuperAdminFlow && companyData.ruc) {
@@ -167,8 +170,7 @@ class CompanyService {
 
 
   async updateCompany(companyId: string, updates: Partial<Company>, user: { uid: string; email: string }): Promise<Company> {
-    const companiesCollection = collection(db, 'companies');
-    const docRef = doc(companiesCollection, companyId);
+    const docRef = doc(this.companiesCollection, companyId);
     const originalDocSnap = await getDoc(docRef);
     
     if (!originalDocSnap.exists()) {

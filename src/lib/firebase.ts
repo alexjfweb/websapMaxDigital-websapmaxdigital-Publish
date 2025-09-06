@@ -1,21 +1,53 @@
-
 // src/lib/firebase.ts
 
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
+import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getAuth, type Auth } from 'firebase/auth';
 import { firebaseConfig, isFirebaseConfigValid } from './firebase-config';
 
-// Asegurarse de que la configuración sea válida antes de proceder.
-if (!isFirebaseConfigValid()) {
-  throw new Error("La configuración de Firebase no es válida. Por favor, revisa el archivo src/lib/firebase-config.ts");
+interface FirebaseServices {
+    app: FirebaseApp;
+    auth: Auth;
+    db: Firestore;
 }
 
-// Inicializa Firebase App solo una vez.
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+let services: FirebaseServices | null = null;
 
-// Obtiene y exporta las instancias de los servicios de Firebase.
-const auth = getAuth(app);
-const db = getFirestore(app);
+function initializeFirebase(): FirebaseServices {
+  if (getApps().length === 0) {
+    if (!isFirebaseConfigValid()) {
+      throw new Error("La configuración de Firebase es inválida. Revisa firebase-config.ts");
+    }
+    console.log("🔥 Inicializando Firebase por primera vez...");
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    return { app, auth, db };
+  } else {
+    // console.log("♻️ Reutilizando instancia de Firebase existente...");
+    const app = getApp();
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    return { app, auth, db };
+  }
+}
 
-export { app, auth, db };
+function getFirebaseServices(): FirebaseServices {
+    if (!services) {
+        services = initializeFirebase();
+    }
+    return services;
+}
+
+// Export individual getters for convenience and to ensure initialization
+export function getDb(): Firestore {
+  return getFirebaseServices().db;
+}
+
+export function getFirebaseAuth(): Auth {
+  return getFirebaseServices().auth;
+}
+
+export function getAppInstance(): FirebaseApp {
+  return getFirebaseServices().app;
+}

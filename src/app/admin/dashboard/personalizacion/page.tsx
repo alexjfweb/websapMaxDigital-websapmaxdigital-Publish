@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/hooks/use-subscription';
@@ -59,6 +59,7 @@ export default function PersonalizacionMenuPage() {
         return;
     };
     const fetchStyles = async () => {
+      const db = getDb();
       setLoading(true);
       try {
         const ref = doc(db, 'menu_styles', companyId);
@@ -87,6 +88,7 @@ export default function PersonalizacionMenuPage() {
     if (!companyId) return;
     setLoading(true);
     try {
+      const db = getDb();
       const ref = doc(db, 'menu_styles', companyId);
       await setDoc(ref, { ...styles, restaurant_id: companyId });
       toast({ title: '¡Personalización guardada!', description: 'Los cambios se aplicaron correctamente.' });

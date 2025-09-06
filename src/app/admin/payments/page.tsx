@@ -12,7 +12,7 @@ import DaviplataIcon from "@/components/icons/daviplata-icon";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertTriangle, CreditCard, XCircle, Save, UploadCloud } from "lucide-react";
 import { storageService } from "@/services/storage-service";
-import { db } from "@/lib/firebase";
+import { getDb } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/contexts/session-context";
@@ -46,7 +46,7 @@ interface FileState {
 
 export default function PaymentsPage() {
   const { currentUser } = useSession();
-  const companyId = currentUser.companyId;
+  const companyId = currentUser?.companyId;
 
   const { toast } = useToast();
   const [methods, setMethods] = useState<PaymentMethodsState>({
@@ -83,6 +83,7 @@ export default function PaymentsPage() {
         return;
       }
       try {
+        const db = getDb();
         const docRef = doc(db, 'payment_configs', companyId);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
@@ -129,6 +130,7 @@ export default function PaymentsPage() {
         }
 
         const configToSave = { methods, form: updatedForm };
+        const db = getDb();
         const docRef = doc(db, 'payment_configs', companyId);
         await setDoc(docRef, configToSave, { merge: true });
 
