@@ -11,10 +11,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "db:sync": "npx tsx src/services/database-sync-service.ts",
-    "deploy:vercel": "vercel --prod",
-    "build:vercel": "vercel build",
-    "dev:vercel": "vercel dev"
+    "db:sync": "npx tsx src/services/database-sync-service.ts"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.7.0",

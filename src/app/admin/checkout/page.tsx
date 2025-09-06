@@ -273,7 +273,7 @@ function CheckoutContent() {
                                 <ul className="space-y-2 text-sm">
                                     {selectedPlan.features.map((feature: string, index: number) => (
                                         <li key={index} className="flex items-center">
-                                            <Check className="h-4 w-4 mr-2 text-green-500" />
+                                            <Check className="mr-2 h-4 w-4 text-green-500" />
                                             {feature}
                                         </li>
                                     ))}
