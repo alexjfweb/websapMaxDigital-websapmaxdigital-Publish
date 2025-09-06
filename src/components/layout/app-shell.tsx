@@ -71,7 +71,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 </Link>
                 <div className="mt-1 text-center group-data-[collapsible=icon]:hidden">
                     <p className="text-sm font-medium text-sidebar-foreground truncate max-w-[150px]">
-                    {currentUser.name || currentUser.username}
+                    {currentUser.businessName || currentUser.name || currentUser.username}
                     </p>
                     <p className="text-xs text-sidebar-foreground/80 capitalize">
                     Rol: {currentUser.role}
