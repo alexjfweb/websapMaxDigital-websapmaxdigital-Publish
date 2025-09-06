@@ -2,7 +2,7 @@
 "use client";
 
 import useSWR, { mutate } from 'swr';
-import { navigationService, NavConfig } from '@/services/navigation-service';
+import { navigationService, NavConfig, NavItemConfig } from '@/services/navigation-service';
 import { useState, useEffect } from 'react';
 
 const SWR_KEY = 'navigation-config';
@@ -47,42 +47,36 @@ const baseFooterItems: any[] = [
     { id: 'footer-share', href: '/admin/share-menu', labelKey: 'Compartir', icon: 'Share2', allowedRoles: ['admin', 'employee'], tooltipKey: 'Compartir Menú' },
 ];
 
+const getDefaultNavConfig = (): NavConfig => ({
+  sidebarItems: [],
+  footerItems: [],
+});
 
 export function useNavigationConfig() {
   const [isSaving, setIsSaving] = useState(false);
-  const [localNavConfig, setLocalNavConfig] = useState<NavConfig | null>(null);
-
+  
   const fetcher = async (): Promise<NavConfig> => {
-    const config = await navigationService.getNavigationConfig({ sidebarItems: baseSidebarItems, footerItems: baseFooterItems });
+    let config = await navigationService.getNavigationConfig({ sidebarItems: baseSidebarItems, footerItems: baseFooterItems });
     if (!config || !config.sidebarItems || config.sidebarItems.length === 0) {
       console.log("No navigation config found, initializing with defaults.");
       await navigationService.initializeDefaultConfig(baseSidebarItems, baseFooterItems);
-      // Vuelve a cargar después de inicializar
-      return await navigationService.getNavigationConfig({ sidebarItems: baseSidebarItems, footerItems: baseFooterItems });
+      config = await navigationService.getNavigationConfig({ sidebarItems: baseSidebarItems, footerItems: baseFooterItems });
     }
     return config;
   };
 
-  const { data: swrNavConfig, error, isLoading } = useSWR(SWR_KEY, fetcher, {
+  const { data: navConfig, error, isLoading, mutate } = useSWR(SWR_KEY, fetcher, {
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
     dedupingInterval: 60000,
   });
 
-  useEffect(() => {
-    // Sincroniza el estado local solo cuando SWR trae nuevos datos
-    if (swrNavConfig) {
-      setLocalNavConfig(swrNavConfig);
-    }
-  }, [swrNavConfig]);
-
-  const saveConfig = async () => {
-    if (!localNavConfig) return;
+  const saveConfig = async (configToSave: NavConfig) => {
     setIsSaving(true);
     try {
-      await navigationService.updateNavigationConfig(localNavConfig);
-      // Invalida la caché de SWR para que la próxima vez se obtengan los datos frescos de la BD
-      mutate(SWR_KEY); 
+      await navigationService.updateNavigationConfig(configToSave);
+      // Actualiza el cache local de SWR con los datos guardados sin necesidad de re-validar
+      mutate(configToSave, false); 
     } catch (e) {
         console.error("Failed to save navigation config:", e);
         throw e;
@@ -92,9 +86,8 @@ export function useNavigationConfig() {
   };
   
   return {
-    navConfig: localNavConfig,
-    setNavConfig: setLocalNavConfig,
-    isLoading: isLoading || !localNavConfig, // isLoading es true hasta que el estado local esté poblado
+    navConfig: navConfig ?? getDefaultNavConfig(),
+    isLoading,
     isError: !!error,
     saveConfig,
     isSaving,
