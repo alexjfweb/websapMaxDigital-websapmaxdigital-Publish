@@ -17,7 +17,7 @@ import {
 import type { Company, User } from '@/types';
 import { auditService } from './audit-service';
 import { serializeDate } from '@/lib/utils';
-import { getDb } from '@/lib/firebase-lazy'; // <--- CAMBIO CLAVE: Import diferido
+import { getDb } from '@/lib/firebase';
 
 const serializeCompany = (doc: any): Company => {
   const data = doc.data();
