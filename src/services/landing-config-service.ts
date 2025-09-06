@@ -1,6 +1,6 @@
 
 // src/services/landing-config-service.ts
-import { db } from '@/lib/firebase'; // Usar la instancia centralizada
+import { getDb } from '@/lib/firebase-lazy'; // Usar la instancia diferida
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import { collection, doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { auditService } from './audit-service';
@@ -107,6 +107,7 @@ const getDefaultConfig = (): LandingConfig => ({
 
 class LandingConfigService {
   private getConfigDocRef() {
+    const db = getDb();
     return doc(collection(db, CONFIG_COLLECTION_NAME), MAIN_CONFIG_DOC_ID);
   }
   
