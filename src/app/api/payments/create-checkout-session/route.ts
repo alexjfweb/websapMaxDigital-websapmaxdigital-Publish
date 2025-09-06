@@ -7,15 +7,18 @@ import { db } from '@/lib/firebase';
 import type { LandingPlan } from '@/services/landing-plans-service';
 import type { Company } from '@/types';
 
-// Helper para obtener la URL base de la aplicación
+// Helper para obtener la URL base de la aplicación de forma robusta
 function getBaseUrl() {
-  // Prioriza la variable de entorno de Vercel si existe
-  const vercelUrl = process.env.VERCEL_URL;
-  if (vercelUrl) return `https://${vercelUrl}`;
-
-  // Fallback para entornos locales o de desarrollo
-  const localUrl = 'http://localhost:9003';
-  return process.env.NEXT_PUBLIC_BASE_URL || localUrl;
+  // Prioriza la variable de entorno si está definida
+  if (process.env.NEXT_PUBLIC_BASE_URL) {
+    return process.env.NEXT_PUBLIC_BASE_URL;
+  }
+  // Fallback para el entorno de producción de Firebase Studio si no hay variable de entorno
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://websapmax.web.app';
+  }
+  // Fallback para desarrollo local
+  return 'http://localhost:9003';
 }
 
 const CONFIG_DOC_ID = 'main_payment_methods';
