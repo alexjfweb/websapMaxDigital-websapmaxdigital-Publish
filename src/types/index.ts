@@ -26,6 +26,7 @@ export interface RestaurantProfile {
     whatsapp?: string;
     tiktok?: string;
     pinterest?: string;
+    youtube?: string;
   };
   paymentMethods: {
     codEnabled: boolean; // Cash on Delivery
@@ -162,6 +163,7 @@ export interface Company {
     instagram?: string;
     x?: string;
     tiktok?: string;
+    youtube?: string;
   };
   paymentMethods?: {
     codEnabled?: boolean;
