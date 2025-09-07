@@ -158,6 +158,10 @@ export interface Company {
   socialLinks?: {
     website?: string;
     menuShareLink?: string;
+    facebook?: string;
+    instagram?: string;
+    x?: string;
+    tiktok?: string;
   };
   paymentMethods?: {
     codEnabled?: boolean;

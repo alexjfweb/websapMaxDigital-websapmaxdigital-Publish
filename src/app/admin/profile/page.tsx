@@ -285,9 +285,9 @@ export default function AdminProfilePage() {
               <div className="flex items-center gap-4">
                 <Image src={avatarPreview || "https://placehold.co/100x100.png?text=Avatar"} alt="Avatar" width={96} height={96} className="h-24 w-24 rounded-full border object-cover" data-ai-hint="user avatar" />
                 <Button variant="outline" asChild disabled={!isEditing}>
-                  <Label htmlFor="avatar-upload" className="cursor-pointer">
+                  <Label htmlFor="logo-upload" className="cursor-pointer">
                     <UploadCloud className="mr-2 h-4 w-4" /> Subir Avatar
-                    <Input id="avatar-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setAvatarPreview, (url) => setProfileData(p => ({...p, logoUrl: url})))} disabled={!isEditing} />
+                    <Input id="logo-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setLogoPreview, (url) => setProfileData(p => ({...p, logoUrl: url})))} disabled={!isEditing} />
                   </Label>
                 </Button>
               </div>
@@ -297,9 +297,9 @@ export default function AdminProfilePage() {
               <div className="flex items-center gap-4">
                 <Image src={logoPreview || "https://placehold.co/100x100.png?text=Logo"} alt="Logo" width={96} height={96} className="h-24 w-24 rounded-md border object-cover" data-ai-hint="logo placeholder" />
                 <Button variant="outline" asChild disabled={!isEditing}>
-                  <Label htmlFor="logo-upload" className="cursor-pointer">
+                  <Label htmlFor="logo-upload-main" className="cursor-pointer">
                     <UploadCloud className="mr-2 h-4 w-4" /> Subir logo
-                    <Input id="logo-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setLogoPreview, (url) => setProfileData(p => ({...p, logoUrl: url})))} disabled={!isEditing} />
+                    <Input id="logo-upload-main" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setLogoPreview, (url) => setProfileData(p => ({...p, logoUrl: url})))} disabled={!isEditing} />
                   </Label>
                 </Button>
               </div>
@@ -328,6 +328,22 @@ export default function AdminProfilePage() {
             <div className="relative">
               <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input id="website" placeholder="Sitio web" value={profileData.socialLinks?.website || ''} className="pl-10" disabled={!isEditing} onChange={handleSocialChange} />
+            </div>
+            <div className="relative">
+              <Facebook className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input id="facebook" placeholder="URL de Facebook" value={profileData.socialLinks?.facebook || ''} className="pl-10" disabled={!isEditing} onChange={handleSocialChange} />
+            </div>
+             <div className="relative">
+              <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input id="instagram" placeholder="URL de Instagram" value={profileData.socialLinks?.instagram || ''} className="pl-10" disabled={!isEditing} onChange={handleSocialChange} />
+            </div>
+            <div className="relative">
+              <Twitter className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input id="x" placeholder="URL de X (Twitter)" value={profileData.socialLinks?.x || ''} className="pl-10" disabled={!isEditing} onChange={handleSocialChange} />
+            </div>
+             <div className="relative">
+              <Music className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input id="tiktok" placeholder="URL de TikTok" value={profileData.socialLinks?.tiktok || ''} className="pl-10" disabled={!isEditing} onChange={handleSocialChange} />
             </div>
             <div className="relative">
               <Share2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -535,4 +551,3 @@ export default function AdminProfilePage() {
     </div>
   );
 }
-
