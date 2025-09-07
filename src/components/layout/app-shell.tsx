@@ -92,7 +92,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="w-full justify-start gap-2 p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto">
                         <Avatar className="h-8 w-8">
-                        <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name || 'User'} />
+                        <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name || 'User'} data-ai-hint="user avatar" />
                         <AvatarFallback>{currentUser.name ? currentUser.name.substring(0,1).toUpperCase() : currentUser.username.substring(0,1).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <div className="group-data-[collapsible=icon]:hidden flex flex-col items-start">
@@ -136,5 +136,3 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </OrderProvider>
     );
 }
-
-    

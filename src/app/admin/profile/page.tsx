@@ -277,7 +277,19 @@ export default function AdminProfilePage() {
             <Label htmlFor="description">Descripción</Label>
             <Textarea id="description" value={profileData.description || ''} rows={4} disabled={!isEditing} onChange={handleInputChange} />
           </div>
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="space-y-4">
+              <Label>Avatar</Label>
+              <div className="flex items-center gap-4">
+                <Image src={currentUser?.avatarUrl || "https://placehold.co/100x100.png?text=Avatar"} alt="Avatar" width={96} height={96} className="h-24 w-24 rounded-full border object-cover" data-ai-hint="user avatar" />
+                <Button variant="outline" asChild disabled={!isEditing}>
+                  <Label htmlFor="avatar-upload" className="cursor-pointer">
+                    <UploadCloud className="mr-2 h-4 w-4" /> Subir Avatar
+                    <Input id="avatar-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setBannerPreview, (url) => setProfileData(p => ({...p, bannerUrl: url})))} disabled={!isEditing} />
+                  </Label>
+                </Button>
+              </div>
+            </div>
             <div className="space-y-4">
               <Label>Logo</Label>
               <div className="flex items-center gap-4">
@@ -291,7 +303,7 @@ export default function AdminProfilePage() {
               </div>
             </div>
             <div className="space-y-4">
-              <Label>Banner de Cabecera (1200x400 recomendado)</Label>
+              <Label>Banner de Cabecera</Label>
               <div className="flex items-center gap-4">
                 <Image src={bannerPreview || "https://placehold.co/200x100.png?text=Banner"} alt="Banner" width={192} height={96} className="h-24 w-48 rounded-md border object-cover" data-ai-hint="restaurant banner" />
                 <Button variant="outline" asChild disabled={!isEditing}>
