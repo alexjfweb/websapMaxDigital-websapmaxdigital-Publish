@@ -55,8 +55,8 @@ export default function AdminProfilePage() {
         if (docSnap.exists()) {
           const data = docSnap.data() as Company;
           setProfileData(data);
-          // La imagen del "Avatar" en el contexto de la empresa es el logo.
-          setAvatarPreview(data.logoUrl); // El avatar es el mismo que el logo
+          // El avatar en el contexto de la empresa es el mismo que el logo.
+          setAvatarPreview(data.logoUrl);
           setLogoPreview(data.logoUrl);
           if(data.bannerUrl) setBannerPreview(data.bannerUrl);
           if(data.paymentMethods?.nequi?.nequiQrImageUrl) setNequiQrPreview(data.paymentMethods.nequi.nequiQrImageUrl);
@@ -77,7 +77,6 @@ export default function AdminProfilePage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value, type } = e.target;
-    // Si el input es de tipo 'number', convierte el valor a número
     const finalValue = (e.target as HTMLInputElement).type === 'number' ? parseFloat(value) : value;
     setProfileData(prev => ({ ...prev, [id]: finalValue }));
   };
@@ -132,12 +131,12 @@ export default function AdminProfilePage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setImagePreview(URL.createObjectURL(file)); // Vista previa local
+    setImagePreview(URL.createObjectURL(file)); 
     setIsSaving(true);
     try {
       const url = await storageService.compressAndUploadFile(file, `profiles/${companyId}/`);
       if (url) {
-        updateProfileField(url); // Actualizar el estado del perfil con la nueva URL
+        updateProfileField(url); 
         toast({
           title: "Imagen subida",
           description: "La nueva imagen se ha cargado. Guarda los cambios para aplicarla.",

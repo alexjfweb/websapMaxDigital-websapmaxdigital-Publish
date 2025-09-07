@@ -22,6 +22,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import FooterNavigation from './footer-navigation';
 import { OrderProvider } from '@/contexts/order-context';
+import { doc, getDoc } from 'firebase/firestore';
+import { getDb } from '@/lib/firebase';
+import type { Company } from '@/types';
 
 
 function AdminLoader() {
@@ -39,32 +42,46 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     const { currentUser, isLoading, logout } = useSession();
     const { setOpenMobile } = useSidebar();
     const router = useRouter();
+    const [companyProfile, setCompanyProfile] = React.useState<Partial<Company>>({});
+
+    React.useEffect(() => {
+        const fetchCompanyProfile = async () => {
+            if (currentUser?.companyId) {
+                const db = getDb();
+                const companyRef = doc(db, 'companies', currentUser.companyId);
+                const companySnap = await getDoc(companyRef);
+                if (companySnap.exists()) {
+                    setCompanyProfile(companySnap.data());
+                }
+            }
+        };
+
+        if (currentUser) {
+            fetchCompanyProfile();
+        }
+    }, [currentUser]);
 
     const handleLogout = () => {
       logout();
       router.push('/login');
     };
 
-    // Este componente ahora asume que SOLO se renderiza en rutas de admin.
-    // La lógica de redirección sigue siendo importante en el SessionProvider.
-    
     if (isLoading) {
         return <AdminLoader />;
     }
 
     if (!currentUser) {
-        // Aunque el SessionProvider redirige, podemos mostrar un loader
-        // mientras ocurre la redirección para evitar un parpadeo de contenido.
         return <AdminLoader />;
     }
 
     const profileLink = currentUser.role === 'superadmin' ? '/superadmin/profile' : '/admin/profile';
+    const businessName = companyProfile?.name || currentUser.businessName || currentUser.name || currentUser.username;
+    const avatarUrl = companyProfile?.logoUrl || currentUser.avatarUrl; // Prioritize company logo as avatar
 
     const handleMobileLinkClick = () => {
         setOpenMobile(false);
     };
 
-    // Renderiza el layout de administración completo.
     return (
         <OrderProvider>
             <Sidebar collapsible="icon" variant="sidebar" side="left">
@@ -77,7 +94,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 </Link>
                 <div className="mt-1 text-center group-data-[collapsible=icon]:hidden">
                     <p className="text-sm font-medium text-sidebar-foreground truncate max-w-[150px]">
-                    {currentUser.businessName || currentUser.name || currentUser.username}
+                    {businessName}
                     </p>
                     <p className="text-xs text-sidebar-foreground/80 capitalize">
                     Rol: {currentUser.role}
@@ -92,11 +109,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="w-full justify-start gap-2 p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto">
                         <Avatar className="h-8 w-8">
-                        <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name || 'User'} data-ai-hint="user avatar" />
-                        <AvatarFallback>{currentUser.name ? currentUser.name.substring(0,1).toUpperCase() : currentUser.username.substring(0,1).toUpperCase()}</AvatarFallback>
+                        <AvatarImage src={avatarUrl} alt={businessName} data-ai-hint="user avatar" />
+                        <AvatarFallback>{businessName ? businessName.substring(0,1).toUpperCase() : 'U'}</AvatarFallback>
                         </Avatar>
                         <div className="group-data-[collapsible=icon]:hidden flex flex-col items-start">
-                        <span className="text-sm font-medium truncate max-w-[120px]">{currentUser.businessName || currentUser.name || currentUser.username}</span>
+                        <span className="text-sm font-medium truncate max-w-[120px]">{businessName}</span>
                         <span className="text-xs text-muted-foreground truncate max-w-[120px]">{currentUser.email}</span>
                         </div>
                     </Button>
