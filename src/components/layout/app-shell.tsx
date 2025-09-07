@@ -96,7 +96,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                         <AvatarFallback>{currentUser.name ? currentUser.name.substring(0,1).toUpperCase() : currentUser.username.substring(0,1).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <div className="group-data-[collapsible=icon]:hidden flex flex-col items-start">
-                        <span className="text-sm font-medium truncate max-w-[120px]">{currentUser.name || currentUser.username}</span>
+                        <span className="text-sm font-medium truncate max-w-[120px]">{currentUser.businessName || currentUser.name || currentUser.username}</span>
                         <span className="text-xs text-muted-foreground truncate max-w-[120px]">{currentUser.email}</span>
                         </div>
                     </Button>

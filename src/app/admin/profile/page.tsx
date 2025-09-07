@@ -34,6 +34,7 @@ export default function AdminProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [nequiQrPreview, setNequiQrPreview] = useState<string | null>(null);
@@ -54,7 +55,9 @@ export default function AdminProfilePage() {
         if (docSnap.exists()) {
           const data = docSnap.data() as Company;
           setProfileData(data);
-          if(data.logoUrl) setLogoPreview(data.logoUrl);
+          // La imagen del "Avatar" en el contexto de la empresa es el logo.
+          setAvatarPreview(data.logoUrl); // El avatar es el mismo que el logo
+          setLogoPreview(data.logoUrl);
           if(data.bannerUrl) setBannerPreview(data.bannerUrl);
           if(data.paymentMethods?.nequi?.nequiQrImageUrl) setNequiQrPreview(data.paymentMethods.nequi.nequiQrImageUrl);
           if(data.paymentMethods?.daviplata?.daviplataQrImageUrl) setDaviplataQrPreview(data.paymentMethods.daviplata.daviplataQrImageUrl);
@@ -281,11 +284,11 @@ export default function AdminProfilePage() {
             <div className="space-y-4">
               <Label>Avatar</Label>
               <div className="flex items-center gap-4">
-                <Image src={currentUser?.avatarUrl || "https://placehold.co/100x100.png?text=Avatar"} alt="Avatar" width={96} height={96} className="h-24 w-24 rounded-full border object-cover" data-ai-hint="user avatar" />
+                <Image src={avatarPreview || "https://placehold.co/100x100.png?text=Avatar"} alt="Avatar" width={96} height={96} className="h-24 w-24 rounded-full border object-cover" data-ai-hint="user avatar" />
                 <Button variant="outline" asChild disabled={!isEditing}>
                   <Label htmlFor="avatar-upload" className="cursor-pointer">
                     <UploadCloud className="mr-2 h-4 w-4" /> Subir Avatar
-                    <Input id="avatar-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setBannerPreview, (url) => setProfileData(p => ({...p, bannerUrl: url})))} disabled={!isEditing} />
+                    <Input id="avatar-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setAvatarPreview, (url) => setProfileData(p => ({...p, logoUrl: url})))} disabled={!isEditing} />
                   </Label>
                 </Button>
               </div>
@@ -533,3 +536,4 @@ export default function AdminProfilePage() {
     </div>
   );
 }
+
