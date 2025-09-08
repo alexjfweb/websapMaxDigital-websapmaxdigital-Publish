@@ -329,3 +329,5 @@ export interface CreateSupportTicket {
   message: string;
   attachmentUrl?: string; // URL a la imagen adjunta
 }
+
+    
