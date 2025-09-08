@@ -1,12 +1,14 @@
 
 "use client"; 
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import LandingClient from './landing-client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLandingConfig } from '@/hooks/use-landing-config';
 import { AlertTriangle } from 'lucide-react';
 import { useLandingPlans } from '@/hooks/use-landing-plans';
+import PublicHeader from '@/components/layout/public-header';
+import { Button } from '@/components/ui/button';
 
 function LandingPageSkeleton() {
   return (
@@ -45,8 +47,33 @@ function ErrorDisplay({ message, onRetry }: { message: string, onRetry?: () => v
 function LandingPageContent() {
   const { landingConfig, isLoading: isLoadingConfig, isError: isErrorConfig, error: errorConfig } = useLandingConfig();
   const { plans, isLoading: isLoadingPlans, error: errorPlans, refetch: retryPlans } = useLandingPlans(true);
+  const [isInitializing, setIsInitializing] = useState(false);
 
-  if (isLoadingConfig || isLoadingPlans) {
+  // Efecto para auto-inicializar la base de datos si está vacía
+  useEffect(() => {
+    const initializeDatabase = async () => {
+      setIsInitializing(true);
+      try {
+        const response = await fetch('/api/sync-database', { method: 'POST' });
+        if (!response.ok) throw new Error('Falló la sincronización del servidor');
+        // Después de sincronizar, refrescar los datos
+        retryPlans();
+        // Se puede añadir un refetch para la config si fuera necesario
+      } catch (e) {
+        console.error("Error en la auto-inicialización:", e);
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+    
+    // Si no está cargando y no hay planes ni configuración, es probable que la BD esté vacía.
+    if (!isLoadingConfig && !isLoadingPlans && plans.length === 0 && landingConfig.sections.length === 0) {
+      console.log("Detectada base de datos vacía, iniciando sincronización automática...");
+      initializeDatabase();
+    }
+  }, [isLoadingConfig, isLoadingPlans, plans.length, landingConfig, retryPlans]);
+
+  if (isLoadingConfig || isLoadingPlans || isInitializing) {
     return <LandingPageSkeleton />;
   }
   
@@ -55,12 +82,15 @@ function LandingPageContent() {
   }
   
   return (
-    <LandingClient 
-        initialConfig={landingConfig} 
-        plans={plans}
-        errorPlans={errorPlans}
-        retryPlans={retryPlans}
-    />
+    <>
+        <PublicHeader />
+        <LandingClient 
+            initialConfig={landingConfig} 
+            plans={plans}
+            errorPlans={errorPlans}
+            retryPlans={retryPlans}
+        />
+    </>
   );
 }
 

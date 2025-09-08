@@ -1,5 +1,6 @@
+
 // src/services/subscription-service.ts
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import {
   collection,
   query,
@@ -13,6 +14,7 @@ import type { Company } from '@/types';
 
 class SubscriptionService {
   private get companiesCollection() {
+    const db = getDb();
     return collection(db, 'companies');
   }
 
@@ -42,7 +44,7 @@ class SubscriptionService {
     }
 
     console.log(`[SubscriptionService] Se encontraron ${totalToCheck} suscripciones para procesar.`);
-
+    const db = getDb();
     const batch = writeBatch(db);
     let downgradedCount = 0;
 

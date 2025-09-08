@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -13,7 +12,7 @@ import RestaurantInfoDisplay from '@/components/menu/restaurant-info-display';
 import DishItem from '@/components/menu/dish-item';
 import CartCheckout from '@/components/menu/cart-checkout';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import ReservationForm from '@/components/forms/reservation-form';
 import { useDishes } from '@/hooks/use-dishes';
@@ -106,6 +105,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
     setIsLoading(true);
 
     const fetchRestaurantData = async () => {
+      const db = getDb();
       try {
         const companyDocRef = doc(db, "companies", restaurantId);
         const companySnapshot = await getDoc(companyDocRef);
@@ -242,7 +242,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
                     <CalendarCheck className="h-7 w-7 text-primary" />
                 </button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Hacer una reserva</DialogTitle>
                     <DialogDescription>
@@ -269,14 +269,14 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
         
         <div className="mb-8">
           <h3 className="text-xl font-semibold mb-3 text-center" style={{ color: menuStyles.primary_color }}>Categorías</h3>
-          <div className="flex flex-wrap gap-2 justify-center">
+          <div className="flex overflow-x-auto pb-4 gap-2 no-scrollbar">
             {categories.map(category => (
               <Button
                 key={category}
                 style={selectedCategory === category ? { backgroundColor: menuStyles.primary_color, color: '#fff' } : {}}
                 variant={selectedCategory === category ? 'default' : 'outline'}
                 onClick={() => setSelectedCategory(category)}
-                className="rounded-full"
+                className="rounded-full flex-shrink-0"
               >
                 {getCategoryLabel(category)}
               </Button>

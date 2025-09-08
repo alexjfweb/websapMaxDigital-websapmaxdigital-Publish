@@ -1,48 +1,19 @@
+
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    
-    // Regla por defecto: denegar todo
-    // Esto asegura que ninguna ruta sea accesible a menos que se permita explícitamente.
+    // Permitir lectura pública de cualquier archivo
     match /{allPaths=**} {
-      allow read, write: if false;
+      allow read;
     }
-    
-    // Permite la lectura pública para imágenes de la landing page y platos.
-    // Esto es necesario para que cualquiera pueda ver el menú y la página de inicio.
-    match /landing-subsections/{allPaths=**} {
-      allow read: if true;
-      allow write: if request.auth != null; // Solo usuarios autenticados pueden subir
-    }
-    
-    match /dishes/{companyId}/{allPaths=**} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
-    
-    // Permite a los usuarios autenticados subir y gestionar sus avatares.
-    // Solo el usuario propietario o un superadmin puede leer/escribir.
-    match /avatars/{userId}/{allPaths=**} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // Permite a los administradores subir los códigos QR para su compañía.
-    match /qrs/{companyId}/{allPaths=**} {
-      allow read: if true; // Los QR deben ser públicamente legibles
-      allow write: if request.auth != null; // Asumimos que un admin o superadmin lo sube
-    }
-    
-    // Permite a los administradores subir imágenes para el perfil de su compañía.
-    match /profiles/{companyId}/{allPaths=**} {
-        allow read: if true; // Las imágenes de perfil (logo, banner) son públicas
-        allow write: if request.auth != null;
-    }
-    
-    // Reglas para adjuntos de soporte.
-    match /support-attachments/{companyId}/{allPaths=**} {
-        allow read, write: if request.auth != null; // Solo usuarios autenticados
+
+    // Permitir escritura (subida) de archivos solo a usuarios autenticados
+    // Se aplica a cualquier ruta dentro del bucket
+    match /{allPaths=**} {
+      allow write: if request.auth != null &&
+                      request.resource.size < 5 * 1024 * 1024 && // Límite de 5MB
+                      request.resource.contentType.matches('image/.*'); // Solo imágenes
     }
   }
 }

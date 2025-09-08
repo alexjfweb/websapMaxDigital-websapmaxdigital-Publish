@@ -1,5 +1,5 @@
 
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import {
   collection,
   doc,
@@ -14,6 +14,7 @@ import type { SupportTicket, CreateSupportTicket } from '@/types';
 
 class SupportService {
   private get ticketsCollection() {
+    const db = getDb();
     return collection(db, 'supportTickets');
   }
 
@@ -28,7 +29,7 @@ class SupportService {
       status: 'open' as const,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      // Asegurarse de que el campo attachmentUrl esté presente si existe, si no, no se añade.
+      // Asegurarse de que el campo attachmentUrl esté presente si existe, si no se añade.
       ...(ticketData.attachmentUrl && { attachmentUrl: ticketData.attachmentUrl }),
     };
 

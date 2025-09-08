@@ -5,12 +5,10 @@ import useSWR from 'swr';
 import type { User } from '@/types';
 import { useSession } from '@/contexts/session-context';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 
 const fetchEmployees = async (companyId: string): Promise<User[]> => {
-  if (!db) {
-    throw new Error("La base de datos no está disponible.");
-  }
+  const db = getDb();
   const q = query(
     collection(db, "users"), 
     where("companyId", "==", companyId), 
@@ -28,7 +26,7 @@ const fetchEmployees = async (companyId: string): Promise<User[]> => {
 
 export function useEmployees(companyId?: string) {
   const { currentUser, isLoading: isSessionLoading } = useSession();
-  const effectiveCompanyId = companyId || currentUser.companyId;
+  const effectiveCompanyId = companyId || currentUser?.companyId;
 
   // Key for SWR should be unique for the query. Using an array is a good practice.
   const swrKey = effectiveCompanyId ? ['employees', effectiveCompanyId] : null;

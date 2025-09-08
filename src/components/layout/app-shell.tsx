@@ -1,7 +1,8 @@
+
 "use client";
 
 import * as React from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from '@/contexts/session-context';
 import AppHeader from './header';
 import {
@@ -11,6 +12,7 @@ import {
   SidebarFooter,
   SidebarInset,
   SidebarRail,
+  useSidebar, 
 } from '@/components/ui/sidebar';
 import NavigationMenu from '@/components/layout/navigation-menu';
 import { Button } from '@/components/ui/button';
@@ -19,6 +21,10 @@ import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import FooterNavigation from './footer-navigation';
+import { OrderProvider } from '@/contexts/order-context';
+import { doc, getDoc } from 'firebase/firestore';
+import { getDb } from '@/lib/firebase';
+import type { Company } from '@/types';
 
 
 function AdminLoader() {
@@ -34,26 +40,50 @@ function AdminLoader() {
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const { currentUser, isLoading, logout } = useSession();
+    const { setOpenMobile } = useSidebar();
     const router = useRouter();
+    const [companyProfile, setCompanyProfile] = React.useState<Partial<Company>>({});
+
+    React.useEffect(() => {
+        const fetchCompanyProfile = async () => {
+            if (currentUser?.companyId) {
+                const db = getDb();
+                const companyRef = doc(db, 'companies', currentUser.companyId);
+                const companySnap = await getDoc(companyRef);
+                if (companySnap.exists()) {
+                    setCompanyProfile(companySnap.data());
+                }
+            }
+        };
+
+        if (currentUser) {
+            fetchCompanyProfile();
+        }
+    }, [currentUser]);
 
     const handleLogout = () => {
       logout();
       router.push('/login');
     };
 
-    React.useEffect(() => {
-        if (!isLoading && !currentUser) {
-          router.push('/login');
-        }
-    }, [isLoading, currentUser, router]);
-
-
-    if (isLoading || !currentUser) {
+    if (isLoading) {
         return <AdminLoader />;
     }
 
+    if (!currentUser) {
+        return <AdminLoader />;
+    }
+
+    const profileLink = currentUser.role === 'superadmin' ? '/superadmin/profile' : '/admin/profile';
+    const businessName = companyProfile?.name || currentUser.businessName || currentUser.name || currentUser.username;
+    const avatarUrl = companyProfile?.logoUrl || currentUser.avatarUrl; // Prioritize company logo as avatar
+
+    const handleMobileLinkClick = () => {
+        setOpenMobile(false);
+    };
+
     return (
-        <>
+        <OrderProvider>
             <Sidebar collapsible="icon" variant="sidebar" side="left">
                 <SidebarHeader className="p-4 flex flex-col items-center gap-2">
                 <Link href="/" className="flex items-center gap-2 font-semibold text-lg text-primary">
@@ -64,7 +94,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 </Link>
                 <div className="mt-1 text-center group-data-[collapsible=icon]:hidden">
                     <p className="text-sm font-medium text-sidebar-foreground truncate max-w-[150px]">
-                    {currentUser.name || currentUser.username}
+                    {businessName}
                     </p>
                     <p className="text-xs text-sidebar-foreground/80 capitalize">
                     Rol: {currentUser.role}
@@ -72,18 +102,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 </div>
                 </SidebarHeader>
                 <SidebarContent className="flex-grow">
-                <NavigationMenu role={currentUser.role} />
+                <NavigationMenu role={currentUser.role} onLinkClick={handleMobileLinkClick} />
                 </SidebarContent>
                 <SidebarFooter className="p-2 mt-auto">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="w-full justify-start gap-2 p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto">
                         <Avatar className="h-8 w-8">
-                        <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name || 'User'} />
-                        <AvatarFallback>{currentUser.name ? currentUser.name.substring(0,1).toUpperCase() : currentUser.username.substring(0,1).toUpperCase()}</AvatarFallback>
+                        <AvatarImage src={avatarUrl} alt={businessName} data-ai-hint="user avatar" />
+                        <AvatarFallback>{businessName ? businessName.substring(0,1).toUpperCase() : 'U'}</AvatarFallback>
                         </Avatar>
                         <div className="group-data-[collapsible=icon]:hidden flex flex-col items-start">
-                        <span className="text-sm font-medium truncate max-w-[120px]">{currentUser.name || currentUser.username}</span>
+                        <span className="text-sm font-medium truncate max-w-[120px]">{businessName}</span>
                         <span className="text-xs text-muted-foreground truncate max-w-[120px]">{currentUser.email}</span>
                         </div>
                     </Button>
@@ -92,9 +122,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuGroup>
-                        <DropdownMenuItem disabled>
-                        <UserCircle className="mr-2 h-4 w-4" />
-                        <span>Perfil</span>
+                        <DropdownMenuItem asChild>
+                            <Link href={profileLink}>
+                                <UserCircle className="mr-2 h-4 w-4" />
+                                <span>Perfil</span>
+                            </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem disabled>
                         <Settings className="mr-2 h-4 w-4" />
@@ -118,6 +150,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 </main>
                 <FooterNavigation role={currentUser.role} />
             </SidebarInset>
-        </>
+        </OrderProvider>
     );
 }

@@ -1,5 +1,4 @@
 
-import { db } from '@/lib/firebase';
 import {
   collection,
   doc,
@@ -10,75 +9,204 @@ import {
   where,
   serverTimestamp,
   Timestamp,
-  addDoc
+  addDoc,
+  writeBatch,
+  runTransaction,
+  type Firestore
 } from 'firebase/firestore';
-import type { Company } from '@/types';
+import type { Company, User } from '@/types';
 import { auditService } from './audit-service';
+import { serializeDate } from '@/lib/utils';
+import { getDb } from '@/lib/firebase';
 
-// Este servicio ahora interactúa directamente con la API en lugar de con Firestore,
-// para ser usado por los componentes de cliente.
-
-const serializeCompany = (id: string, data: any): Company => {
-  const companyData = data as Partial<Company>;
+const serializeCompany = (doc: any): Company => {
+  const data = doc.data();
+  // Usar la nueva utilidad para serializar fechas de forma segura
   return {
-    ...companyData,
-    id,
-    createdAt: new Date(data.createdAt?.seconds * 1000 || Date.now()).toISOString(),
-    updatedAt: new Date(data.updatedAt?.seconds * 1000 || Date.now()).toISOString(),
-    registrationDate: new Date(data.registrationDate || Date.now()).toISOString(),
-    trialEndsAt: data.trialEndsAt ? new Date(data.trialEndsAt.seconds * 1000).toISOString() : null,
-  } as Company;
+    id: doc.id,
+    ...data,
+    createdAt: serializeDate(data.createdAt),
+    updatedAt: serializeDate(data.updatedAt),
+    registrationDate: serializeDate(data.registrationDate) || new Date().toISOString(),
+    trialEndsAt: serializeDate(data.trialEndsAt),
+  };
 };
 
 class CompanyService {
   
+  private get companiesCollection() {
+    const db = getDb();
+    return collection(db, 'companies');
+  }
+
+  async isRucUnique(ruc: string, excludeId?: string): Promise<boolean> {
+    const q = query(this.companiesCollection, where('ruc', '==', ruc));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return true;
+    if (excludeId) return snapshot.docs.every(doc => doc.id === excludeId);
+    return false;
+  }
+
   async getCompanies(): Promise<Company[]> {
-    const response = await fetch('/api/companies');
-    if (!response.ok) {
-      throw new Error('Failed to fetch companies');
-    }
-    const result = await response.json();
-    return result.data;
+    const snapshot = await getDocs(this.companiesCollection);
+    return snapshot.docs.map(serializeCompany);
   }
 
   async getCompanyById(id: string): Promise<Company | null> {
-     if (!id) return null;
-    const response = await fetch(`/api/companies/${id}`);
-    if (!response.ok) {
-      if (response.status === 404) return null;
-      throw new Error('Failed to fetch company');
-    }
-    return response.json();
+    if (!id) return null;
+    const docRef = doc(this.companiesCollection, id);
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) return null;
+    return serializeCompany(docSnap);
   }
   
-  async createCompany(companyData: Partial<Company>, user: { uid: string; email: string }): Promise<{id: string}> {
-    const response = await fetch('/api/companies', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyData, user }),
-    });
-    if (!response.ok) {
-        const result = await response.json();
-        throw new Error(result.error || 'Failed to create company');
+  async createCompany(companyData: Partial<Company>, user: { uid: string; email: string }): Promise<Company> {
+    if (!companyData.name || !companyData.ruc) {
+      throw new Error("El nombre de la empresa y el RUC son obligatorios.");
     }
-    const result = await response.json();
-    return { id: result.companyId };
+
+    if (!await this.isRucUnique(companyData.ruc)) {
+      throw new Error(`Ya existe una empresa con el RUC ${companyData.ruc}.`);
+    }
+
+    const newCompanyData = {
+      ...companyData,
+      status: companyData.status || 'pending',
+      registrationDate: new Date().toISOString(),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+    
+    const docRef = await addDoc(this.companiesCollection, newCompanyData);
+    const createdCompany = await this.getCompanyById(docRef.id);
+
+    if (!createdCompany) {
+      throw new Error("No se pudo obtener la empresa después de la creación.");
+    }
+    
+    await auditService.log({
+      entity: 'companies',
+      entityId: docRef.id,
+      action: 'created',
+      performedBy: user,
+      newData: newCompanyData,
+    });
+
+    return createdCompany;
   }
 
-  async updateCompany(companyId: string, companyData: Partial<Company>, user: { uid: string; email: string }): Promise<Company> {
-    const response = await fetch(`/api/companies/${companyId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyData, user }),
-    });
-     if (!response.ok) {
-        const result = await response.json();
-        throw new Error(result.error || 'Failed to update company');
+  async createCompanyWithAdminUser(
+    companyData: Partial<Omit<Company, 'id'>>,
+    adminUserData: Partial<Omit<User, 'id'>>,
+    isSuperAdminFlow: boolean = false
+  ): Promise<{ companyId: string | null; userId: string }> {
+    
+    const db = getDb();
+    
+    // Mover la validación del RUC fuera de la transacción
+    if (!isSuperAdminFlow && companyData.ruc) {
+      const companiesColRef = collection(db, 'companies');
+      const rucQuery = query(companiesColRef, where('ruc', '==', companyData.ruc));
+      const rucSnapshot = await getDocs(rucQuery);
+      if (!rucSnapshot.empty) {
+        throw new Error(`El RUC "${companyData.ruc}" ya está registrado.`);
+      }
     }
-    const result = await response.json();
-    return result.data;
+    
+    return runTransaction(db, async (transaction) => {
+      // Crear las referencias de colecciones DENTRO de la transacción
+      const companiesColRef = collection(db, 'companies');
+      const usersColRef = collection(db, 'users');
+
+      const userId = adminUserData?.uid;
+      if (!userId) {
+        throw new Error('userId es undefined - adminUserData.uid no existe');
+      }
+      
+      let companyId: string | null = null;
+
+      // Crear compañía si no es superadmin
+      if (!isSuperAdminFlow) {
+        const companyDocRef = doc(companiesColRef); 
+        companyId = companyDocRef.id;
+
+        // CORRECCIÓN: Asegurarse que planId se maneja bien
+        const planId = companyData.planId || 'plan-gratuito';
+
+        const newCompanyData = {
+          ...companyData,
+          planId: planId, // Asignar el plan correcto
+          status: 'active',
+          subscriptionStatus: planId !== 'plan-gratuito' ? 'pending_payment' : 'trialing',
+          trialEndsAt: planId !== 'plan-gratuito' ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          registrationDate: new Date().toISOString(),
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+        transaction.set(companyDocRef, newCompanyData);
+      }
+
+      // Crear el documento del usuario
+      const userDocRef = doc(usersColRef, userId);
+      const newUserDoc: Omit<User, 'id'> = {
+        uid: userId,
+        email: adminUserData.email!,
+        firstName: adminUserData.firstName!,
+        lastName: adminUserData.lastName!,
+        role: adminUserData.role!,
+        companyId: companyId || undefined,
+        businessName: companyData.name || '',
+        status: 'active',
+        registrationDate: new Date().toISOString(),
+        isActive: true,
+        avatarUrl: adminUserData.avatarUrl || `https://placehold.co/100x100.png?text=${adminUserData.firstName!.charAt(0)}`,
+        username: adminUserData.email!.split('@')[0],
+      };
+      transaction.set(userDocRef, newUserDoc);
+
+      return { companyId, userId };
+    });
+  }
+
+
+  async updateCompany(companyId: string, updates: Partial<Company>, user: { uid: string; email: string }): Promise<Company> {
+    const docRef = doc(this.companiesCollection, companyId);
+    const originalDocSnap = await getDoc(docRef);
+    
+    if (!originalDocSnap.exists()) {
+      throw new Error(`Empresa con ID ${companyId} no encontrada.`);
+    }
+
+    if (updates.ruc && updates.ruc !== originalDocSnap.data().ruc) {
+      if (!await this.isRucUnique(updates.ruc, companyId)) {
+        throw new Error(`Ya existe otra empresa con el RUC ${updates.ruc}.`);
+      }
+    }
+    
+    const originalData = serializeCompany(originalDocSnap);
+    
+    await updateDoc(docRef, { ...updates, updatedAt: serverTimestamp() });
+    const updatedCompany = await this.getCompanyById(companyId);
+
+    if (!updatedCompany) {
+      throw new Error("No se pudo obtener la empresa después de la actualización.");
+    }
+    
+    await auditService.log({
+      entity: 'companies',
+      entityId: companyId,
+      action: 'updated',
+      performedBy: user,
+      previousData: originalData,
+      newData: updatedCompany,
+    });
+
+    return updatedCompany;
+  }
+
+  async deleteCompany(companyId: string, user: { uid: string; email: string }): Promise<void> {
+    await this.updateCompany(companyId, { status: 'inactive' }, user);
   }
 }
 
 export const companyService = new CompanyService();
-export type { Company };

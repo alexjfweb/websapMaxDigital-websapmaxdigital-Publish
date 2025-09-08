@@ -21,17 +21,17 @@ import { UserPlus, Loader2, Check, X } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { User as FirebaseUser, deleteUser } from "firebase/auth";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth, db } from "@/lib/firebase"; // Usar la instancia centralizada
-import { doc, setDoc } from "firebase/firestore";
-import type { UserRole, User, Company } from "@/types";
+import { getFirebaseAuth } from "@/lib/firebase";
+import type { User, UserRole, Company } from "@/types";
 import React, { Suspense, useState, useEffect } from "react";
 import { companyService } from "@/services/company-service";
 import ErrorModal from "@/components/ui/error-modal";
+import PublicHeader from "@/components/layout/public-header";
 
 const SUPERADMIN_EMAIL = 'alexjfweb@gmail.com';
 
 const registerFormSchema = z.object({
-  name: z.string().min(2, { message: "El nombre es obligatorio." }),
+  firstName: z.string().min(2, { message: "El nombre es obligatorio." }),
   lastName: z.string().min(2, { message: "El apellido es obligatorio." }),
   businessName: z.string().optional(),
   ruc: z.string().optional(),
@@ -86,7 +86,7 @@ function RegisterForm() {
     resolver: zodResolver(registerFormSchema),
     mode: "onTouched",
     defaultValues: {
-      name: "", lastName: "", businessName: "", ruc: "", email: "", password: "", confirmPassword: "",
+      firstName: "", lastName: "", businessName: "", ruc: "", email: "", password: "", confirmPassword: "",
     },
   });
 
@@ -107,38 +107,31 @@ function RegisterForm() {
     let firebaseUser: FirebaseUser | null = null;
     
     try {
+      const role: UserRole = isSuperAdminFlow ? 'superadmin' : 'admin';
+      
+      const auth = getFirebaseAuth();
+      // 1. Crear usuario en Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       firebaseUser = userCredential.user;
 
-      let companyId: string | null = null;
-      const role: UserRole = isSuperAdminFlow ? 'superadmin' : 'admin';
-      
-      if (role === 'admin') {
-        if (!values.businessName || !values.ruc) {
-            throw new Error("El nombre de la empresa y el RUC son necesarios para administradores.");
-        }
-        
-        const companyData: Omit<Company, 'id' | 'createdAt' | 'updatedAt'> = {
-            name: values.businessName, email: values.email, ruc: values.ruc, status: 'active',
-            registrationDate: new Date().toISOString(),
-            planId: planSlug || 'plan-gratuito',
-            subscriptionStatus: planSlug ? 'pending_payment' : 'trialing',
-            trialEndsAt: planSlug ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-            location: '',
-        };
-        
-        const createdCompany = await companyService.createCompany(companyData, { uid: firebaseUser.uid, email: firebaseUser.email! });
-        companyId = createdCompany.id;
-      }
-      
-      const userData: Omit<User, 'id'> = {
-        uid: firebaseUser.uid, email: firebaseUser.email || values.email, username: values.email.split('@')[0],
-        firstName: values.name, lastName: values.lastName, role: role, companyId: companyId || undefined,
-        businessName: values.businessName || '', status: 'active', registrationDate: new Date().toISOString(),
-        isActive: true, avatarUrl: `https://placehold.co/100x100.png?text=${values.name.charAt(0)}`,
+      // 2. Preparar los datos y guardarlos en Firestore
+      const adminUserData: Partial<Omit<User, 'id'>> = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email!,
+          firstName: values.firstName,
+          lastName: values.lastName,
+          role: role,
+          avatarUrl: `https://placehold.co/100x100.png?text=${values.firstName.substring(0,1).toUpperCase()}`
+      };
+
+      const companyData: Partial<Omit<Company, 'id'>> = {
+        name: values.businessName,
+        email: values.email,
+        ruc: values.ruc,
+        planId: planSlug || 'plan-gratuito',
       };
       
-      await setDoc(doc(db, "users", firebaseUser.uid), userData);
+      await companyService.createCompanyWithAdminUser(companyData, adminUserData, isSuperAdminFlow);
       
       toast({ title: '¡Registro Exitoso!', description: `Serás redirigido para continuar.` });
 
@@ -152,14 +145,20 @@ function RegisterForm() {
       console.error("Error detallado en el registro:", error);
       
       if (firebaseUser) {
-        try { await deleteUser(firebaseUser); console.log("↩️ Usuario de Auth revertido exitosamente."); } 
-        catch (revertError) { console.error("🔴 Error CRÍTICO al revertir la creación del usuario de Auth:", revertError); }
+        try { 
+          await deleteUser(firebaseUser); 
+          console.log("↩️ Usuario de Auth revertido exitosamente."); 
+        } catch (revertError) { 
+          console.error("🔴 Error CRÍTICO al revertir la creación del usuario de Auth:", revertError); 
+        }
       }
 
       const err = error as { code?: string; message?: string };
       let errorMessage = err.message || 'Hubo un error al crear la cuenta.';
       if (err.code === 'auth/email-already-in-use') {
         errorMessage = "El correo electrónico que ingresaste ya está en uso.";
+      } else if (err.message && err.message.includes("El RUC")) {
+        errorMessage = err.message;
       }
       
       setErrorState({ title: "Error de Registro", message: errorMessage });
@@ -171,23 +170,19 @@ function RegisterForm() {
 
   return (
     <>
+    <PublicHeader />
     <ErrorModal isOpen={!!errorState} title={errorState?.title || ""} message={errorState?.message || ""} onClose={() => setErrorState(null)} />
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background to-accent/10 p-4">
+    <div className="flex items-center justify-center min-h-screen pt-20 bg-gradient-to-br from-background to-accent/10 p-4">
       <Card className="w-full max-w-lg shadow-2xl">
          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-16 w-16 text-primary">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
-              </svg>
-            </div>
           <CardTitle className="text-3xl font-bold text-primary">Crear Cuenta</CardTitle>
-          <CardDescription>Registre una nueva cuenta para gestionar su negocio.</CardDescription>
+          <CardDescription>Crea una nueva cuenta para gestionar tu negocio.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Ej. Juan" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Ej. Juan" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Apellido</FormLabel><FormControl><Input placeholder="Ej. Pérez" {...field} /></FormControl><FormMessage /></FormItem>)} />
               </div>
               <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Correo Electrónico</FormLabel><FormControl><Input type="email" placeholder="su@correo.com" {...field} /></FormControl><FormMessage /></FormItem>)} />

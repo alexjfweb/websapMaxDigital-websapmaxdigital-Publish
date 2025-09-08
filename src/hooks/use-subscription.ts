@@ -5,8 +5,6 @@ import useSWR from 'swr';
 import { useSession } from '@/contexts/session-context';
 import type { Company } from '@/types';
 import type { LandingPlan } from '@/services/landing-plans-service';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { companyService } from '@/services/company-service';
 import { landingPlansService } from '@/services/landing-plans-service';
 
@@ -20,43 +18,64 @@ interface SubscriptionInfo {
   };
 }
 
+// Fetcher optimizado: obtiene la compañía y luego todos los planes (no solo los públicos)
+const fetchSubscriptionData = async (companyId: string): Promise<{ company: Company | null, currentPlan: LandingPlan | null, allPlans: LandingPlan[] }> => {
+  const company = await companyService.getCompanyById(companyId);
+  const allPlans = await landingPlansService.getPlans(); // Obtener todos los planes para una búsqueda robusta
+
+  if (!company || !company.planId) {
+    // Si no hay compañía o no tiene planId, no podemos determinar el plan actual.
+    return { company, currentPlan: null, allPlans };
+  }
+
+  // La lógica para encontrar el plan actual es más robusta ahora.
+  // Buscamos el plan que coincida con el planId de la compañía.
+  const currentPlan = allPlans.find(p => p.slug === company.planId || p.id === company.planId) || null;
+  
+  if (company.planId && !currentPlan && (company.subscriptionStatus === 'active' || company.subscriptionStatus === 'pending_payment')) {
+      console.warn(`Advertencia: La compañía ${company.id} tiene un planId "${company.planId}" que no corresponde a ningún plan existente.`);
+  }
+
+  return { company, currentPlan, allPlans };
+};
+
+
 export function useSubscription() {
   const { currentUser, isLoading: isSessionLoading } = useSession();
   const companyId = currentUser?.companyId;
 
-  // SWR hook to fetch company data, already serialized by the service
-  const { data: company, error: companyError, isLoading: isCompanyLoading } = useSWR<Company | null>(
-    companyId ? `company/${companyId}` : null,
-    () => companyService.getCompanyById(companyId!)
+  const { data, error, isLoading: isDataLoading } = useSWR(
+    companyId ? `subscription/${companyId}` : null,
+    () => fetchSubscriptionData(companyId!),
+    { revalidateOnFocus: false }
   );
 
-  const planId = company?.planId;
+  const { company = null, currentPlan = null, allPlans = [] } = data || {};
+  
+  const isLoading = isSessionLoading || (!!companyId && isDataLoading);
 
-  // SWR hook to fetch plan data, already serialized by the service
-  const { data: plan, error: planError, isLoading: isPlanLoading } = useSWR<LandingPlan | null>(
-    planId ? `plan/${planId}` : null,
-    () => landingPlansService.getPlanById(planId!)
-  );
+  // Filtrar los planes públicos para la sección "Explora"
+  const publicPlans = allPlans.filter(p => p.isPublic && p.isActive);
 
-  // La carga general depende de la sesión y de las cargas de datos condicionales.
-  const isLoading = isSessionLoading || (companyId && isCompanyLoading) || (planId && isPlanLoading);
-
+  // Lógica de permisos corregida y robustecida
+  const planSlugPart = currentPlan?.slug?.toLowerCase().split('-')[1] || '';
+  
   const permissions = {
-    // La gestión de empleados está disponible en planes 'estándar', 'premium' y 'profesional'.
-    canManageEmployees: ['estandar', 'premium', 'profesional'].includes(plan?.slug?.split('-')[1] || ''),
-    // Ejemplo: Analíticas avanzadas solo para premium y superior.
-    canUseAdvancedAnalytics: ['premium', 'profesional'].includes(plan?.slug?.split('-')[1] || ''),
-    // La personalización de marca está disponible en cualquier plan con un precio > 0.
-    canCustomizeBranding: !!plan && plan.price > 0 && plan.slug !== 'plan-gratis-lite',
+    // Un plan permite gestionar empleados si NO es el gratuito Y NO es el básico.
+    canManageEmployees: !!currentPlan && currentPlan.price > 0 && !['plan-gratuito', 'plan-gratis-lite', 'plan-basico'].includes(currentPlan.slug),
+    canUseAdvancedAnalytics: ['premium', 'profesional'].includes(planSlugPart),
+    canCustomizeBranding: !!currentPlan && currentPlan.price > 0 && currentPlan.slug !== 'plan-gratis-lite',
   };
-
+  
   return {
     subscription: {
-      company: company || null,
-      plan: plan || null,
+      company: company,
+      plan: currentPlan,
       permissions,
     },
+    allPlans: publicPlans,
     isLoading,
-    error: companyError || planError,
+    error,
   };
 }
+

@@ -1,10 +1,12 @@
+
 "use client";
 import React, { createContext, useContext, useState, ReactNode, useCallback } from "react";
 import useSWR from 'swr';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, updateDoc, doc, Timestamp, serverTimestamp } from 'firebase/firestore';
+import { getDb } from '@/lib/firebase';
+import { collection, addDoc, updateDoc, doc, Timestamp, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import type { Order } from '@/types'; 
 import { useSession } from "./session-context";
+import { serializeDate } from "@/lib/utils";
 
 interface OrderContextType {
   orders: Order[];
@@ -23,14 +25,32 @@ export const useOrderContext = () => {
   return ctx;
 };
 
-const fetcher = async (url: string): Promise<Order[]> => {
-  const response = await fetch(url);
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || 'Error al obtener los pedidos.');
+// Fetcher ahora consulta directamente a Firestore
+const fetcher = async ([_, companyId]: [string, string]): Promise<Order[]> => {
+  if (!companyId) return [];
+
+  const db = getDb();
+  const ordersQuery = query(
+    collection(db, "orders"),
+    where("restaurantId", "==", companyId)
+  );
+
+  const snapshot = await getDocs(ordersQuery);
+  if (snapshot.empty) {
+    return [];
   }
-  return response.json();
+
+  return snapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      ...data,
+      date: serializeDate(data.date)!,
+      updatedAt: serializeDate(data.updatedAt)!,
+    } as Order;
+  });
 };
+
 
 export const OrderProvider = ({ children }: { children: ReactNode }) => {
   const { currentUser, isLoading: isSessionLoading } = useSession();
@@ -40,18 +60,16 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
   const shouldFetch = !isSessionLoading && !!companyId;
 
   const { data: orders = [], error, isLoading, mutate } = useSWR<Order[], Error>(
-    shouldFetch ? `/api/companies/${companyId}/orders` : null,
+    shouldFetch ? [`orders`, companyId] : null, // Clave de SWR actualizada
     fetcher,
     {
-      revalidateOnFocus: true, // Revalidar al enfocar para datos en tiempo real
+      revalidateOnFocus: true,
       shouldRetryOnError: false,
     }
   );
 
   const addOrder = useCallback(async (orderData: Omit<Order, 'id' | 'date'>) => {
-    if (!db) {
-      throw new Error("La base de datos no está disponible.");
-    }
+    const db = getDb();
     const orderWithTimestamp = {
       ...orderData,
       date: serverTimestamp(),
@@ -63,9 +81,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
   }, [mutate, shouldFetch]);
 
   const updateOrder = useCallback(async (id: string, updates: Partial<Order>) => {
-     if (!db) {
-      throw new Error("La base de datos no está disponible.");
-    }
+     const db = getDb();
     const orderRef = doc(db, 'orders', id);
     const updatePayload: any = { ...updates };
     

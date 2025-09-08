@@ -1,3 +1,4 @@
+
 // src/app/api/sync-database/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { databaseSyncService } from '@/services/database-sync-service';

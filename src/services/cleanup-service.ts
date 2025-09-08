@@ -1,5 +1,5 @@
 // src/services/cleanup-service.ts
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { collection, query, where, getDocs, writeBatch } from 'firebase/firestore';
 import { auditService } from './audit-service';
 
@@ -11,6 +11,7 @@ class CleanupService {
    * Esta función está diseñada para ser ejecutada por un job programado (ej. cada 24 horas).
    */
   async cleanupLitePlanData(): Promise<{ cleanedCompanies: number; deletedDocs: number }> {
+    const db = getDb();
     console.log('🧹 [CleanupService] Iniciando limpieza de datos para planes Lite...');
 
     const companiesRef = collection(db, 'companies');

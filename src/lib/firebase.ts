@@ -1,24 +1,53 @@
+// src/lib/firebase.ts
 
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
-import { firebaseConfig } from './firebase-config';
+import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
+import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getAuth, type Auth } from 'firebase/auth';
+import { firebaseConfig, isFirebaseConfigValid } from './firebase-config';
 
-// Patrón Singleton para una inicialización segura y única de Firebase.
-let app: FirebaseApp;
-if (!getApps().length) {
-    if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-        console.error("Firebase config is missing or incomplete. Cannot initialize Firebase. Check your .env.local file.");
-        // En un escenario real, podríamos lanzar un error aquí para detener la ejecución.
-        // Para este entorno, intentaremos continuar, pero es probable que falle.
-    }
-    app = initializeApp(firebaseConfig);
-} else {
-    app = getApp();
+interface FirebaseServices {
+    app: FirebaseApp;
+    auth: Auth;
+    db: Firestore;
 }
 
-const db = getFirestore(app);
-const auth = getAuth(app);
+let services: FirebaseServices | null = null;
 
-// Exporta las instancias únicas que se deben usar en toda la aplicación.
-export { app, db, auth };
+function initializeFirebase(): FirebaseServices {
+  if (getApps().length === 0) {
+    if (!isFirebaseConfigValid()) {
+      throw new Error("La configuración de Firebase es inválida. Revisa firebase-config.ts");
+    }
+    console.log("🔥 Inicializando Firebase por primera vez...");
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    return { app, auth, db };
+  } else {
+    // console.log("♻️ Reutilizando instancia de Firebase existente...");
+    const app = getApp();
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    return { app, auth, db };
+  }
+}
+
+function getFirebaseServices(): FirebaseServices {
+    if (!services) {
+        services = initializeFirebase();
+    }
+    return services;
+}
+
+// Export individual getters for convenience and to ensure initialization
+export function getDb(): Firestore {
+  return getFirebaseServices().db;
+}
+
+export function getFirebaseAuth(): Auth {
+  return getFirebaseServices().auth;
+}
+
+export function getAppInstance(): FirebaseApp {
+  return getFirebaseServices().app;
+}

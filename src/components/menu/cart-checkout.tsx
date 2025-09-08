@@ -14,9 +14,15 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent as UiDialogContent, DialogHeader as UiDialogHeader, DialogTitle as UiDialogTitle, DialogDescription as UiDialogDescription, DialogFooter as UiDialogFooter } from '@/components/ui/dialog';
 import { tableService, Table } from '@/services/table-service';
-import { db } from "@/lib/firebase";
+import { getDb } from "@/lib/firebase";
 import { collection, addDoc, doc, serverTimestamp } from "firebase/firestore";
 import type { Company } from '@/types';
+import NequiIcon from '@/components/icons/nequi-icon';
+import DaviplataIcon from '@/components/icons/daviplata-icon';
+import BancolombiaIcon from '@/components/icons/bancolombia-icon';
+import WhatsAppIcon from "@/components/icons/whatsapp-icon";
+import { usePlanLimits } from "@/hooks/use-plan-limits";
+
 
 // Tipos para los productos del carrito
 interface CartItem {
@@ -49,7 +55,7 @@ function validateEmail(email: string) {
 
 
 export default function CartCheckout({ cart, onQuantity, onRemove, onClear, restaurantId, restaurantProfile, onClose }: CartCheckoutProps) {
-  const envio = cart.length > 0 ? 5.0 : 0;
+  const envio = restaurantProfile?.baseShippingCost && cart.length > 0 ? restaurantProfile.baseShippingCost : 0;
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const total = subtotal + envio;
   const { toast } = useToast() || { toast: () => {} };
@@ -99,29 +105,37 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
 
   const paymentMethods = useMemo(() => {
     const methods = [];
-    if (restaurantProfile?.paymentMethods?.codEnabled) {
-        methods.push({ key: "cash", label: "Pago Contra Entrega", instructions: "Paga en efectivo al recibir tu pedido." });
+    if (!restaurantProfile?.paymentMethods) return [];
+
+    const pm = restaurantProfile.paymentMethods;
+
+    if (pm.codEnabled) {
+      methods.push({ key: "cash", label: "Pago Contra Entrega", icon: <CreditCard className="h-5 w-5" /> });
     }
-    if (restaurantProfile?.paymentMethods?.bancolombia?.enabled && restaurantProfile.paymentMethods.bancolombia.bancolombiaQrImageUrl) {
-        methods.push({ key: "qr", label: "Paga con Código QR", instructions: "Escanea este QR con tu app bancaria.", qrUrl: restaurantProfile.paymentMethods.bancolombia.bancolombiaQrImageUrl });
+    if (pm.nequi?.enabled) {
+      methods.push({ key: 'nequi', label: 'Paga con Nequi', icon: <NequiIcon className="h-5 w-5" />, details: pm.nequi });
     }
-    if (restaurantProfile?.paymentMethods?.nequi?.enabled || restaurantProfile?.paymentMethods?.daviplata?.enabled) {
-        let nequiInfo = restaurantProfile?.paymentMethods?.nequi?.enabled ? `Nequi: ${restaurantProfile.paymentMethods.nequi.accountNumber}` : '';
-        let daviplataInfo = restaurantProfile?.paymentMethods?.daviplata?.enabled ? `Daviplata: ${restaurantProfile.paymentMethods.daviplata.accountNumber}` : '';
-        methods.push({ key: "nequi_daviplata", label: "Paga con Nequi/Daviplata", instructions: `Envía el total a ${[nequiInfo, daviplataInfo].filter(Boolean).join(' o ')}.` });
+    if (pm.daviplata?.enabled) {
+      methods.push({ key: 'daviplata', label: 'Paga con Daviplata', icon: <DaviplataIcon className="h-5 w-5" />, details: pm.daviplata });
+    }
+    if (pm.bancolombia?.enabled) {
+      methods.push({ key: 'bancolombia', label: 'Paga con Bancolombia QR', icon: <BancolombiaIcon className="h-5 w-5" />, details: pm.bancolombia });
     }
     return methods;
   }, [restaurantProfile]);
 
 
   useEffect(() => {
-    setLoadingMesas(true);
-    tableService.getAllTables(restaurantId).then((todas) => {
-      setMesas(todas.filter(m => m.isActive && m.status === 'available'));
-    }).finally(() => setLoadingMesas(false));
+    if (restaurantId) {
+      setLoadingMesas(true);
+      tableService.getAllTables(restaurantId).then((todas) => {
+        setMesas(todas.filter(m => m.isActive && m.status === 'available'));
+      }).finally(() => setLoadingMesas(false));
+    }
   }, [restaurantId]);
 
   const handleConfirmAndSend = async () => {
+    // 1. Validaciones previas
     if (cart.length === 0) {
       toast({ title: 'Carrito vacío', description: 'Agrega productos antes de continuar.', variant: 'destructive' });
       return;
@@ -136,13 +150,17 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
       setAccordionOpen('payment');
       return;
     }
+    if (!restaurantId) {
+        toast({ title: 'Error de configuración', description: 'No se pudo identificar el restaurante. Contacta a soporte.', variant: 'destructive' });
+        return;
+    }
 
-    let pedidoGuardado = false;
+    // 2. Guardar pedido en la base de datos
     try {
       const mesaObj = mesas.find(m => m.id === mesaSeleccionada);
       
       const newOrderData: any = {
-        restaurantId,
+        restaurantId: restaurantId, // **CORRECCIÓN CLAVE**
         productos: cart.map(item => ({ id: item.id, nombre: item.name, cantidad: item.quantity, precio: item.price })),
         cliente: {
           nombre: cliente.nombre,
@@ -166,19 +184,21 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
           tableNumber: mesaObj.number,
         };
       }
-
+      
+      const db = getDb();
       await addDoc(collection(db, "orders"), newOrderData);
       
       if (mesaObj) {
         await tableService.changeTableStatus(mesaObj.id!, 'occupied');
       }
-      pedidoGuardado = true;
+
     } catch (err) {
       console.error("Error al registrar pedido:", err);
-      toast({ title: 'Error al registrar pedido', description: 'No se pudo guardar el pedido en el sistema.', variant: 'destructive' });
-      return;
+      toast({ title: 'Error al registrar pedido', description: 'No se pudo guardar el pedido en el sistema. Por favor, intenta de nuevo.', variant: 'destructive' });
+      return; // **CORRECCIÓN CLAVE**: Detener la ejecución si el guardado falla
     }
-
+    
+    // 3. Si el guardado fue exitoso, proceder a enviar por WhatsApp
     const productos = cart.map(item => `• ${item.quantity}x ${item.name} – $${(item.price * item.quantity).toFixed(2)}`).join('\n');
     const totalStr = (cart.reduce((acc, item) => acc + item.price * item.quantity, 0) + envio).toFixed(2);
     const metodo = paymentMethods.find(m => m.key === selectedPayment)?.label || '';
@@ -192,12 +212,13 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
       (cliente.notas ? `📝 *Notas del Cliente:*\n${cliente.notas}` : '');
     const phone = restaurantProfile?.phone || '';
     const url = `https://api.whatsapp.com/send?phone=${phone.replace(/\D/g, '')}&text=${encodeURIComponent(mensaje)}`;
+    
     window.open(url, '_blank');
-    toast({ title: 'Pedido preparado', description: 'Redirigiendo a WhatsApp...', variant: 'success' });
-    if (pedidoGuardado) {
-      if (onClear) onClear();
-      if (onClose) onClose();
-    }
+    
+    toast({ title: 'Pedido Enviado', description: 'Tu pedido se guardó y se envió por WhatsApp.', variant: 'success' });
+    
+    if (onClear) onClear();
+    if (onClose) onClose();
   };
 
   const handleShare = () => {
@@ -206,19 +227,48 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
       return;
     }
     const productos = cart.map(item => `- ${item.quantity}x ${item.name} – $${(item.price * item.quantity).toFixed(2)}`).join('\n');
-    const total = (cart.reduce((acc, item) => acc + item.price * item.quantity, 0) + envio).toFixed(2);
+    const totalStr = (cart.reduce((acc, item) => acc + item.price * item.quantity, 0) + envio).toFixed(2);
     const resumen =
       `🛍️ Pedido WebSapMax\n` +
       `Cliente: ${cliente.nombre || '-'}\n` +
       `Tel: ${cliente.telefono || '-'}\n` +
       `Dirección: ${cliente.direccion || '-'}\n` +
       `Productos:\n${productos}\n` +
-      `Total: $${total}`;
+      `Total: $${totalStr}`;
     navigator.clipboard.writeText(resumen).then(() => {
       toast({ title: 'Pedido copiado', description: 'Resumen copiado al portapapeles.', variant: 'success' });
     }).catch(() => {
       toast({ title: 'Error', description: 'No se pudo copiar el pedido.', variant: 'destructive' });
     });
+  };
+  
+  const renderPaymentDetails = () => {
+    const method = paymentMethods.find(m => m.key === selectedPayment);
+    if (!method || !method.details) return null;
+
+    const { nequiQrImageUrl, bancolombiaQrImageUrl, daviplataQrImageUrl, accountNumber, accountHolder } = method.details;
+    const qrUrl = nequiQrImageUrl || bancolombiaQrImageUrl || daviplataQrImageUrl;
+
+    return (
+        <div className="mt-2 p-3 rounded-md bg-muted border text-sm text-center space-y-2">
+            <p className="font-semibold">Paga a la siguiente cuenta:</p>
+            {accountHolder && <p><strong>Titular:</strong> {accountHolder}</p>}
+            {accountNumber && <p><strong>Cuenta:</strong> {accountNumber}</p>}
+            {qrUrl && (
+                <>
+                    <p className="font-semibold mt-2">O escanea el código QR:</p>
+                    <Image 
+                        src={qrUrl}
+                        alt={`Código QR para ${method.label}`}
+                        width={150}
+                        height={150}
+                        className="mx-auto rounded-lg border"
+                        data-ai-hint="payment QR code"
+                    />
+                </>
+            )}
+        </div>
+    );
   };
 
   return (
@@ -301,26 +351,12 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
                           onChange={() => setSelectedPayment(method.key)}
                           className="accent-primary h-4 w-4"
                         />
+                        {method.icon}
                         <span className="flex-1 font-medium">{method.label}</span>
                         {selectedPayment === method.key && <Check className="h-5 w-5 text-green-600" />}
                       </label>
                     ))}
-                    {selectedPayment && (
-                      <div className="mt-2 p-3 rounded-md bg-muted border text-sm">
-                        <div className="font-medium mb-1">Instrucciones:</div>
-                        <div className="mb-2">{paymentMethods.find(m => m.key === selectedPayment)?.instructions}</div>
-                        {selectedPayment === "qr" && paymentMethods.find(m => m.key === "qr")?.qrUrl && (
-                          <Image 
-                            src={paymentMethods.find(m => m.key === "qr")?.qrUrl || ''} 
-                            alt="QR de Pago" 
-                            width={112} 
-                            height={112} 
-                            className="w-28 h-28 mx-auto rounded border" 
-                            data-ai-hint="payment QR code"
-                          />
-                        )}
-                      </div>
-                    )}
+                    {renderPaymentDetails()}
                   </div>
                 </AccordionContent>
               </AccordionItem>
@@ -425,7 +461,7 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
           </CardContent>
           <CardFooter className="flex flex-col gap-3 p-6 border-t bg-primary/5 rounded-b-2xl">
             <Button className="w-full bg-green-500 hover:bg-green-600 text-white text-lg py-4 rounded-lg flex items-center justify-center gap-2" onClick={handleConfirmAndSend}>
-              <CheckCircle className="h-6 w-6" /> Confirmar Pedido y Contactar por WhatsApp
+              <WhatsAppIcon className="h-6 w-6" /> Pedir por WhatsApp
             </Button>
             <div className="flex justify-center w-full">
               <Button variant="outline" className="text-primary border-primary text-lg py-4 rounded-lg mt-1 w-full max-w-xs" onClick={handleShare} disabled={cart.length === 0}>

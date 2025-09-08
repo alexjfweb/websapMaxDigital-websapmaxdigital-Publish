@@ -1,13 +1,112 @@
 
-// Este archivo ya no es necesario y puede ser eliminado.
-// La subida de archivos ahora se gestiona directamente desde el cliente
-// a través del servicio `src/services/storage-service.ts` que usa el SDK de cliente de Firebase.
-// Dejarlo vacío previene errores si alguna parte del código aún lo referencia por error.
-import { NextResponse } from 'next/server';
+// src/app/api/upload/route.ts - VERSIÓN CORREGIDA CON BUCKET CORRECTO
+import { NextRequest, NextResponse } from 'next/server';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getStorage } from 'firebase-admin/storage';
+import { firebaseAdminConfig } from '@/lib/firebase-config';
 
-export async function POST(request: Request) {
-  return NextResponse.json(
-    { error: 'This endpoint is deprecated. Use the client-side storage service instead.' },
-    { status: 410 } // 410 Gone
-  );
+export async function POST(request: NextRequest) {
+  console.log('🚀 API Upload iniciada - Versión final y robusta');
+
+  try {
+    // 1. Obtener archivo y ruta del FormData
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
+    const path = formData.get('path') as string || 'uploads';
+    
+    if (!file) {
+      return NextResponse.json({ 
+        success: false,
+        error: 'No se encontró archivo en la solicitud' 
+      }, { status: 400 });
+    }
+
+    console.log('📁 Archivo recibido:', { 
+      name: file.name, 
+      size: file.size, 
+      type: file.type,
+      path: path
+    });
+
+    // 2. Usar la configuración de firebase-admin importada
+    if (!firebaseAdminConfig || !firebaseAdminConfig.project_id) {
+       return NextResponse.json({
+        success: false,
+        error: 'La configuración de Firebase Admin está incompleta en firebase-config.ts.'
+      }, { status: 500 });
+    }
+    
+    console.log('🔑 Usando proyecto:', firebaseAdminConfig.project_id);
+
+    // 3. Inicializar Firebase Admin - BUCKET CORREGIDO
+    let app;
+    if (getApps().length === 0) {
+      app = initializeApp({
+        credential: cert(firebaseAdminConfig),
+        storageBucket: 'websapmax.firebasestorage.app',
+      });
+      console.log('✅ Firebase Admin inicializado');
+    } else {
+      app = getApps()[0];
+      console.log('♻️ Reutilizando Firebase Admin');
+    }
+
+    // 4. Subir archivo
+    const storage = getStorage(app);
+    const bucket = storage.bucket();
+    
+    // Verificar si el bucket existe
+    try {
+        const [exists] = await bucket.exists();
+        if (!exists) {
+            throw new Error(`El bucket "${bucket.name}" no existe. Por favor, ve a la Consola de Firebase -> Storage y crea un bucket de almacenamiento.`);
+        }
+    } catch (e) {
+         throw new Error(`Error al verificar el bucket: ${(e as Error).message}`);
+    }
+
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    
+    const timestamp = Date.now();
+    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const fileName = `${path}/${timestamp}-${sanitizedFileName}`;
+    
+    const fileRef = bucket.file(fileName);
+
+    await fileRef.save(buffer, {
+      metadata: { 
+        contentType: file.type,
+      }
+    });
+
+    console.log('✅ Archivo guardado en Storage');
+
+    // 5. Hacer público el archivo y generar URL
+    await fileRef.makePublic();
+    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+    
+    console.log('🎉 Upload completado exitosamente:', publicUrl);
+
+    return NextResponse.json({ 
+      success: true, 
+      url: publicUrl,
+    });
+
+  } catch (error: any) {
+    console.error('❌ Error completo en la API de subida:', error);
+    
+    let errorMessage = 'Error interno del servidor al subir el archivo.';
+    if (error.message && error.message.includes('bucket does not exist')) {
+      errorMessage = 'El bucket de Firebase Storage no existe o no está activado. Ve a Firebase Console -> Storage y actívalo.';
+    } else if (error.message && error.message.includes('permission')) {
+      errorMessage = 'Sin permisos para acceder a Firebase Storage. Revisa los permisos de la cuenta de servicio.';
+    }
+
+    return NextResponse.json({ 
+      success: false,
+      error: errorMessage,
+      details: error.message,
+    }, { status: 500 });
+  }
 }

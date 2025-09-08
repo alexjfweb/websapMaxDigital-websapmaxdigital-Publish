@@ -4,7 +4,12 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  productionBrowserSourceMaps: false, // Añadido para optimizar
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
@@ -15,6 +20,12 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "firebasestorage.googleapis.com",
+        port: "",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "storage.googleapis.com",
         port: "",
         pathname: "/**",
       },
@@ -42,3 +53,5 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
+
+    

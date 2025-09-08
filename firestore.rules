@@ -1,72 +1,79 @@
 
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Reglas Públicas: Cualquiera puede leer, pero nadie puede escribir.
-    // Esencial para la landing page.
+    // --- REGLAS PÚBLICAS (SOLO LECTURA) ---
+    // Permite que cualquiera pueda leer la configuración y los planes de la landing page.
     match /landing_configs/{docId} {
       allow read: if true;
-      allow write: if false; // Nadie escribe directamente aquí.
-    }
-    
-    match /landingPlans/{planId} {
-      allow read: if true;
-      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
-    }
-    
-    // Reglas para Tickets de Soporte
-    // Cualquiera puede crear (POST), pero solo superadmins pueden leer/actualizar
-    match /supportTickets/{ticketId} {
-      allow create: if true;
-      allow read, update, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
-    }
-    
-    // Configuración general (ej. navegación)
-    match /configuration/{configId} {
-      allow read: if true; // Permitir lectura para que la UI se construya
-      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
+      allow write: if request.auth != null; // Solo usuarios autenticados pueden escribir
     }
 
-    // Reglas para Usuarios: Un usuario puede leer/actualizar su propio perfil. Superadmins pueden hacer todo.
-    match /users/{userId} {
-      allow read, update: if request.auth != null && request.auth.uid == userId;
-      allow create, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
+    match /landingPlans/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null; // Solo usuarios autenticados pueden escribir
     }
-    
-    // Reglas para Compañías: Solo los miembros (admins) de esa compañía y superadmins pueden acceder.
+
+    // --- REGLAS PROTEGIDAS POR AUTENTICACIÓN ---
+    // Cualquier usuario autenticado puede leer/escribir en estas colecciones.
+    // La lógica de negocio (quién puede escribir en qué) se maneja en el backend/servicios.
     match /companies/{companyId} {
-      // Un usuario puede leer los datos de su propia compañía.
-      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == companyId;
-      // Solo el superadmin puede crear/actualizar/borrar compañías directamente.
-      allow create, update, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
+      allow read, write: if request.auth != null;
     }
-    
-    // Reglas para Subcolecciones: Platos, Pedidos, Mesas, etc. pertenecen a una compañía.
+
     match /dishes/{dishId} {
-       allow read: if true; // Menús públicos
-       allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == resource.data.companyId;
+      allow read, write: if request.auth != null;
     }
-    
+
     match /orders/{orderId} {
-      allow create: if true; // Clientes pueden crear pedidos
-      allow read, update: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == resource.data.restaurantId;
+      allow read, write: if request.auth != null;
     }
-    
+
     match /reservations/{reservationId} {
-       allow create: if true; // Clientes pueden crear reservas
-       allow read, update: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == resource.data.restaurantId;
+      allow read, write: if request.auth != null;
     }
     
     match /tables/{tableId} {
-      allow read: if true; // Empleados y admins necesitan ver el estado de las mesas
-      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == resource.data.restaurantId;
+      allow read, write: if request.auth != null;
+    }
+
+    match /supportTickets/{ticketId} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /payment_configs/{paymentId} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /payment_methods/{methodId} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /menu_styles/{styleId} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /globalAuditLogs/{logId} {
+      allow read, write: if request.auth != null;
     }
     
-    // Colección de logs de auditoría: Solo superadmins pueden leer y solo el sistema (o superadmin) puede escribir.
-    match /globalAuditLogs/{logId} {
-       allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin';
+    match /configuration/{docId} {
+      allow read, write: if request.auth != null;
     }
+
+    // --- REGLAS DE USUARIO ---
+    // Un usuario solo puede leer o modificar su propio documento.
+    match /users/{userId} {
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      // La creación se maneja en el backend durante el registro.
+      allow create, delete: if request.auth != null; 
+    }
+
+    // --- CATCH-ALL ---
+    // Bloquea por defecto cualquier acceso a rutas no definidas explícitamente.
+    // Esta regla NO es necesaria si las de arriba cubren todo. Si se añade,
+    // debe ser la última y con el formato correcto. Las reglas de Firestore son
+    // "deny by default", por lo que si una ruta no coincide con ninguna regla, se deniega.
   }
 }

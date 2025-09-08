@@ -3,15 +3,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Stripe } from 'stripe';
 import { MercadoPagoConfig, PreApproval } from 'mercadopago';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import type { LandingPlan } from '@/services/landing-plans-service';
 import type { Company } from '@/types';
 
-// Helper para obtener la URL base de la aplicación
-// ✅ CORRECCIÓN DEFINITIVA: Se establece la URL base de forma estática y prioritaria.
+// Helper para obtener la URL base de la aplicación de forma robusta
 function getBaseUrl() {
-  // Se prioriza la URL específica del entorno de desarrollo para evitar cualquier ambigüedad.
-  return 'https://9000-firebase-studio-1748450787904.cluster-ux5mmlia3zhhask7riihruxydo.cloudworkstations.dev';
+  // Prioriza la variable de entorno si está definida para producción
+  if (process.env.NEXT_PUBLIC_BASE_URL) {
+    return process.env.NEXT_PUBLIC_BASE_URL;
+  }
+  // Fallback para el entorno de producción de Firebase si no hay variable de entorno.
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://websapmax.web.app';
+  }
+  // Fallback para desarrollo local
+  return 'http://localhost:9003';
 }
 
 const CONFIG_DOC_ID = 'main_payment_methods';
@@ -19,51 +26,29 @@ const CONFIG_DOC_ID = 'main_payment_methods';
 
 // Handler para la creación de sesiones de checkout
 export async function POST(request: NextRequest) {
-  console.log('🚀🚀🚀 API ROUTE HIT - POST /api/payments/create-checkout-session');
-  console.log('🔍 === DEPURACIÓN CHECKOUT ===');
+  console.log('🚀 API ROUTE HIT - POST /api/payments/create-checkout-session');
   
   try {
     const body = await request.json();
-    console.log('🔍 Método:', request.method);
-    console.log('🔍 Body completo:', JSON.stringify(body, null, 2));
-    console.log('🔍 Plan ID recibido:', body.planId);
-    console.log('🔍 Tipo de planId:', typeof body.planId);
+    const { planId, companyId, provider } = body;
 
-    let { companyId, provider } = body;
-    let rawPlanId = body.planId;
-
-    if (!rawPlanId || !companyId || !provider) {
+    if (!planId || !companyId || !provider) {
       console.error('🔴 [Checkout API] - Error: Faltan parámetros. planId, companyId y provider son requeridos.');
       return NextResponse.json({ error: 'Faltan parámetros: planId, companyId y provider son requeridos.' }, { status: 400 });
     }
-    
-    // Mapeo temporal para corregir IDs inconsistentes como 'bsico'
-    const planIdMap: Record<string, string> = {
-      'bsico': 'plan-basico',
-      'basico': 'plan-basico',
-      'estndar': 'plan-estandar',
-      'estandar': 'plan-estandar',
-      'premium': 'plan-premium'
-    };
-
-    const planId = planIdMap[rawPlanId] || rawPlanId;
-    if (planId !== rawPlanId) {
-       console.log(`🔄 Plan ID mapeado de '${rawPlanId}' a '${planId}'`);
-    }
 
     console.log(`[Checkout API] - Procesando para companyId: ${companyId}, planSlug: ${planId}, provider: ${provider}`);
-
+    const db = getDb();
     // 1. Obtener detalles del plan y la empresa
     const plansCollection = collection(db, 'landingPlans');
     const q = query(plansCollection, where('slug', '==', planId), where('isActive', '==', true));
     const planQuerySnap = await getDocs(q);
     
-    let planSnap = planQuerySnap.docs[0];
-
-    if (!planSnap) {
+    if (planQuerySnap.empty) {
         console.warn(`[Checkout API] - No se encontró el plan con slug '${planId}'.`);
         return NextResponse.json({ error: `Plan con slug '${planId}' no encontrado o inactivo.` }, { status: 404 });
     }
+    const planSnap = planQuerySnap.docs[0];
     const plan = { id: planSnap.id, ...planSnap.data() } as LandingPlan;
 
     const companySnap = await getDoc(doc(db, 'companies', companyId));
@@ -80,9 +65,8 @@ export async function POST(request: NextRequest) {
     }
     
     const allPlansConfig = paymentMethodsDoc.data();
-    // Extraer el nombre clave del plan desde el slug, ej: 'plan-basico' -> 'básico'
-    const planNameKey = plan.slug?.split('-')[1] as 'básico' | 'estándar' | 'premium' || 'básico';
-    const paymentMethodsConfig = allPlansConfig[planNameKey];
+    const planNameKey = (plan.slug?.replace(/^plan-/, '').replace(/-$/, '') || 'básico') as 'básico' | 'estándar' | 'premium';
+    const paymentMethodsConfig = allPlansConfig[planNameKey] || allPlansConfig['estandar'] || allPlansConfig['estándar'];
 
     if (!paymentMethodsConfig) {
         console.error(`🔴 [Checkout API] - Error: No hay configuración de pago para el plan '${planNameKey}'.`);
@@ -132,11 +116,11 @@ export async function POST(request: NextRequest) {
         }],
         mode: 'subscription',
         customer: customerId,
-        success_url: `${baseUrl}/admin/subscription?payment=success&provider=stripe`,
+        success_url: `${baseUrl}/admin/subscription?payment=success&provider=stripe&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/admin/checkout?plan=${plan.slug}&payment=cancelled`,
         metadata: {
           companyId,
-          planId: planSnap.id,
+          planId: plan.slug, // CORREGIDO: Usar siempre el slug
         },
       });
 
@@ -167,9 +151,9 @@ export async function POST(request: NextRequest) {
           body: {
             preapproval_plan_id: plan.mp_preapproval_plan_id,
             payer_email: company.email,
-            back_url: `${baseUrl}/admin/subscription?payment=success`,
+            back_url: `${baseUrl}/admin/subscription?payment=success&provider=mercadopago`,
             reason: `Suscripción al Plan ${plan.name} de WebSapMax`,
-            external_reference: `${companyId}|${planSnap.id}`,
+            external_reference: `${companyId}|${plan.slug}`, // CORREGIDO: Enviar el slug
           }
       });
       

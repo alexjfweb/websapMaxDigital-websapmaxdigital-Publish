@@ -5,7 +5,6 @@ import { useState, useEffect, type ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Edit3, Trash2, Search, UploadCloud, Save, Filter, CalendarDays, Lock } from "lucide-react";
@@ -26,14 +25,15 @@ import { addDays, isWithinInterval, parseISO } from "date-fns";
 import { storageService } from "@/services/storage-service";
 import { useSession } from "@/contexts/session-context";
 import { collection, getDocs, query, where, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { getDb } from "@/lib/firebase";
 import { useSubscription } from '@/hooks/use-subscription';
 import UpgradePlanCard from "@/components/UpgradePlanCard";
-
+import { usePlanLimits } from "@/hooks/use-plan-limits";
+import LimitReachedDialog from "@/components/LimitReachedDialog";
 
 export default function AdminEmployeesPage() {
   const { currentUser } = useSession();
-  const companyId = currentUser.companyId;
+  const companyId = currentUser?.companyId;
   const { toast } = useToast();
   const [employees, setEmployees] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,11 +45,14 @@ export default function AdminEmployeesPage() {
   const [search, setSearch] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { subscription, isLoading: isSubscriptionLoading } = useSubscription();
+  const { limits, isLimitsLoading } = usePlanLimits();
+  const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
 
   const fetchEmployees = async () => {
     if (!companyId) return;
     setIsLoading(true);
     try {
+      const db = getDb();
       const q = query(collection(db, "users"), where("companyId", "==", companyId), where("role", "==", "employee"));
       const querySnapshot = await getDocs(q);
       const fetchedEmployees: User[] = [];
@@ -65,7 +68,7 @@ export default function AdminEmployeesPage() {
   };
 
   useEffect(() => {
-    fetchEmployees();
+    if(companyId) fetchEmployees();
   }, [companyId]);
 
   const employeeFormSchema = z.object({
@@ -138,6 +141,7 @@ export default function AdminEmployeesPage() {
     }
     setIsSubmitting(true);
     try {
+        const db = getDb();
         let avatarUrl = editingEmployee?.avatarUrl;
 
         if (values.avatar instanceof File) {
@@ -160,7 +164,6 @@ export default function AdminEmployeesPage() {
             await updateDoc(employeeRef, employeeData);
             toast({ title: "Empleado Actualizado!", description: `Detalles para ${values.username} han sido actualizados.` });
         } else {
-            // Note: This does not create a Firebase Auth user, only a user document in Firestore.
             await addDoc(collection(db, "users"), employeeData);
             toast({ title: "Empleado Agregado!", description: `${values.username} ha sido agregado al equipo.` });
         }
@@ -180,6 +183,10 @@ export default function AdminEmployeesPage() {
   };
 
   const openNewDialog = () => {
+    if (limits.reached.employees) {
+        setIsLimitModalOpen(true);
+        return;
+    }
     setEditingEmployee(null);
     setIsDialogOpen(true);
   };
@@ -190,6 +197,7 @@ export default function AdminEmployeesPage() {
 
   const handleDeleteEmployee = async (employeeId: string) => {
     try {
+      const db = getDb();
       await deleteDoc(doc(db, "users", employeeId));
       toast({ title: "Empleado Eliminado", description: "El empleado ha sido eliminado del sistema.", variant: "destructive" });
       fetchEmployees();
@@ -199,14 +207,11 @@ export default function AdminEmployeesPage() {
   };
 
   const filteredEmployees = employees.filter((emp) => {
-    // Filtrar por estado
     if (statusFilter && statusFilter !== 'all' && emp.status !== statusFilter) return false;
-    // Filtrar por rango de fechas
     if (dateRange.from && dateRange.to) {
       const regDate = parseISO(emp.registrationDate);
       if (!isWithinInterval(regDate, { start: dateRange.from, end: addDays(dateRange.to, 1) })) return false;
     }
-    // Filtrar por búsqueda
     if (search && !(
       emp.username.toLowerCase().includes(search.toLowerCase()) ||
       emp.email.toLowerCase().includes(search.toLowerCase()) ||
@@ -215,7 +220,7 @@ export default function AdminEmployeesPage() {
     return true;
   });
 
-  if (isSubscriptionLoading) {
+  if (isSubscriptionLoading || isLimitsLoading) {
     return <div>Cargando información de suscripción...</div>;
   }
 
@@ -230,18 +235,24 @@ export default function AdminEmployeesPage() {
   }
 
   return (
+    <>
+    <LimitReachedDialog 
+        isOpen={isLimitModalOpen}
+        onClose={() => setIsLimitModalOpen(false)}
+        limitType="empleados"
+        limit={limits.max.employees}
+        planName={subscription?.plan?.name || ''}
+    />
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-primary">Gestión de empleados</h1>
-          <p className="text-lg text-muted-foreground">Descripción de la página de empleados</p>
+          <p className="text-lg text-muted-foreground">Añade o edita los miembros de tu equipo. Límite del plan: {limits.current.employees}/{limits.max.employees < 0 ? 'Ilimitados' : limits.max.employees}</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openNewDialog}>
-              <PlusCircle className="mr-2 h-5 w-5" /> Agregar Nuevo
-            </Button>
-          </DialogTrigger>
+          <Button onClick={openNewDialog}>
+            <PlusCircle className="mr-2 h-5 w-5" /> Agregar Nuevo
+          </Button>
           <DialogContent className="sm:max-w-xl">
              <DialogHeader>
                 <DialogTitle>{editingEmployee ? 'Editar Empleado' : 'Agregar Empleado'}</DialogTitle>
@@ -464,5 +475,6 @@ export default function AdminEmployeesPage() {
         </CardContent>
       </Card>
     </div>
+    </>
   );
 }

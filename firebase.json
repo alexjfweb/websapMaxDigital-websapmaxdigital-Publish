@@ -4,22 +4,38 @@
     "rules": "firestore.rules"
   },
   "storage": {
-    "rules": "storage.rules"
+    "rules": "storage.rules",
+    "cors": [
+      {
+        "origin": [
+          "https://6000-firebase-studio-1748450787904.cluster-ux5mmlia3zhhask7riihruxydo.cloudworkstations.dev",
+          "http://localhost:3000",
+          "http://localhost:9002",
+          "http://localhost:9003",
+          "https://studio-three-eta-78.vercel.app"
+        ],
+        "method": [
+          "GET",
+          "POST",
+          "PUT",
+          "DELETE",
+          "HEAD"
+        ],
+        "maxAgeSeconds": 3600
+      }
+    ]
   },
   "hosting": {
-    "source": ".",
+    "public": ".next",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ],
-    "frameworksBackend": {
-      "region": "us-central1"
-    },
     "rewrites": [
       {
-        "source": "/api/**",
-        "function": "ssrapi"
+        "source": "**",
+        "function": "nextServer"
       }
     ]
   }

@@ -32,6 +32,7 @@ import BancolombiaIcon from "@/components/icons/bancolombia-icon"
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import WhatsAppIcon from "@/components/icons/whatsapp-icon"
+import { usePlanLimits } from "@/hooks/use-plan-limits"
 
 const reservationFormSchema = z.object({
   customerName: z.string().min(2, { message: "El nombre completo debe tener al menos 2 caracteres." }),
@@ -46,10 +47,9 @@ const reservationFormSchema = z.object({
 
 type ReservationFormData = z.infer<typeof reservationFormSchema>;
 
-// Generar franjas horarias (ej. cada 30 minutos de 12 PM a 9 PM)
 const generateTimeSlots = () => {
   const slots = [];
-  for (let hour = 12; hour <= 21; hour++) { // De 12:00 a 21:00
+  for (let hour = 12; hour <= 21; hour++) {
     for (let minute = 0; minute < 60; minute += 30) {
       const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
       slots.push(time);
@@ -59,7 +59,6 @@ const generateTimeSlots = () => {
 };
 const timeSlots = generateTimeSlots();
 
-
 export default function ReservationForm({ restaurantId, restaurantProfile, onSuccess }: { 
     restaurantId: string; 
     restaurantProfile: Company | null;
@@ -68,6 +67,7 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [reservationData, setReservationData] = useState<ReservationFormData | null>(null);
+  const { limits, isLimitsLoading } = usePlanLimits();
 
   const paymentMethods = useMemo(() => {
     const methods = [];
@@ -100,6 +100,15 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
   const selectedPaymentMethod = form.watch("paymentMethod");
 
   async function onValidSubmit(values: ReservationFormData) {
+    if (limits.reached.reservations) {
+        toast({
+            title: "Límite de Reservas Alcanzado",
+            description: `Este restaurante ha alcanzado el límite de ${limits.max.reservations} reservas para este mes. Por favor, contacte directamente al restaurante.`,
+            variant: "destructive",
+            duration: 8000,
+        });
+        return;
+    }
     setReservationData(values);
     setIsConfirmModalOpen(true);
   }
@@ -130,10 +139,9 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
             notes: reservationData.notes || '',
         });
 
-        // Preparamos el mensaje de WhatsApp
         const paymentMethodLabel = paymentMethods.find(p => p.key === reservationData.paymentMethod)?.label || 'No especificado';
         const message = `✨ *Nueva Solicitud de Reserva* ✨\n\n` +
-                        `*Restaurante:* ${restaurantProfile?.name}\n\n` +
+                        `*Restaurante:* ${restaurantProfile?.name || 'Nombre no disponible'}\n\n` +
                         `*Cliente:* ${reservationData.customerName}\n` +
                         `*Teléfono:* ${reservationData.customerPhone}\n` +
                         `*Fecha:* ${format(combinedDateTime, "EEEE, d 'de' MMMM", { locale: es })}\n` +
@@ -166,45 +174,46 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
     }
   }
 
-
   const renderPaymentDetails = () => {
     if (!selectedPaymentMethod) return null;
 
     const pm = restaurantProfile?.paymentMethods;
 
-    if (selectedPaymentMethod === 'nequi' && pm?.nequi?.enabled) {
-      return (
-        <div className="mt-4 p-3 bg-muted rounded-md border text-sm">
-          <p><strong>Pagar a Nequi:</strong> {pm.nequi.accountNumber}</p>
-          <p><strong>Titular:</strong> {pm.nequi.accountHolder}</p>
-        </div>
-      );
-    }
-    if (selectedPaymentMethod === 'daviplata' && pm?.daviplata?.enabled) {
-      return (
-        <div className="mt-4 p-3 bg-muted rounded-md border text-sm">
-          <p><strong>Pagar a Daviplata:</strong> {pm.daviplata.accountNumber}</p>
-          <p><strong>Titular:</strong> {pm.daviplata.accountHolder}</p>
-        </div>
-      );
-    }
-    if (selectedPaymentMethod === 'bancolombia_qr' && pm?.bancolombia?.enabled && pm.bancolombia.bancolombiaQrImageUrl) {
-        return (
-            <div className="mt-4 p-3 bg-muted rounded-md border text-center">
-                <p className="font-semibold mb-2">Escanea para pagar con Bancolombia</p>
-                <Image 
-                    src={pm.bancolombia.bancolombiaQrImageUrl}
-                    alt="Código QR Bancolombia"
-                    width={150}
-                    height={150}
-                    className="mx-auto rounded-lg"
-                    data-ai-hint="payment QR code"
-                />
-            </div>
-        )
-    }
+    let details = null;
+    let qrUrl = null;
 
-    return null;
+    if (selectedPaymentMethod === 'nequi' && pm?.nequi?.enabled) {
+      details = pm.nequi;
+      qrUrl = pm.nequi.nequiQrImageUrl;
+    } else if (selectedPaymentMethod === 'daviplata' && pm?.daviplata?.enabled) {
+      details = pm.daviplata;
+      qrUrl = pm.daviplata.daviplataQrImageUrl;
+    } else if (selectedPaymentMethod === 'bancolombia_qr' && pm?.bancolombia?.enabled) {
+      details = pm.bancolombia;
+      qrUrl = pm.bancolombia.bancolombiaQrImageUrl;
+    }
+    
+    if (!details) return null;
+
+    return (
+      <div className="mt-4 p-3 bg-muted rounded-md border text-sm text-center">
+        {details.accountHolder && <p><strong>Titular:</strong> {details.accountHolder}</p>}
+        {details.accountNumber && <p><strong>Pagar a:</strong> {details.accountNumber}</p>}
+        {qrUrl && (
+          <>
+            <p className="font-semibold my-2">O escanea el código QR:</p>
+            <Image 
+              src={qrUrl}
+              alt={`Código QR para ${selectedPaymentMethod}`}
+              width={150}
+              height={150}
+              className="mx-auto rounded-lg border"
+              data-ai-hint="payment QR code"
+            />
+          </>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -297,7 +306,7 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
                         selected={field.value}
                         onSelect={field.onChange}
                         disabled={(date) =>
-                            date < new Date(new Date().setHours(0,0,0,0)) // Deshabilitar fechas pasadas
+                            date < new Date(new Date().setHours(0,0,0,0))
                         }
                         initialFocus
                     />
@@ -375,7 +384,7 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
+        <Button type="submit" className="w-full" disabled={isSubmitting || isLimitsLoading}>
            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
            {isSubmitting ? 'Procesando...' : 'Solicitar Reserva'}
         </Button>
@@ -425,7 +434,7 @@ export default function ReservationForm({ restaurantId, restaurantProfile, onSuc
                 className="w-full bg-green-500 hover:bg-green-600 text-lg py-6"
              >
                 {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <WhatsAppIcon className="mr-2 h-5 w-5" />}
-                {isSubmitting ? 'Confirmando...' : 'Confirmar y Enviar por WhatsApp'}
+                {isSubmitting ? 'Confirmando...' : 'Pedir por WhatsApp'}
              </Button>
             <Button variant="outline" onClick={() => setIsConfirmModalOpen(false)} disabled={isSubmitting}>
                 Volver y Editar

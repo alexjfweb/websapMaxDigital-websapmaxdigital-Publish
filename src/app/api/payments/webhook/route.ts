@@ -3,12 +3,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Stripe } from 'stripe';
 import { MercadoPagoConfig, PreApproval } from 'mercadopago';
 import { doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { headers } from 'next/headers';
 import { auditService } from '@/services/audit-service';
+import type { Company } from '@/types';
 
 // Helper para obtener las claves secretas de un documento de config central.
 async function getPaymentKeys() {
+  const db = getDb();
   const docRef = doc(db, "payment_methods", "main_payment_methods");
   const docSnap = await getDoc(docRef);
   if (!docSnap.exists()) {
@@ -48,6 +50,7 @@ async function handleStripeWebhook(request: NextRequest, keys: any) {
   }
   
   const session = event.data.object as any;
+  const db = getDb();
 
   // Manejar diferentes eventos de Stripe
   switch (event.type) {
@@ -125,6 +128,7 @@ async function handleMercadoPagoWebhook(request: NextRequest, keys: any) {
             newStatus = 'canceled';
         }
 
+        const db = getDb();
         await updateDoc(doc(db, 'companies', companyId), {
             subscriptionStatus: newStatus,
             planId: planId,

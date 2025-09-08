@@ -26,6 +26,7 @@ export interface RestaurantProfile {
     whatsapp?: string;
     tiktok?: string;
     pinterest?: string;
+    youtube?: string;
   };
   paymentMethods: {
     codEnabled: boolean; // Cash on Delivery
@@ -39,6 +40,7 @@ export interface RestaurantProfile {
      daviplata?: {
       enabled: boolean;
       qrCodeUrl?: string;
+      daviplataQrImageUrl?: string; // New field for uploaded image
       accountHolder?: string;
       accountNumber?: string;
     };
@@ -53,6 +55,11 @@ export interface RestaurantProfile {
         enabled: boolean;
         publicKey?: string;
         accessToken?: string;
+    };
+    stripe?: {
+        enabled: boolean;
+        publicKey?: string;
+        secretKey?: string;
     };
   };
 }
@@ -152,6 +159,11 @@ export interface Company {
   socialLinks?: {
     website?: string;
     menuShareLink?: string;
+    facebook?: string;
+    instagram?: string;
+    x?: string;
+    tiktok?: string;
+    youtube?: string;
   };
   paymentMethods?: {
     codEnabled?: boolean;
@@ -165,6 +177,7 @@ export interface Company {
       enabled: boolean;
       accountHolder?: string;
       accountNumber?: string;
+      daviplataQrImageUrl?: string;
     };
     bancolombia?: {
       enabled: boolean;
@@ -177,6 +190,11 @@ export interface Company {
         publicKey?: string;
         accessToken?: string;
     };
+    stripe?: {
+        enabled: boolean;
+        publicKey?: string;
+        secretKey?: string;
+    };
   };
   corporateColors?: {
       primary?: string;
@@ -186,21 +204,20 @@ export interface Company {
   customShareMessage?: string;
   customShareImageUrl?: string;
   stripeCustomerId?: string; // Nuevo campo
+  baseShippingCost?: number; // Nuevo campo para costo de envío
 }
 // Sistema de Gestión de Mesas
 export interface Table {
-  id: string;
+  id?: string;
   number: number;
   capacity: number;
-  zone: string;
+  location?: string;
+  description?: string;
   status: 'available' | 'occupied' | 'reserved' | 'out_of_service';
   isActive: boolean;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-  deletedAt?: Timestamp;
-  currentOrderId?: string;
-  reservationDate?: string;
-  reservationTime?: string;
+  createdAt?: any;
+  updatedAt?: any;
+  restaurantId?: string;
 }
 
 export type TableInput = {
@@ -312,3 +329,5 @@ export interface CreateSupportTicket {
   message: string;
   attachmentUrl?: string; // URL a la imagen adjunta
 }
+
+    

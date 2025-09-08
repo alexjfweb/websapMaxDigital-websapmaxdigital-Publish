@@ -2,22 +2,16 @@
   "name": "nextn",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "dev": "next dev --port 9003",
-    "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
-    "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "deploy": "npm run build && firebase deploy --only hosting --project websapmax",
-    "deploy:staging": "npm run build && firebase deploy --only hosting --project websapmax-staging",
-    "deploy:production": "npm run build && firebase deploy --only hosting --project websapmax",
-    "predeploy": "npm run typecheck && npm run lint",
-    "cleanup:plans": "node scripts/cleanup-plans.js",
-    "migrate:plans": "node scripts/migrate-plans.js",
-    "migrate:landing-plans": "node src/scripts/init-landing-config.js",
-    "seed:dishes": "node src/scripts/create-sample-dishes.js"
+    "db:sync": "npx tsx src/services/database-sync-service.ts"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.7.0",
@@ -47,7 +41,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
-    "dotenv": "^16.6.1",
     "firebase": "^11.8.1",
     "firebase-admin": "^12.3.0",
     "framer-motion": "^12.23.12",
@@ -74,6 +67,7 @@
     "genkit-cli": "^1.7.0",
     "postcss": "^8.4.39",
     "tailwindcss": "^3.4.4",
-    "typescript": "^5.5.3"
+    "typescript": "^5.5.3",
+    "tsx": "^4.16.2"
   }
 }

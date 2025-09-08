@@ -2,13 +2,17 @@
 
 import React from 'react';
 import AppShell from '@/components/layout/app-shell';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
-// Este layout ahora solo envuelve a los hijos con el AppShell.
-// La lógica de carga y autenticación se ha movido al AppShell.
+// Este layout ahora solo envuelve a los hijos con el AppShell y su proveedor.
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <AppShell>{children}</AppShell>;
+  return (
+    <SidebarProvider>
+        <AppShell>{children}</AppShell>
+    </SidebarProvider>
+  );
 }

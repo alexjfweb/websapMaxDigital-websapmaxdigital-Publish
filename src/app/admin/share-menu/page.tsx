@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { storageService } from "@/services/storage-service";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { getDb } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import SuccessModal from "@/components/ui/success-modal";
 
@@ -43,6 +43,7 @@ export default function AdminShareMenuPage() {
       };
       setIsLoading(true);
       try {
+        const db = getDb();
         const docRef = doc(db, 'companies', companyId);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
@@ -115,7 +116,8 @@ export default function AdminShareMenuPage() {
         customShareImageUrl: customImageUrl,
         updatedAt: serverTimestamp(),
       };
-
+      
+      const db = getDb();
       await setDoc(doc(db, 'companies', currentUser.companyId), configToSave, { merge: true });
       
       setShowSuccess(true);

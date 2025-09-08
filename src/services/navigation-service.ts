@@ -1,5 +1,5 @@
 
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export interface NavItemConfig {
@@ -24,6 +24,7 @@ const NAVIGATION_DOC_ID = 'main-navigation';
 class NavigationService {
 
   private get navConfigDocRef() {
+    const db = getDb();
     return doc(db, CONFIG_COLLECTION, NAVIGATION_DOC_ID);
   }
 

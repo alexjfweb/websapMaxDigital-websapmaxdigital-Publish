@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Dish, DishFormData } from "@/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, Timestamp, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { useDishes } from "@/hooks/use-dishes";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -111,7 +111,7 @@ export default function AdminDishesPage() {
   
   const onSubmit = async (values: DishFormData) => {
     // Obtener el companyId en el momento de la sumisión para asegurar el valor más reciente.
-    const currentCompanyId = currentUser.companyId;
+    const currentCompanyId = currentUser?.companyId;
 
     if (!currentCompanyId) {
       toast({ title: 'Error', description: 'No se ha identificado la compañía. Por favor, recargue la página.', variant: 'destructive' });
@@ -158,6 +158,7 @@ export default function AdminDishesPage() {
         imageUrl = "https://placehold.co/800x450.png";
       }
       
+      const db = getDb();
       const dishData: any = { // Usamos any temporalmente para construir el objeto
         companyId: currentCompanyId,
         name: values.name,
@@ -221,6 +222,7 @@ export default function AdminDishesPage() {
     if (!dishToDelete) return;
     
     try {
+      const db = getDb();
       if (dishToDelete.imageUrl && !dishToDelete.imageUrl.includes('placehold.co')) {
         await storageService.deleteFile(dishToDelete.imageUrl);
       }

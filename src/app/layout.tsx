@@ -1,9 +1,8 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
 import { Toaster } from "@/components/ui/toaster";
-import { SessionProvider } from '@/contexts/session-context';
-import { OrderProvider } from '@/contexts/order-context';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import { ClientProviders } from '@/contexts/client-providers';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -20,13 +19,11 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={inter.className}>
-        <SessionProvider>
-            <OrderProvider>
-              <SidebarProvider>
+        <ErrorBoundary>
+            <ClientProviders>
                 {children}
-              </SidebarProvider>
-            </OrderProvider>
-        </SessionProvider>
+            </ClientProviders>
+        </ErrorBoundary>
         <Toaster />
       </body>
     </html>

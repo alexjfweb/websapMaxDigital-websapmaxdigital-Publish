@@ -12,31 +12,15 @@ import {
   where,
   Timestamp,
   serverTimestamp,
+  deleteDoc,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase'; // Usar la instancia centralizada
+import { getDb } from '@/lib/firebase';
 import type { LandingPlan, CreatePlanRequest, UpdatePlanRequest, PlanAuditLog } from '@/types/plans';
 import { auditService } from './audit-service';
+import { generateSlug, serializeDate } from '@/lib/utils';
 
 
 // --- HELPER FUNCTIONS ---
-const generateSlug = (name: string): string => {
-  return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-};
-
-const serializeDate = (date: any): string | null => {
-  if (!date) return null;
-  if (date instanceof Timestamp) return date.toDate().toISOString();
-  if (date instanceof Date) return date.toISOString();
-  if (typeof date === 'string') {
-    const d = new Date(date);
-    if (!isNaN(d.getTime())) return d.toISOString();
-  }
-  if (date && typeof date.seconds === 'number') {
-    return new Date(date.seconds * 1000).toISOString();
-  }
-  return null;
-};
-
 const serializePlan = (id: string, data: any): LandingPlan => ({
   id,
   slug: data.slug || '',
@@ -91,11 +75,11 @@ class LandingPlansService {
   private readonly AUDIT_COLLECTION = 'planAuditLogs';
   
   private getPlansCollection() {
-    return collection(db, this.COLLECTION_NAME);
+    return collection(getDb(), this.COLLECTION_NAME);
   }
 
   private getAuditCollection() {
-      return collection(db, this.AUDIT_COLLECTION);
+      return collection(getDb(), this.AUDIT_COLLECTION);
   }
 
   private async validateSlug(slug: string, excludeId?: string): Promise<boolean> {
@@ -108,17 +92,17 @@ class LandingPlansService {
     return snapshot.empty;
   }
 
-  // Obtiene TODOS los planes, para el panel de admin
+  // Obtiene TODOS los planes, para el panel de admin, sin ordenar desde la BD
   async getPlans(): Promise<LandingPlan[]> {
     const coll = this.getPlansCollection();
-    const q = query(coll, orderBy('order', 'asc'));
-    const snapshot = await getDocs(q);
+    const snapshot = await getDocs(coll); // Consulta simple sin 'orderBy'
     return snapshot.docs.map(doc => serializePlan(doc.id, doc.data()));
   }
 
   // Obtiene solo los planes públicos y activos para la landing page
   async getPublicPlans(): Promise<LandingPlan[]> {
     const coll = this.getPlansCollection();
+    // Esta consulta ahora funcionará gracias a las reglas de Firestore
     const q = query(coll, where('isActive', '==', true), where('isPublic', '==', true), orderBy('order', 'asc'));
     
     const snapshot = await getDocs(q);
@@ -133,6 +117,20 @@ class LandingPlansService {
     const docSnap = await getDoc(docRef);
     return docSnap.exists() ? serializePlan(docSnap.id, docSnap.data()) : null;
   }
+  
+  async getPlanBySlug(slug: string): Promise<LandingPlan | null> {
+    if (!slug) return null;
+    const coll = this.getPlansCollection();
+    const q = query(coll, where('slug', '==', slug), where('isActive', '==', true));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+        console.warn(`[getPlanBySlug] No active plan found for slug: ${slug}`);
+        return null;
+    }
+    const docSnap = snapshot.docs[0];
+    return serializePlan(docSnap.id, docSnap.data());
+  }
+
 
   async createPlan(data: CreatePlanRequest, userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<LandingPlan> {
     let slug = generateSlug(data.name);
@@ -204,11 +202,30 @@ class LandingPlansService {
   }
 
   async deletePlan(id: string, userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<void> {
-    await this.updatePlan(id, { isActive: false, isPublic: false }, userId, userEmail, ipAddress, userAgent);
+    const coll = this.getPlansCollection();
+    const docRef = doc(coll, id);
+    const originalDoc = await this.getPlanById(id);
+
+    if (!originalDoc) {
+      throw new Error(`Plan with id ${id} not found.`);
+    }
+
+    await deleteDoc(docRef);
+
+    await auditService.log({
+        entity: 'landingPlans',
+        entityId: id,
+        action: 'deleted',
+        performedBy: { uid: userId, email: userEmail },
+        previousData: cleanupObject(originalDoc),
+        details: `Plan "${originalDoc.name}" permanentemente eliminado.`,
+        ipAddress,
+        userAgent
+    });
   }
 
   async reorderPlans(planIds: string[], userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<void> {
-    const batch = writeBatch(db);
+    const batch = writeBatch(getDb());
     const coll = this.getPlansCollection();
 
     planIds.forEach((id, index) => {
