@@ -7,6 +7,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  productionBrowserSourceMaps: false, // Añadido para optimizar
   images: {
     unoptimized: true,
     remotePatterns: [
