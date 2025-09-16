@@ -4,13 +4,13 @@
 // --- Configuración del Cliente (Pública y Segura) ---
 // Esta configuración es segura para exponer en el frontend.
 export const firebaseConfig = {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyC5sQ0G3f7c_1J6X5c8V4Z9b3Y7a1f2E3",
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "websapmax.firebaseapp.com",
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "websapmax",
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "websapmax.appspot.com",
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "104506820845",
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:104506820845:web:86aa3545645855f71901d8",
-    measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "G-ABCDEFGHIJ"
+    apiKey: "AIzaSyC5sQ0G3f7c_1J6X5c8V4Z9b3Y7a1f2E3",
+    authDomain: "websapmax.firebaseapp.com",
+    projectId: "websapmax",
+    storageBucket: "websapmax.appspot.com",
+    messagingSenderId: "104506820845",
+    appId: "1:104506820845:web:86aa3545645855f71901d8",
+    measurementId: "G-ABCDEFGHIJ"
 };
 
 // --- Configuración del Servidor/Admin (Privada) ---
