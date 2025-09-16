@@ -24,7 +24,7 @@ function initializeFirebaseAdmin(): App {
   try {
     const app = initializeApp({
       credential: cert(firebaseAdminConfig),
-      storageBucket: 'websapmax.appspot.com', // Nombre explícito y correcto del bucket
+      storageBucket: 'websapmax.firebasestorage.app', // Nombre explícito y correcto del bucket
     });
     
     console.log('✅ Firebase Admin inicializado correctamente para el proyecto:', app.name);
