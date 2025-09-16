@@ -1,4 +1,5 @@
 
+
 // src/app/api/upload/route.ts - VERSIÓN CORREGIDA CON BUCKET CORRECTO
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
@@ -38,12 +39,12 @@ export async function POST(request: NextRequest) {
     
     console.log('🔑 Usando proyecto:', firebaseAdminConfig.project_id);
 
-    // 3. Inicializar Firebase Admin - BUCKET CORREGIDO
+    // 3. Inicializar Firebase Admin
     let app;
     if (getApps().length === 0) {
       app = initializeApp({
         credential: cert(firebaseAdminConfig),
-        storageBucket: 'websapmax.firebasestorage.app',
+        storageBucket: firebaseAdminConfig.storageBucket || `${firebaseAdminConfig.project_id}.appspot.com`,
       });
       console.log('✅ Firebase Admin inicializado');
     } else {
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Archivo guardado en Storage');
 
-    // 5. Hacer público el archivo y generar URL
+    // 5. Hacer público el archivo y generar URL CORRECTA
     await fileRef.makePublic();
     const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
     
@@ -110,3 +111,4 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   }
 }
+
