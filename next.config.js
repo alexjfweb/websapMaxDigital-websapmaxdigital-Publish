@@ -31,12 +31,6 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "websapmax.firebasestorage.app",
-        port: "",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
         hostname: "api.qrserver.com",
         port: "",
         pathname: "/**",
