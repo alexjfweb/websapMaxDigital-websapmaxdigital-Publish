@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     if (getApps().length === 0) {
       app = initializeApp({
         credential: cert(firebaseAdminConfig),
-        storageBucket: firebaseAdminConfig.storageBucket || `${firebaseAdminConfig.project_id}.appspot.com`,
+        storageBucket: 'websapmax.firebasestorage.app', // CORRECCIÓN DEFINITIVA
       });
       console.log('✅ Firebase Admin inicializado');
     } else {

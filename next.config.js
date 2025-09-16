@@ -31,7 +31,7 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "websapmax.firebasestorage.app",
+        hostname: "websapmax.firebasestorage.app", // CORRECCIÓN: Dominio añadido
         port: "",
         pathname: "/**",
       },
