@@ -1,3 +1,4 @@
+
 // src/lib/firebase-config.ts
 
 // --- Configuración del Cliente (Pública y Segura) ---
@@ -7,8 +8,8 @@ export const firebaseConfig = {
     authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "websapmax.firebaseapp.com",
     projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "websapmax",
     storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "websapmax.appspot.com",
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "123456789012",
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:123456789012:web:a1b2c3d4e5f67890abcdef",
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "104506820845",
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:104506820845:web:86aa3545645855f71901d8",
     measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "G-ABCDEFGHIJ"
 };
 
