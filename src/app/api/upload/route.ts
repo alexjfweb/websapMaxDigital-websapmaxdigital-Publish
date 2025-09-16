@@ -1,32 +1,18 @@
 // src/app/api/upload/route.ts - VERSIÓN CORREGIDA Y ROBUSTA
 import { NextRequest, NextResponse } from 'next/server';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
-import { firebaseAdminConfig } from '@/lib/firebase-config';
-
-// Inicialización de Firebase Admin fuera del handler para reutilizar la instancia
-let adminApp;
-if (!getApps().length) {
-  try {
-    adminApp = initializeApp({
-      credential: cert(firebaseAdminConfig),
-      // CORRECCIÓN CLAVE: Usar el formato .appspot.com para el bucket de admin
-      storageBucket: 'websapmax.appspot.com',
-    });
-    console.log('✅ Firebase Admin SDK inicializado correctamente.');
-  } catch (error) {
-    console.error('❌ Error crítico al inicializar Firebase Admin SDK:', error);
-  }
-} else {
-  adminApp = getApps()[0];
-}
-
+import { getFirebaseAdmin } from '@/lib/firebase-admin';
 
 export async function POST(request: NextRequest) {
-  if (!adminApp) {
+  let adminApp;
+  try {
+    // Obtiene la instancia inicializada de forma centralizada
+    adminApp = getFirebaseAdmin();
+  } catch (error: any) {
+    console.error('❌ Error fatal al obtener la instancia de Firebase Admin:', error);
     return NextResponse.json({ 
         success: false,
-        error: 'El servidor de Firebase no está inicializado. Revisa las credenciales del servidor.' 
+        error: `Fallo en la configuración del servidor de Firebase: ${error.message}`
       }, { status: 500 });
   }
 
@@ -49,8 +35,9 @@ export async function POST(request: NextRequest) {
     try {
       const [exists] = await bucket.exists();
       if (!exists) {
-        console.error(`❌ El bucket "${bucket.name}" no existe o no se puede acceder a él.`);
-        throw new Error(`El bucket de almacenamiento no existe. Actívalo en la consola de Firebase.`);
+        const errorMsg = `El bucket de almacenamiento "${bucket.name}" no existe o no se puede acceder a él.`;
+        console.error(`❌ ${errorMsg}`);
+        throw new Error(`Configuración de Storage incorrecta. Activa Firebase Storage en la consola.`);
       }
     } catch (e: any) {
       throw new Error(`Error al verificar el bucket: ${e.message}`);
@@ -71,7 +58,6 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // CORRECCIÓN CLAVE: Hacer el archivo público y generar la URL correcta
     await fileRef.makePublic();
     const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
     
