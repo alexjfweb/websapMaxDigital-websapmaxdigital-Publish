@@ -25,13 +25,13 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "storage.googleapis.com",
+        hostname: "storage.googleapis.com", // Dominio correcto para las URLs públicas
         port: "",
         pathname: "/**",
       },
       {
         protocol: "https",
-        hostname: "websapmax.firebasestorage.app", // CORRECCIÓN: Dominio añadido
+        hostname: "websapmax.firebasestorage.app",
         port: "",
         pathname: "/**",
       },
