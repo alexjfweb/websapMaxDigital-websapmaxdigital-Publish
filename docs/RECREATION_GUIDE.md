@@ -23,7 +23,7 @@ Este documento proporciona un plano detallado para recrear la aplicación desde 
 ```env
 # Variables de configuración de Firebase (Cliente)
 # Reemplaza los valores de ejemplo con tus credenciales reales de Firebase
-NEXT_PUBLIC_FIREBASE_API_KEY="AIzaSy...your-api-key"
+NEXT_PUBLIC_FIREBASE_API_KEY="BB7zCrAz2u0wJBGuhAAVuoSk6Hx3lYv8dTGweV8TD_7oHCYhj56iKGxfogwuLiMREVq3PMLRnOIQU8Fma4Gt2YA"
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="your-project-id.firebaseapp.com"
 NEXT_PUBLIC_FIREBASE_PROJECT_ID="your-project-id"
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="your-project-id.appspot.com"

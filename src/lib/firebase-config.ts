@@ -1,3 +1,4 @@
+
 // src/lib/firebase-config.ts
 
 // --- Configuración del Cliente (Pública y Segura) ---
