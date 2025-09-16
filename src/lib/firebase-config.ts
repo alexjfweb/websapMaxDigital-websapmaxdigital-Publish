@@ -4,24 +4,22 @@
 // --- Configuración del Cliente (Pública y Segura) ---
 // Esta configuración es segura para exponer en el frontend.
 export const firebaseConfig = {
-    apiKey: "BB7zCrAz2u0wJBGuhAAVuoSk6Hx3lYv8dTGweV8TD_7oHCYhj56iKGxfogwuLiMREVq3PMLRnOIQU8Fma4Gt2YA",
+    apiKey: "AIzaSyC3UzUVh_OPavejyo-kviYVX_Zy9494yjg",
     authDomain: "websapmax.firebaseapp.com",
     projectId: "websapmax",
-    storageBucket: "websapmax.appspot.com",
-    messagingSenderId: "104506820845",
-    appId: "1:104506820845:web:86aa3545645855f71901d8",
-    measurementId: "G-ABCDEFGHIJ"
+    storageBucket: "websapmax.appspot.com", // Se mantiene el formato .appspot.com que es el estándar para el SDK de Admin
+    messagingSenderId: "560613070255",
+    appId: "1:560613070255:web:7ce75870dbe6b19a084b5a",
+    measurementId: "G-DD5JWPV701"
 };
 
 // --- Configuración del Servidor/Admin (Privada) ---
 // Se construye a partir de variables de entorno para no exponer secretos en el código.
-// La variable FIREBASE_SERVICE_ACCOUNT contiene el JSON completo.
 let adminConfig: any;
 try {
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
         adminConfig = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
     } else {
-        // Fallback para entornos que usan variables separadas (como Vercel)
         if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
             console.warn("⚠️  Advertencia: Faltan variables de entorno para Firebase Admin. Algunas funciones del backend pueden no funcionar.");
             adminConfig = {};
@@ -30,7 +28,7 @@ try {
                 type: "service_account",
                 project_id: process.env.FIREBASE_PROJECT_ID,
                 private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
-                private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+                private_key: (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
                 client_email: process.env.FIREBASE_CLIENT_EMAIL,
                 client_id: process.env.FIREBASE_CLIENT_ID,
                 auth_uri: "https://accounts.google.com/o/oauth2/auth",
