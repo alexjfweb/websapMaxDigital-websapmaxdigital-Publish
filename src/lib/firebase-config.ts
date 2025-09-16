@@ -4,7 +4,7 @@
 // --- Configuración del Cliente (Pública y Segura) ---
 // Esta configuración es segura para exponer en el frontend.
 export const firebaseConfig = {
-    apiKey: "AIzaSyC5sQ0G3f7c_1J6X5c8V4Z9b3Y7a1f2E3",
+    apiKey: "BB7zCrAz2u0wJBGuhAAVuoSk6Hx3lYv8dTGweV8TD_7oHCYhj56iKGxfogwuLiMREVq3PMLRnOIQU8Fma4Gt2YA",
     authDomain: "websapmax.firebaseapp.com",
     projectId: "websapmax",
     storageBucket: "websapmax.appspot.com",
