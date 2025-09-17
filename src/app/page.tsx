@@ -1,7 +1,7 @@
 
 "use client"; 
 
-import React, { Suspense, useEffect, useState } from 'react';
+import React from 'react';
 import LandingClient from './landing-client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLandingConfig } from '@/hooks/use-landing-config';
@@ -31,33 +31,20 @@ function LandingPageSkeleton() {
   );
 }
 
-function ErrorDisplay({ message, onRetry }: { message: string, onRetry?: () => void }) {
-    return (
-        <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-4">
-            <div className="bg-red-50 rounded-lg shadow-lg p-8 max-w-md w-full border border-red-200">
-                <AlertTriangle className="h-16 w-16 mx-auto text-red-500 mb-4" />
-                <h1 className="text-2xl font-bold text-red-800 mb-2">Error al Cargar la Página</h1>
-                <p className="text-red-700">{message}</p>
-                {onRetry && <Button onClick={onRetry} className="mt-4">Reintentar</Button>}
-            </div>
-        </div>
-    );
-}
-
 function LandingPageContent() {
-  const { landingConfig, isLoading: isLoadingConfig, isError: isErrorConfig, error: errorConfig } = useLandingConfig();
+  // Ahora los hooks son más resilientes y siempre devuelven un valor.
+  const { landingConfig, isLoading: isLoadingConfig, error: errorConfig, refetch: retryConfig } = useLandingConfig();
   const { plans, isLoading: isLoadingPlans, error: errorPlans, refetch: retryPlans } = useLandingPlans(true);
   
   const isLoading = isLoadingConfig || isLoadingPlans;
 
-  if (isLoading) {
+  // Mostramos el esqueleto solo si la configuración principal está cargando.
+  if (isLoadingConfig) {
     return <LandingPageSkeleton />;
   }
   
-  if (isErrorConfig || errorConfig) {
-    return <ErrorDisplay message={errorConfig?.message || 'Ocurrió un error inesperado al cargar la configuración.'} />
-  }
-  
+  // El `landingConfig` siempre tendrá un valor (el de la DB o el por defecto).
+  // El error en `errorPlans` se manejará dentro de LandingClient.
   return (
     <>
         <PublicHeader />
