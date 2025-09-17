@@ -134,9 +134,9 @@ export default function AdminProfilePage() {
     setImagePreview(URL.createObjectURL(file)); 
     setIsSaving(true);
     try {
-      const url = await storageService.compressAndUploadFile(file, `profiles/${companyId}/`);
-      if (url) {
-        updateProfileField(url); 
+      const imageUrl = await storageService.compressAndUploadFile(file, `profiles/${companyId}/`);
+      if (imageUrl) {
+        updateProfileField(imageUrl); 
         toast({
           title: "Imagen subida",
           description: "La nueva imagen se ha cargado. Guarda los cambios para aplicarla.",
@@ -173,9 +173,9 @@ export default function AdminProfilePage() {
     setPreview(URL.createObjectURL(file));
     setIsSaving(true);
     try {
-      const url = await storageService.compressAndUploadFile(file, `qrs/${companyId}/`);
-      if (url) {
-        handlePaymentMethodChange(method, fieldName, url);
+      const imageUrl = await storageService.compressAndUploadFile(file, `qrs/${companyId}/`);
+      if (imageUrl) {
+        handlePaymentMethodChange(method, fieldName, imageUrl);
         toast({
           title: "Imagen QR subida",
           description: "El nuevo QR se ha cargado. Guarda los cambios para aplicarlo.",
@@ -285,9 +285,9 @@ export default function AdminProfilePage() {
               <div className="flex items-center gap-4">
                 <Image src={avatarPreview || "https://placehold.co/100x100.png?text=Avatar"} alt="Avatar" width={96} height={96} className="h-24 w-24 rounded-full border object-cover" data-ai-hint="user avatar" />
                 <Button variant="outline" asChild disabled={!isEditing}>
-                  <Label htmlFor="logo-upload" className="cursor-pointer">
+                  <Label htmlFor="avatar-upload" className="cursor-pointer">
                     <UploadCloud className="mr-2 h-4 w-4" /> Subir Avatar
-                    <Input id="logo-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setLogoPreview, (url) => setProfileData(p => ({...p, logoUrl: url})))} disabled={!isEditing} />
+                    <Input id="avatar-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setAvatarPreview, (url) => setProfileData(p => ({...p, logoUrl: url})))} disabled={!isEditing} />
                   </Label>
                 </Button>
               </div>
@@ -297,16 +297,16 @@ export default function AdminProfilePage() {
               <div className="flex items-center gap-4">
                 <Image src={logoPreview || "https://placehold.co/100x100.png?text=Logo"} alt="Logo" width={96} height={96} className="h-24 w-24 rounded-md border object-cover" data-ai-hint="logo placeholder" />
                 <Button variant="outline" asChild disabled={!isEditing}>
-                  <Label htmlFor="logo-upload-main" className="cursor-pointer">
+                  <Label htmlFor="logo-upload" className="cursor-pointer">
                     <UploadCloud className="mr-2 h-4 w-4" /> Subir logo
-                    <Input id="logo-upload-main" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setLogoPreview, (url) => setProfileData(p => ({...p, logoUrl: url})))} disabled={!isEditing} />
+                    <Input id="logo-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setLogoPreview, (url) => setProfileData(p => ({...p, logoUrl: url})))} disabled={!isEditing} />
                   </Label>
                 </Button>
               </div>
             </div>
             <div className="space-y-4">
               <Label>Banner de Cabecera</Label>
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-4">
                 <Image src={bannerPreview || "https://placehold.co/200x100.png?text=Banner"} alt="Banner" width={192} height={96} className="h-24 w-48 rounded-md border object-cover" data-ai-hint="restaurant banner" />
                 <Button variant="outline" asChild disabled={!isEditing}>
                   <Label htmlFor="banner-upload" className="cursor-pointer">
@@ -555,5 +555,7 @@ export default function AdminProfilePage() {
     </div>
   );
 }
+
+    
 
     
