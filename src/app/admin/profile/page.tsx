@@ -403,9 +403,9 @@ export default function AdminProfilePage() {
                                 <Button variant="outline" asChild disabled={!isEditing}>
                                     <Label htmlFor="nequi-qr-upload" className="cursor-pointer">
                                         <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
-                                        <Input id="nequi-qr-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleQrImageUpload(e, 'nequi')} disabled={!isEditing} />
                                     </Label>
                                 </Button>
+                                <Input id="nequi-qr-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleQrImageUpload(e, 'nequi')} disabled={!isEditing} />
                             </div>
                         </div>
                     </div>
@@ -443,9 +443,9 @@ export default function AdminProfilePage() {
                                 <Button variant="outline" asChild disabled={!isEditing}>
                                     <Label htmlFor="daviplata-qr-upload" className="cursor-pointer">
                                         <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
-                                        <Input id="daviplata-qr-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleQrImageUpload(e, 'daviplata')} disabled={!isEditing} />
                                     </Label>
                                 </Button>
+                                <Input id="daviplata-qr-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleQrImageUpload(e, 'daviplata')} disabled={!isEditing} />
                             </div>
                         </div>
                     </div>
@@ -485,9 +485,9 @@ export default function AdminProfilePage() {
                                 <Button variant="outline" asChild disabled={!isEditing}>
                                     <Label htmlFor="bancolombia-qr-upload" className="cursor-pointer">
                                         <UploadCloud className="mr-2 h-4 w-4" /> Subir QR
-                                        <Input id="bancolombia-qr-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleQrImageUpload(e, 'bancolombia')} disabled={!isEditing} />
                                     </Label>
                                 </Button>
+                                <Input id="bancolombia-qr-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleQrImageUpload(e, 'bancolombia')} disabled={!isEditing} />
                             </div>
                         </div>
                     </div>
@@ -555,7 +555,3 @@ export default function AdminProfilePage() {
     </div>
   );
 }
-
-    
-
-    
