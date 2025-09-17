@@ -28,7 +28,9 @@ import {
   Settings,
   Globe,
   UploadCloud,
-  Loader2
+  Loader2,
+  MessageSquare,
+  Star
 } from 'lucide-react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
@@ -94,7 +96,7 @@ export default function LandingPublicPage() {
     }
     setSaving(true);
     try {
-      await updateConfig(formData, currentUser);
+      await updateConfig(formData);
       
       toast({
         title: "Éxito",
@@ -238,6 +240,9 @@ export default function LandingPublicPage() {
       </div>
     );
   }
+  
+  const testimonialsSection = formData.sections.find(s => s.type === 'testimonials') || null;
+  const testimonialsSectionIndex = formData.sections.findIndex(s => s.type === 'testimonials');
 
   return (
     <div className="space-y-6">
@@ -282,9 +287,10 @@ export default function LandingPublicPage() {
         {/* Editor */}
         <div className="space-y-6">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="hero">Hero</TabsTrigger>
               <TabsTrigger value="sections">Secciones</TabsTrigger>
+              <TabsTrigger value="testimonials">Testimonios</TabsTrigger>
               <TabsTrigger value="seo">SEO</TabsTrigger>
             </TabsList>
 
@@ -412,7 +418,7 @@ export default function LandingPublicPage() {
                   <CardTitle className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <Settings className="w-5 h-5" />
-                      Secciones de Contenido
+                      Secciones de Contenido (Excepto Testimonios)
                     </span>
                     <Button onClick={addSection} size="sm" variant="outline">
                       <Plus className="w-4 h-4 mr-2" />
@@ -421,12 +427,12 @@ export default function LandingPublicPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {formData.sections.map((section, index) => (
+                  {formData.sections.filter(s => s.type !== 'testimonials').map((section, index) => (
                     <Card key={section.id} className="border-2">
-                      <CardHeader className="pb-3 bg-muted/50">
+                       <CardHeader className="pb-3 bg-muted/50">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <Badge variant="secondary">Sección {index + 1}</Badge>
+                            <Badge variant="secondary">Sección {section.order + 1}</Badge>
                             <Select
                               value={section.type}
                               onValueChange={(value) => updateSection(index, 'type', value)}
@@ -437,7 +443,8 @@ export default function LandingPublicPage() {
                               <SelectContent>
                                 <SelectItem value="features">Características</SelectItem>
                                 <SelectItem value="services">Servicios</SelectItem>
-                                <SelectItem value="testimonials">Testimonios</SelectItem>
+                                <SelectItem value="about">Sobre Nosotros</SelectItem>
+                                <SelectItem value="contact">Contacto</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -462,7 +469,7 @@ export default function LandingPublicPage() {
                               size="icon"
                                className="h-8 w-8"
                               onClick={() => moveSection(index, 'down')}
-                              disabled={index === formData.sections.length - 1}
+                              disabled={index === formData.sections.filter(s => s.type !== 'testimonials').length - 1}
                               title="Mover abajo"
                             >
                               <MoveDown className="w-4 h-4" />
@@ -507,47 +514,57 @@ export default function LandingPublicPage() {
                                />
                             </Suspense>
                         </div>
-                        
-                        <div className="mt-6">
-                          <Label className="mb-2 block font-semibold">
-                            {section.type === 'testimonials' ? 'Testimonios' : 'Subsecciones (Columnas/Tarjetas)'}
-                          </Label>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="testimonials">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Star className="w-5 h-5 text-yellow-500" />
+                            Gestión de Testimonios
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {testimonialsSection && (
                           <div className="space-y-4">
-                            {(section.subsections || []).map((sub, subIdx) => (
+                            {(testimonialsSection.subsections || []).map((sub, subIdx) => (
                               <Card key={sub.id} className="p-3 relative overflow-visible bg-background">
                                 <Button size="sm" variant="ghost" className="absolute top-1 right-1 h-6 w-6 p-0" onClick={() => {
-                                  const newSubs = section.subsections!.filter((_, i) => i !== subIdx);
-                                  updateSection(index, 'subsections', newSubs);
+                                  const newSubs = testimonialsSection.subsections!.filter((_, i) => i !== subIdx);
+                                  updateSection(testimonialsSectionIndex, 'subsections', newSubs);
                                 }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <div className="space-y-2">
                                      <Input
                                       value={sub.title}
-                                      onChange={e => updateSubsection(index, subIdx, 'title', e.target.value)}
-                                      placeholder={section.type === 'testimonials' ? 'Nombre del Autor' : 'Título de la subsección'}
+                                      onChange={e => updateSubsection(testimonialsSectionIndex, subIdx, 'title', e.target.value)}
+                                      placeholder={'Nombre del Autor'}
                                     />
-                                    {section.type === 'testimonials' && (
-                                       <Input
-                                          value={sub.authorRole || ''}
-                                          onChange={e => updateSubsection(index, subIdx, 'authorRole', e.target.value)}
-                                          placeholder="Cargo/Empresa del Autor"
-                                        />
-                                    )}
+                                    <Input
+                                        value={sub.authorRole || ''}
+                                        onChange={e => updateSubsection(testimonialsSectionIndex, subIdx, 'authorRole', e.target.value)}
+                                        placeholder="Cargo/Empresa del Autor"
+                                    />
                                      <RichTextEditor
                                       value={sub.content}
-                                      onChange={value => updateSubsection(index, subIdx, 'content', value)}
-                                      placeholder={section.type === 'testimonials' ? 'Cita del testimonio...' : 'Contenido de la subsección'}
+                                      onChange={value => updateSubsection(testimonialsSectionIndex, subIdx, 'content', value)}
+                                      placeholder={'Cita del testimonio...'}
                                     />
                                   </div>
                                   <div className="space-y-2">
                                     <Label>Imagen</Label>
                                     <div className="flex items-center gap-2">
                                       <Image 
-                                        src={sub.imageUrl || "https://placehold.co/100x100.png?text=Sub"}
-                                        alt="Vista previa de subsección"
+                                        src={sub.imageUrl || "https://placehold.co/100x100.png?text=Autor"}
+                                        alt="Vista previa de autor"
                                         width={64}
                                         height={64}
-                                        className="rounded-md border object-cover h-16 w-16"
+                                        className="rounded-full border object-cover h-16 w-16"
                                       />
                                       <Button variant="outline" asChild size="sm">
                                         <label htmlFor={`sub-img-${sub.id}`} className="cursor-pointer">
@@ -558,7 +575,7 @@ export default function LandingPublicPage() {
                                             type="file"
                                             className="hidden"
                                             accept="image/png, image/jpeg, image/jpg, image/webp"
-                                            onChange={(e) => handleSubsectionImageUpload(e, index, subIdx)}
+                                            onChange={(e) => handleSubsectionImageUpload(e, testimonialsSectionIndex, subIdx)}
                                             disabled={uploading[sub.id]}
                                           />
                                         </label>
@@ -569,19 +586,16 @@ export default function LandingPublicPage() {
                               </Card>
                             ))}
                             <Button size="sm" variant="outline" className="mt-2" onClick={() => {
-                              const newSub = { id: `sub-${Date.now()}`, title: '', content: '', imageUrl: '' };
-                              updateSection(index, 'subsections', [...(section.subsections || []), newSub]);
+                              const newSub = { id: `sub-${Date.now()}`, title: '', content: '', imageUrl: '', authorRole: '' };
+                              updateSection(testimonialsSectionIndex, 'subsections', [...(testimonialsSection.subsections || []), newSub]);
                             }}>
                               <Plus className="mr-2 h-4 w-4"/>
-                              {section.type === 'testimonials' ? 'Añadir Testimonio' : 'Agregar subsección'}
+                              Añadir Testimonio
                             </Button>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </CardContent>
-              </Card>
+                        )}
+                    </CardContent>
+                </Card>
             </TabsContent>
 
             <TabsContent value="seo" className="space-y-4">
@@ -724,7 +738,5 @@ export default function LandingPublicPage() {
     </div>
   );
 }
-
-    
 
     
