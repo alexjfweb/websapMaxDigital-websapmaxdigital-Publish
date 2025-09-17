@@ -32,6 +32,8 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
+import { useSession } from '@/contexts/session-context';
+
 
 const RichTextEditor = dynamic(() => import('@/components/ui/rich-text-editor'), { ssr: false });
 
@@ -61,6 +63,7 @@ const getDefaultConfig = (): LandingConfig => ({
 
 export default function LandingPublicPage() {
   const { landingConfig, isLoading, updateConfig } = useLandingConfig();
+  const { currentUser } = useSession();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
@@ -85,9 +88,13 @@ export default function LandingPublicPage() {
   }, [landingConfig]);
 
   const handleSave = async () => {
+    if (!currentUser) {
+        toast({ title: "Error de autenticación", description: "No se pudo verificar el usuario.", variant: "destructive" });
+        return;
+    }
     setSaving(true);
     try {
-      await updateConfig(formData);
+      await updateConfig(formData, currentUser);
       
       toast({
         title: "Éxito",
@@ -690,5 +697,7 @@ export default function LandingPublicPage() {
     </div>
   );
 }
+
+    
 
     
