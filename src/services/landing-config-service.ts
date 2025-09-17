@@ -1,3 +1,4 @@
+
 // src/services/landing-config-service.ts
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import { getDb } from '@/lib/firebase';
@@ -140,7 +141,7 @@ class LandingConfigService {
         const imageRef = ref(storage, path);
         return await getDownloadURL(imageRef);
       } catch (error) {
-        console.error(`Error getting download URL for gs:// path "${path}":`, error);
+        console.warn(`[Servicio Landing] No se pudo obtener la URL para gs path "${path}". Puede que el objeto no exista o falten permisos.`, error);
         return placeholder;
       }
     }
@@ -149,7 +150,7 @@ class LandingConfigService {
         const imageRef = ref(storage, `subsections/${path}`);
         return await getDownloadURL(imageRef);
     } catch(e) {
-        console.error(`Could not get URL for file name "${path}":`, e);
+        console.warn(`[Servicio Landing] No se pudo obtener la URL para el archivo "${path}".`, e);
         return placeholder;
     }
   }

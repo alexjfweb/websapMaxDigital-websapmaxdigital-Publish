@@ -1,3 +1,4 @@
+
 import './globals.css';
 import 'react-quill/dist/quill.snow.css'; // Importa los estilos de Quill aquí
 import { Inter } from 'next/font/google';
