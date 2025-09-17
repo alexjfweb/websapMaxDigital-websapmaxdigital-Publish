@@ -345,7 +345,7 @@ export default function LandingPublicPage() {
                     <Suspense fallback={<div className="h-32 w-full bg-muted rounded-md animate-pulse" />}>
                       <RichTextEditor
                         value={formData.heroContent || ''}
-                        onChange={(value) => setFormData(prev => ({ ...prev, heroContent: value }))}
+                        onChange={(value) => setFormData(prev => ({ ...prev, heroContent: value || '' }))}
                       />
                     </Suspense>
                   </div>
@@ -462,7 +462,6 @@ export default function LandingPublicPage() {
                                 <SelectItem value="services">Servicios</SelectItem>
                                 <SelectItem value="about">Sobre Nosotros</SelectItem>
                                 <SelectItem value="contact">Contacto</SelectItem>
-                                <SelectItem value="testimonials">Testimonios</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -528,7 +527,7 @@ export default function LandingPublicPage() {
                             <Suspense fallback={<div className="h-32 w-full bg-muted rounded-md animate-pulse" />}>
                                <RichTextEditor
                                 value={section.content || ''}
-                                onChange={(value) => updateSection(index, 'content', value)}
+                                onChange={(value) => updateSection(index, 'content', value || '')}
                                />
                             </Suspense>
                         </div>
@@ -550,7 +549,7 @@ export default function LandingPublicPage() {
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                   <Input value={sub.title} onChange={(e) => updateSubsection(index, subIdx, 'title', e.target.value)} placeholder="Título de la tarjeta" />
-                                  <RichTextEditor value={sub.content} onChange={(value) => updateSubsection(index, subIdx, 'content', value)} placeholder="Contenido de la tarjeta" />
+                                  <RichTextEditor value={sub.content} onChange={(value) => updateSubsection(index, subIdx, 'content', value || '')} placeholder="Contenido de la tarjeta" />
                                 </div>
                                 <div>
                                   <Label>Imagen</Label>
@@ -577,103 +576,105 @@ export default function LandingPublicPage() {
             </TabsContent>
             
             <TabsContent value="testimonials">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Star className="w-5 h-5 text-yellow-500" />
-                    Gestión de Testimonios
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {testimonialsSection ? (
-                    <div className="space-y-4">
-                      {(testimonialsSection.subsections || []).map((sub, subIdx) => (
-                        <Card key={sub.id} className="p-4 relative overflow-visible bg-background border">
-                          <Button size="sm" variant="ghost" className="absolute top-2 right-2 h-7 w-7 p-0" onClick={() => {
-                            const newSubs = testimonialsSection.subsections!.filter((_, i) => i !== subIdx);
-                            updateSection(testimonialsSectionIndex, 'subsections', newSubs);
-                          }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                          <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-4">
-                            <div className="space-y-2">
-                              <Label>Imagen del Autor</Label>
-                              <div className="relative w-24 h-24 mx-auto" style={{ width: `${64 + (sub.imageRadius || 0)}px`, height: `${64 + (sub.imageRadius || 0)}px` }}>
-                                <Image 
-                                  src={sub.imageUrl || "https://placehold.co/100x100.png?text=Autor"}
-                                  alt="Vista previa de autor"
-                                  fill
-                                  className="border object-cover"
-                                  style={{ borderRadius: `50%` }}
-                                />
-                              </div>
-                               <Button variant="outline" asChild size="sm" className="w-full mt-2">
-                                  <label htmlFor={`sub-img-${sub.id}`} className="cursor-pointer">
-                                    {uploading[sub.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}
-                                    {uploading[sub.id] ? "Subiendo..." : "Subir Imagen"}
-                                    <input 
-                                      id={`sub-img-${sub.id}`}
-                                      type="file"
-                                      className="hidden"
-                                      accept="image/png, image/jpeg, image/jpg, image/webp"
-                                      onChange={(e) => handleSubsectionImageUpload(e, testimonialsSectionIndex, subIdx)}
-                                      disabled={uploading[sub.id]}
+                 <Card>
+                    <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                            <Star className="w-5 h-5 text-yellow-500" />
+                            Gestión de Testimonios
+                        </span>
+                    </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                    {testimonialsSection ? (
+                        <div className="space-y-4">
+                        {(testimonialsSection.subsections || []).map((sub, subIdx) => (
+                            <Card key={sub.id} className="p-4 relative overflow-visible bg-background border">
+                            <Button size="sm" variant="ghost" className="absolute top-2 right-2 h-7 w-7 p-0" onClick={() => {
+                                const newSubs = testimonialsSection.subsections!.filter((_, i) => i !== subIdx);
+                                updateSection(testimonialsSectionIndex, 'subsections', newSubs);
+                            }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                            <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-4">
+                                <div className="space-y-2">
+                                <Label>Imagen del Autor</Label>
+                                <div className="relative mx-auto" style={{ width: `${64 + (sub.imageRadius || 0)}px`, height: `${64 + (sub.imageRadius || 0)}px` }}>
+                                    <Image 
+                                        src={sub.imageUrl || "https://placehold.co/100x100.png?text=Autor"}
+                                        alt="Vista previa de autor"
+                                        fill
+                                        className="border object-cover"
+                                        style={{ borderRadius: `50%` }}
                                     />
-                                  </label>
-                                </Button>
-                               <div className="space-y-1 mt-2">
-                                  <Label>Radio del Círculo</Label>
-                                  <Slider
-                                    value={[sub.imageRadius || 0]}
-                                    max={64}
-                                    step={1}
-                                    onValueChange={(value) => updateSubsection(testimonialsSectionIndex, subIdx, 'imageRadius', value[0])}
-                                  />
-                               </div>
+                                </div>
+                                <Button variant="outline" asChild size="sm" className="w-full mt-2">
+                                    <label htmlFor={`sub-img-${sub.id}`} className="cursor-pointer">
+                                        {uploading[sub.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}
+                                        {uploading[sub.id] ? "Subiendo..." : "Subir Imagen"}
+                                        <input 
+                                        id={`sub-img-${sub.id}`}
+                                        type="file"
+                                        className="hidden"
+                                        accept="image/png, image/jpeg, image/jpg, image/webp"
+                                        onChange={(e) => handleSubsectionImageUpload(e, testimonialsSectionIndex, subIdx)}
+                                        disabled={uploading[sub.id]}
+                                        />
+                                    </label>
+                                    </Button>
+                                <div className="space-y-1 mt-2">
+                                    <Label>Radio del Círculo</Label>
+                                    <Slider
+                                        value={[sub.imageRadius || 0]}
+                                        max={64}
+                                        step={1}
+                                        onValueChange={(value) => updateSubsection(testimonialsSectionIndex, subIdx, 'imageRadius', value[0])}
+                                    />
+                                </div>
+                                </div>
+                                <div className="space-y-4">
+                                <div className="space-y-1">
+                                    <Label>Nombre del Autor</Label>
+                                <Input
+                                    value={sub.title}
+                                    onChange={e => updateSubsection(testimonialsSectionIndex, subIdx, 'title', e.target.value)}
+                                    placeholder={'Nombre del Autor'}
+                                />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label>Cargo/Empresa del Autor</Label>
+                                <Input
+                                    value={sub.authorRole || ''}
+                                    onChange={e => updateSubsection(testimonialsSectionIndex, subIdx, 'authorRole', e.target.value)}
+                                    placeholder="Cargo/Empresa del Autor"
+                                />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label>Cita del Testimonio</Label>
+                                <RichTextEditor
+                                    value={sub.content}
+                                    onChange={value => updateSubsection(testimonialsSectionIndex, subIdx, 'content', value || '')}
+                                    placeholder={'Cita del testimonio...'}
+                                />
+                                </div>
+                                </div>
                             </div>
-                            <div className="space-y-4">
-                              <div className="space-y-1">
-                                <Label>Nombre del Autor</Label>
-                               <Input
-                                value={sub.title}
-                                onChange={e => updateSubsection(testimonialsSectionIndex, subIdx, 'title', e.target.value)}
-                                placeholder={'Nombre del Autor'}
-                              />
-                              </div>
-                              <div className="space-y-1">
-                                <Label>Cargo/Empresa del Autor</Label>
-                              <Input
-                                  value={sub.authorRole || ''}
-                                  onChange={e => updateSubsection(testimonialsSectionIndex, subIdx, 'authorRole', e.target.value)}
-                                  placeholder="Cargo/Empresa del Autor"
-                              />
-                              </div>
-                              <div className="space-y-1">
-                                <Label>Cita del Testimonio</Label>
-                               <RichTextEditor
-                                value={sub.content}
-                                onChange={value => updateSubsection(testimonialsSectionIndex, subIdx, 'content', value)}
-                                placeholder={'Cita del testimonio...'}
-                              />
-                              </div>
-                            </div>
-                          </div>
-                        </Card>
-                      ))}
-                      <Button size="sm" variant="outline" className="mt-2" onClick={() => {
-                        const newSub = { id: `sub-${Date.now()}`, title: '', content: '', imageUrl: '', authorRole: '', imageRadius: 0 };
-                        updateSection(testimonialsSectionIndex, 'subsections', [...(testimonialsSection.subsections || []), newSub]);
-                      }}>
-                        <Plus className="mr-2 h-4 w-4"/>
-                        Añadir Testimonio
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground bg-gray-50 rounded-lg">
-                      <p>Para gestionar testimonios, primero añade una sección de tipo "Testimonios" en la pestaña de Secciones.</p>
-                      <Button className="mt-4" onClick={() => addSection('testimonials')}>Habilitar Sección de Testimonios</Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                            </Card>
+                        ))}
+                        <Button size="sm" variant="outline" className="mt-2" onClick={() => {
+                            const newSub = { id: `sub-${Date.now()}`, title: '', content: '', imageUrl: '', authorRole: '', imageRadius: 0 };
+                            updateSection(testimonialsSectionIndex, 'subsections', [...(testimonialsSection.subsections || []), newSub]);
+                        }}>
+                            <Plus className="mr-2 h-4 w-4"/>
+                            Añadir Testimonio
+                        </Button>
+                        </div>
+                    ) : (
+                        <div className="text-center py-8 text-muted-foreground bg-gray-50 rounded-lg">
+                        <p>Para gestionar testimonios, primero añade una sección de tipo "Testimonios" en la pestaña de Secciones.</p>
+                        <Button className="mt-4" onClick={() => addSection('testimonials')}>Habilitar Sección de Testimonios</Button>
+                        </div>
+                    )}
+                    </CardContent>
+                </Card>
             </TabsContent>
 
 
