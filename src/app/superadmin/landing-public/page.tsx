@@ -596,14 +596,13 @@ export default function LandingPublicPage() {
                           <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-4">
                             <div className="space-y-2">
                               <Label>Imagen del Autor</Label>
-                              <div className="relative w-24 h-24 mx-auto">
+                              <div className="relative w-24 h-24 mx-auto" style={{ width: `${64 + (sub.imageRadius || 0)}px`, height: `${64 + (sub.imageRadius || 0)}px` }}>
                                 <Image 
                                   src={sub.imageUrl || "https://placehold.co/100x100.png?text=Autor"}
                                   alt="Vista previa de autor"
-                                  width={96}
-                                  height={96}
+                                  fill
                                   className="border object-cover"
-                                  style={{ borderRadius: `${sub.imageRadius}%` }}
+                                  style={{ borderRadius: `50%` }}
                                 />
                               </div>
                                <Button variant="outline" asChild size="sm" className="w-full mt-2">
@@ -623,8 +622,8 @@ export default function LandingPublicPage() {
                                <div className="space-y-1 mt-2">
                                   <Label>Radio del Círculo</Label>
                                   <Slider
-                                    value={[sub.imageRadius || 50]}
-                                    max={50}
+                                    value={[sub.imageRadius || 0]}
+                                    max={64}
                                     step={1}
                                     onValueChange={(value) => updateSubsection(testimonialsSectionIndex, subIdx, 'imageRadius', value[0])}
                                   />
@@ -660,7 +659,7 @@ export default function LandingPublicPage() {
                         </Card>
                       ))}
                       <Button size="sm" variant="outline" className="mt-2" onClick={() => {
-                        const newSub = { id: `sub-${Date.now()}`, title: '', content: '', imageUrl: '', authorRole: '', imageRadius: 50 };
+                        const newSub = { id: `sub-${Date.now()}`, title: '', content: '', imageUrl: '', authorRole: '', imageRadius: 0 };
                         updateSection(testimonialsSectionIndex, 'subsections', [...(testimonialsSection.subsections || []), newSub]);
                       }}>
                         <Plus className="mr-2 h-4 w-4"/>
@@ -799,14 +798,13 @@ export default function LandingPublicPage() {
                                 {section.subsections.map(sub => (
                                     <Card key={sub.id} className="bg-white/80 backdrop-blur-sm text-gray-800">
                                         <CardContent className="p-6 text-center">
-                                            <div className="relative w-24 h-24 mx-auto mb-4">
+                                            <div className="relative mx-auto mb-4" style={{ width: `${64 + (sub.imageRadius || 0)}px`, height: `${64 + (sub.imageRadius || 0)}px` }}>
                                                 <Image 
                                                     src={sub.imageUrl || 'https://placehold.co/100x100.png'} 
                                                     alt={sub.title}
-                                                    width={96}
-                                                    height={96}
+                                                    fill
                                                     className="object-cover border-4 border-white shadow-lg"
-                                                    style={{ borderRadius: `${sub.imageRadius}%` }}
+                                                    style={{ borderRadius: `50%` }}
                                                 />
                                             </div>
                                             <div className="text-lg italic mb-4" dangerouslySetInnerHTML={{ __html: sub.content }}/>
