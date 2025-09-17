@@ -509,7 +509,9 @@ export default function LandingPublicPage() {
                         </div>
                         
                         <div className="mt-6">
-                          <Label className="mb-2 block font-semibold">Subsecciones (Columnas/Tarjetas)</Label>
+                          <Label className="mb-2 block font-semibold">
+                            {section.type === 'testimonials' ? 'Testimonios' : 'Subsecciones (Columnas/Tarjetas)'}
+                          </Label>
                           <div className="space-y-4">
                             {(section.subsections || []).map((sub, subIdx) => (
                               <Card key={sub.id} className="p-3 relative overflow-visible bg-background">
@@ -519,15 +521,22 @@ export default function LandingPublicPage() {
                                 }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <div className="space-y-2">
-                                    <Input
+                                     <Input
                                       value={sub.title}
                                       onChange={e => updateSubsection(index, subIdx, 'title', e.target.value)}
-                                      placeholder="Título de la subsección"
+                                      placeholder={section.type === 'testimonials' ? 'Nombre del Autor' : 'Título de la subsección'}
                                     />
+                                    {section.type === 'testimonials' && (
+                                       <Input
+                                          value={sub.authorRole || ''}
+                                          onChange={e => updateSubsection(index, subIdx, 'authorRole', e.target.value)}
+                                          placeholder="Cargo/Empresa del Autor"
+                                        />
+                                    )}
                                      <RichTextEditor
                                       value={sub.content}
                                       onChange={value => updateSubsection(index, subIdx, 'content', value)}
-                                      placeholder="Contenido de la subsección"
+                                      placeholder={section.type === 'testimonials' ? 'Cita del testimonio...' : 'Contenido de la subsección'}
                                     />
                                   </div>
                                   <div className="space-y-2">
@@ -562,7 +571,10 @@ export default function LandingPublicPage() {
                             <Button size="sm" variant="outline" className="mt-2" onClick={() => {
                               const newSub = { id: `sub-${Date.now()}`, title: '', content: '', imageUrl: '' };
                               updateSection(index, 'subsections', [...(section.subsections || []), newSub]);
-                            }}><Plus className="mr-2 h-4 w-4"/>Agregar subsección</Button>
+                            }}>
+                              <Plus className="mr-2 h-4 w-4"/>
+                              {section.type === 'testimonials' ? 'Añadir Testimonio' : 'Agregar subsección'}
+                            </Button>
                           </div>
                         </div>
                       </CardContent>
@@ -676,7 +688,7 @@ export default function LandingPublicPage() {
                             </button>}
                         </div>
 
-                        {section.subsections && section.subsections.length > 0 && (
+                        {section.subsections && section.subsections.length > 0 && section.type !== 'testimonials' && (
                             <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
                             {section.subsections.map(sub => (
                                 <div key={sub.id} className="bg-white rounded-lg shadow-md p-6 flex flex-col items-center text-center text-gray-800">
@@ -685,6 +697,21 @@ export default function LandingPublicPage() {
                                 <div className="text-sm" dangerouslySetInnerHTML={{ __html: sub.content }}/>
                                 </div>
                             ))}
+                            </div>
+                        )}
+                        
+                        {section.type === 'testimonials' && section.subsections && section.subsections.length > 0 && (
+                            <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
+                                {section.subsections.map(sub => (
+                                    <Card key={sub.id} className="bg-white/80 backdrop-blur-sm text-gray-800">
+                                        <CardContent className="p-6 text-center">
+                                            <Image src={sub.imageUrl || 'https://placehold.co/100x100.png'} alt={sub.title} width={80} height={80} className="mx-auto mb-4 rounded-full border-4 border-white shadow-lg" />
+                                            <div className="text-lg italic mb-4" dangerouslySetInnerHTML={{ __html: sub.content }}/>
+                                            <p className="font-bold text-primary">{sub.title}</p>
+                                            {sub.authorRole && <p className="text-sm text-muted-foreground">{sub.authorRole}</p>}
+                                        </CardContent>
+                                    </Card>
+                                ))}
                             </div>
                         )}
                         </div>
@@ -697,7 +724,3 @@ export default function LandingPublicPage() {
     </div>
   );
 }
-
-    
-
-    

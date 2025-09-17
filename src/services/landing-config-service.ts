@@ -8,9 +8,11 @@ import { auditService } from './audit-service';
 // Interfaces for structured data
 export interface LandingSubsection {
   id: string;
-  title: string;
-  content: string;
-  imageUrl: string;
+  title: string; // Se usará para el Nombre/Autor del testimonio
+  content: string; // Se usará para el texto/cita del testimonio
+  imageUrl: string; // Imagen del autor
+  quote?: string; // Campo específico para la cita (opcional, para claridad)
+  authorRole?: string; // ej. "Dueño, Pizzería La Tradición"
 }
 
 export interface LandingSection {
@@ -68,8 +70,8 @@ const getDefaultConfig = (): LandingConfig => ({
   id: 'main',
   heroTitle: 'Moderniza tu negocio y aumenta tus ventas.',
   heroSubtitle: 'La solución completa para tu restaurante. Menú digital, gestión de pedidos, reservas y más.',
-  heroContent: 'Descubre la revolución para tu NEGOCIO. Con nuestro menú digital interactivo, tus clientes explorarán tus platos con fotos de alta calidad y descripciones detalladas, facilitando su elección y aumentando su satisfacción.',
-  heroButtonText: 'Ver Demo',
+  heroContent: 'Descubre la revolución para tu NEGOCIO. ¿Tienes una cafetería, pizzería, food truck, panadería, pastelería, servicio de catering o cualquier otro negocio gastronómico? ¡Esta solución es para ti! </br></br>Con nuestro menú digital interactivo, tus clientes explorarán tus platos con fotos de alta calidad y descripciones detalladas, facilitando su elección y aumentando su satisfacción.</br></br>Además, nuestro sistema de gestión integral te permite controlar cada aspecto de tu negocio: desde el inventario y los pedidos hasta las mesas y el personal, todo en una sola plataforma.</br></br>Optimiza tu operación, reduce costos y toma decisiones más inteligentes con datos en tiempo real. Es la solución completa para llevar tu restaurante a un nuevo nivel de eficiencia y rentabilidad.',
+  heroButtonText: 'Comenzar',
   heroButtonUrl: '#planes',
   heroBackgroundColor: '#FFFFFF',
   heroTextColor: '#1f2937',
@@ -96,6 +98,15 @@ const getDefaultConfig = (): LandingConfig => ({
         { id: 'sub-2-3', title: 'App Mesa', content: 'Permite que los clientes pidan desde la mesa de forma fácil.', imageUrl: 'gs://websapmax.appspot.com/subsections/mesa.jpg' },
       ],
     },
+    {
+      id: 'section-3', type: 'testimonials', title: 'Lo que nuestros clientes dicen', subtitle: 'Descubre cómo hemos ayudado a otros negocios a crecer', content: '',
+      backgroundColor: '#FFFFFF', textColor: '#1f2937', buttonColor: '#FF4500', buttonText: '', buttonUrl: '', imageUrl: '',
+      order: 3, isActive: true, animation: 'fadeIn',
+      subsections: [
+        { id: 'sub-3-1', title: 'Ana López', authorRole: 'Dueña, Restaurante Café del Sol', content: 'WebSapMax transformó nuestra operación. Los pedidos online y el menú QR han sido un cambio de juego para nosotros.', imageUrl: 'https://placehold.co/100x100.png' },
+        { id: 'sub-3-2', title: 'Juan M.', authorRole: 'Gerente, Burger Hub', content: 'La gestión de mesas y reservas nunca ha sido tan fácil. Nuestros clientes aman la simplicidad y nosotros amamos la eficiencia.', imageUrl: 'https://placehold.co/100x100.png' },
+      ]
+    }
   ],
   seo: {
     title: 'WebSapMax - Menús Digitales para Restaurantes',
