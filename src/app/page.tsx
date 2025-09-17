@@ -9,7 +9,6 @@ import { AlertTriangle } from 'lucide-react';
 import { useLandingPlans } from '@/hooks/use-landing-plans';
 import PublicHeader from '@/components/layout/public-header';
 import { Button } from '@/components/ui/button';
-import { ClientProviders } from '@/contexts/client-providers';
 
 function LandingPageSkeleton() {
   return (
@@ -75,10 +74,6 @@ function LandingPageContent() {
 
 export default function Page() {
   return (
-    <ClientProviders>
-      <Suspense fallback={<LandingPageSkeleton />}>
-        <LandingPageContent />
-      </Suspense>
-    </ClientProviders>
+    <LandingPageContent />
   );
 }
