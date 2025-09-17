@@ -462,6 +462,7 @@ export default function LandingPublicPage() {
                                 <SelectItem value="services">Servicios</SelectItem>
                                 <SelectItem value="about">Sobre Nosotros</SelectItem>
                                 <SelectItem value="contact">Contacto</SelectItem>
+                                <SelectItem value="testimonials">Testimonios</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -826,3 +827,4 @@ export default function LandingPublicPage() {
     </div>
   );
 }
+

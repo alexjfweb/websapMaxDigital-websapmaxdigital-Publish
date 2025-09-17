@@ -53,3 +53,4 @@ export function useLandingConfig() {
     refetch: mutate,
   };
 }
+
