@@ -445,6 +445,7 @@ export default function LandingPublicPage() {
                                 <SelectItem value="services">Servicios</SelectItem>
                                 <SelectItem value="about">Sobre Nosotros</SelectItem>
                                 <SelectItem value="contact">Contacto</SelectItem>
+                                <SelectItem value="testimonials">Testimonios</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -530,7 +531,7 @@ export default function LandingPublicPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {testimonialsSection && (
+                        {testimonialsSection ? (
                           <div className="space-y-4">
                             {(testimonialsSection.subsections || []).map((sub, subIdx) => (
                               <Card key={sub.id} className="p-3 relative overflow-visible bg-background">
@@ -592,6 +593,10 @@ export default function LandingPublicPage() {
                               <Plus className="mr-2 h-4 w-4"/>
                               Añadir Testimonio
                             </Button>
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <p>Para gestionar testimonios, primero añade una sección de tipo "Testimonios" en la pestaña de Secciones.</p>
                           </div>
                         )}
                     </CardContent>
