@@ -67,3 +67,4 @@ export function useLandingPlans(publicOnly: boolean = true): UseLandingPlansRetu
     refetch,
   };
 }
+

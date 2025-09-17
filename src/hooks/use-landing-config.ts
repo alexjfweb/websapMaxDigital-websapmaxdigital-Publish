@@ -4,7 +4,6 @@
 import useSWR from 'swr';
 import { landingConfigService, LandingConfig } from '@/services/landing-config-service';
 import { useToast } from './use-toast';
-import { useSession } from '@/contexts/session-context';
 
 const SWR_KEY = 'landing-page-config';
 
@@ -71,3 +70,4 @@ export function useLandingConfig() {
     refetch: mutate,
   };
 }
+
