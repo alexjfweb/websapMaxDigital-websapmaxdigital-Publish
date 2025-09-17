@@ -233,6 +233,19 @@ export default function LandingPublicPage() {
     }));
   };
 
+    const addSubsection = (sectionIndex: number) => {
+    const newSub: LandingSubsection = { id: `sub-${Date.now()}`, title: 'Nuevo Título', content: 'Nueva descripción.', imageUrl: '' };
+    const newSections = [...formData.sections];
+    newSections[sectionIndex].subsections = [...(newSections[sectionIndex].subsections || []), newSub];
+    setFormData(prev => ({ ...prev, sections: newSections }));
+  };
+
+  const removeSubsection = (sectionIndex: number, subIndex: number) => {
+    const newSections = [...formData.sections];
+    newSections[sectionIndex].subsections = newSections[sectionIndex].subsections?.filter((_, i) => i !== subIndex);
+    setFormData(prev => ({ ...prev, sections: newSections }));
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -427,7 +440,7 @@ export default function LandingPublicPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {formData.sections.map((section, index) => (
+                  {formData.sections.filter(s => s.type !== 'testimonials').map((section, index) => (
                     <Card key={section.id} className="border-2">
                        <CardHeader className="pb-3 bg-muted/50">
                         <div className="flex items-center justify-between">
@@ -445,7 +458,6 @@ export default function LandingPublicPage() {
                                 <SelectItem value="services">Servicios</SelectItem>
                                 <SelectItem value="about">Sobre Nosotros</SelectItem>
                                 <SelectItem value="contact">Contacto</SelectItem>
-                                <SelectItem value="testimonials">Testimonios</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -514,6 +526,43 @@ export default function LandingPublicPage() {
                                 onChange={(value) => updateSection(index, 'content', value)}
                                />
                             </Suspense>
+                        </div>
+                         {/* Gestión de Subsecciones */}
+                        <Separator />
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <Label className="font-semibold">Subsecciones (Columnas/Tarjetas)</Label>
+                            <Button size="xs" variant="outline" onClick={() => addSubsection(index)}>
+                              <Plus className="w-3 h-3 mr-1" /> Añadir
+                            </Button>
+                          </div>
+                          <div className="space-y-3">
+                            {section.subsections?.map((sub, subIdx) => (
+                              <div key={sub.id} className="p-3 border rounded-md bg-background space-y-2">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs font-medium text-muted-foreground">Tarjeta {subIdx + 1}</span>
+                                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => removeSubsection(index, subIdx)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                  <Input value={sub.title} onChange={(e) => updateSubsection(index, subIdx, 'title', e.target.value)} placeholder="Título de la tarjeta" />
+                                  <RichTextEditor value={sub.content} onChange={(value) => updateSubsection(index, subIdx, 'content', value)} placeholder="Contenido de la tarjeta" />
+                                </div>
+                                <div>
+                                  <Label>Imagen</Label>
+                                   <div className="flex items-center gap-2">
+                                        <Image src={sub.imageUrl || "https://placehold.co/100x100.png?text=IMG"} alt="Vista previa" width={64} height={64} className="rounded-md border object-cover h-16 w-16" />
+                                        <Button variant="outline" asChild size="sm">
+                                            <label htmlFor={`sub-img-${sub.id}`} className="cursor-pointer">
+                                            {uploading[sub.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}
+                                            {uploading[sub.id] ? "Subiendo..." : "Subir"}
+                                            <input id={`sub-img-${sub.id}`} type="file" className="hidden" accept="image/*" onChange={(e) => handleSubsectionImageUpload(e, index, subIdx)} disabled={uploading[sub.id]}/>
+                                            </label>
+                                        </Button>
+                                    </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
