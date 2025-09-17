@@ -1,42 +1,31 @@
+
 // src/lib/firebase-admin.ts
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
+import { getStorage } from 'firebase-admin/storage';
 import { firebaseAdminConfig } from './firebase-config';
 
-let adminApp: App | null = null;
+let adminApp: App;
 
-function initializeFirebaseAdmin(): App {
-  // Reutiliza la instancia si ya existe para evitar errores en hot-reload
-  if (getApps().length > 0) {
-    return getApps().find(app => app.name === 'websapmax-admin') || getApps()[0];
+// Esta es una función singleton que asegura que Firebase Admin se inicialice solo una vez.
+function getFirebaseAdmin(): App {
+  if (getApps().some(app => app.name === 'websapmax-admin')) {
+    return getApps().find(app => app.name === 'websapmax-admin')!;
+  }
+
+  if (!firebaseAdminConfig || !firebaseAdminConfig.project_id) {
+    console.error("❌ ERROR CRÍTICO: La configuración de Firebase Admin no está definida o es inválida.");
+    throw new Error("La configuración del servidor de Firebase no está completa. Revisa tus variables de entorno.");
   }
 
   console.log("🚀 Inicializando Firebase Admin SDK por primera vez...");
-
-  if (!firebaseAdminConfig || !firebaseAdminConfig.project_id) {
-    console.error("❌ ERROR: La configuración de Firebase Admin está vacía o es inválida.");
-    throw new Error("La configuración de Firebase Admin no está definida. Revisa tus variables de entorno o firebase-config.ts.");
-  }
-
-  try {
-    const app = initializeApp({
-      credential: cert(firebaseAdminConfig),
-      // Apunta al bucket correcto
-      storageBucket: 'websapmax.appspot.com',
-    }, 'websapmax-admin'); // Dar un nombre a la app de admin para evitar conflictos
-    
-    console.log('✅ Firebase Admin inicializado correctamente para el proyecto:', app.name);
-    return app;
-
-  } catch (error: any) {
-    console.error("❌ ERROR CRÍTICO AL INICIALIZAR FIREBASE ADMIN:", error.message);
-    throw new Error(`Fallo en la inicialización de Firebase Admin: ${error.message}`);
-  }
-}
-
-// Función singleton para obtener la instancia de la app de admin.
-export function getFirebaseAdmin(): App {
-  if (!adminApp) {
-    adminApp = initializeFirebaseAdmin();
-  }
+  adminApp = initializeApp({
+    credential: cert(firebaseAdminConfig),
+    storageBucket: 'websapmax.appspot.com',
+  }, 'websapmax-admin');
+  
+  console.log('✅ Firebase Admin inicializado correctamente.');
   return adminApp;
 }
+
+// Exportamos la función para que otros módulos del servidor puedan obtener la instancia.
+export { getFirebaseAdmin };
