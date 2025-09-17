@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useMemo } from 'react';
-import 'react-quill/dist/quill.snow.css'; // Import styles
 
 // Importar ReactQuill de forma dinámica para evitar problemas con SSR
 import dynamic from 'next/dynamic';
