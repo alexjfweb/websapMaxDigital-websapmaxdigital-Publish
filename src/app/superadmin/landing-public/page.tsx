@@ -174,10 +174,10 @@ export default function LandingPublicPage() {
     });
   };
 
-  const addSection = () => {
+  const addSection = (type: 'features' | 'services' | 'about' | 'contact' | 'testimonials' = 'features') => {
     const newSection: LandingSection = {
       id: `section-${Date.now()}`,
-      type: 'features',
+      type: type,
       title: 'Nueva Sección',
       subtitle: '',
       content: 'Contenido de la nueva sección',
@@ -418,16 +418,16 @@ export default function LandingPublicPage() {
                   <CardTitle className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <Settings className="w-5 h-5" />
-                      Secciones de Contenido (Excepto Testimonios)
+                      Secciones de Contenido
                     </span>
-                    <Button onClick={addSection} size="sm" variant="outline">
+                    <Button onClick={() => addSection('features')} size="sm" variant="outline">
                       <Plus className="w-4 h-4 mr-2" />
                       Agregar Sección
                     </Button>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {formData.sections.filter(s => s.type !== 'testimonials').map((section, index) => (
+                  {formData.sections.map((section, index) => (
                     <Card key={section.id} className="border-2">
                        <CardHeader className="pb-3 bg-muted/50">
                         <div className="flex items-center justify-between">
@@ -437,7 +437,7 @@ export default function LandingPublicPage() {
                               value={section.type}
                               onValueChange={(value) => updateSection(index, 'type', value)}
                             >
-                              <SelectTrigger className="w-36 h-8 text-xs">
+                              <SelectTrigger className="w-40 h-8 text-xs">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -470,7 +470,7 @@ export default function LandingPublicPage() {
                               size="icon"
                                className="h-8 w-8"
                               onClick={() => moveSection(index, 'down')}
-                              disabled={index === formData.sections.filter(s => s.type !== 'testimonials').length - 1}
+                              disabled={index === formData.sections.length - 1}
                               title="Mover abajo"
                             >
                               <MoveDown className="w-4 h-4" />
@@ -523,84 +523,85 @@ export default function LandingPublicPage() {
             </TabsContent>
             
             <TabsContent value="testimonials">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Star className="w-5 h-5 text-yellow-500" />
-                            Gestión de Testimonios
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {testimonialsSection ? (
-                          <div className="space-y-4">
-                            {(testimonialsSection.subsections || []).map((sub, subIdx) => (
-                              <Card key={sub.id} className="p-3 relative overflow-visible bg-background">
-                                <Button size="sm" variant="ghost" className="absolute top-1 right-1 h-6 w-6 p-0" onClick={() => {
-                                  const newSubs = testimonialsSection.subsections!.filter((_, i) => i !== subIdx);
-                                  updateSection(testimonialsSectionIndex, 'subsections', newSubs);
-                                }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div className="space-y-2">
-                                     <Input
-                                      value={sub.title}
-                                      onChange={e => updateSubsection(testimonialsSectionIndex, subIdx, 'title', e.target.value)}
-                                      placeholder={'Nombre del Autor'}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Star className="w-5 h-5 text-yellow-500" />
+                    Gestión de Testimonios
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {testimonialsSection ? (
+                    <div className="space-y-4">
+                      {(testimonialsSection.subsections || []).map((sub, subIdx) => (
+                        <Card key={sub.id} className="p-3 relative overflow-visible bg-background">
+                          <Button size="sm" variant="ghost" className="absolute top-1 right-1 h-6 w-6 p-0" onClick={() => {
+                            const newSubs = testimonialsSection.subsections!.filter((_, i) => i !== subIdx);
+                            updateSection(testimonialsSectionIndex, 'subsections', newSubs);
+                          }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                               <Input
+                                value={sub.title}
+                                onChange={e => updateSubsection(testimonialsSectionIndex, subIdx, 'title', e.target.value)}
+                                placeholder={'Nombre del Autor'}
+                              />
+                              <Input
+                                  value={sub.authorRole || ''}
+                                  onChange={e => updateSubsection(testimonialsSectionIndex, subIdx, 'authorRole', e.target.value)}
+                                  placeholder="Cargo/Empresa del Autor"
+                              />
+                               <RichTextEditor
+                                value={sub.content}
+                                onChange={value => updateSubsection(testimonialsSectionIndex, subIdx, 'content', value)}
+                                placeholder={'Cita del testimonio...'}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Imagen</Label>
+                              <div className="flex items-center gap-2">
+                                <Image 
+                                  src={sub.imageUrl || "https://placehold.co/100x100.png?text=Autor"}
+                                  alt="Vista previa de autor"
+                                  width={64}
+                                  height={64}
+                                  className="rounded-full border object-cover h-16 w-16"
+                                />
+                                <Button variant="outline" asChild size="sm">
+                                  <label htmlFor={`sub-img-${sub.id}`} className="cursor-pointer">
+                                    {uploading[sub.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}
+                                    {uploading[sub.id] ? "Subiendo..." : "Subir"}
+                                    <input 
+                                      id={`sub-img-${sub.id}`}
+                                      type="file"
+                                      className="hidden"
+                                      accept="image/png, image/jpeg, image/jpg, image/webp"
+                                      onChange={(e) => handleSubsectionImageUpload(e, testimonialsSectionIndex, subIdx)}
+                                      disabled={uploading[sub.id]}
                                     />
-                                    <Input
-                                        value={sub.authorRole || ''}
-                                        onChange={e => updateSubsection(testimonialsSectionIndex, subIdx, 'authorRole', e.target.value)}
-                                        placeholder="Cargo/Empresa del Autor"
-                                    />
-                                     <RichTextEditor
-                                      value={sub.content}
-                                      onChange={value => updateSubsection(testimonialsSectionIndex, subIdx, 'content', value)}
-                                      placeholder={'Cita del testimonio...'}
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label>Imagen</Label>
-                                    <div className="flex items-center gap-2">
-                                      <Image 
-                                        src={sub.imageUrl || "https://placehold.co/100x100.png?text=Autor"}
-                                        alt="Vista previa de autor"
-                                        width={64}
-                                        height={64}
-                                        className="rounded-full border object-cover h-16 w-16"
-                                      />
-                                      <Button variant="outline" asChild size="sm">
-                                        <label htmlFor={`sub-img-${sub.id}`} className="cursor-pointer">
-                                          {uploading[sub.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}
-                                          {uploading[sub.id] ? "Subiendo..." : "Subir"}
-                                          <input 
-                                            id={`sub-img-${sub.id}`}
-                                            type="file"
-                                            className="hidden"
-                                            accept="image/png, image/jpeg, image/jpg, image/webp"
-                                            onChange={(e) => handleSubsectionImageUpload(e, testimonialsSectionIndex, subIdx)}
-                                            disabled={uploading[sub.id]}
-                                          />
-                                        </label>
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </div>
-                              </Card>
-                            ))}
-                            <Button size="sm" variant="outline" className="mt-2" onClick={() => {
-                              const newSub = { id: `sub-${Date.now()}`, title: '', content: '', imageUrl: '', authorRole: '' };
-                              updateSection(testimonialsSectionIndex, 'subsections', [...(testimonialsSection.subsections || []), newSub]);
-                            }}>
-                              <Plus className="mr-2 h-4 w-4"/>
-                              Añadir Testimonio
-                            </Button>
+                                  </label>
+                                </Button>
+                              </div>
+                            </div>
                           </div>
-                        ) : (
-                          <div className="text-center py-8 text-muted-foreground">
-                            <p>Para gestionar testimonios, primero añade una sección de tipo "Testimonios" en la pestaña de Secciones.</p>
-                          </div>
-                        )}
-                    </CardContent>
-                </Card>
+                        </Card>
+                      ))}
+                      <Button size="sm" variant="outline" className="mt-2" onClick={() => {
+                        const newSub = { id: `sub-${Date.now()}`, title: '', content: '', imageUrl: '', authorRole: '' };
+                        updateSection(testimonialsSectionIndex, 'subsections', [...(testimonialsSection.subsections || []), newSub]);
+                      }}>
+                        <Plus className="mr-2 h-4 w-4"/>
+                        Añadir Testimonio
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground bg-gray-50 rounded-lg">
+                      <p>Para gestionar testimonios, primero añade una sección de tipo "Testimonios" en la pestaña de Secciones.</p>
+                      <Button className="mt-4" onClick={() => addSection('testimonials')}>Habilitar Sección de Testimonios</Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="seo" className="space-y-4">
@@ -743,5 +744,3 @@ export default function LandingPublicPage() {
     </div>
   );
 }
-
-    
