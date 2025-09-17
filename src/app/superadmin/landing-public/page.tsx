@@ -38,6 +38,7 @@ const getDefaultConfig = (): LandingConfig => ({
   id: 'main',
   heroTitle: 'Título Hero por Defecto',
   heroSubtitle: 'Subtítulo por defecto.',
+  heroContent: '',
   heroButtonText: 'Comenzar',
   heroButtonUrl: '#',
   heroBackgroundColor: '#ffffff',
@@ -56,7 +57,7 @@ const getDefaultConfig = (): LandingConfig => ({
 
 
 export default function LandingPublicPage() {
-  const { config, isLoading, updateConfig } = useLandingConfig();
+  const { landingConfig, isLoading, updateConfig } = useLandingConfig();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
@@ -67,25 +68,23 @@ export default function LandingPublicPage() {
 
   // Sincronizar con la configuración de Firebase
   useEffect(() => {
-    if (config) {
+    if (landingConfig) {
       setFormData({
         ...getDefaultConfig(), // Asegura que todos los campos por defecto estén presentes
-        ...config,
-        sections: (config.sections || []).map(s => ({
+        ...landingConfig,
+        sections: (landingConfig.sections || []).map(s => ({
           ...s,
           subsections: s.subsections || []
         })),
-        seo: { ...getDefaultConfig().seo, ...(config.seo || {}) }
+        seo: { ...getDefaultConfig().seo, ...(landingConfig.seo || {}) }
       });
     }
-  }, [config]);
+  }, [landingConfig]);
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await updateConfig({
-        ...formData
-      });
+      await updateConfig(formData);
       
       toast({
         title: "Éxito",
@@ -308,7 +307,16 @@ export default function LandingPublicPage() {
                       />
                     </div>
                   </div>
-
+                  <div>
+                    <Label htmlFor="heroContent">Contenido Adicional (HTML)</Label>
+                    <Textarea
+                        id="heroContent"
+                        value={formData.heroContent || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, heroContent: e.target.value }))}
+                        placeholder="Añade texto, listas o más detalles aquí..."
+                        rows={4}
+                    />
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="heroButtonText">Texto del Botón</Label>
@@ -480,6 +488,15 @@ export default function LandingPublicPage() {
                                 />
                             </div>
                         </div>
+                         <div>
+                            <Label>Contenido Adicional (HTML)</Label>
+                            <Textarea
+                                value={section.content || ''}
+                                onChange={(e) => updateSection(index, 'content', e.target.value)}
+                                placeholder="Añade texto, listas o más detalles aquí..."
+                                rows={4}
+                            />
+                        </div>
                         
                         <div className="mt-6">
                           <Label className="mb-2 block font-semibold">Subsecciones (Columnas/Tarjetas)</Label>
@@ -619,7 +636,8 @@ export default function LandingPublicPage() {
                         }}
                     >
                         <h1 className="text-4xl font-bold mb-4">{formData.heroTitle}</h1>
-                        <p className="text-xl mb-8">{formData.heroSubtitle}</p>
+                        <p className="text-xl mb-6">{formData.heroSubtitle}</p>
+                         {formData.heroContent && <div className="text-base max-w-3xl mx-auto mb-8 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: formData.heroContent }} />}
                         <button
                         className="px-8 py-3 rounded-lg font-semibold"
                         style={{ backgroundColor: formData.heroButtonColor, color: '#ffffff' }}
@@ -642,7 +660,7 @@ export default function LandingPublicPage() {
                             {section.subtitle && (
                             <p className="text-xl mb-6">{section.subtitle}</p>
                             )}
-                            {section.content && <p className="mb-8">{section.content}</p>}
+                            {section.content && <div className="text-base max-w-3xl mx-auto mb-8 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: section.content }} />}
                             {section.buttonText && <button
                             className="px-6 py-2 rounded-lg font-semibold"
                             style={{ backgroundColor: section.buttonColor, color: '#ffffff' }}

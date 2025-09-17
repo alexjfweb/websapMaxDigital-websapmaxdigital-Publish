@@ -76,6 +76,12 @@ export default function LandingClient({ initialConfig: config, plans, errorPlans
           <p className="text-xl mb-8 text-center max-w-3xl">
             {config.heroSubtitle}
           </p>
+          {config.heroContent && (
+            <div 
+              className="text-lg max-w-3xl text-center mb-8"
+              dangerouslySetInnerHTML={{ __html: config.heroContent }}
+            />
+          )}
           <Button
             asChild
             className="text-lg font-semibold shadow-lg hover:scale-105 transition py-3 px-8 rounded-full"
@@ -98,8 +104,10 @@ export default function LandingClient({ initialConfig: config, plans, errorPlans
             <div className="container mx-auto text-center">
               <h2 className="text-3xl font-bold mb-4">{section.title}</h2>
               <p className="text-lg text-muted-foreground mb-6 max-w-3xl mx-auto">{section.subtitle}</p>
-              {/* CORRECCIÓN: Se agrega el campo de contenido de la sección aquí */}
-              <p className="text-base text-muted-foreground mb-8 max-w-3xl mx-auto whitespace-pre-wrap">{section.content}</p>
+              
+              {section.content && (
+                  <div className="text-base text-muted-foreground mb-8 max-w-3xl mx-auto whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: section.content }} />
+              )}
               
               {section.buttonText && section.buttonUrl && (
                   <Button asChild size="lg" style={{ backgroundColor: section.buttonColor, color: section.textColor }}>

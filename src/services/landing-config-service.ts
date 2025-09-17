@@ -50,6 +50,7 @@ export interface LandingConfig {
   id: string;
   heroTitle: string;
   heroSubtitle: string;
+  heroContent?: string; // Campo añadido para el contenido HTML del Hero
   heroButtonText: string;
   heroButtonUrl: string;
   heroBackgroundColor: string;
@@ -67,6 +68,7 @@ const getDefaultConfig = (): LandingConfig => ({
   id: 'main',
   heroTitle: 'Moderniza tu negocio y aumenta tus ventas.',
   heroSubtitle: 'La solución completa para tu restaurante. Menú digital, gestión de pedidos, reservas y más.',
+  heroContent: 'Descubre la revolución para tu NEGOCIO. Con nuestro menú digital interactivo, tus clientes explorarán tus platos con fotos de alta calidad y descripciones detalladas, facilitando su elección y aumentando su satisfacción.',
   heroButtonText: 'Ver Demo',
   heroButtonUrl: '#planes',
   heroBackgroundColor: '#FFFFFF',
