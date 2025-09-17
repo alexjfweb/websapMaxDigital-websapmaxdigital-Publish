@@ -75,8 +75,10 @@ function LandingPageContent() {
 
 export default function Page() {
   return (
-    <Suspense fallback={<LandingPageSkeleton />}>
-      <LandingPageContent />
-    </Suspense>
+    <ClientProviders>
+      <Suspense fallback={<LandingPageSkeleton />}>
+        <LandingPageContent />
+      </Suspense>
+    </ClientProviders>
   );
 }
