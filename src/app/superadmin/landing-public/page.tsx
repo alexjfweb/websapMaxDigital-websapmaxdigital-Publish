@@ -430,6 +430,7 @@ export default function LandingPublicPage() {
                               <SelectContent>
                                 <SelectItem value="features">Características</SelectItem>
                                 <SelectItem value="services">Servicios</SelectItem>
+                                <SelectItem value="testimonials">Testimonios</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
