@@ -21,7 +21,7 @@ export function useLandingConfig() {
 
   const { currentUser } = useSession();
 
-  const updateConfig = async (configUpdate: Partial<LandingConfig>) => {
+  const updateConfig = async (configUpdate: Partial<LandingConfig>, userId: string, userEmail: string) => {
     if (!currentUser) {
       throw new Error("Usuario no autenticado.");
     }
@@ -36,8 +36,8 @@ export function useLandingConfig() {
     try {
         await landingConfigService.updateLandingConfig(
             configUpdate,
-            currentUser.id,
-            currentUser.email
+            userId,
+            userEmail
         );
         // Revalida para asegurar que los datos son consistentes con el backend
         mutate();
