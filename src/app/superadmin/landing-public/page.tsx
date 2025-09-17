@@ -35,6 +35,7 @@ import {
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { useSession } from '@/contexts/session-context';
+import { Slider } from '@/components/ui/slider';
 
 
 const RichTextEditor = dynamic(() => import('@/components/ui/rich-text-editor'), { ssr: false });
@@ -82,7 +83,10 @@ export default function LandingPublicPage() {
         ...landingConfig,
         sections: (landingConfig.sections || []).map(s => ({
           ...s,
-          subsections: s.subsections || []
+          subsections: (s.subsections || []).map(sub => ({
+              ...sub,
+              imageRadius: sub.imageRadius ?? 50, // Set default radius if not present
+          }))
         })),
         seo: { ...getDefaultConfig().seo, ...(landingConfig.seo || {}) }
       });
@@ -96,7 +100,7 @@ export default function LandingPublicPage() {
     }
     setSaving(true);
     try {
-      await updateConfig(formData);
+      await updateConfig(formData, currentUser.id, currentUser.email);
       
       toast({
         title: "Éxito",
@@ -458,6 +462,7 @@ export default function LandingPublicPage() {
                                 <SelectItem value="services">Servicios</SelectItem>
                                 <SelectItem value="about">Sobre Nosotros</SelectItem>
                                 <SelectItem value="contact">Contacto</SelectItem>
+                                <SelectItem value="testimonials">Testimonios</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -583,43 +588,28 @@ export default function LandingPublicPage() {
                   {testimonialsSection ? (
                     <div className="space-y-4">
                       {(testimonialsSection.subsections || []).map((sub, subIdx) => (
-                        <Card key={sub.id} className="p-3 relative overflow-visible bg-background">
-                          <Button size="sm" variant="ghost" className="absolute top-1 right-1 h-6 w-6 p-0" onClick={() => {
+                        <Card key={sub.id} className="p-4 relative overflow-visible bg-background border">
+                          <Button size="sm" variant="ghost" className="absolute top-2 right-2 h-7 w-7 p-0" onClick={() => {
                             const newSubs = testimonialsSection.subsections!.filter((_, i) => i !== subIdx);
                             updateSection(testimonialsSectionIndex, 'subsections', newSubs);
                           }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-4">
                             <div className="space-y-2">
-                               <Input
-                                value={sub.title}
-                                onChange={e => updateSubsection(testimonialsSectionIndex, subIdx, 'title', e.target.value)}
-                                placeholder={'Nombre del Autor'}
-                              />
-                              <Input
-                                  value={sub.authorRole || ''}
-                                  onChange={e => updateSubsection(testimonialsSectionIndex, subIdx, 'authorRole', e.target.value)}
-                                  placeholder="Cargo/Empresa del Autor"
-                              />
-                               <RichTextEditor
-                                value={sub.content}
-                                onChange={value => updateSubsection(testimonialsSectionIndex, subIdx, 'content', value)}
-                                placeholder={'Cita del testimonio...'}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Imagen</Label>
-                              <div className="flex items-center gap-2">
+                              <Label>Imagen del Autor</Label>
+                              <div className="relative w-24 h-24 mx-auto">
                                 <Image 
                                   src={sub.imageUrl || "https://placehold.co/100x100.png?text=Autor"}
                                   alt="Vista previa de autor"
-                                  width={64}
-                                  height={64}
-                                  className="rounded-full border object-cover h-16 w-16"
+                                  width={96}
+                                  height={96}
+                                  className="border object-cover"
+                                  style={{ borderRadius: `${sub.imageRadius}%` }}
                                 />
-                                <Button variant="outline" asChild size="sm">
+                              </div>
+                               <Button variant="outline" asChild size="sm" className="w-full mt-2">
                                   <label htmlFor={`sub-img-${sub.id}`} className="cursor-pointer">
                                     {uploading[sub.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}
-                                    {uploading[sub.id] ? "Subiendo..." : "Subir"}
+                                    {uploading[sub.id] ? "Subiendo..." : "Subir Imagen"}
                                     <input 
                                       id={`sub-img-${sub.id}`}
                                       type="file"
@@ -630,13 +620,47 @@ export default function LandingPublicPage() {
                                     />
                                   </label>
                                 </Button>
+                               <div className="space-y-1 mt-2">
+                                  <Label>Radio del Círculo</Label>
+                                  <Slider
+                                    value={[sub.imageRadius || 50]}
+                                    max={50}
+                                    step={1}
+                                    onValueChange={(value) => updateSubsection(testimonialsSectionIndex, subIdx, 'imageRadius', value[0])}
+                                  />
+                               </div>
+                            </div>
+                            <div className="space-y-4">
+                              <div className="space-y-1">
+                                <Label>Nombre del Autor</Label>
+                               <Input
+                                value={sub.title}
+                                onChange={e => updateSubsection(testimonialsSectionIndex, subIdx, 'title', e.target.value)}
+                                placeholder={'Nombre del Autor'}
+                              />
+                              </div>
+                              <div className="space-y-1">
+                                <Label>Cargo/Empresa del Autor</Label>
+                              <Input
+                                  value={sub.authorRole || ''}
+                                  onChange={e => updateSubsection(testimonialsSectionIndex, subIdx, 'authorRole', e.target.value)}
+                                  placeholder="Cargo/Empresa del Autor"
+                              />
+                              </div>
+                              <div className="space-y-1">
+                                <Label>Cita del Testimonio</Label>
+                               <RichTextEditor
+                                value={sub.content}
+                                onChange={value => updateSubsection(testimonialsSectionIndex, subIdx, 'content', value)}
+                                placeholder={'Cita del testimonio...'}
+                              />
                               </div>
                             </div>
                           </div>
                         </Card>
                       ))}
                       <Button size="sm" variant="outline" className="mt-2" onClick={() => {
-                        const newSub = { id: `sub-${Date.now()}`, title: '', content: '', imageUrl: '', authorRole: '' };
+                        const newSub = { id: `sub-${Date.now()}`, title: '', content: '', imageUrl: '', authorRole: '', imageRadius: 50 };
                         updateSection(testimonialsSectionIndex, 'subsections', [...(testimonialsSection.subsections || []), newSub]);
                       }}>
                         <Plus className="mr-2 h-4 w-4"/>
@@ -652,6 +676,7 @@ export default function LandingPublicPage() {
                 </CardContent>
               </Card>
             </TabsContent>
+
 
             <TabsContent value="seo" className="space-y-4">
               <Card>
@@ -774,7 +799,16 @@ export default function LandingPublicPage() {
                                 {section.subsections.map(sub => (
                                     <Card key={sub.id} className="bg-white/80 backdrop-blur-sm text-gray-800">
                                         <CardContent className="p-6 text-center">
-                                            <Image src={sub.imageUrl || 'https://placehold.co/100x100.png'} alt={sub.title} width={80} height={80} className="mx-auto mb-4 rounded-full border-4 border-white shadow-lg" />
+                                            <div className="relative w-24 h-24 mx-auto mb-4">
+                                                <Image 
+                                                    src={sub.imageUrl || 'https://placehold.co/100x100.png'} 
+                                                    alt={sub.title}
+                                                    width={96}
+                                                    height={96}
+                                                    className="object-cover border-4 border-white shadow-lg"
+                                                    style={{ borderRadius: `${sub.imageRadius}%` }}
+                                                />
+                                            </div>
                                             <div className="text-lg italic mb-4" dangerouslySetInnerHTML={{ __html: sub.content }}/>
                                             <p className="font-bold text-primary">{sub.title}</p>
                                             {sub.authorRole && <p className="text-sm text-muted-foreground">{sub.authorRole}</p>}

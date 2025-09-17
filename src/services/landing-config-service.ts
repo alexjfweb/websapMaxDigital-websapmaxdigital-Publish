@@ -13,6 +13,7 @@ export interface LandingSubsection {
   imageUrl: string; // Imagen del autor
   quote?: string; // Campo específico para la cita (opcional, para claridad)
   authorRole?: string; // ej. "Dueño, Pizzería La Tradición"
+  imageRadius?: number; // New field for circle radius
 }
 
 export interface LandingSection {
@@ -103,8 +104,8 @@ const getDefaultConfig = (): LandingConfig => ({
       backgroundColor: '#FFFFFF', textColor: '#1f2937', buttonColor: '#FF4500', buttonText: '', buttonUrl: '', imageUrl: '',
       order: 3, isActive: true, animation: 'fadeIn',
       subsections: [
-        { id: 'sub-3-1', title: 'Ana López', authorRole: 'Dueña, Restaurante Café del Sol', content: 'WebSapMax transformó nuestra operación. Los pedidos online y el menú QR han sido un cambio de juego para nosotros.', imageUrl: 'https://placehold.co/100x100.png' },
-        { id: 'sub-3-2', title: 'Juan M.', authorRole: 'Gerente, Burger Hub', content: 'La gestión de mesas y reservas nunca ha sido tan fácil. Nuestros clientes aman la simplicidad y nosotros amamos la eficiencia.', imageUrl: 'https://placehold.co/100x100.png' },
+        { id: 'sub-3-1', title: 'Ana López', authorRole: 'Dueña, Restaurante Café del Sol', content: 'WebSapMax transformó nuestra operación. Los pedidos online y el menú QR han sido un cambio de juego para nosotros.', imageUrl: 'https://placehold.co/100x100.png', imageRadius: 50 },
+        { id: 'sub-3-2', title: 'Juan M.', authorRole: 'Gerente, Burger Hub', content: 'La gestión de mesas y reservas nunca ha sido tan fácil. Nuestros clientes aman la simplicidad y nosotros amamos la eficiencia.', imageUrl: 'https://placehold.co/100x100.png', imageRadius: 50 },
       ]
     }
   ],
@@ -238,5 +239,3 @@ class LandingConfigService {
 }
 
 export const landingConfigService = new LandingConfigService();
-
-    
