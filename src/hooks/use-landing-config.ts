@@ -3,7 +3,6 @@
 
 import useSWR from 'swr';
 import { landingConfigService, LandingConfig } from '@/services/landing-config-service';
-import { useSession } from '@/contexts/session-context';
 
 const SWR_KEY = 'landing-page-config';
 
@@ -19,30 +18,27 @@ export function useLandingConfig() {
     }
   );
 
-  const { currentUser } = useSession();
-
-  const updateConfig = async (configUpdate: Partial<LandingConfig>, userId: string, userEmail: string) => {
-    if (!currentUser) {
-      throw new Error("Usuario no autenticado.");
+  const updateConfig = async (configUpdate: Partial<LandingConfig>, userId?: string, userEmail?: string) => {
+    if (!userId || !userEmail) {
+      throw new Error("Usuario no autenticado para realizar la actualización.");
     }
-    // Asegurarse de que los datos actuales están cargados antes de mutar
+    
     const currentData = data || landingConfigService.getDefaultConfig();
     const newData = { ...currentData, ...configUpdate };
 
-    // Actualización optimista: actualiza la UI inmediatamente
+    // Actualización optimista
     await mutate(newData, false);
 
-    // Llama al servicio para persistir los cambios
     try {
         await landingConfigService.updateLandingConfig(
             configUpdate,
             userId,
             userEmail
         );
-        // Revalida para asegurar que los datos son consistentes con el backend
+        // Revalida para asegurar consistencia
         mutate();
     } catch (e) {
-        // Si la actualización falla, revierte al estado original
+        // Si falla, revierte al estado original
         await mutate(currentData, false);
         throw e;
     }
