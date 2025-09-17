@@ -18,7 +18,7 @@ export function useLandingConfig() {
     }
   );
 
-  const updateConfig = async (configUpdate: Partial<LandingConfig>, userId?: string, userEmail?: string) => {
+  const updateConfig = async (configUpdate: Partial<LandingConfig>, userId: string, userEmail: string) => {
     if (!userId || !userEmail) {
       throw new Error("Usuario no autenticado para realizar la actualización.");
     }
@@ -53,4 +53,3 @@ export function useLandingConfig() {
     refetch: mutate,
   };
 }
-
