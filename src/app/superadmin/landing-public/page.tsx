@@ -431,7 +431,7 @@ export default function LandingPublicPage() {
                               value={section.type}
                               onValueChange={(value) => updateSection(index, 'type', value)}
                             >
-                              <SelectTrigger className="w-32 h-8 text-xs">
+                              <SelectTrigger className="w-36 h-8 text-xs">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -724,3 +724,5 @@ export default function LandingPublicPage() {
     </div>
   );
 }
+
+    
