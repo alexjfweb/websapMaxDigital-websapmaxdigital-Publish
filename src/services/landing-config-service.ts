@@ -1,7 +1,6 @@
-
 // src/services/landing-config-service.ts
-import { initializeFirebase } from '@/lib/firebase'; // Importar el inicializador
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
+import { getDb } from '@/lib/firebase';
 import { collection, doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { auditService } from './audit-service';
 
@@ -120,9 +119,12 @@ const getDefaultConfig = (): LandingConfig => ({
 });
 
 class LandingConfigService {
-  private async getConfigDocRef() {
-    const { db } = await initializeFirebase();
-    return doc(collection(db, CONFIG_COLLECTION_NAME), MAIN_CONFIG_DOC_ID);
+  private get db() {
+    return getDb();
+  }
+
+  private getConfigDocRef() {
+    return doc(this.db, CONFIG_COLLECTION_NAME, MAIN_CONFIG_DOC_ID);
   }
   
   private async getImageUrl(path: string): Promise<string> {
@@ -130,8 +132,7 @@ class LandingConfigService {
     if (!path) return placeholder;
     if (path.startsWith('http')) return path;
     
-    // Espera a que Firebase esté listo
-    await initializeFirebase();
+    // Ahora es seguro obtener Storage porque getDb() ya aseguró la inicialización.
     const storage = getStorage();
 
     if (path.startsWith('gs://')) {
@@ -154,7 +155,7 @@ class LandingConfigService {
   }
 
   async getLandingConfig(): Promise<LandingConfig> {
-    const docRef = await this.getConfigDocRef();
+    const docRef = this.getConfigDocRef();
     const docSnap = await getDoc(docRef);
     const defaultConfig = getDefaultConfig();
     
@@ -196,7 +197,7 @@ class LandingConfigService {
     userEmail: string
   ): Promise<void> {
     const originalDoc = await this.getLandingConfig().catch(() => getDefaultConfig());
-    const docRef = await this.getConfigDocRef();
+    const docRef = this.getConfigDocRef();
     
     await setDoc(docRef, { 
       ...configUpdate,
@@ -219,7 +220,7 @@ class LandingConfigService {
       userEmail: string
   ): Promise<void> {
       const { id, ...dataToSave } = configData;
-      const docRef = await this.getConfigDocRef();
+      const docRef = this.getConfigDocRef();
       await setDoc(docRef, {
           ...dataToSave,
           createdAt: serverTimestamp(),

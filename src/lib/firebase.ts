@@ -5,78 +5,50 @@ import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getAuth, type Auth } from 'firebase/auth';
 import { firebaseConfig, isFirebaseConfigValid } from './firebase-config';
 
-interface FirebaseServices {
-    app: FirebaseApp;
-    auth: Auth;
-    db: Firestore;
+// Variable para almacenar la instancia de la app de Firebase
+let app: FirebaseApp;
+
+// Verifica si la configuración de Firebase es válida al cargar el módulo
+if (!isFirebaseConfigValid()) {
+    console.error("❌ Configuración de Firebase inválida. La aplicación no puede iniciarse.");
+    // Podríamos lanzar un error aquí para detener la ejecución, 
+    // pero en el contexto del cliente es mejor manejarlo en los componentes.
 }
 
-let services: FirebaseServices | null = null;
-let initializationPromise: Promise<FirebaseServices> | null = null;
-
-function initializeFirebase(): Promise<FirebaseServices> {
-  if (services) {
-    return Promise.resolve(services);
-  }
-
-  if (initializationPromise) {
-    return initializationPromise;
-  }
-  
-  initializationPromise = new Promise((resolve, reject) => {
-    if (getApps().length === 0) {
-      if (!isFirebaseConfigValid()) {
-        const error = new Error("La configuración de Firebase es inválida. Revisa firebase-config.ts");
-        console.error("❌ Firebase Initialization Failed:", error.message);
-        reject(error);
-        return;
-      }
-      console.log("🔥 Inicializando Firebase por primera vez...");
-      try {
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        services = { app, auth, db };
-        console.log("✅ Firebase inicializado correctamente.");
-        resolve(services);
-      } catch (error) {
-        console.error("❌ Error durante la inicialización de Firebase:", error);
-        reject(error);
-      }
-    } else {
-      // console.log("♻️ Reutilizando instancia de Firebase existente...");
-      const app = getApp();
-      const auth = getAuth(app);
-      const db = getFirestore(app);
-      services = { app, auth, db };
-      resolve(services);
-    }
-  });
-
-  return initializationPromise;
+// Inicialización Singleton: Se ejecuta solo una vez.
+if (getApps().length === 0) {
+    console.log("🔥 Inicializando Firebase por primera vez...");
+    app = initializeApp(firebaseConfig);
+    console.log("✅ Firebase inicializado correctamente.");
+} else {
+    // console.log("♻️ Reutilizando instancia de Firebase existente...");
+    app = getApp();
 }
 
-// Export individual getters for convenience and to ensure initialization
+// Exporta la instancia de la app para quien la necesite.
+export const firebaseApp = app;
+
+// Exporta funciones para obtener los servicios específicos.
+// Estas funciones ahora son seguras de llamar en cualquier parte de la app.
 export function getDb(): Firestore {
-  if (!services) {
-    throw new Error("Firebase no ha sido inicializado. Llama a initializeFirebase() primero.");
-  }
-  return services.db;
+  return getFirestore(app);
 }
 
 export function getFirebaseAuth(): Auth {
-    if (!services) {
-    throw new Error("Firebase no ha sido inicializado. Llama a initializeFirebase() primero.");
-  }
-  return services.auth;
+  return getAuth(app);
 }
 
+// Para compatibilidad, exportamos una función getAppInstance.
 export function getAppInstance(): FirebaseApp {
-    if (!services) {
-    throw new Error("Firebase no ha sido inicializado. Llama a initializeFirebase() primero.");
-  }
-  return services.app;
+  return app;
 }
 
-// Export the initialization function to be awaited
-export { initializeFirebase };
+// Para compatibilidad con el código anterior que esperaba una promesa,
+// exportamos una función que devuelve una promesa resuelta.
+export function initializeFirebase(): Promise<any> {
+    return Promise.resolve({
+        app: firebaseApp,
+        db: getDb(),
+        auth: getFirebaseAuth()
+    });
+}
