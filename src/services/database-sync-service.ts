@@ -2,8 +2,32 @@
 // src/services/database-sync-service.ts
 import { getDb } from '@/lib/firebase';
 import { collection, doc, writeBatch, serverTimestamp, getDoc } from 'firebase/firestore';
-import { landingConfigService } from './landing-config-service';
 import { landingPlansService } from './landing-plans-service';
+
+// --- INICIO DE CORRECCIÓN: Se elimina la dependencia de landingConfigService ---
+// Se define la configuración por defecto directamente aquí para evitar el ciclo de importación.
+const getDefaultLandingConfig = () => ({
+  id: 'main',
+  heroTitle: 'Moderniza tu negocio y aumenta tus ventas.',
+  heroSubtitle: 'La solución completa para tu restaurante. Menú digital, gestión de pedidos, reservas y más.',
+  heroContent: 'Descubre la revolución para tu NEGOCIO. ¿Tienes una cafetería, pizzería, food truck, panadería, pastelería, servicio de catering o cualquier otro negocio gastronómico? ¡Esta solución es para ti! </br></br>Con nuestro menú digital interactivo, tus clientes explorarán tus platos con fotos de alta calidad y descripciones detalladas, facilitando su elección y aumentando su satisfacción.</br></br>Además, nuestro sistema de gestión integral te permite controlar cada aspecto de tu negocio: desde el inventario y los pedidos hasta las mesas y el personal, todo en una sola plataforma.</br></br>Optimiza tu operación, reduce costos y toma decisiones más inteligentes con datos en tiempo real. Es la solución completa para llevar tu restaurante a un nuevo nivel de eficiencia y rentabilidad.',
+  heroButtonText: 'Comenzar',
+  heroButtonUrl: '#planes',
+  heroBackgroundColor: '#FFFFFF',
+  heroTextColor: '#1f2937',
+  heroButtonColor: '#FF4500',
+  sections: [],
+  seo: {
+    title: 'WebSapMax - Menús Digitales para Restaurantes',
+    description: 'La solución completa para digitalizar tu restaurante. Ofrece menús con QR, gestiona pedidos y reservas.',
+    keywords: ['restaurante', 'menú digital', 'código qr', 'gestión de pedidos', 'software para restaurantes'],
+    ogTitle: 'WebSapMax: Digitaliza tu Restaurante Hoy',
+    ogDescription: 'Atrae más clientes y optimiza tu operación con nuestra plataforma.',
+    ogImage: 'https://placehold.co/1200x630.png',
+  },
+});
+// --- FIN DE CORRECCIÓN ---
+
 
 // Planes de ejemplo
 const examplePlans = [
@@ -85,7 +109,7 @@ const syncAll = async (userId: string, userEmail: string): Promise<string> => {
     const configDocRef = doc(db, 'landing_configs', 'main');
     const configDocSnap = await getDoc(configDocRef);
     if (!configDocSnap.exists()) {
-        const defaultConfig = landingConfigService.getDefaultConfig();
+        const defaultConfig = getDefaultLandingConfig(); // Usar la función local
         const { id, ...dataToSave } = defaultConfig;
         batch.set(configDocRef, { ...dataToSave, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
         operationsCount++;
