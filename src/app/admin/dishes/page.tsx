@@ -110,12 +110,9 @@ export default function AdminDishesPage() {
   };
   
   const onSubmit = async (values: DishFormData) => {
-    // Obtener el companyId en el momento de la sumisión para asegurar el valor más reciente.
     const currentCompanyId = currentUser?.companyId;
-
     if (!currentCompanyId) {
       toast({ title: 'Error', description: 'No se ha identificado la compañía. Por favor, recargue la página.', variant: 'destructive' });
-      setIsSubmitting(false);
       return;
     }
     
@@ -124,20 +121,12 @@ export default function AdminDishesPage() {
   
     try {
       const normalizedNewName = values.name.trim().toLowerCase();
-      // Verificamos si es una actualización y si el nombre ha cambiado
       const isNameChanged = !isUpdating || (editingDish && normalizedNewName !== editingDish.name.trim().toLowerCase());
   
       if (isNameChanged) {
-        // Solo verificamos duplicados si el nombre es nuevo o ha cambiado
-        const isDuplicate = dishes.some(
-          (dish) => dish.name.trim().toLowerCase() === normalizedNewName
-        );
+        const isDuplicate = dishes.some(dish => dish.name.trim().toLowerCase() === normalizedNewName);
         if (isDuplicate) {
-          toast({
-            title: 'Error: Plato duplicado',
-            description: `Ya existe un plato con el nombre "${values.name}".`,
-            variant: 'destructive',
-          });
+          toast({ title: 'Error: Plato duplicado', description: `Ya existe un plato con el nombre "${values.name}".`, variant: 'destructive' });
           setIsSubmitting(false);
           return;
         }
@@ -146,20 +135,15 @@ export default function AdminDishesPage() {
       let imageUrl = editingDish?.imageUrl || "https://placehold.co/800x450.png";
   
       if (values.image instanceof File) {
-        const newUrl = await storageService.compressAndUploadFile(values.image, `dishes/${currentCompanyId}/`);
-        if (newUrl) {
-          if (editingDish?.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
-            await storageService.deleteFile(editingDish.imageUrl);
-          }
-          imageUrl = newUrl;
-        }
-      } else if (isUpdating && !imagePreview && editingDish?.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
-        await storageService.deleteFile(editingDish.imageUrl);
+        // Nueva lógica: convertir a Base64
+        imageUrl = await storageService.compressAndConvertToBase64(values.image);
+      } else if (isUpdating && !imagePreview) {
+        // Si se quita la imagen en edición
         imageUrl = "https://placehold.co/800x450.png";
       }
       
       const db = getDb();
-      const dishData: any = { // Usamos any temporalmente para construir el objeto
+      const dishData: any = {
         companyId: currentCompanyId,
         name: values.name,
         description: values.description,
@@ -173,19 +157,13 @@ export default function AdminDishesPage() {
       if (isUpdating) {
         const dishRef = doc(db, 'dishes', editingDish.id);
         await updateDoc(dishRef, dishData);
-        toast({
-          title: 'Plato actualizado',
-          description: `El plato "${values.name}" se ha actualizado correctamente.`,
-        });
+        toast({ title: 'Plato actualizado', description: `El plato "${values.name}" se ha actualizado correctamente.` });
       } else {
         dishData.likes = 0;
         dishData.available = true;
         dishData.createdAt = new Date().toISOString();
         await addDoc(collection(db, 'dishes'), dishData);
-        toast({
-          title: 'Plato creado',
-          description: `El plato "${values.name}" se ha creado correctamente.`,
-        });
+        toast({ title: 'Plato creado', description: `El plato "${values.name}" se ha creado correctamente.` });
       }
   
       setEditingDish(null);
@@ -194,11 +172,7 @@ export default function AdminDishesPage() {
   
     } catch (error) {
       console.error("Error guardando el plato: ", error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo guardar el plato. Inténtelo de nuevo.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'No se pudo guardar el plato. Inténtelo de nuevo.', variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
     }
@@ -223,22 +197,12 @@ export default function AdminDishesPage() {
     
     try {
       const db = getDb();
-      if (dishToDelete.imageUrl && !dishToDelete.imageUrl.includes('placehold.co')) {
-        await storageService.deleteFile(dishToDelete.imageUrl);
-      }
+      // Ya no es necesario borrar de Storage, la imagen está en el documento.
       await deleteDoc(doc(db, 'dishes', dishToDelete.id));
-      toast({
-        title: 'Plato eliminado',
-        description: `El plato "${dishToDelete.name}" se ha eliminado correctamente.`,
-        variant: "destructive"
-      });
+      toast({ title: 'Plato eliminado', description: `El plato "${dishToDelete.name}" se ha eliminado correctamente.`, variant: "destructive" });
       await refreshDishes();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar el plato. Inténtalo de nuevo.",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "No se pudo eliminar el plato. Inténtalo de nuevo.", variant: "destructive" });
     } finally {
       setDishToDelete(null);
     }
@@ -333,6 +297,7 @@ export default function AdminDishesPage() {
               height={48} 
               className="rounded-md object-cover"
               data-ai-hint="food item"
+              unoptimized={dish.imageUrl.startsWith('data:')}
           />
         </TableCell>
         <TableCell className="font-medium">{dish.name}</TableCell>
@@ -485,7 +450,7 @@ export default function AdminDishesPage() {
                                 <div className="relative flex items-center justify-center w-full h-40 border-2 border-dashed rounded-lg">
                                     {imagePreview ? (
                                         <>
-                                            <Image src={imagePreview} alt="Vista previa de la imagen" layout="fill" objectFit="cover" className="rounded-lg"/>
+                                            <Image src={imagePreview} alt="Vista previa de la imagen" layout="fill" objectFit="cover" className="rounded-lg" unoptimized={imagePreview.startsWith('data:')}/>
                                             <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={() => { setImagePreview(null); form.setValue("image", null); }}>
                                                 <X className="h-4 w-4"/>
                                             </Button>
