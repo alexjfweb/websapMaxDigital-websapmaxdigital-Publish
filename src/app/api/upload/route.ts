@@ -1,12 +1,13 @@
 // src/app/api/upload/route.ts - VERSIÓN CORREGIDA Y ROBUSTA
 import { NextRequest, NextResponse } from 'next/server';
 import { getStorage } from 'firebase-admin/storage';
-import { getFirebaseAdmin } from '@/lib/firebase-admin';
+import { getFirebaseAdmin } from '@/lib/firebase-admin'; // Importar el inicializador centralizado
 
 export async function POST(request: NextRequest) {
   let adminApp;
   try {
-    // Obtiene la instancia inicializada de forma centralizada
+    // Obtiene la instancia inicializada de forma centralizada.
+    // Esto resuelve el error "El servidor de Firebase no está inicializado".
     adminApp = getFirebaseAdmin();
   } catch (error: any) {
     console.error('❌ Error fatal al obtener la instancia de Firebase Admin:', error);
@@ -29,13 +30,13 @@ export async function POST(request: NextRequest) {
     }
 
     const storage = getStorage(adminApp);
-    const bucket = storage.bucket();
+    const bucket = storage.bucket(); // El bucket se obtiene de la inicialización
 
-    // Verificación de existencia del Bucket
+    // Verificación de existencia del Bucket (buena práctica)
     try {
       const [exists] = await bucket.exists();
       if (!exists) {
-        const errorMsg = `El bucket de almacenamiento "${bucket.name}" no existe o no se puede acceder a él.`;
+        const errorMsg = `El bucket de almacenamiento "${bucket.name}" no existe. Asegúrate de que Firebase Storage esté habilitado en tu proyecto.`;
         console.error(`❌ ${errorMsg}`);
         throw new Error(`Configuración de Storage incorrecta. Activa Firebase Storage en la consola.`);
       }
@@ -58,7 +59,10 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    // Hacer el archivo público para que pueda ser visto
     await fileRef.makePublic();
+
+    // Construir la URL pública correctamente
     const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
     
     console.log('🎉 Upload completado. URL pública:', publicUrl);
