@@ -1,11 +1,10 @@
 
 "use client";
 
-import { useState, useEffect, ChangeEvent } from 'react';
+import { useState, useEffect, ChangeEvent, lazy, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
@@ -32,6 +31,10 @@ import {
   Loader2
 } from 'lucide-react';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
+
+const RichTextEditor = dynamic(() => import('@/components/ui/rich-text-editor'), { ssr: false });
+
 
 // Función para obtener la configuración por defecto
 const getDefaultConfig = (): LandingConfig => ({
@@ -309,13 +312,12 @@ export default function LandingPublicPage() {
                   </div>
                   <div>
                     <Label htmlFor="heroContent">Contenido Adicional (HTML)</Label>
-                    <Textarea
-                        id="heroContent"
+                    <Suspense fallback={<div className="h-32 w-full bg-muted rounded-md animate-pulse" />}>
+                      <RichTextEditor
                         value={formData.heroContent || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, heroContent: e.target.value }))}
-                        placeholder="Añade texto, listas o más detalles aquí..."
-                        rows={4}
-                    />
+                        onChange={(value) => setFormData(prev => ({ ...prev, heroContent: value }))}
+                      />
+                    </Suspense>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -490,12 +492,12 @@ export default function LandingPublicPage() {
                         </div>
                          <div>
                             <Label>Contenido Adicional (HTML)</Label>
-                            <Textarea
+                            <Suspense fallback={<div className="h-32 w-full bg-muted rounded-md animate-pulse" />}>
+                               <RichTextEditor
                                 value={section.content || ''}
-                                onChange={(e) => updateSection(index, 'content', e.target.value)}
-                                placeholder="Añade texto, listas o más detalles aquí..."
-                                rows={4}
-                            />
+                                onChange={(value) => updateSection(index, 'content', value)}
+                               />
+                            </Suspense>
                         </div>
                         
                         <div className="mt-6">
@@ -514,11 +516,10 @@ export default function LandingPublicPage() {
                                       onChange={e => updateSubsection(index, subIdx, 'title', e.target.value)}
                                       placeholder="Título de la subsección"
                                     />
-                                    <Textarea
+                                     <RichTextEditor
                                       value={sub.content}
-                                      onChange={e => updateSubsection(index, subIdx, 'content', e.target.value)}
+                                      onChange={value => updateSubsection(index, subIdx, 'content', value)}
                                       placeholder="Contenido de la subsección"
-                                      rows={3}
                                     />
                                   </div>
                                   <div className="space-y-2">
@@ -587,15 +588,13 @@ export default function LandingPublicPage() {
 
                   <div>
                     <Label htmlFor="seoDescription">Descripción SEO</Label>
-                    <Textarea
-                      id="seoDescription"
+                    <RichTextEditor
                       value={formData.seo.description}
-                      onChange={(e) => setFormData(prev => ({ 
+                      onChange={(value) => setFormData(prev => ({ 
                         ...prev, 
-                        seo: { ...prev.seo, description: e.target.value }
+                        seo: { ...prev.seo, description: value }
                       }))}
                       placeholder="Descripción para motores de búsqueda"
-                      rows={3}
                     />
                   </div>
 
@@ -675,7 +674,7 @@ export default function LandingPublicPage() {
                                 <div key={sub.id} className="bg-white rounded-lg shadow-md p-6 flex flex-col items-center text-center text-gray-800">
                                 {sub.imageUrl && <Image src={sub.imageUrl} alt={sub.title} width={80} height={80} className="mb-4 w-20 h-20 object-cover rounded-full" />}
                                 <h4 className="font-bold text-lg mb-2">{sub.title}</h4>
-                                <p className="text-sm">{sub.content}</p>
+                                <div className="text-sm" dangerouslySetInnerHTML={{ __html: sub.content }}/>
                                 </div>
                             ))}
                             </div>
