@@ -11,9 +11,9 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from "@/hooks/use-toast";
 import { useLandingConfig } from '@/hooks/use-landing-config';
-import type { LandingSection, LandingConfig } from '@/services/landing-config-service';
+import type { LandingSection, LandingConfig, LandingSubsection } from '@/services/landing-config-service';
 import { storageService } from '@/services/storage-service';
 import { 
   Save, 
@@ -43,9 +43,9 @@ const getDefaultConfig = (): LandingConfig => ({
   id: 'main',
   heroTitle: 'Título Hero por Defecto',
   heroSubtitle: 'Subtítulo por defecto.',
-  heroContent: '',
+  heroContent: 'Descubre la revolución para tu NEGOCIO. ¿Tienes una cafetería, pizzería, food truck, panadería, pastelería, servicio de catering o cualquier otro negocio gastronómico? ¡Esta solución es para ti! </br></br>Con nuestro menú digital interactivo, tus clientes explorarán tus platos con fotos de alta calidad y descripciones detalladas, facilitando su elección y aumentando su satisfacción.</br></br>Además, nuestro sistema de gestión integral te permite controlar cada aspecto de tu negocio: desde el inventario y los pedidos hasta las mesas y el personal, todo en una sola plataforma.</br></br>Optimiza tu operación, reduce costos y toma decisiones más inteligentes con datos en tiempo real. Es la solución completa para llevar tu restaurante a un nuevo nivel de eficiencia y rentabilidad.',
   heroButtonText: 'Comenzar',
-  heroButtonUrl: '#',
+  heroButtonUrl: '#planes',
   heroBackgroundColor: '#ffffff',
   heroTextColor: '#000000',
   heroButtonColor: '#ff4500',
@@ -724,5 +724,7 @@ export default function LandingPublicPage() {
     </div>
   );
 }
+
+    
 
     
