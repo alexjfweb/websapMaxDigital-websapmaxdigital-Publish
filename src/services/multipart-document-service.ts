@@ -149,14 +149,15 @@ async function cleanupExistingParts(db: Firestore, collectionName: string, docum
 }
 
 // Función para leer datos divididos
-export async function readMultiPartDocument(db: Firestore, collectionName: string, documentId: string): Promise<any> {
+export async function readMultiPartDocument(db: Firestore, collectionName: string, documentId: string): Promise<any | null> {
   try {
     // 1. Leer documento principal
     const mainDocRef = doc(db, collectionName, documentId);
     const mainDoc = await getDoc(mainDocRef);
     
     if (!mainDoc.exists()) {
-      return null;
+      console.warn(`Documento principal ${documentId} no encontrado.`);
+      return null; // Devuelve null si el documento no existe
     }
     
     const mainData = mainDoc.data();
