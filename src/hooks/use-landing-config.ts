@@ -1,6 +1,6 @@
 "use client";
 
-import useSWR from 'swr';
+import useSWR, { mutate } from 'swr';
 import { landingConfigService, LandingConfig } from '@/services/landing-config-service';
 import { useToast } from './use-toast';
 import { useState, useEffect } from 'react';
@@ -14,12 +14,12 @@ export function useLandingConfig() {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSavedContent, setLastSavedContent] = useState<string>('');
   
-  const { data, error, isLoading, mutate } = useSWR<LandingConfig | null, Error>(
+  const { data, error, isLoading, mutate: revalidate } = useSWR<LandingConfig | null, Error>(
     SWR_KEY,
     fetcher,
     {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
+      revalidateOnFocus: true, // Revalida cuando el usuario vuelve a la pestaña
+      revalidateOnReconnect: true,
       onError: (err) => {
         console.error("SWR Error fetching landing config:", err);
         toast({
@@ -34,22 +34,18 @@ export function useLandingConfig() {
   const updateConfig = async (configUpdate: Partial<LandingConfig>, userId: string, userEmail: string) => {
     setIsSaving(true);
     try {
-      console.log('🔄 Iniciando guardado multipart...');
       const currentHeroContent = configUpdate.heroContent || '';
-      setLastSavedContent(currentHeroContent);
-
+      
       await landingConfigService.updateLandingConfig(configUpdate, userId, userEmail);
       
-      const freshData = await landingConfigService.getLandingConfig();
-      const syncedData = {
-        ...freshData,
-        heroContent: currentHeroContent,
-      };
+      // La clave para la sincronización global:
+      // Disparamos una revalidación global de la clave SWR.
+      // Esto notificará a todas las instancias de useSWR con esta clave (incluida la de la página de inicio)
+      // que sus datos están desactualizados y deben volver a buscarlos.
+      await mutate(SWR_KEY);
+      
+      setLastSavedContent(currentHeroContent); // Aún útil para depuración
 
-      await mutate(syncedData, { revalidate: false });
-      
-      console.log('✅ Guardado y sincronización completados');
-      
     } catch (e: any) {
         toast({
           title: "Error al Guardar",
@@ -70,7 +66,7 @@ export function useLandingConfig() {
     isSaving,
     error: error || null,
     updateConfig,
-    refetch: mutate,
+    refetch: revalidate,
     lastSavedContent,
   };
 }
