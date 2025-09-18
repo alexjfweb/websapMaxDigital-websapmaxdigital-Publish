@@ -78,9 +78,7 @@ export default function LandingPublicPage() {
   const [pendingFiles, setPendingFiles] = useState<Record<string, File | null>>({});
 
   useEffect(() => {
-    // Sincroniza el estado del formulario solo cuando los datos del hook cambian.
-    // Esto previene reinicios inesperados durante las ediciones locales.
-    if (landingConfig && landingConfig.id !== 'main-default') { // Evita usar datos por defecto si hay datos reales
+    if (landingConfig && landingConfig.id !== 'main-default') {
       setFormData({
         ...getDefaultConfig(),
         ...landingConfig,
@@ -286,8 +284,10 @@ export default function LandingPublicPage() {
 
   const removeSubsection = (sectionIndex: number, subIndex: number) => {
     const newSections = [...formData.sections];
-    newSections[sectionIndex].subsections = newSections[sectionIndex].subsections?.filter((_, i) => i !== subIndex);
-    setFormData(prev => ({ ...prev, sections: newSections }));
+    if (newSections[sectionIndex]?.subsections) {
+        newSections[sectionIndex].subsections = newSections[sectionIndex].subsections!.filter((_, i) => i !== subIndex);
+        setFormData(prev => ({ ...prev, sections: newSections }));
+    }
   };
 
   if (isLoading) {

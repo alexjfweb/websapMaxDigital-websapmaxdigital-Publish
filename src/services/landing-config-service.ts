@@ -1,7 +1,7 @@
 // src/services/landing-config-service.ts
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import { getDb } from '@/lib/firebase';
-import { collection, doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, setDoc, serverTimestamp, Timestamp, writeBatch } from 'firebase/firestore';
 import { auditService } from './audit-service';
 
 // Interfaces for structured data
@@ -64,6 +64,7 @@ export interface LandingConfig {
 }
 
 const CONFIG_COLLECTION_NAME = 'landing_configs';
+const SUBSECTIONS_COLLECTION_NAME = 'landing_subsections';
 const MAIN_CONFIG_DOC_ID = 'main';
 
 const getDefaultConfig = (): LandingConfig => ({
@@ -126,6 +127,10 @@ class LandingConfigService {
   private getConfigDocRef() {
     return doc(this.db, CONFIG_COLLECTION_NAME, MAIN_CONFIG_DOC_ID);
   }
+
+  private getSubsectionsDocRef(sectionId: string) {
+    return doc(this.db, SUBSECTIONS_COLLECTION_NAME, `${sectionId}_subsections`);
+  }
   
   private async getImageUrl(path: string): Promise<string> {
     const placeholder = 'https://placehold.co/400x300.png?text=...';
@@ -167,16 +172,20 @@ class LandingConfigService {
     
     const resolvedSections = await Promise.all(
         (dbData.sections || []).map(async (section: LandingSection) => {
-            if (section.subsections && section.subsections.length > 0) {
-                const resolvedSubsections = await Promise.all(
-                    section.subsections.map(async (sub: LandingSubsection) => ({
+            const subsectionsDocRef = this.getSubsectionsDocRef(section.id);
+            const subsectionsSnap = await getDoc(subsectionsDocRef);
+            let resolvedSubsections: LandingSubsection[] = [];
+
+            if (subsectionsSnap.exists()) {
+                const subsectionsData = subsectionsSnap.data().subsections || [];
+                resolvedSubsections = await Promise.all(
+                    subsectionsData.map(async (sub: LandingSubsection) => ({
                         ...sub,
                         imageUrl: await this.getImageUrl(sub.imageUrl),
                     }))
                 );
-                return { ...section, subsections: resolvedSubsections };
             }
-            return section;
+            return { ...section, subsections: resolvedSubsections };
         })
     );
 
@@ -197,33 +206,33 @@ class LandingConfigService {
     const originalDoc = await this.getLandingConfig().catch(() => getDefaultConfig());
     const docRef = this.getConfigDocRef();
 
-    // Separar los datos pesados (subsections) de los datos ligeros
-    const { sections, ...lightweightConfigUpdate } = configUpdate;
-
-    // Crear un objeto solo con los datos ligeros para el documento principal
-    const mainDocUpdate: any = {
-      ...lightweightConfigUpdate,
-      updatedAt: serverTimestamp()
-    };
-
-    // Crear un batch para asegurar que todas las escrituras sean atómicas
     const batch = writeBatch(this.db);
+    
+    // Preparar el documento principal sin los datos pesados
+    const mainDocUpdate: any = { ...configUpdate, updatedAt: serverTimestamp() };
+    delete mainDocUpdate.sections; // Quitar las secciones del objeto principal por ahora
+    
+    // Crear una copia de las secciones para guardarlas sin subsecciones
+    if (configUpdate.sections) {
+      mainDocUpdate.sections = configUpdate.sections.map(section => {
+        const { subsections, ...sectionData } = section;
+        return sectionData; // Guardar solo los datos de la sección, no las subsecciones
+      });
+    }
 
-    // 1. Actualizar el documento principal con datos ligeros
     batch.set(docRef, mainDocUpdate, { merge: true });
 
-    // 2. Si hay secciones, procesarlas
-    if (sections) {
-        mainDocUpdate.sections = [];
-        for (const section of sections) {
-            const { subsections, ...sectionData } = section;
-            mainDocUpdate.sections.push(sectionData); // Guardar datos de la sección sin subsecciones en el doc principal
-
-            if (subsections && subsections.length > 0) {
-                const subsectionsDocRef = doc(this.db, 'landing_subsections', section.id);
-                batch.set(subsectionsDocRef, { subsections: subsections, updatedAt: serverTimestamp() });
-            }
+    // Guardar las subsecciones en documentos separados
+    if (configUpdate.sections) {
+      for (const section of configUpdate.sections) {
+        if (section.subsections && section.subsections.length > 0) {
+          const subsectionsDocRef = this.getSubsectionsDocRef(section.id);
+          batch.set(subsectionsDocRef, { 
+            subsections: section.subsections, 
+            updatedAt: serverTimestamp() 
+          });
         }
+      }
     }
     
     await batch.commit();
