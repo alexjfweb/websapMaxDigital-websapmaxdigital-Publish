@@ -1,4 +1,3 @@
-
 // src/services/landing-config-service.ts
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import { getDb } from '@/lib/firebase';
@@ -231,24 +230,38 @@ class LandingConfigService {
     const docRef = this.getConfigDocRef();
     const batch = writeBatch(this.db);
     
-    const { sections, heroContent, ...mainDocUpdate } = configUpdate;
-    mainDocUpdate.updatedAt = serverTimestamp();
+    // 1. Prepara el documento principal EXCLUYENDO campos grandes
+    const { sections, heroContent, ...mainData } = configUpdate;
+    const mainDocUpdate: { [key: string]: any } = {
+        ...mainData,
+        updatedAt: serverTimestamp()
+    };
+
+    // Esto es crucial: eliminamos 'sections' y 'heroContent' del objeto que va al documento principal
+    delete mainDocUpdate.sections;
+    delete mainDocUpdate.heroContent;
 
     batch.set(docRef, mainDocUpdate, { merge: true });
-
+    
+    // 2. Guarda el heroContent en su propio documento
     if (heroContent !== undefined) {
-      const heroContentDocRef = this.getContentDocRef('hero_content');
-      batch.set(heroContentDocRef, { content: heroContent, updatedAt: serverTimestamp() }, { merge: true });
+        const heroContentDocRef = this.getContentDocRef('hero_content');
+        batch.set(heroContentDocRef, { content: heroContent, updatedAt: serverTimestamp() }, { merge: true });
     }
 
+    // 3. Procesa cada sección
     if (sections) {
-      const sectionsForMainDoc = sections.map(({ subsections, content, ...sectionData }) => sectionData);
+      // Guarda la ESTRUCTURA de las secciones (sin contenido pesado) en el documento principal
+      const sectionsForMainDoc = sections.map(({ content, subsections, ...sectionData }) => sectionData);
       batch.update(docRef, { sections: sectionsForMainDoc });
 
+      // Ahora, para cada sección, guarda su contenido y subsecciones en documentos separados
       for (const section of sections) {
+        // Guarda el 'content' de la sección
         const contentDocRef = this.getContentDocRef(section.id);
-        batch.set(contentDocRef, { content: section.content, updatedAt: serverTimestamp() }, { merge: true });
+        batch.set(contentDocRef, { content: section.content || '', updatedAt: serverTimestamp() }, { merge: true });
 
+        // Guarda las 'subsections' si existen
         if (section.subsections && section.subsections.length > 0) {
           const subsectionsDocRef = this.getSubsectionsDocRef(section.id);
           batch.set(subsectionsDocRef, { subsections: section.subsections, updatedAt: serverTimestamp() }, { merge: true });
@@ -256,6 +269,7 @@ class LandingConfigService {
       }
     }
     
+    // 4. Ejecuta todas las operaciones en un solo batch
     await batch.commit();
 
     await auditService.log({

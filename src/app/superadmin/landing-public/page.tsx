@@ -362,7 +362,11 @@ export default function LandingPublicPage() {
                     <Suspense fallback={<div className="h-32 w-full bg-muted rounded-md animate-pulse" />}>
                       <RichTextEditor
                         value={formData.heroContent || ''}
-                        onChange={(value) => setFormData(prev => ({ ...prev, heroContent: value || '' }))}
+                        onChange={(value) => {
+                          // Evitar guardar un string vacío que solo contiene <p><br></p>
+                          const cleanValue = value === '<p><br></p>' ? '' : value;
+                          setFormData(prev => ({ ...prev, heroContent: cleanValue }));
+                        }}
                       />
                     </Suspense>
                   </div>
@@ -545,7 +549,10 @@ export default function LandingPublicPage() {
                             <Suspense fallback={<div className="h-32 w-full bg-muted rounded-md animate-pulse" />}>
                                <RichTextEditor
                                 value={section.content || ''}
-                                onChange={(value) => updateSection(index, 'content', value || '')}
+                                onChange={(value) => {
+                                  const cleanValue = value === '<p><br></p>' ? '' : value;
+                                  updateSection(index, 'content', cleanValue);
+                                }}
                                />
                             </Suspense>
                         </div>
