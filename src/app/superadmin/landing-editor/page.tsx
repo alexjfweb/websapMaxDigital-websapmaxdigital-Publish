@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, ChangeEvent, lazy, Suspense } from 'react';
+import React, { useState, useEffect, ChangeEvent, lazy, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -63,66 +63,71 @@ const getDefaultConfig = (): LandingConfig => ({
 });
 
 
-export default function LandingPublicPage() {
+export default function LandingEditorPage() {
   const { landingConfig, isLoading, updateConfig, isSaving } = useLandingConfig();
   const { currentUser } = useSession();
   const { toast } = useToast();
   
   const [formData, setFormData] = useState<LandingConfig>(landingConfig);
+  const [filesToUpload, setFilesToUpload] = useState<Record<string, File>>({});
   const [activeTab, setActiveTab] = useState('hero');
   const [previewMode, setPreviewMode] = useState(false);
   
-  const [uploading, setUploading] = useState<Record<string, boolean>>({});
   const [editorKey, setEditorKey] = useState(0);
 
   useEffect(() => {
     if (!isLoading && landingConfig && Object.keys(landingConfig).length > 0) {
       setFormData(landingConfig);
-      setEditorKey(prev => prev + 1); // Forzar re-render del editor si la config cambia
+      setEditorKey(prev => prev + 1);
     }
   }, [landingConfig, isLoading]);
-
 
   const handleSave = async () => {
     if (!currentUser) {
       toast({ title: "Error de autenticación", description: "No se pudo verificar el usuario.", variant: "destructive" });
       return;
     }
-    
+  
+    let updatedFormData = { ...formData };
+  
+    // Subir imágenes nuevas
+    for (const key in filesToUpload) {
+      const file = filesToUpload[key];
+      const [sectionIndex, subIndex, field] = key.split('-');
+      
+      try {
+        const imageUrl = await storageService.compressAndUploadFile(file, `subsections/`);
+        updatedFormData.sections[parseInt(sectionIndex)].subsections![parseInt(subIndex)][field as 'imageUrl' | 'logoUrl'] = imageUrl;
+      } catch (error: any) {
+        toast({ title: "Error de subida", description: `No se pudo subir una de las imágenes: ${error.message}`, variant: "destructive" });
+        return; // Detener el guardado si una imagen falla
+      }
+    }
+  
     try {
-      await updateConfig(formData, currentUser.id, currentUser.email);
+      await updateConfig(updatedFormData, currentUser.id, currentUser.email);
+      setFilesToUpload({}); // Limpiar cola de subida después de guardar
     } catch (error: any) {
-      // El hook ya muestra el toast de error.
       console.error("Error al guardar desde la página:", error);
     }
   };
   
-    const handleFileSelection = async (e: ChangeEvent<HTMLInputElement>, sectionIndex: number, subIndex: number, field: 'imageUrl' | 'logoUrl') => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+  const handleFileSelection = (e: ChangeEvent<HTMLInputElement>, sectionIndex: number, subIndex: number, field: 'imageUrl' | 'logoUrl') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-        const subsectionId = formData.sections[sectionIndex].subsections![subIndex].id;
+    const fileKey = `${sectionIndex}-${subIndex}-${field}`;
+    setFilesToUpload(prev => ({ ...prev, [fileKey]: file }));
 
-        setUploading(prev => ({ ...prev, [subsectionId]: true }));
-
-        try {
-            const imageUrl = await storageService.compressAndUploadFile(file, `subsections/`);
-            updateSubsection(sectionIndex, subIndex, field, imageUrl);
-
-            toast({
-                title: "Imagen subida",
-                description: "La imagen se ha subido. Guarda los cambios para que sea permanente.",
-            });
-        } catch (error: any) {
-            toast({
-                title: "Error de subida",
-                description: error.message || "No se pudo subir la imagen.",
-                variant: "destructive",
-            });
-        } finally {
-            setUploading(prev => ({ ...prev, [subsectionId]: false }));
+    // Actualizar la vista previa inmediatamente
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        if (event.target?.result) {
+            updateSubsection(sectionIndex, subIndex, field, event.target.result as string);
         }
     };
+    reader.readAsDataURL(file);
+  };
   
   const updateSubsection = (sectionIndex: number, subIndex: number, field: string, value: any) => {
      setFormData(prev => {
@@ -223,7 +228,7 @@ export default function LandingPublicPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Landing Pública</h1>
+          <h1 className="text-3xl font-bold">Editor Landing</h1>
           <p className="text-muted-foreground">Edita la configuración de la página principal</p>
         </div>
         <div className="flex gap-2">
@@ -510,8 +515,7 @@ export default function LandingPublicPage() {
                           </div>
                           <div className="space-y-3">
                             {section.subsections?.map((sub, subIdx) => {
-                              const subsectionId = sub.id;
-                              const isImgUploading = uploading[subsectionId];
+                              const fileKey = `${index}-${subIdx}-imageUrl`;
                               return (
                                 <div key={sub.id} className="p-3 border rounded-md bg-background space-y-2">
                                   <div className="flex justify-between items-center">
@@ -527,10 +531,10 @@ export default function LandingPublicPage() {
                                      <div className="flex items-center gap-2">
                                           <Image src={sub.imageUrl || "https://placehold.co/100x100.png?text=IMG"} alt="Vista previa" width={64} height={64} className="rounded-md border object-cover h-16 w-16" />
                                           <label htmlFor={`sub-img-${sub.id}`} className="cursor-pointer">
-                                            <Button variant="outline" asChild size="sm" disabled={isImgUploading}>
+                                            <Button variant="outline" asChild size="sm">
                                                 <span>
-                                                {isImgUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}
-                                                {isImgUploading ? 'Subiendo...' : 'Seleccionar'}
+                                                    <UploadCloud className="mr-2 h-4 w-4"/>
+                                                    Seleccionar
                                                 </span>
                                             </Button>
                                             <input id={`sub-img-${sub.id}`} type="file" className="hidden" accept="image/png, image/jpeg" onChange={(e) => handleFileSelection(e, index, subIdx, 'imageUrl')}/>
@@ -563,9 +567,7 @@ export default function LandingPublicPage() {
                     {testimonialsSection ? (
                         <div className="space-y-4">
                         {(testimonialsSection.subsections || []).map((sub, subIdx) => {
-                             const subsectionId = sub.id;
-                             const isImgUploading = uploading[subsectionId];
-
+                            const fileKey = `${testimonialsSectionIndex}-${subIdx}-imageUrl`;
                             return (
                             <Card key={sub.id} className="p-4 relative overflow-visible bg-background border">
                                 <Button size="sm" variant="ghost" className="absolute top-2 right-2 h-7 w-7 p-0" onClick={() => {
@@ -586,10 +588,10 @@ export default function LandingPublicPage() {
                                         </div>
                                          <div className="flex items-center gap-2 pt-2">
                                             <label htmlFor={`sub-img-testimonial-${sub.id}`} className="cursor-pointer">
-                                                <Button variant="outline" asChild size="sm" disabled={isImgUploading}>
+                                                <Button variant="outline" asChild size="sm">
                                                     <span>
-                                                      {isImgUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}
-                                                      {isImgUploading ? 'Subiendo...' : 'Seleccionar'}
+                                                      <UploadCloud className="mr-2 h-4 w-4"/>
+                                                      Seleccionar
                                                     </span>
                                                 </Button>
                                                 <input id={`sub-img-testimonial-${sub.id}`} type="file" className="hidden" accept="image/png, image/jpeg" onChange={(e) => handleFileSelection(e, testimonialsSectionIndex, subIdx, 'imageUrl')} />
