@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, ChangeEvent, lazy, Suspense } from 'react';
@@ -162,7 +161,7 @@ export default function LandingPublicPage() {
         setUploading(prev => ({ ...prev, [subsectionId]: true }));
 
         try {
-          const imageUrl = await storageService.uploadFile(file, `subsections/`);
+          const imageUrl = await storageService.compressAndUploadFile(file, `subsections/`);
           
           updateSubsection(sectionIndex, subIndex, 'imageUrl', imageUrl);
           setPendingFiles(prev => ({ ...prev, [subsectionId]: null }));
@@ -363,7 +362,6 @@ export default function LandingPublicPage() {
                       <RichTextEditor
                         value={formData.heroContent || ''}
                         onChange={(value) => {
-                          // Evitar guardar un string vacío que solo contiene <p><br></p>
                           const cleanValue = value === '<p><br></p>' ? '' : value;
                           setFormData(prev => ({ ...prev, heroContent: cleanValue }));
                         }}
