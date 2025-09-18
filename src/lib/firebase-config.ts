@@ -15,31 +15,33 @@ export const firebaseConfig = {
 
 // --- Configuración del Servidor/Admin (Privada) ---
 // Se construye a partir de variables de entorno para no exponer secretos en el código.
-let adminConfig: any;
-try {
-    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
-        adminConfig = {
-            type: "service_account",
-            project_id: process.env.FIREBASE_PROJECT_ID,
-            private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
-            private_key: (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
-            client_email: process.env.FIREBASE_CLIENT_EMAIL,
-            client_id: process.env.FIREBASE_CLIENT_ID,
-            auth_uri: "https://accounts.google.com/o/oauth2/auth",
-            token_uri: "https://oauth2.googleapis.com/token",
-            auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
-            client_x509_cert_url: process.env.FIREBASE_CLIENT_X509_CERT_URL,
-        };
+const buildAdminConfig = () => {
+  try {
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && privateKey) {
+      return {
+        type: "service_account",
+        project_id: process.env.FIREBASE_PROJECT_ID,
+        private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+        private_key: privateKey.replace(/\\n/g, '\n'),
+        client_email: process.env.FIREBASE_CLIENT_EMAIL,
+        client_id: process.env.FIREBASE_CLIENT_ID,
+        auth_uri: "https://accounts.google.com/o/oauth2/auth",
+        token_uri: "https://oauth2.googleapis.com/token",
+        auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
+        client_x509_cert_url: process.env.FIREBASE_CLIENT_X509_CERT_URL,
+      };
     } else {
         console.warn("⚠️  Advertencia: Faltan variables de entorno para Firebase Admin. Algunas funciones del backend pueden no funcionar.");
-        adminConfig = {};
+        return {}; // Devuelve un objeto vacío si faltan variables
     }
-} catch (error) {
-    console.error("❌ Error al construir la configuración de Firebase Admin:", error);
-    adminConfig = {};
-}
+  } catch (error) {
+      console.error("❌ Error al construir la configuración de Firebase Admin:", error);
+      return {}; // Devuelve un objeto vacío en caso de error
+  }
+};
 
-export const firebaseAdminConfig = adminConfig;
+export const firebaseAdminConfig = buildAdminConfig();
 
 // VALIDACIÓN: Asegura que las claves públicas de Firebase estén presentes.
 export const isFirebaseConfigValid = () => {
