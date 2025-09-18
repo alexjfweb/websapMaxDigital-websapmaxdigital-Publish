@@ -10,19 +10,74 @@ import imageCompression from 'browser-image-compression';
  * @returns Una promesa que se resuelve con la URL pública de la imagen subida.
  */
 const compressAndUploadFile = async (file: File, path: string): Promise<string> => {
-  const options = {
-    maxSizeMB: 0.8, // 800KB, para ser seguro
-    maxWidthOrHeight: 1200,
-    useWebWorker: true,
+  const maxSizeBytes = 800 * 1024; // Límite seguro de 800KB para Firestore
+
+  const calculateOptimalSize = (originalWidth: number, originalHeight: number) => {
+    const originalSize = originalWidth * originalHeight;
+    let maxDimension;
+    if (originalSize > 2000000) maxDimension = 800;
+    else if (originalSize > 1000000) maxDimension = 1000;
+    else if (originalSize > 500000) maxDimension = 1200;
+    else maxDimension = 1400;
+
+    const ratio = Math.min(maxDimension / originalWidth, maxDimension / originalHeight, 1);
+    return {
+      width: Math.floor(originalWidth * ratio),
+      height: Math.floor(originalHeight * ratio)
+    };
+  };
+
+  const compressIteratively = (canvas: HTMLCanvasElement, quality = 0.9): string => {
+    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+    const sizeInBytes = dataUrl.length * (3/4); // Approx. Base64 to bytes
+    
+    console.log(`Probando calidad ${quality.toFixed(2)}: ${(sizeInBytes / 1024).toFixed(1)}KB`);
+
+    if (sizeInBytes <= maxSizeBytes || quality <= 0.1) {
+      if (sizeInBytes > maxSizeBytes) {
+        console.warn(`La imagen no pudo ser comprimida por debajo de ${maxSizeBytes/1024}KB. Tamaño final: ${(sizeInBytes / 1024).toFixed(1)}KB`);
+      }
+      return dataUrl;
+    }
+    return compressIteratively(canvas, quality - 0.1);
+  };
+  
+  const autoCompress = (file: File): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return reject(new Error('Canvas context not available'));
+      
+      const img = new Image();
+      img.onload = () => {
+        const { width, height } = calculateOptimalSize(img.width, img.height);
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const compressedDataUrl = compressIteratively(canvas);
+        
+        // Convert base64 back to Blob for uploading
+        fetch(compressedDataUrl)
+          .then(res => res.blob())
+          .then(blob => {
+              console.log(`Compresión finalizada. Tamaño: ${(blob.size / 1024).toFixed(2)}KB`);
+              resolve(blob);
+          })
+          .catch(reject);
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
   };
 
   try {
     console.log(`Tamaño original: ${(file.size / 1024).toFixed(2)}KB`);
-    const compressedFile = await imageCompression(file, options);
-    console.log(`Tamaño comprimido: ${(compressedFile.size / 1024).toFixed(2)}KB`);
+    const compressedBlob = await autoCompress(file);
+    console.log(`Tamaño comprimido para subir: ${(compressedBlob.size / 1024).toFixed(2)}KB`);
 
     const formData = new FormData();
-    formData.append('file', compressedFile, file.name); // Enviar el archivo comprimido pero con el nombre original
+    formData.append('file', compressedBlob, file.name);
     formData.append('path', path);
 
     const response = await fetch('/api/upload', {
