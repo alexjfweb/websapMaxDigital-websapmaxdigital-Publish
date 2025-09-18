@@ -136,28 +136,6 @@ export default function LandingPublicPage() {
             return;
         }
 
-        const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
-        const fileExtension = file.name.split('.').pop()?.toLowerCase();
-        const maxSize = 5 * 1024 * 1024; // 5MB
-
-        if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
-          toast({
-            title: "Archivo no válido",
-            description: "Por favor, selecciona una imagen (JPG, PNG, WEBP).",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        if (file.size > maxSize) {
-          toast({
-            title: "Archivo demasiado grande",
-            description: "La imagen no puede pesar más de 5MB.",
-            variant: "destructive",
-          });
-          return;
-        }
-
         setUploading(prev => ({ ...prev, [subsectionId]: true }));
 
         try {
