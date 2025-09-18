@@ -95,21 +95,39 @@ export default function LandingPublicPage() {
 
   const handleSave = async () => {
     if (!currentUser) {
-        toast({ title: "Error de autenticación", description: "No se pudo verificar el usuario.", variant: "destructive" });
-        return;
+      toast({ title: "Error de autenticación", description: "No se pudo verificar el usuario.", variant: "destructive" });
+      return;
     }
     setSaving(true);
     try {
-      await updateConfig(formData, currentUser.id, currentUser.email);
+      // **INICIO DE LA CORRECCIÓN**
+      // Validar y limpiar datos antes de guardar
+      const configToSave: Partial<LandingConfig> = {
+        ...formData,
+        // Asegurarse de que el contenido HTML nunca sea `undefined`
+        heroContent: formData.heroContent || '',
+        sections: formData.sections.map(section => ({
+          ...section,
+          content: section.content || '',
+        })),
+        seo: {
+          ...formData.seo,
+          description: formData.seo.description || '',
+        }
+      };
+      // **FIN DE LA CORRECCIÓN**
+
+      await updateConfig(configToSave, currentUser.id, currentUser.email);
       
       toast({
         title: "Éxito",
         description: "Configuración de la landing guardada correctamente",
       });
     } catch (error) {
+      console.error("Error al guardar:", error); // Añadir log para depuración
       toast({
         title: "Error",
-        description: "No se pudo guardar la configuración",
+        description: "No se pudo guardar la configuración. Revisa la consola para más detalles.",
         variant: "destructive",
       });
     } finally {
