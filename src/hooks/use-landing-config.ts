@@ -19,8 +19,8 @@ export function useLandingConfig() {
     SWR_KEY,
     fetcher,
     {
-      revalidateOnFocus: true,
-      revalidateOnReconnect: true,
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
       onError: (err) => {
         console.error("SWR Error fetching landing config:", err);
         toast({

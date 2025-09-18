@@ -107,7 +107,6 @@ export async function handleSaveInParts(db: Firestore, collectionName: string, d
     batch.set(mainDocRef, {
       isMultiPart: true,
       totalParts: chunks.length,
-      createdAt: serverTimestamp(),
       lastUpdated: serverTimestamp()
     });
     
@@ -145,8 +144,10 @@ async function cleanupExistingParts(db: Firestore, collectionName: string, docum
       await batch.commit();
     }
   } catch (error: any) {
-    // It's okay if this fails, might be the first time.
-    console.log('Info: No se encontraron partes existentes para limpiar o hubo un error menor, lo cual es normal en la primera ejecución.', error.message);
+    // Es normal que falle si no existen partes, no es un error crítico
+    if (error.code !== 'permission-denied' && error.code !== 'not-found') {
+        console.warn('Info: No se encontraron partes existentes para limpiar o hubo un error menor.', error.message);
+    }
   }
 }
 
@@ -180,40 +181,46 @@ export async function readMultiPartDocument(db: Firestore, collectionName: strin
     
     let reconstructedData: { [key: string]: any } = {};
     const splitFields = new Map<string, { type: 'split_string' | 'split_json', parts: number, data: string[] }>();
+
+    // Primero, combinar todos los datos de los chunks en un solo objeto.
+    const combinedChunkData = parts.reduce((acc, part) => ({ ...acc, ...part.data }), {});
     
-    parts.forEach(part => {
-      const chunkData = part.data;
-      
-      for (const [key, value] of Object.entries(chunkData)) {
-        if (key.endsWith('_metadata')) {
-          const metadata = value as any;
-          splitFields.set(metadata.originalKey, {
-            type: metadata.type,
-            parts: metadata.parts,
-            data: new Array(metadata.parts)
-          });
-        } else if (key.includes('_part_')) {
-          const originalKey = key.split('_part_')[0];
-          const partIndex = parseInt(key.split('_part_')[1]);
-          
-          if (!splitFields.has(originalKey)) {
-             splitFields.set(originalKey, { data: [] } as any);
-          }
-          
-          splitFields.get(originalKey)!.data[partIndex] = value as string;
-        } else {
-          reconstructedData[key] = value;
+    // Segundo, identificar los campos que fueron divididos a partir de la metadata.
+    for (const [key, value] of Object.entries(combinedChunkData)) {
+      if (key.endsWith('_metadata')) {
+        const metadata = value as any;
+        if (metadata.originalKey) {
+            splitFields.set(metadata.originalKey, {
+                type: metadata.type,
+                parts: metadata.parts,
+                data: new Array(metadata.parts)
+            });
         }
       }
-    });
+    }
     
+    // Tercero, procesar todos los campos del objeto combinado.
+    for (const [key, value] of Object.entries(combinedChunkData)) {
+        if (key.includes('_part_')) {
+            const originalKey = key.split('_part_')[0];
+            const partIndex = parseInt(key.split('_part_')[1]);
+            if (splitFields.has(originalKey)) {
+                splitFields.get(originalKey)!.data[partIndex] = value as string;
+            }
+        } else if (!key.endsWith('_metadata')) {
+            // Es un campo normal, no dividido.
+            reconstructedData[key] = value;
+        }
+    }
+    
+    // Cuarto, reconstruir los campos grandes.
     for (const [originalKey, fieldData] of splitFields.entries()) {
+      const joinedData = fieldData.data.join('');
       if (fieldData.type === 'split_string') {
-        reconstructedData[originalKey] = fieldData.data.join('');
+        reconstructedData[originalKey] = joinedData;
       } else if (fieldData.type === 'split_json') {
-        const jsonStr = fieldData.data.join('');
         try {
-            reconstructedData[originalKey] = JSON.parse(jsonStr);
+            reconstructedData[originalKey] = JSON.parse(joinedData);
         } catch(e) {
             console.error(`Error parseando JSON reconstruido para el campo ${originalKey}:`, e);
             reconstructedData[originalKey] = {};

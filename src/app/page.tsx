@@ -45,6 +45,17 @@ function LandingPageContent() {
     return <LandingPageSkeleton />;
   }
   
+  if (errorConfig) {
+      return (
+        <div className="flex flex-col items-center justify-center h-screen text-center">
+            <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+            <h1 className="text-xl font-bold">Error al cargar la página</h1>
+            <p className="text-muted-foreground mb-4">No se pudo obtener la configuración principal.</p>
+            <Button onClick={() => retryConfig()}>Reintentar</Button>
+        </div>
+      )
+  }
+  
   return (
     <>
         <PublicHeader />
