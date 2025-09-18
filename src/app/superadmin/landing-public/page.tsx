@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, ChangeEvent, lazy, Suspense } from 'react';
@@ -101,29 +102,9 @@ export default function LandingPublicPage() {
     }
     setSaving(true);
     try {
-      const cleanQuillContent = (htmlString: string | undefined | null): string => {
-        if (!htmlString || htmlString === '<p><br></p>') {
-          return '';
-        }
-        return htmlString;
-      };
-
-      const configToSave: Partial<LandingConfig> = {
-        ...formData,
-        heroContent: cleanQuillContent(formData.heroContent),
-        sections: formData.sections.map(section => ({
-          ...section,
-          content: cleanQuillContent(section.content),
-          subsections: (section.subsections || []).map(sub => ({
-            ...sub,
-            content: cleanQuillContent(sub.content)
-          }))
-        })),
-        seo: {
-          ...formData.seo,
-          description: cleanQuillContent(formData.seo.description),
-        }
-      };
+      // Prepara los datos para guardar. La lógica de separación de datos
+      // se maneja dentro de 'updateConfig'.
+      const configToSave: Partial<LandingConfig> = { ...formData };
 
       await updateConfig(configToSave, currentUser.id, currentUser.email);
       
@@ -175,7 +156,7 @@ export default function LandingPublicPage() {
         if (file.size > maxSize) {
           toast({
             title: "Archivo demasiado grande",
-            description: "La imagen no puede pesar más de 5MB antes de la compresión.",
+            description: "La imagen no puede pesar más de 5MB.",
             variant: "destructive",
           });
           return;
@@ -184,15 +165,14 @@ export default function LandingPublicPage() {
         setUploading(prev => ({ ...prev, [subsectionId]: true }));
 
         try {
-          toast({ title: "Comprimiendo imagen...", description: "Este proceso puede tardar unos segundos." });
-          const imageUrl = await storageService.compressAndUploadFile(file, `subsections/`);
+          const imageUrl = await storageService.uploadFile(file, `subsections/`);
           
           updateSubsection(sectionIndex, subIndex, 'imageUrl', imageUrl);
           setPendingFiles(prev => ({ ...prev, [subsectionId]: null }));
 
           toast({
             title: "Imagen subida",
-            description: "La imagen se ha subido y comprimido correctamente.",
+            description: "La imagen se ha subido correctamente. Recuerda guardar los cambios.",
           });
 
         } catch (error: any) {

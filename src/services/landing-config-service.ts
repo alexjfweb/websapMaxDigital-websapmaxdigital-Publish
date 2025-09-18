@@ -1,3 +1,4 @@
+
 // src/services/landing-config-service.ts
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import { getDb } from '@/lib/firebase';
@@ -65,6 +66,7 @@ export interface LandingConfig {
 
 const CONFIG_COLLECTION_NAME = 'landing_configs';
 const SUBSECTIONS_COLLECTION_NAME = 'landing_subsections';
+const CONTENT_COLLECTION_NAME = 'landing_content';
 const MAIN_CONFIG_DOC_ID = 'main';
 
 const getDefaultConfig = (): LandingConfig => ({
@@ -132,6 +134,10 @@ class LandingConfigService {
     return doc(this.db, SUBSECTIONS_COLLECTION_NAME, `${sectionId}_subsections`);
   }
   
+  private getContentDocRef(contentId: string) {
+    return doc(this.db, CONTENT_COLLECTION_NAME, contentId);
+  }
+
   private async getImageUrl(path: string): Promise<string> {
     const placeholder = 'https://placehold.co/400x300.png?text=...';
     if (!path) return placeholder;
@@ -169,6 +175,11 @@ class LandingConfigService {
     }
     
     const dbData = docSnap.data();
+
+    // Fetch heroContent separately
+    const heroContentDocRef = this.getContentDocRef('hero_content');
+    const heroContentSnap = await getDoc(heroContentDocRef);
+    const heroContent = heroContentSnap.exists() ? heroContentSnap.data().content : '';
     
     const resolvedSections = await Promise.all(
         (dbData.sections || []).map(async (section: LandingSection) => {
@@ -193,6 +204,7 @@ class LandingConfigService {
       ...defaultConfig,
       ...dbData,
       id: docSnap.id,
+      heroContent: heroContent,
       sections: resolvedSections,
       seo: { ...defaultConfig.seo, ...(dbData?.seo || {}) },
     };
@@ -210,20 +222,26 @@ class LandingConfigService {
     
     // Preparar el documento principal sin los datos pesados
     const mainDocUpdate: any = { ...configUpdate, updatedAt: serverTimestamp() };
-    delete mainDocUpdate.sections; // Quitar las secciones del objeto principal por ahora
-    
-    // Crear una copia de las secciones para guardarlas sin subsecciones
-    if (configUpdate.sections) {
-      mainDocUpdate.sections = configUpdate.sections.map(section => {
-        const { subsections, ...sectionData } = section;
-        return sectionData; // Guardar solo los datos de la sección, no las subsecciones
-      });
-    }
+    delete mainDocUpdate.sections; // Quitar las secciones del objeto principal
+    delete mainDocUpdate.heroContent; // Quitar el heroContent también
 
     batch.set(docRef, mainDocUpdate, { merge: true });
 
+    // Guardar heroContent en su propio documento si existe en la actualización
+    if (configUpdate.heroContent !== undefined) {
+        const heroContentDocRef = this.getContentDocRef('hero_content');
+        batch.set(heroContentDocRef, { content: configUpdate.heroContent, updatedAt: serverTimestamp() });
+    }
+
     // Guardar las subsecciones en documentos separados
     if (configUpdate.sections) {
+      // Guardar los datos de las secciones (sin subsecciones) en el doc principal
+      const sectionsDataForMainDoc = configUpdate.sections.map(section => {
+        const { subsections, ...sectionData } = section;
+        return sectionData;
+      });
+      batch.update(docRef, { sections: sectionsDataForMainDoc });
+
       for (const section of configUpdate.sections) {
         if (section.subsections && section.subsections.length > 0) {
           const subsectionsDocRef = this.getSubsectionsDocRef(section.id);
@@ -252,13 +270,27 @@ class LandingConfigService {
       userId: string,
       userEmail: string
   ): Promise<void> {
-      const { id, ...dataToSave } = configData;
+      const { id, heroContent, ...dataToSave } = configData;
       const docRef = this.getConfigDocRef();
-      await setDoc(docRef, {
+      const heroContentDocRef = this.getContentDocRef('hero_content');
+
+      const batch = writeBatch(this.db);
+
+      batch.set(docRef, {
           ...dataToSave,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
       });
+
+      if (heroContent) {
+          batch.set(heroContentDocRef, {
+              content: heroContent,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+          });
+      }
+
+      await batch.commit();
 
       await auditService.log({
           entity: 'landingConfigs' as any,
