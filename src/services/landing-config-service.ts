@@ -230,60 +230,68 @@ class LandingConfigService {
     const batch = writeBatch(this.db);
     const mainDocRef = this.getConfigDocRef();
 
-    // 1. Crear el objeto para el documento principal solo con datos ligeros
-    const mainDocData: Partial<Omit<LandingConfig, 'id' | 'heroContent' | 'sections'>> = {
-      heroTitle: configUpdate.heroTitle,
-      heroSubtitle: configUpdate.heroSubtitle,
-      heroButtonText: configUpdate.heroButtonText,
-      heroButtonUrl: configUpdate.heroButtonUrl,
-      heroBackgroundColor: configUpdate.heroBackgroundColor,
-      heroTextColor: configUpdate.heroTextColor,
-      heroButtonColor: configUpdate.heroButtonColor,
-      heroAnimation: configUpdate.heroAnimation,
-      seo: configUpdate.seo,
+    // 1. Explicitly create a lightweight object for the main document.
+    // DO NOT use spread operator on configUpdate here.
+    const mainDocData = {
+        heroTitle: configUpdate.heroTitle,
+        heroSubtitle: configUpdate.heroSubtitle,
+        heroButtonText: configUpdate.heroButtonText,
+        heroButtonUrl: configUpdate.heroButtonUrl,
+        heroBackgroundColor: configUpdate.heroBackgroundColor,
+        heroTextColor: configUpdate.heroTextColor,
+        heroButtonColor: configUpdate.heroButtonColor,
+        heroAnimation: configUpdate.heroAnimation,
+        seo: configUpdate.seo,
+        updatedAt: serverTimestamp(),
+        // Store only the lightweight structure of sections
+        sections: (configUpdate.sections || []).map(
+            ({ content, subsections, ...sectionData }) => sectionData
+        ),
     };
+
+    batch.set(mainDocRef, mainDocData, { merge: true });
     
-    // Si hay secciones, guardar solo su estructura ligera en el doc principal
-    if (configUpdate.sections) {
-      (mainDocData as any).sections = configUpdate.sections.map(
-        ({ content, subsections, ...sectionData }) => sectionData
-      );
-    }
-  
-    batch.set(mainDocRef, { ...mainDocData, updatedAt: serverTimestamp() }, { merge: true });
-  
-    // 2. Guardar el contenido pesado del Hero por separado
+    // 2. Save the heavy heroContent separately.
     if (configUpdate.heroContent !== undefined) {
       const heroContentDocRef = this.getContentDocRef('hero_content');
-      batch.set(heroContentDocRef, { content: configUpdate.heroContent || '', updatedAt: serverTimestamp() }, { merge: true });
+      batch.set(heroContentDocRef, { 
+        content: configUpdate.heroContent || '', 
+        updatedAt: serverTimestamp() 
+      }, { merge: true });
     }
   
-    // 3. Guardar el contenido y subsecciones de cada sección por separado
+    // 3. Save heavy content for each section separately.
     if (configUpdate.sections) {
       for (const section of configUpdate.sections) {
-        // Guardar el 'content' pesado en su propio documento
+        // Save the heavy 'content' field in its own document
         const contentDocRef = this.getContentDocRef(section.id);
-        batch.set(contentDocRef, { content: section.content || '', updatedAt: serverTimestamp() }, { merge: true });
+        batch.set(contentDocRef, { 
+            content: section.content || '', 
+            updatedAt: serverTimestamp() 
+        }, { merge: true });
   
-        // Guardar las 'subsections' pesadas en su propio documento
+        // Save the heavy 'subsections' array in its own document
         if (section.subsections) {
           const subsectionsDocRef = this.getSubsectionsDocRef(section.id);
-          batch.set(subsectionsDocRef, { subsections: section.subsections, updatedAt: serverTimestamp() }, { merge: true });
+          batch.set(subsectionsDocRef, { 
+            subsections: section.subsections, 
+            updatedAt: serverTimestamp() 
+          }, { merge: true });
         }
       }
     }
   
-    // 4. Ejecutar todas las operaciones en un solo batch
+    // 4. Commit all operations atomically.
     await batch.commit();
   
-    // 5. Registrar en la auditoría
+    // 5. Log the audit trail.
     await auditService.log({
       entity: 'landingConfigs' as any,
       entityId: MAIN_CONFIG_DOC_ID,
       action: 'updated',
       performedBy: { uid: userId, email: userEmail },
-      previousData: originalDoc, // Guarda el estado anterior completo
-      newData: configUpdate, // Guarda la actualización completa
+      previousData: originalDoc,
+      newData: configUpdate,
       details: 'Landing page configuration updated.'
     });
   }
