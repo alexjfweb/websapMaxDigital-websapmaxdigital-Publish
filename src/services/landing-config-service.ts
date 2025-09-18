@@ -184,9 +184,14 @@ class LandingConfigService {
     const resolvedSections = await Promise.all(
         (dbData.sections || []).map(async (section: LandingSection) => {
             const subsectionsDocRef = this.getSubsectionsDocRef(section.id);
-            const subsectionsSnap = await getDoc(subsectionsDocRef);
-            let resolvedSubsections: LandingSubsection[] = [];
+            const contentDocRef = this.getContentDocRef(section.id);
 
+            const [subsectionsSnap, contentSnap] = await Promise.all([
+                getDoc(subsectionsDocRef),
+                getDoc(contentDocRef)
+            ]);
+            
+            let resolvedSubsections: LandingSubsection[] = [];
             if (subsectionsSnap.exists()) {
                 const subsectionsData = subsectionsSnap.data().subsections || [];
                 resolvedSubsections = await Promise.all(
@@ -196,7 +201,14 @@ class LandingConfigService {
                     }))
                 );
             }
-            return { ...section, subsections: resolvedSubsections };
+            
+            const sectionContent = contentSnap.exists() ? contentSnap.data().content : '';
+            
+            return { 
+                ...section, 
+                content: sectionContent,
+                subsections: resolvedSubsections 
+            };
         })
     );
 
@@ -217,38 +229,29 @@ class LandingConfigService {
   ): Promise<void> {
     const originalDoc = await this.getLandingConfig().catch(() => getDefaultConfig());
     const docRef = this.getConfigDocRef();
-
     const batch = writeBatch(this.db);
     
-    // Preparar el documento principal sin los datos pesados
-    const mainDocUpdate: any = { ...configUpdate, updatedAt: serverTimestamp() };
-    delete mainDocUpdate.sections; // Quitar las secciones del objeto principal
-    delete mainDocUpdate.heroContent; // Quitar el heroContent también
+    const { sections, heroContent, ...mainDocUpdate } = configUpdate;
+    mainDocUpdate.updatedAt = serverTimestamp();
 
     batch.set(docRef, mainDocUpdate, { merge: true });
 
-    // Guardar heroContent en su propio documento si existe en la actualización
-    if (configUpdate.heroContent !== undefined) {
-        const heroContentDocRef = this.getContentDocRef('hero_content');
-        batch.set(heroContentDocRef, { content: configUpdate.heroContent, updatedAt: serverTimestamp() });
+    if (heroContent !== undefined) {
+      const heroContentDocRef = this.getContentDocRef('hero_content');
+      batch.set(heroContentDocRef, { content: heroContent, updatedAt: serverTimestamp() }, { merge: true });
     }
 
-    // Guardar las subsecciones en documentos separados
-    if (configUpdate.sections) {
-      // Guardar los datos de las secciones (sin subsecciones) en el doc principal
-      const sectionsDataForMainDoc = configUpdate.sections.map(section => {
-        const { subsections, ...sectionData } = section;
-        return sectionData;
-      });
-      batch.update(docRef, { sections: sectionsDataForMainDoc });
+    if (sections) {
+      const sectionsForMainDoc = sections.map(({ subsections, content, ...sectionData }) => sectionData);
+      batch.update(docRef, { sections: sectionsForMainDoc });
 
-      for (const section of configUpdate.sections) {
+      for (const section of sections) {
+        const contentDocRef = this.getContentDocRef(section.id);
+        batch.set(contentDocRef, { content: section.content, updatedAt: serverTimestamp() }, { merge: true });
+
         if (section.subsections && section.subsections.length > 0) {
           const subsectionsDocRef = this.getSubsectionsDocRef(section.id);
-          batch.set(subsectionsDocRef, { 
-            subsections: section.subsections, 
-            updatedAt: serverTimestamp() 
-          });
+          batch.set(subsectionsDocRef, { subsections: section.subsections, updatedAt: serverTimestamp() }, { merge: true });
         }
       }
     }
@@ -270,24 +273,33 @@ class LandingConfigService {
       userId: string,
       userEmail: string
   ): Promise<void> {
-      const { id, heroContent, ...dataToSave } = configData;
+      const { id, heroContent, sections, ...dataToSave } = configData;
       const docRef = this.getConfigDocRef();
-      const heroContentDocRef = this.getContentDocRef('hero_content');
-
+      
       const batch = writeBatch(this.db);
 
+      const sectionsForMainDoc = sections.map(({ subsections, content, ...sectionData }) => sectionData);
+      
       batch.set(docRef, {
           ...dataToSave,
+          sections: sectionsForMainDoc,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
       });
 
       if (heroContent) {
-          batch.set(heroContentDocRef, {
-              content: heroContent,
-              createdAt: serverTimestamp(),
-              updatedAt: serverTimestamp(),
-          });
+          const heroContentDocRef = this.getContentDocRef('hero_content');
+          batch.set(heroContentDocRef, { content: heroContent, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+      }
+
+      for (const section of sections) {
+          const contentDocRef = this.getContentDocRef(section.id);
+          batch.set(contentDocRef, { content: section.content, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+
+          if (section.subsections && section.subsections.length > 0) {
+              const subsectionsDocRef = this.getSubsectionsDocRef(section.id);
+              batch.set(subsectionsDocRef, { subsections: section.subsections, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+          }
       }
 
       await batch.commit();

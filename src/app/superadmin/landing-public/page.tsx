@@ -102,10 +102,7 @@ export default function LandingPublicPage() {
     }
     setSaving(true);
     try {
-      // Prepara los datos para guardar. La lógica de separación de datos
-      // se maneja dentro de 'updateConfig'.
       const configToSave: Partial<LandingConfig> = { ...formData };
-
       await updateConfig(configToSave, currentUser.id, currentUser.email);
       
       toast({
