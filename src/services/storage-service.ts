@@ -1,62 +1,69 @@
-
 // src/services/storage-service.ts
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { menuImagesStorage } from '@/lib/firebase'; // Importar el bucket específico para imágenes
+import imageCompression from 'browser-image-compression';
 
 /**
- * Sube un archivo a una ruta específica en el bucket de imágenes del menú.
- * 
- * @param file El archivo a subir.
- * @param path La ruta dentro del bucket donde se guardará (ej. 'dishes/').
+ * Comprime una imagen en el cliente y la sube al servidor a través de un endpoint de API.
+ * @param file El archivo de imagen a subir.
+ * @param path La ruta de destino en el bucket (ej. 'landing-images').
  * @returns Una promesa que se resuelve con la URL pública de la imagen subida.
  */
-const uploadFile = async (file: File, path: string): Promise<string> => {
+const compressAndUploadFile = async (file: File, path: string): Promise<string> => {
   if (!file) {
-    throw new Error("No se proporcionó ningún archivo para subir.");
+    throw new Error("No se proporcionó ningún archivo.");
   }
 
-  const timestamp = Date.now();
-  const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-  const fullPath = `${path}${timestamp}-${sanitizedFileName}`;
-  
-  const imageRef = ref(menuImagesStorage, fullPath);
+  // Opciones de compresión
+  const options = {
+    maxSizeMB: 0.8, // Límite de 800KB, como se especificó
+    maxWidthOrHeight: 1920,
+    useWebWorker: true,
+  };
 
   try {
-    const snapshot = await uploadBytes(imageRef, file);
-    const downloadURL = await getDownloadURL(snapshot.ref);
-    return downloadURL;
+    const compressedFile = await imageCompression(file, options);
+    
+    const formData = new FormData();
+    formData.append('file', compressedFile);
+    formData.append('path', path);
+
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || 'Error en el servidor al subir la imagen.');
+    }
+    
+    return result.url;
+
   } catch (error) {
-    console.error('Error al subir la imagen:', error);
-    throw new Error('No se pudo subir la imagen a Cloud Storage.');
+    console.error('Error durante la compresión y subida:', error);
+    throw new Error('No se pudo procesar y subir la imagen.');
   }
 };
 
+
 /**
  * Elimina un archivo de Cloud Storage usando su URL pública.
- * 
+ * Esta función sigue siendo relevante si se necesita borrar archivos antiguos.
  * @param fileUrl La URL completa del archivo a eliminar.
  */
 const deleteFile = async (fileUrl: string): Promise<void> => {
-  if (!fileUrl.startsWith('https://firebasestorage.googleapis.com')) {
+  if (!fileUrl || !fileUrl.startsWith('https://storage.googleapis.com')) {
     console.warn(`[storage-service] La URL "${fileUrl}" no parece ser una URL de Firebase Storage. Se omitirá la eliminación.`);
     return;
   }
   
-  try {
-    const fileRef = ref(menuImagesStorage, fileUrl);
-    await deleteObject(fileRef);
-  } catch (error: any) {
-    // Es común que el archivo no exista si ya fue borrado, así que no tratamos "object-not-found" como un error fatal.
-    if (error.code === 'storage/object-not-found') {
-      console.log(`[storage-service] El archivo a eliminar no fue encontrado (es posible que ya haya sido borrado): ${fileUrl}`);
-    } else {
-      console.error(`[storage-service] Error al eliminar el archivo: ${fileUrl}`, error);
-      // No relanzamos el error para no interrumpir flujos de actualización si solo falla el borrado del archivo antiguo.
-    }
-  }
+  // La lógica de eliminación del lado del servidor se podría implementar en un endpoint de API si fuera necesario.
+  // Por ahora, esta función queda como placeholder o para ser usada si se implementa un endpoint de borrado.
+  console.log(`[storage-service] Se solicitó eliminar: ${fileUrl}. Esta operación debe ser manejada por el backend.`);
 };
 
 export const storageService = {
-  uploadFile,
-  deleteFile
+  compressAndUploadFile,
+  deleteFile,
+  // Se eliminan las funciones que dependían de `firebase-admin` en el cliente.
 };
