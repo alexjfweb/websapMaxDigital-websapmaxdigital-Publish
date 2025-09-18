@@ -7,7 +7,7 @@ import { useToast } from './use-toast';
 
 const SWR_KEY = 'landing-page-config';
 
-// El fetcher ahora es más simple, solo obtiene los datos.
+// The fetcher simply gets the data. The service handles reconstruction.
 const fetcher = () => landingConfigService.getLandingConfig();
 
 export function useLandingConfig() {
@@ -36,11 +36,12 @@ export function useLandingConfig() {
     }
     
     try {
-        // Llama al servicio para guardar los datos. Este servicio ahora maneja la división.
+        // Call the service to save data. The service now handles the complex multipart logic.
         await landingConfigService.updateLandingConfig(configUpdate, userId, userEmail);
         
-        // Después de un guardado exitoso, revalida los datos para obtener la versión más reciente
-        // y reconstruida desde Firestore. Esto actualizará la UI correctamente.
+        // After a successful save, revalidate the data from the server.
+        // This will trigger the fetcher again, which calls `readMultiPartDocument`.
+        // This ensures the UI is updated with the correctly reconstructed data.
         await mutate();
 
     } catch (e: any) {
@@ -49,19 +50,14 @@ export function useLandingConfig() {
           description: `No se pudieron guardar los cambios: ${e.message}`,
           variant: "destructive",
         });
-        // No se revierte el estado localmente para evitar más inconsistencias, 
-        // se confía en la próxima revalidación o en una recarga manual.
         throw e;
     }
   };
 
-  // Si hay un error en la carga inicial o no hay datos, usa la configuración por defecto.
-  // Esto asegura que `landingConfig` nunca sea `null` o `undefined` para el componente.
   const configToShow = error || !data ? landingConfigService.getDefaultConfig() : data;
 
   return {
     landingConfig: configToShow,
-    // El estado de carga es verdadero solo al principio, si no hay datos ni error.
     isLoading: isLoading && !data && !error,
     error: error || null,
     updateConfig,

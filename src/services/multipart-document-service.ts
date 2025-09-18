@@ -144,42 +144,39 @@ async function cleanupExistingParts(db: Firestore, collectionName: string, docum
       await batch.commit();
     }
   } catch (error: any) {
-    console.log('⚠️ Error al limpiar (puede ser primera vez):', error.message);
+    // It's okay if this fails, might be the first time.
+    console.log('Info: No se encontraron partes existentes para limpiar o hubo un error menor, lo cual es normal en la primera ejecución.', error.message);
   }
 }
 
 // Función para leer datos divididos
 export async function readMultiPartDocument(db: Firestore, collectionName: string, documentId: string): Promise<any | null> {
   try {
-    // 1. Leer documento principal
     const mainDocRef = doc(db, collectionName, documentId);
     const mainDoc = await getDoc(mainDocRef);
     
     if (!mainDoc.exists()) {
-      console.warn(`Documento principal ${documentId} no encontrado.`);
-      return null; // Devuelve null si el documento no existe
+      console.warn(`Documento principal ${documentId} no encontrado. Se devolverá null.`);
+      return null;
     }
     
     const mainData = mainDoc.data();
     if (!mainData.isMultiPart) {
-      return mainData; // Documento normal
+      return mainData; // Documento normal, no dividido
     }
     
-    // 2. Leer todas las partes
     const partsRef = collection(db, collectionName, documentId, 'parts');
     const partsSnapshot = await getDocs(partsRef);
     
     if (partsSnapshot.empty) {
-      console.warn(`El documento ${documentId} está marcado como multi-parte pero no tiene sub-documentos.`);
-      return { id: documentId }; // Devuelve un objeto mínimo para no romper la app
+        console.warn(`El documento ${documentId} está marcado como multi-parte pero no tiene sub-documentos.`);
+        return { id: documentId };
     }
     
-    // 3. Ordenar partes y reconstruir datos
     const parts = partsSnapshot.docs
       .map(doc => doc.data())
       .sort((a, b) => a.partIndex - b.partIndex);
     
-    // 4. Combinar todos los chunks
     let reconstructedData: { [key: string]: any } = {};
     const splitFields = new Map<string, { type: 'split_string' | 'split_json', parts: number, data: string[] }>();
     
@@ -188,7 +185,6 @@ export async function readMultiPartDocument(db: Firestore, collectionName: strin
       
       for (const [key, value] of Object.entries(chunkData)) {
         if (key.endsWith('_metadata')) {
-          // Es metadata de campo dividido
           const metadata = value as any;
           splitFields.set(metadata.originalKey, {
             type: metadata.type,
@@ -196,24 +192,20 @@ export async function readMultiPartDocument(db: Firestore, collectionName: strin
             data: new Array(metadata.parts)
           });
         } else if (key.includes('_part_')) {
-          // Es parte de campo dividido
           const originalKey = key.split('_part_')[0];
           const partIndex = parseInt(key.split('_part_')[1]);
           
           if (!splitFields.has(originalKey)) {
-             // Esto puede pasar si los chunks se leen fuera de orden, pre-inicializar
-            splitFields.set(originalKey, { data: [] } as any);
+             splitFields.set(originalKey, { data: [] } as any);
           }
           
           splitFields.get(originalKey)!.data[partIndex] = value as string;
         } else {
-          // Campo normal
           reconstructedData[key] = value;
         }
       }
     });
     
-    // 5. Reconstruir campos divididos
     for (const [originalKey, fieldData] of splitFields.entries()) {
       if (fieldData.type === 'split_string') {
         reconstructedData[originalKey] = fieldData.data.join('');
@@ -228,7 +220,6 @@ export async function readMultiPartDocument(db: Firestore, collectionName: strin
       }
     }
     
-    console.log('✅ Documento reconstruido exitosamente');
     return reconstructedData;
     
   } catch (error) {

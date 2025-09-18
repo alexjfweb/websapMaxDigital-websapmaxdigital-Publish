@@ -1,5 +1,4 @@
 // src/services/landing-config-service.ts
-import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import { getDb } from '@/lib/firebase';
 import { auditService } from './audit-service';
 import { handleSaveInParts, readMultiPartDocument } from './multipart-document-service';
@@ -133,9 +132,12 @@ class LandingConfigService {
         return this.getDefaultConfig();
     }
     
+    // Merge with default to ensure all properties are present
+    const defaultConfig = this.getDefaultConfig();
     return {
-      ...this.getDefaultConfig(),
+      ...defaultConfig,
       ...data,
+      seo: { ...defaultConfig.seo, ...(data.seo || {}) },
       id: MAIN_CONFIG_DOC_ID,
     };
   }
@@ -152,8 +154,10 @@ class LandingConfigService {
         updatedBy: userEmail,
     };
 
+    // Use the robust multipart save function
     await handleSaveInParts(this.db, CONFIG_COLLECTION_NAME, MAIN_CONFIG_DOC_ID, dataToSave);
   
+    // Log the audit action
     await auditService.log({
       entity: 'landingConfigs',
       entityId: MAIN_CONFIG_DOC_ID,
