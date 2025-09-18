@@ -7,7 +7,6 @@ import { useToast } from './use-toast';
 
 const SWR_KEY = 'landing-page-config';
 
-// The fetcher simply gets the data. The service handles reconstruction.
 const fetcher = () => landingConfigService.getLandingConfig();
 
 export function useLandingConfig() {
@@ -36,13 +35,10 @@ export function useLandingConfig() {
     }
     
     try {
-        // Call the service to save data. The service now handles the complex multipart logic.
-        await landingConfigService.updateLandingConfig(configUpdate, userId, userEmail);
-        
-        // After a successful save, revalidate the data from the server.
-        // This will trigger the fetcher again, which calls `readMultiPartDocument`.
-        // This ensures the UI is updated with the correctly reconstructed data.
-        await mutate();
+      await landingConfigService.updateLandingConfig(configUpdate, userId, userEmail);
+      // Forzar la revalidación de los datos desde el servidor.
+      // Esto ejecutará el 'fetcher' nuevamente, que a su vez llamará a 'readMultiPartDocument'.
+      await mutate();
 
     } catch (e: any) {
         toast({

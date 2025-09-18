@@ -1,3 +1,4 @@
+
 // src/services/landing-config-service.ts
 import { getDb } from '@/lib/firebase';
 import { auditService } from './audit-service';
@@ -132,7 +133,6 @@ class LandingConfigService {
         return this.getDefaultConfig();
     }
     
-    // Merge with default to ensure all properties are present
     const defaultConfig = this.getDefaultConfig();
     return {
       ...defaultConfig,
@@ -154,10 +154,8 @@ class LandingConfigService {
         updatedBy: userEmail,
     };
 
-    // Use the robust multipart save function
     await handleSaveInParts(this.db, CONFIG_COLLECTION_NAME, MAIN_CONFIG_DOC_ID, dataToSave);
   
-    // Log the audit action
     await auditService.log({
       entity: 'landingConfigs',
       entityId: MAIN_CONFIG_DOC_ID,

@@ -112,7 +112,7 @@ export default function LandingPublicPage() {
       console.error("Error al guardar:", error);
       toast({
         title: "Error al Guardar",
-        description: `No se pudo guardar la configuración: ${error.message}`,
+        description: `No se pudieron guardar los cambios: ${error.message}`,
         variant: "destructive",
       });
     } finally {
