@@ -87,7 +87,7 @@ const getDefaultConfig = (): LandingConfig => ({
       subsections: [
         { id: 'sub-1-1', title: 'Herramienta para personalizar menú digital con videos', content: '<p>Imagina un menú que cobra vida: nuestra herramienta te permite **personalizar tu menú digital con videos** de tus deliciosos platos, directamente desde Bucaramanga. Captura la atención de tus clientes en Santander, ofreciéndoles una experiencia visual única antes de ordenar. Destaca tus especialidades, muestra la frescura de tus ingredientes y cuenta la historia detrás de cada creación. ¡Haz que tu menú sea tan inolvidable como tu comida!</p>', imageUrl: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', authorRole: '', imageRadius: 0 },
         { id: 'sub-1-2', title: 'Sistema de gestión para restaurante con integración de pedidos en línea', content: '<p>¡Lleva tu restaurante en al siguiente nivel! Nuestro sistema de gestión con integración de pedidos en línea te permite recibir órdenes desde cualquier lugar de Santander, directo a tu cocina. Agiliza tu operación, expande tu alcance y ofrece comodidad a tus clientes, aumentando tus ventas y optimizando tu servicio. ¡Todo en una sola plataforma, fácil de usar y adaptada a tu negocio!</p>', imageUrl: 'https://images.pexels.com/photos/376464/pexels-photo-376464.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', authorRole: '', imageRadius: 0 },
-        { id: 'sub-1-3', title: 'Sistema de menú digital con pago desde el móvil', content: '<p>Olvídate de los menús físicos y ofrece a tus clientes un menú moderno y seguro. Elige entre diseños elegantes, añade fotos y videos, y actualízalo en tiempo real. Reduce costos de impresión, mejora la experiencia del cliente y agiliza el servicio.</p>', imageUrl: 'https://images.pexels.com/photos/580612/pexels-photo-580612.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', authorRole: '', imageRadius: 0 },
+        { id: 'sub-1-3', title: 'Sistema de menú digital con pago desde el móvil', content: '<p>Olvídate de los menús físicos y ofrece a tus clientes un menú moderno y seguro. Elige entre diseños elegantes, añade fotos y vídeos, y actualízalo en tiempo real. Reduce costos de impresión, mejora la experiencia del cliente y agiliza el servicio.</p>', imageUrl: 'https://images.pexels.com/photos/580612/pexels-photo-580612.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', authorRole: '', imageRadius: 0 },
       ],
     },
     {
@@ -180,3 +180,5 @@ class LandingConfigService {
 }
 
 export const landingConfigService = new LandingConfigService();
+
+    
