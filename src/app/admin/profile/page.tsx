@@ -125,7 +125,8 @@ export default function AdminProfilePage() {
  const handleImageUpload = async (
     event: ChangeEvent<HTMLInputElement>,
     setImagePreview: React.Dispatch<React.SetStateAction<string | null>>,
-    updateProfileField: (url: string) => void
+    updateProfileField: (url: string) => void,
+    oldImageUrl?: string
   ) => {
     if (!companyId) return;
     const file = event.target.files?.[0];
@@ -134,14 +135,15 @@ export default function AdminProfilePage() {
     setImagePreview(URL.createObjectURL(file)); 
     setIsSaving(true);
     try {
-      const imageUrl = await storageService.compressAndUploadFile(file, `profiles/${companyId}/`);
-      if (imageUrl) {
-        updateProfileField(imageUrl); 
-        toast({
-          title: "Imagen subida",
-          description: "La nueva imagen se ha cargado. Guarda los cambios para aplicarla.",
-        });
+      if (oldImageUrl && !oldImageUrl.includes('placehold.co')) {
+          await storageService.deleteFile(oldImageUrl);
       }
+      const imageUrl = await storageService.uploadFile(file, `profiles/${companyId}/`);
+      updateProfileField(imageUrl); 
+      toast({
+        title: "Imagen subida",
+        description: "La nueva imagen se ha cargado. Guarda los cambios para aplicarla.",
+      });
     } catch (error: any) {
       toast({ title: "Error de Subida", description: error.message, variant: "destructive" });
     } finally {
@@ -154,33 +156,37 @@ export default function AdminProfilePage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    let setPreview, fieldName;
+    let setPreview, fieldName, oldImageUrl;
     switch(method) {
         case 'nequi':
             setPreview = setNequiQrPreview;
             fieldName = 'nequiQrImageUrl';
+            oldImageUrl = profileData.paymentMethods?.nequi?.nequiQrImageUrl;
             break;
         case 'bancolombia':
             setPreview = setBancolombiaQrPreview;
             fieldName = 'bancolombiaQrImageUrl';
+            oldImageUrl = profileData.paymentMethods?.bancolombia?.bancolombiaQrImageUrl;
             break;
         case 'daviplata':
             setPreview = setDaviplataQrPreview;
             fieldName = 'daviplataQrImageUrl';
+            oldImageUrl = profileData.paymentMethods?.daviplata?.daviplataQrImageUrl;
             break;
     }
 
     setPreview(URL.createObjectURL(file));
     setIsSaving(true);
     try {
-      const imageUrl = await storageService.compressAndUploadFile(file, `qrs/${companyId}/`);
-      if (imageUrl) {
-        handlePaymentMethodChange(method, fieldName, imageUrl);
-        toast({
-          title: "Imagen QR subida",
-          description: "El nuevo QR se ha cargado. Guarda los cambios para aplicarlo.",
-        });
+      if (oldImageUrl && !oldImageUrl.includes('placehold.co')) {
+          await storageService.deleteFile(oldImageUrl);
       }
+      const imageUrl = await storageService.uploadFile(file, `qrs/${companyId}/`);
+      handlePaymentMethodChange(method, fieldName, imageUrl);
+      toast({
+        title: "Imagen QR subida",
+        description: "El nuevo QR se ha cargado. Guarda los cambios para aplicarlo.",
+      });
     } catch (error: any) {
        toast({ title: "Error de Subida", description: error.message, variant: "destructive" });
     } finally {
@@ -287,7 +293,7 @@ export default function AdminProfilePage() {
                 <Button variant="outline" asChild disabled={!isEditing}>
                   <Label htmlFor="avatar-upload" className="cursor-pointer">
                     <UploadCloud className="mr-2 h-4 w-4" /> Subir Avatar
-                    <Input id="avatar-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setAvatarPreview, (url) => setProfileData(p => ({...p, logoUrl: url})))} disabled={!isEditing} />
+                    <Input id="avatar-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setAvatarPreview, (url) => setProfileData(p => ({...p, logoUrl: url})), profileData.logoUrl)} disabled={!isEditing} />
                   </Label>
                 </Button>
               </div>
@@ -299,7 +305,7 @@ export default function AdminProfilePage() {
                 <Button variant="outline" asChild disabled={!isEditing}>
                   <Label htmlFor="logo-upload" className="cursor-pointer">
                     <UploadCloud className="mr-2 h-4 w-4" /> Subir logo
-                    <Input id="logo-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setLogoPreview, (url) => setProfileData(p => ({...p, logoUrl: url})))} disabled={!isEditing} />
+                    <Input id="logo-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setLogoPreview, (url) => setProfileData(p => ({...p, logoUrl: url})), profileData.logoUrl)} disabled={!isEditing} />
                   </Label>
                 </Button>
               </div>
@@ -311,7 +317,7 @@ export default function AdminProfilePage() {
                 <Button variant="outline" asChild disabled={!isEditing}>
                   <Label htmlFor="banner-upload" className="cursor-pointer">
                     <UploadCloud className="mr-2 h-4 w-4" /> Subir banner
-                    <Input id="banner-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setBannerPreview, (url) => setProfileData(p => ({...p, bannerUrl: url})))} disabled={!isEditing} />
+                    <Input id="banner-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setBannerPreview, (url) => setProfileData(p => ({...p, bannerUrl: url})), profileData.bannerUrl)} disabled={!isEditing} />
                   </Label>
                 </Button>
               </div>

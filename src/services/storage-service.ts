@@ -1,116 +1,62 @@
 
-// src/services/storage-service.ts - CON COMPRESIÓN INTELIGENTE y API de subida
-import imageCompression from 'browser-image-compression';
+// src/services/storage-service.ts
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { menuImagesStorage } from '@/lib/firebase'; // Importar el bucket específico para imágenes
 
 /**
- * Comprime una imagen en el cliente y luego la sube a través de la API del servidor.
+ * Sube un archivo a una ruta específica en el bucket de imágenes del menú.
  * 
- * @param file El archivo de imagen a procesar.
- * @param path La ruta dentro del bucket donde se guardará (ej. 'landing-images').
+ * @param file El archivo a subir.
+ * @param path La ruta dentro del bucket donde se guardará (ej. 'dishes/').
  * @returns Una promesa que se resuelve con la URL pública de la imagen subida.
  */
-const compressAndUploadFile = async (file: File, path: string): Promise<string> => {
-  const maxSizeBytes = 800 * 1024; // Límite seguro de 800KB para Firestore
+const uploadFile = async (file: File, path: string): Promise<string> => {
+  if (!file) {
+    throw new Error("No se proporcionó ningún archivo para subir.");
+  }
 
-  const calculateOptimalSize = (originalWidth: number, originalHeight: number) => {
-    const originalSize = originalWidth * originalHeight;
-    let maxDimension;
-    if (originalSize > 2000000) maxDimension = 800;
-    else if (originalSize > 1000000) maxDimension = 1000;
-    else if (originalSize > 500000) maxDimension = 1200;
-    else maxDimension = 1400;
-
-    const ratio = Math.min(maxDimension / originalWidth, maxDimension / originalHeight, 1);
-    return {
-      width: Math.floor(originalWidth * ratio),
-      height: Math.floor(originalHeight * ratio)
-    };
-  };
-
-  const compressIteratively = (canvas: HTMLCanvasElement, quality = 0.9): string => {
-    const dataUrl = canvas.toDataURL('image/jpeg', quality);
-    const sizeInBytes = dataUrl.length * (3/4); // Approx. Base64 to bytes
-    
-    console.log(`Probando calidad ${quality.toFixed(2)}: ${(sizeInBytes / 1024).toFixed(1)}KB`);
-
-    if (sizeInBytes <= maxSizeBytes || quality <= 0.1) {
-      if (sizeInBytes > maxSizeBytes) {
-        console.warn(`La imagen no pudo ser comprimida por debajo de ${maxSizeBytes/1024}KB. Tamaño final: ${(sizeInBytes / 1024).toFixed(1)}KB`);
-      }
-      return dataUrl;
-    }
-    return compressIteratively(canvas, quality - 0.1);
-  };
+  const timestamp = Date.now();
+  const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+  const fullPath = `${path}${timestamp}-${sanitizedFileName}`;
   
-  const autoCompress = (file: File): Promise<Blob> => {
-    return new Promise((resolve, reject) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return reject(new Error('Canvas context not available'));
-      
-      const img = new Image();
-      img.onload = () => {
-        const { width, height } = calculateOptimalSize(img.width, img.height);
-        canvas.width = width;
-        canvas.height = height;
-        ctx.drawImage(img, 0, 0, width, height);
-
-        const compressedDataUrl = compressIteratively(canvas);
-        
-        // Convert base64 back to Blob for uploading
-        fetch(compressedDataUrl)
-          .then(res => res.blob())
-          .then(blob => {
-              console.log(`Compresión finalizada. Tamaño: ${(blob.size / 1024).toFixed(2)}KB`);
-              resolve(blob);
-          })
-          .catch(reject);
-      };
-      img.onerror = reject;
-      img.src = URL.createObjectURL(file);
-    });
-  };
+  const imageRef = ref(menuImagesStorage, fullPath);
 
   try {
-    console.log(`Tamaño original: ${(file.size / 1024).toFixed(2)}KB`);
-    const compressedBlob = await autoCompress(file);
-    console.log(`Tamaño comprimido para subir: ${(compressedBlob.size / 1024).toFixed(2)}KB`);
-
-    const formData = new FormData();
-    formData.append('file', compressedBlob, file.name);
-    formData.append('path', path);
-
-    const response = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData,
-    });
-
-    const result = await response.json();
-
-    if (!response.ok || !result.success) {
-      throw new Error(result.error || 'Error en la API de subida');
-    }
-
-    return result.url;
-
+    const snapshot = await uploadBytes(imageRef, file);
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return downloadURL;
   } catch (error) {
-    console.error('Error durante la compresión y subida:', error);
-    throw error;
+    console.error('Error al subir la imagen:', error);
+    throw new Error('No se pudo subir la imagen a Cloud Storage.');
   }
 };
 
-
-// Función para eliminar un archivo. Requiere una implementación de API si se necesita desde el cliente
-// Por ahora, se asume que la lógica que elimina archivos (ej. en un update) se hace en el backend.
+/**
+ * Elimina un archivo de Cloud Storage usando su URL pública.
+ * 
+ * @param fileUrl La URL completa del archivo a eliminar.
+ */
 const deleteFile = async (fileUrl: string): Promise<void> => {
-    // Esta función está intencionadamente vacía en el cliente.
-    // La eliminación debe ser manejada por una API segura en el backend
-    // para evitar que cualquier usuario pueda borrar archivos.
-    console.warn(`[storage-service] La eliminación de archivos desde el cliente no está implementada por seguridad. URL: ${fileUrl}`);
-    return Promise.resolve();
+  if (!fileUrl.startsWith('https://firebasestorage.googleapis.com')) {
+    console.warn(`[storage-service] La URL "${fileUrl}" no parece ser una URL de Firebase Storage. Se omitirá la eliminación.`);
+    return;
+  }
+  
+  try {
+    const fileRef = ref(menuImagesStorage, fileUrl);
+    await deleteObject(fileRef);
+  } catch (error: any) {
+    // Es común que el archivo no exista si ya fue borrado, así que no tratamos "object-not-found" como un error fatal.
+    if (error.code === 'storage/object-not-found') {
+      console.log(`[storage-service] El archivo a eliminar no fue encontrado (es posible que ya haya sido borrado): ${fileUrl}`);
+    } else {
+      console.error(`[storage-service] Error al eliminar el archivo: ${fileUrl}`, error);
+      // No relanzamos el error para no interrumpir flujos de actualización si solo falla el borrado del archivo antiguo.
+    }
+  }
 };
 
 export const storageService = {
-  compressAndUploadFile,
+  uploadFile,
   deleteFile
 };

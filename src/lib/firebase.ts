@@ -1,9 +1,9 @@
-
 // src/lib/firebase.ts
 
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getAuth, type Auth } from 'firebase/auth';
+import { getStorage } from 'firebase/storage';
 import { firebaseConfig, isFirebaseConfigValid } from './firebase-config';
 
 // Variable para almacenar la instancia de la app de Firebase
@@ -35,6 +35,13 @@ if (getApps().length === 0) {
 
 // Exporta la instancia de la app para quien la necesite.
 export const firebaseApp = app;
+
+// Storage por defecto (para archivos generales)
+export const storage = getStorage(app);
+
+// Storage personalizado para imágenes del menú
+export const menuImagesStorage = getStorage(app, "gs://websapmax-images");
+
 
 // Exporta funciones para obtener los servicios específicos.
 // Estas funciones ahora son seguras de llamar en cualquier parte de la app.

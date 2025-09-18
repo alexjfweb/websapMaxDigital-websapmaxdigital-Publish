@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { PlusCircle, Edit3, Trash2, Search, Filter, UploadCloud, X, Save } from "lucide-react";
+import { PlusCircle, Edit3, Trash2, Search, Filter, UploadCloud, X, Save, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -24,67 +24,7 @@ import { collection, addDoc, getDocs, query, where, Timestamp, onSnapshot, delet
 import { useDishes } from "@/hooks/use-dishes";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/contexts/session-context";
-
-// Función de compresión movida directamente al componente del cliente
-const compressAndConvertToBase64 = async (file: File): Promise<string> => {
-  const MAX_SIZE_BYTES = 800 * 1024; // Límite seguro de 800KB para Firestore
-
-  return new Promise((resolve, reject) => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      return reject(new Error('No se pudo obtener el contexto del canvas.'));
-    }
-    const img = new Image();
-    
-    img.onload = () => {
-      let { width, height } = calculateOptimalSize(img.width, img.height);
-      canvas.width = width;
-      canvas.height = height;
-      ctx.drawImage(img, 0, 0, width, height);
-      
-      compressUntilFits(canvas, resolve, reject, MAX_SIZE_BYTES);
-    };
-
-    img.onerror = (error) => {
-        console.error("Error al cargar la imagen en el objeto Image:", error);
-        reject(new Error("No se pudo cargar el archivo de imagen."));
-    };
-
-    img.src = URL.createObjectURL(file);
-  });
-};
-
-const calculateOptimalSize = (originalWidth: number, originalHeight: number) => {
-    const originalSize = originalWidth * originalHeight;
-    let maxDimension;
-    
-    if (originalSize > 2000000) maxDimension = 800;
-    else if (originalSize > 1000000) maxDimension = 1000;
-    else if (originalSize > 500000) maxDimension = 1200;
-    else maxDimension = 1400;
-
-    const ratio = Math.min(maxDimension / originalWidth, maxDimension / originalHeight, 1);
-    
-    return {
-      width: Math.floor(originalWidth * ratio),
-      height: Math.floor(originalHeight * ratio)
-    };
-};
-
-const compressUntilFits = (canvas: HTMLCanvasElement, resolve: (dataUrl: string) => void, reject: (reason?: any) => void, limit: number, quality = 0.9) => {
-    const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-    const sizeInBytes = compressedDataUrl.length * (3 / 4);
-
-    if (sizeInBytes <= limit || quality <= 0.1) {
-      if (sizeInBytes > limit) {
-        console.warn(`La imagen no pudo ser comprimida por debajo del límite. Tamaño final: ${(sizeInBytes / 1024).toFixed(2)}KB`);
-      }
-      resolve(compressedDataUrl);
-    } else {
-      setTimeout(() => compressUntilFits(canvas, resolve, reject, limit, quality - 0.1), 0);
-    }
-};
+import { storageService } from "@/services/storage-service";
 
 
 export default function AdminDishesPage() {
@@ -196,9 +136,16 @@ export default function AdminDishesPage() {
       let imageUrl = editingDish?.imageUrl || "https://placehold.co/800x450.png";
   
       if (values.image instanceof File) {
-        toast({ title: "Procesando imagen...", description: "Comprimiendo la imagen antes de guardar. Esto puede tardar unos segundos." });
-        imageUrl = await compressAndConvertToBase64(values.image);
+        toast({ title: "Subiendo imagen...", description: "Por favor espera mientras se sube la imagen." });
+        if (isUpdating && editingDish?.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
+            await storageService.deleteFile(editingDish.imageUrl);
+        }
+        imageUrl = await storageService.uploadFile(values.image, 'dishes/');
       } else if (isUpdating && !imagePreview) {
+        // Si el usuario eliminó la vista previa, eliminamos la imagen anterior si existe.
+        if (editingDish?.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
+            await storageService.deleteFile(editingDish.imageUrl);
+        }
         imageUrl = "https://placehold.co/800x450.png";
       }
       
@@ -257,6 +204,10 @@ export default function AdminDishesPage() {
     
     try {
       const db = getDb();
+      // Si el plato tiene una imagen, la borramos de Storage
+      if (dishToDelete.imageUrl && !dishToDelete.imageUrl.includes('placehold.co')) {
+        await storageService.deleteFile(dishToDelete.imageUrl);
+      }
       await deleteDoc(doc(db, 'dishes', dishToDelete.id));
       toast({ title: 'Plato eliminado', description: `El plato "${dishToDelete.name}" se ha eliminado correctamente.`, variant: "destructive" });
       await refreshDishes();
@@ -356,7 +307,7 @@ export default function AdminDishesPage() {
               height={48} 
               className="rounded-md object-cover"
               data-ai-hint="food item"
-              unoptimized={dish.imageUrl.startsWith('data:')}
+              unoptimized
           />
         </TableCell>
         <TableCell className="font-medium">{dish.name}</TableCell>
@@ -509,7 +460,7 @@ export default function AdminDishesPage() {
                                 <div className="relative flex items-center justify-center w-full h-40 border-2 border-dashed rounded-lg">
                                     {imagePreview ? (
                                         <>
-                                            <Image src={imagePreview} alt="Vista previa de la imagen" layout="fill" objectFit="cover" className="rounded-lg" unoptimized={imagePreview.startsWith('data:')}/>
+                                            <Image src={imagePreview} alt="Vista previa de la imagen" layout="fill" objectFit="cover" className="rounded-lg" unoptimized/>
                                             <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={() => { setImagePreview(null); form.setValue("image", null); }}>
                                                 <X className="h-4 w-4"/>
                                             </Button>
@@ -569,7 +520,8 @@ export default function AdminDishesPage() {
                          <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>Cancelar</Button>
                             <Button type="submit" disabled={isSubmitting}>
-                                {isSubmitting ? 'Guardando...' : <><Save className="mr-2 h-4 w-4"/> {editingDish ? 'Guardar cambios' : 'Guardar plato'}</>}
+                                {isSubmitting ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4"/>}
+                                {isSubmitting ? 'Guardando...' : (editingDish ? 'Guardar cambios' : 'Guardar plato')}
                             </Button>
                         </DialogFooter>
                     </form>
