@@ -78,10 +78,9 @@ export default function LandingPublicPage() {
   const [pendingFiles, setPendingFiles] = useState<Record<string, File | null>>({});
 
   useEffect(() => {
-    // CORRECCIÓN: Este efecto sincroniza de forma segura los datos del hook al estado local del formulario.
-    // Se ejecuta solo cuando landingConfig (del hook) cambia, asegurando que el estado del formulario
-    // refleje los datos cargados de la base de datos sin causar reinicios inesperados.
-    if (landingConfig) {
+    // Sincroniza el estado del formulario solo cuando los datos del hook cambian.
+    // Esto previene reinicios inesperados durante las ediciones locales.
+    if (landingConfig && landingConfig.id !== 'main-default') { // Evita usar datos por defecto si hay datos reales
       setFormData({
         ...getDefaultConfig(),
         ...landingConfig,
@@ -135,7 +134,7 @@ export default function LandingPublicPage() {
         description: "Configuración de la landing guardada correctamente",
       });
     } catch (error: any) {
-      console.error("Error al guardar:", error); // Añadir log para depuración
+      console.error("Error al guardar:", error);
       toast({
         title: "Error al Guardar",
         description: `No se pudo guardar la configuración: ${error.message}`,
@@ -279,7 +278,7 @@ export default function LandingPublicPage() {
   };
 
     const addSubsection = (sectionIndex: number) => {
-    const newSub: LandingSubsection = { id: `sub-${Date.now()}`, title: 'Nuevo Título', content: 'Nueva descripción.', imageUrl: '' };
+    const newSub: LandingSubsection = { id: `sub-${Date.now()}`, title: 'Nuevo Título', content: 'Nueva descripción.', imageUrl: '', authorRole: '', imageRadius: 0 };
     const newSections = [...formData.sections];
     newSections[sectionIndex].subsections = [...(newSections[sectionIndex].subsections || []), newSub];
     setFormData(prev => ({ ...prev, sections: newSections }));

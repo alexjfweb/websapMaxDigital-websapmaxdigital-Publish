@@ -1,4 +1,3 @@
-
 // src/services/landing-config-service.ts
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import { getDb } from '@/lib/firebase';
@@ -84,9 +83,9 @@ const getDefaultConfig = (): LandingConfig => ({
       backgroundColor: '#FFFFFF', textColor: '#1f2937', buttonColor: '#FF4500', buttonText: '', buttonUrl: '', imageUrl: '',
       order: 1, isActive: true, animation: 'fadeIn',
       subsections: [
-        { id: 'sub-1-1', title: 'Pago Móvil', content: 'Agiliza tus mesas, aumenta la rotación y mejora la rentabilidad.', imageUrl: 'gs://websapmax.appspot.com/subsections/pago-movil.jpg' },
-        { id: 'sub-1-2', title: 'Menú con Video', content: 'Captura la atención de tus clientes con una experiencia visual única.', imageUrl: 'gs://websapmax.appspot.com/subsections/menu-video.jpg' },
-        { id: 'sub-1-3', title: 'Gestión Online', content: 'Recibe órdenes desde cualquier lugar, directo a tu cocina.', imageUrl: 'gs://websapmax.appspot.com/subsections/gestion-online.jpg' },
+        { id: 'sub-1-1', title: 'Pago Móvil', content: 'Agiliza tus mesas, aumenta la rotación y mejora la rentabilidad.', imageUrl: 'gs://websapmax.appspot.com/subsections/pago-movil.jpg', authorRole: '', imageRadius: 0 },
+        { id: 'sub-1-2', title: 'Menú con Video', content: 'Captura la atención de tus clientes con una experiencia visual única.', imageUrl: 'gs://websapmax.appspot.com/subsections/menu-video.jpg', authorRole: '', imageRadius: 0 },
+        { id: 'sub-1-3', title: 'Gestión Online', content: 'Recibe órdenes desde cualquier lugar, directo a tu cocina.', imageUrl: 'gs://websapmax.appspot.com/subsections/gestion-online.jpg', authorRole: '', imageRadius: 0 },
       ],
     },
     {
@@ -94,9 +93,9 @@ const getDefaultConfig = (): LandingConfig => ({
       backgroundColor: '#F9FAFB', textColor: '#1f2937', buttonColor: '#FF4500', buttonText: '', buttonUrl: '', imageUrl: '',
       order: 2, isActive: true, animation: 'fadeIn',
       subsections: [
-        { id: 'sub-2-1', title: 'Marketing', content: 'Atrae a más clientes directamente desde sus teléfonos.', imageUrl: 'gs://websapmax.appspot.com/subsections/marketing.jpg' },
-        { id: 'sub-2-2', title: 'QR Bar', content: 'Moderniza tu bar con un menú digital y código QR.', imageUrl: 'gs://websapmax.appspot.com/subsections/bar.jpg' },
-        { id: 'sub-2-3', title: 'App Mesa', content: 'Permite que los clientes pidan desde la mesa de forma fácil.', imageUrl: 'gs://websapmax.appspot.com/subsections/mesa.jpg' },
+        { id: 'sub-2-1', title: 'Marketing', content: 'Atrae a más clientes directamente desde sus teléfonos.', imageUrl: 'gs://websapmax.appspot.com/subsections/marketing.jpg', authorRole: '', imageRadius: 0 },
+        { id: 'sub-2-2', title: 'QR Bar', content: 'Moderniza tu bar con un menú digital y código QR.', imageUrl: 'gs://websapmax.appspot.com/subsections/bar.jpg', authorRole: '', imageRadius: 0 },
+        { id: 'sub-2-3', title: 'App Mesa', content: 'Permite que los clientes pidan desde la mesa de forma fácil.', imageUrl: 'gs://websapmax.appspot.com/subsections/mesa.jpg', authorRole: '', imageRadius: 0 },
       ],
     },
     {
@@ -131,29 +130,25 @@ class LandingConfigService {
   private async getImageUrl(path: string): Promise<string> {
     const placeholder = 'https://placehold.co/400x300.png?text=...';
     if (!path) return placeholder;
-    // Si ya es una URL pública (http o https), devuélvela directamente.
     if (path.startsWith('http')) return path;
     
-    // Ahora es seguro obtener Storage porque getDb() ya aseguró la inicialización.
     const storage = getStorage();
 
-    // Si es una ruta gs://, resuélvela.
     if (path.startsWith('gs://')) {
       try {
         const imageRef = ref(storage, path);
         return await getDownloadURL(imageRef);
       } catch (error) {
-        console.warn(`[Servicio Landing] No se pudo obtener la URL para gs path "${path}". Puede que el objeto no exista o falten permisos.`, error);
+        console.warn(`[Servicio Landing] No se pudo obtener la URL para gs path "${path}".`, error);
         return placeholder;
       }
     }
     
-    // Intenta resolver como si fuera una ruta relativa dentro del bucket.
     try {
-        const imageRef = ref(storage, path); // Asume que la ruta es correcta si no es gs://
+        const imageRef = ref(storage, path);
         return await getDownloadURL(imageRef);
     } catch(e) {
-        console.warn(`[Servicio Landing] No se pudo obtener la URL para el archivo "${path}". Puede que sea una ruta antigua o incorrecta.`, e);
+        console.warn(`[Servicio Landing] No se pudo obtener la URL para el archivo "${path}".`, e);
         return placeholder;
     }
   }
@@ -170,7 +165,6 @@ class LandingConfigService {
     
     const dbData = docSnap.data();
     
-    // CORRECCIÓN: Mapea las subsecciones para resolver SIEMPRE sus URLs de imagen
     const resolvedSections = await Promise.all(
         (dbData.sections || []).map(async (section: LandingSection) => {
             if (section.subsections && section.subsections.length > 0) {
@@ -202,11 +196,37 @@ class LandingConfigService {
   ): Promise<void> {
     const originalDoc = await this.getLandingConfig().catch(() => getDefaultConfig());
     const docRef = this.getConfigDocRef();
+
+    // Separar los datos pesados (subsections) de los datos ligeros
+    const { sections, ...lightweightConfigUpdate } = configUpdate;
+
+    // Crear un objeto solo con los datos ligeros para el documento principal
+    const mainDocUpdate: any = {
+      ...lightweightConfigUpdate,
+      updatedAt: serverTimestamp()
+    };
+
+    // Crear un batch para asegurar que todas las escrituras sean atómicas
+    const batch = writeBatch(this.db);
+
+    // 1. Actualizar el documento principal con datos ligeros
+    batch.set(docRef, mainDocUpdate, { merge: true });
+
+    // 2. Si hay secciones, procesarlas
+    if (sections) {
+        mainDocUpdate.sections = [];
+        for (const section of sections) {
+            const { subsections, ...sectionData } = section;
+            mainDocUpdate.sections.push(sectionData); // Guardar datos de la sección sin subsecciones en el doc principal
+
+            if (subsections && subsections.length > 0) {
+                const subsectionsDocRef = doc(this.db, 'landing_subsections', section.id);
+                batch.set(subsectionsDocRef, { subsections: subsections, updatedAt: serverTimestamp() });
+            }
+        }
+    }
     
-    await setDoc(docRef, { 
-      ...configUpdate,
-      updatedAt: serverTimestamp() 
-    }, { merge: true });
+    await batch.commit();
 
     await auditService.log({
       entity: 'landingConfigs' as any,
