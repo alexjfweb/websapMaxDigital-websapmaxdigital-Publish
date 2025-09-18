@@ -32,19 +32,15 @@ function LandingPageSkeleton() {
 }
 
 function LandingPageContent() {
-  // Ahora los hooks son más resilientes y siempre devuelven un valor.
   const { landingConfig, isLoading: isLoadingConfig, error: errorConfig, refetch: retryConfig } = useLandingConfig();
   const { plans, isLoading: isLoadingPlans, error: errorPlans, refetch: retryPlans } = useLandingPlans(true);
   
   const isLoading = isLoadingConfig || isLoadingPlans;
 
-  // Mostramos el esqueleto solo si la configuración principal está cargando.
-  if (isLoadingConfig) {
+  if (isLoading) {
     return <LandingPageSkeleton />;
   }
   
-  // El `landingConfig` siempre tendrá un valor (el de la DB o el por defecto).
-  // El error en `errorPlans` se manejará dentro de LandingClient.
   return (
     <>
         <PublicHeader />

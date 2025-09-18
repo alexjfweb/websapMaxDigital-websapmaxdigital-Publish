@@ -1,3 +1,4 @@
+
 "use client";
 
 import useSWR, { mutate } from 'swr';
@@ -18,7 +19,7 @@ export function useLandingConfig() {
     SWR_KEY,
     fetcher,
     {
-      revalidateOnFocus: true, // Revalida cuando el usuario vuelve a la pestaña
+      revalidateOnFocus: true,
       revalidateOnReconnect: true,
       onError: (err) => {
         console.error("SWR Error fetching landing config:", err);
@@ -35,16 +36,12 @@ export function useLandingConfig() {
     setIsSaving(true);
     try {
       const currentHeroContent = configUpdate.heroContent || '';
+      setLastSavedContent(currentHeroContent); // For debugging
       
       await landingConfigService.updateLandingConfig(configUpdate, userId, userEmail);
       
-      // La clave para la sincronización global:
-      // Disparamos una revalidación global de la clave SWR.
-      // Esto notificará a todas las instancias de useSWR con esta clave (incluida la de la página de inicio)
-      // que sus datos están desactualizados y deben volver a buscarlos.
-      await mutate(SWR_KEY);
-      
-      setLastSavedContent(currentHeroContent); // Aún útil para depuración
+      // Revalidate the data to ensure the UI is in sync with the database.
+      await revalidate();
 
     } catch (e: any) {
         toast({

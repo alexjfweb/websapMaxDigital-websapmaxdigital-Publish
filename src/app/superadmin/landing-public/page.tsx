@@ -88,6 +88,7 @@ export default function LandingPublicPage() {
     if (!isLoading && landingConfig && Object.keys(landingConfig).length > 0) {
       setFormData(landingConfig);
       
+      // FORZAR re-render del editor incrementando la key
       setEditorKey(prev => prev + 1);
       
       console.log('📝 FormData actualizado:', {
@@ -96,6 +97,7 @@ export default function LandingPublicPage() {
       });
     }
   }, [landingConfig, isLoading, isSaving]);
+
 
   const handleSave = async () => {
     if (!currentUser) {
