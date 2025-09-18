@@ -82,7 +82,7 @@ export default function LandingPublicPage() {
       setFormData(landingConfig);
       setEditorKey(prev => prev + 1);
     }
-  }, [landingConfig, isLoading, isSaving]);
+  }, [landingConfig, isLoading]);
 
 
   const handleSave = async () => {
@@ -317,7 +317,7 @@ export default function LandingPublicPage() {
                     <Label htmlFor="heroContent">Contenido Adicional (HTML)</Label>
                     <Suspense fallback={<div className="h-32 w-full bg-muted rounded-md animate-pulse" />}>
                       <RichTextEditor
-                        key={`editor-${editorKey}`}
+                        key={`editor-hero-${editorKey}`}
                         value={formData.heroContent || ''}
                         onChange={(value) => {
                           const cleanValue = value === '<p><br></p>' ? '' : value;
@@ -505,6 +505,7 @@ export default function LandingPublicPage() {
                             <Label>Contenido Adicional (HTML)</Label>
                             <Suspense fallback={<div className="h-32 w-full bg-muted rounded-md animate-pulse" />}>
                                <RichTextEditor
+                                key={`editor-section-${index}-${editorKey}`}
                                 value={section.content || ''}
                                 onChange={(value) => {
                                   const cleanValue = value === '<p><br></p>' ? '' : value;
@@ -537,7 +538,7 @@ export default function LandingPublicPage() {
                                   </div>
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                     <Input value={sub.title} onChange={(e) => updateSubsection(index, subIdx, 'title', e.target.value)} placeholder="Título de la tarjeta" />
-                                    <RichTextEditor value={sub.content} onChange={(value) => updateSubsection(index, subIdx, 'content', value || '')} placeholder="Contenido de la tarjeta" />
+                                    <RichTextEditor key={`editor-subsection-${sub.id}-${editorKey}`} value={sub.content} onChange={(value) => updateSubsection(index, subIdx, 'content', value || '')} placeholder="Contenido de la tarjeta" />
                                   </div>
                                   <div>
                                     <Label>Imagen</Label>
@@ -652,6 +653,7 @@ export default function LandingPublicPage() {
                                     <div className="space-y-1">
                                         <Label>Cita del Testimonio</Label>
                                     <RichTextEditor
+                                        key={`editor-testimonial-${sub.id}-${editorKey}`}
                                         value={sub.content}
                                         onChange={value => updateSubsection(testimonialsSectionIndex, subIdx, 'content', value || '')}
                                         placeholder={'Cita del testimonio...'}
@@ -705,6 +707,7 @@ export default function LandingPublicPage() {
                   <div>
                     <Label htmlFor="seoDescription">Descripción SEO</Label>
                     <RichTextEditor
+                      key={`editor-seo-${editorKey}`}
                       value={formData.seo.description}
                       onChange={(value) => setFormData(prev => ({ 
                         ...prev, 
