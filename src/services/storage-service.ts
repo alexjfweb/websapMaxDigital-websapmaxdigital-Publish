@@ -1,4 +1,3 @@
-
 // src/services/storage-service.ts
 import imageCompression from 'browser-image-compression';
 
@@ -27,6 +26,7 @@ const compressAndUploadFile = async (file: File, path: string): Promise<string> 
     formData.append('file', compressedFile, file.name); // Incluir el nombre original
     formData.append('path', path);
 
+    // Única responsabilidad: Enviar el archivo a la API del servidor.
     const response = await fetch('/api/upload', {
       method: 'POST',
       body: formData,

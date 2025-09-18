@@ -3,24 +3,24 @@ import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
-import { firebaseConfig, isFirebaseConfigValid } from './firebase-config'; // Importa desde el archivo de config del cliente
+
+// --- Configuración del Cliente (Pública y Segura) ---
+// Estas credenciales son públicas y se utilizan para que el navegador
+// se comunique con los servicios de Firebase a los que tiene permiso.
+const firebaseConfig = {
+    apiKey: "AIzaSyC3UzUVh_OPavejyo-kviYVX_Zy9494yjg",
+    authDomain: "websapmax.firebaseapp.com",
+    projectId: "websapmax",
+    storageBucket: "websapmax.appspot.com",
+    messagingSenderId: "560613070255",
+    appId: "1:560613070255:web:7ce75870dbe6b19a084b5a",
+    measurementId: "G-DD5JWPV701"
+};
 
 let app: FirebaseApp;
 
-// Esta validación se ejecuta una sola vez al cargar la app
-if (!isFirebaseConfigValid()) {
-    console.error("❌ Configuración de Firebase del cliente inválida. La aplicación no puede iniciarse correctamente.");
-    // En un entorno real, podrías querer mostrar un error en la UI aquí.
-}
-
 if (getApps().length === 0) {
-    try {
-        app = initializeApp(firebaseConfig);
-    } catch(e) {
-        console.error("🚨 ERROR CRÍTICO AL INICIALIZAR FIREBASE (CLIENTE):", e);
-        // Fallback a un objeto vacío para evitar que la app crashee por completo.
-        app = {} as FirebaseApp;
-    }
+    app = initializeApp(firebaseConfig);
 } else {
     app = getApp();
 }
