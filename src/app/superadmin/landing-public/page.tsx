@@ -74,10 +74,12 @@ export default function LandingPublicPage() {
   const [formData, setFormData] = useState<LandingConfig>(getDefaultConfig());
   const [activeTab, setActiveTab] = useState('hero');
   const [previewMode, setPreviewMode] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Sincronizar con la configuración de Firebase
   useEffect(() => {
-    if (landingConfig) {
+    // Esta condición asegura que la inicialización ocurra solo una vez.
+    if (landingConfig && !isInitialized && !isLoading) {
       setFormData({
         ...getDefaultConfig(), // Asegura que todos los campos por defecto estén presentes
         ...landingConfig,
@@ -90,8 +92,9 @@ export default function LandingPublicPage() {
         })),
         seo: { ...getDefaultConfig().seo, ...(landingConfig.seo || {}) }
       });
+      setIsInitialized(true); // Marcar como inicializado para evitar reinicios.
     }
-  }, [landingConfig]);
+  }, [landingConfig, isInitialized, isLoading]);
 
   const handleSave = async () => {
     if (!currentUser) {
@@ -100,8 +103,6 @@ export default function LandingPublicPage() {
     }
     setSaving(true);
     try {
-      // **INICIO DE LA CORRECCIÓN**
-      // Función para limpiar el contenido de Quill
       const cleanQuillContent = (htmlString: string | undefined | null): string => {
         if (!htmlString || htmlString === '<p><br></p>') {
           return '';
@@ -109,7 +110,6 @@ export default function LandingPublicPage() {
         return htmlString;
       };
 
-      // Validar y limpiar datos antes de guardar
       const configToSave: Partial<LandingConfig> = {
         ...formData,
         heroContent: cleanQuillContent(formData.heroContent),
@@ -126,7 +126,6 @@ export default function LandingPublicPage() {
           description: cleanQuillContent(formData.seo.description),
         }
       };
-      // **FIN DE LA CORRECCIÓN**
 
       await updateConfig(configToSave, currentUser.id, currentUser.email);
       
@@ -279,7 +278,7 @@ export default function LandingPublicPage() {
     setFormData(prev => ({ ...prev, sections: newSections }));
   };
 
-  if (isLoading) {
+  if (isLoading || !isInitialized) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-lg">Cargando configuración...</div>
