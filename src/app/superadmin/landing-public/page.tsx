@@ -101,18 +101,29 @@ export default function LandingPublicPage() {
     setSaving(true);
     try {
       // **INICIO DE LA CORRECCIÓN**
+      // Función para limpiar el contenido de Quill
+      const cleanQuillContent = (htmlString: string | undefined | null): string => {
+        if (!htmlString || htmlString === '<p><br></p>') {
+          return '';
+        }
+        return htmlString;
+      };
+
       // Validar y limpiar datos antes de guardar
       const configToSave: Partial<LandingConfig> = {
         ...formData,
-        // Asegurarse de que el contenido HTML nunca sea `undefined`
-        heroContent: formData.heroContent || '',
+        heroContent: cleanQuillContent(formData.heroContent),
         sections: formData.sections.map(section => ({
           ...section,
-          content: section.content || '',
+          content: cleanQuillContent(section.content),
+          subsections: (section.subsections || []).map(sub => ({
+            ...sub,
+            content: cleanQuillContent(sub.content)
+          }))
         })),
         seo: {
           ...formData.seo,
-          description: formData.seo.description || '',
+          description: cleanQuillContent(formData.seo.description),
         }
       };
       // **FIN DE LA CORRECCIÓN**
@@ -123,11 +134,11 @@ export default function LandingPublicPage() {
         title: "Éxito",
         description: "Configuración de la landing guardada correctamente",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error al guardar:", error); // Añadir log para depuración
       toast({
-        title: "Error",
-        description: "No se pudo guardar la configuración. Revisa la consola para más detalles.",
+        title: "Error al Guardar",
+        description: `No se pudo guardar la configuración: ${error.message}`,
         variant: "destructive",
       });
     } finally {
