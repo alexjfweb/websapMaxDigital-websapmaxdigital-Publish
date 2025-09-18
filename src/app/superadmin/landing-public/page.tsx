@@ -74,7 +74,6 @@ export default function LandingPublicPage() {
   const [activeTab, setActiveTab] = useState('hero');
   const [previewMode, setPreviewMode] = useState(false);
   
-  const [pendingFiles, setPendingFiles] = useState<Record<string, File | null>>({});
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
   const [editorKey, setEditorKey] = useState(0);
 
@@ -99,44 +98,31 @@ export default function LandingPublicPage() {
       console.error("Error al guardar desde la página:", error);
     }
   };
-
-    const handleFileSelection = (e: ChangeEvent<HTMLInputElement>, subsectionId: string) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setPendingFiles(prev => ({ ...prev, [subsectionId]: file }));
-        }
-    };
   
-    const handleSubsectionImageUpload = async (sectionIndex: number, subIndex: number) => {
+    const handleFileSelection = async (e: ChangeEvent<HTMLInputElement>, sectionIndex: number, subIndex: number, field: 'imageUrl' | 'logoUrl') => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
         const subsectionId = formData.sections[sectionIndex].subsections![subIndex].id;
-        const file = pendingFiles[subsectionId];
-        
-        if (!file) {
-            toast({ title: 'No hay archivo', description: 'Por favor, selecciona una imagen primero.', variant: 'destructive' });
-            return;
-        }
 
         setUploading(prev => ({ ...prev, [subsectionId]: true }));
 
         try {
-          const imageUrl = await storageService.compressAndUploadFile(file, `subsections/`);
-          
-          updateSubsection(sectionIndex, subIndex, 'imageUrl', imageUrl);
-          setPendingFiles(prev => ({ ...prev, [subsectionId]: null }));
+            const imageUrl = await storageService.compressAndUploadFile(file, `subsections/`);
+            updateSubsection(sectionIndex, subIndex, field, imageUrl);
 
-          toast({
-            title: "Imagen subida",
-            description: "La imagen se ha subido correctamente. Recuerda guardar los cambios.",
-          });
-
+            toast({
+                title: "Imagen subida",
+                description: "La imagen se ha subido. Guarda los cambios para que sea permanente.",
+            });
         } catch (error: any) {
-          toast({
-            title: "Error de subida",
-            description: error.message || "No se pudo subir la imagen.",
-            variant: "destructive",
-          });
+            toast({
+                title: "Error de subida",
+                description: error.message || "No se pudo subir la imagen.",
+                variant: "destructive",
+            });
         } finally {
-          setUploading(prev => ({ ...prev, [subsectionId]: false }));
+            setUploading(prev => ({ ...prev, [subsectionId]: false }));
         }
     };
   
@@ -527,10 +513,7 @@ export default function LandingPublicPage() {
                           <div className="space-y-3">
                             {section.subsections?.map((sub, subIdx) => {
                               const subsectionId = sub.id;
-                              const previewUrl = pendingFiles[subsectionId]
-                                ? URL.createObjectURL(pendingFiles[subsectionId]!)
-                                : sub.imageUrl || "https://placehold.co/100x100.png?text=IMG";
-
+                              const isImgUploading = uploading[subsectionId];
                               return (
                                 <div key={sub.id} className="p-3 border rounded-md bg-background space-y-2">
                                   <div className="flex justify-between items-center">
@@ -544,29 +527,15 @@ export default function LandingPublicPage() {
                                   <div>
                                     <Label>Imagen</Label>
                                      <div className="flex items-center gap-2">
-                                          <Image src={previewUrl} alt="Vista previa" width={64} height={64} className="rounded-md border object-cover h-16 w-16" />
+                                          <Image src={sub.imageUrl || "https://placehold.co/100x100.png?text=IMG"} alt="Vista previa" width={64} height={64} className="rounded-md border object-cover h-16 w-16" />
                                           <label htmlFor={`sub-img-${sub.id}`} className="cursor-pointer">
-                                            <Button variant="outline" asChild size="sm">
+                                            <Button variant="outline" asChild size="sm" disabled={isImgUploading}>
                                                 <span>
-                                                {pendingFiles[subsectionId] ? (
-                                                    <div
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            handleSubsectionImageUpload(index, subIdx);
-                                                        }}
-                                                    >
-                                                        {uploading[subsectionId] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}
-                                                        {uploading[subsectionId] ? 'Subiendo...' : 'Subir ahora'}
-                                                    </div>
-                                                ) : (
-                                                    <span>
-                                                        <UploadCloud className="mr-2 h-4 w-4"/>
-                                                        Seleccionar
-                                                    </span>
-                                                )}
+                                                {isImgUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}
+                                                {isImgUploading ? 'Subiendo...' : 'Seleccionar'}
                                                 </span>
                                             </Button>
-                                            <input id={`sub-img-${sub.id}`} type="file" className="hidden" accept="image/png, image/jpeg" onChange={(e) => handleFileSelection(e, subsectionId)}/>
+                                            <input id={`sub-img-${sub.id}`} type="file" className="hidden" accept="image/png, image/jpeg" onChange={(e) => handleFileSelection(e, index, subIdx, 'imageUrl')}/>
                                           </label>
                                       </div>
                                   </div>
@@ -597,9 +566,7 @@ export default function LandingPublicPage() {
                         <div className="space-y-4">
                         {(testimonialsSection.subsections || []).map((sub, subIdx) => {
                              const subsectionId = sub.id;
-                             const previewUrl = pendingFiles[subsectionId]
-                                ? URL.createObjectURL(pendingFiles[subsectionId]!)
-                                : sub.imageUrl || "https://placehold.co/100x100.png?text=Autor";
+                             const isImgUploading = uploading[subsectionId];
 
                             return (
                             <Card key={sub.id} className="p-4 relative overflow-visible bg-background border">
@@ -612,7 +579,7 @@ export default function LandingPublicPage() {
                                         <Label>Imagen del Autor</Label>
                                         <div className="relative mx-auto" style={{ width: `${64 + (sub.imageRadius || 0)}px`, height: `${64 + (sub.imageRadius || 0)}px` }}>
                                             <Image 
-                                                src={previewUrl}
+                                                src={sub.imageUrl || 'https://placehold.co/100x100.png'}
                                                 alt="Vista previa de autor"
                                                 fill
                                                 className="object-cover border-4 border-white shadow-lg"
@@ -620,26 +587,14 @@ export default function LandingPublicPage() {
                                             />
                                         </div>
                                          <div className="flex items-center gap-2 pt-2">
-                                            <label htmlFor={`sub-img-${sub.id}`} className="cursor-pointer">
-                                                <Button variant="outline" asChild size="sm">
+                                            <label htmlFor={`sub-img-testimonial-${sub.id}`} className="cursor-pointer">
+                                                <Button variant="outline" asChild size="sm" disabled={isImgUploading}>
                                                     <span>
-                                                        {pendingFiles[subsectionId] ? (
-                                                            <div onClick={(e) => {
-                                                                    e.preventDefault();
-                                                                    handleSubsectionImageUpload(testimonialsSectionIndex, subIdx);
-                                                                }}>
-                                                                {uploading[subsectionId] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}
-                                                                {uploading[subsectionId] ? 'Subiendo...' : 'Subir ahora'}
-                                                            </div>
-                                                        ) : (
-                                                            <span>
-                                                                <UploadCloud className="mr-2 h-3 w-3"/>
-                                                                Seleccionar
-                                                            </span>
-                                                        )}
+                                                      {isImgUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}
+                                                      {isImgUploading ? 'Subiendo...' : 'Seleccionar'}
                                                     </span>
                                                 </Button>
-                                                <input id={`sub-img-${sub.id}`} type="file" className="hidden" accept="image/png, image/jpeg" onChange={(e) => handleFileSelection(e, sub.id)} />
+                                                <input id={`sub-img-testimonial-${sub.id}`} type="file" className="hidden" accept="image/png, image/jpeg" onChange={(e) => handleFileSelection(e, testimonialsSectionIndex, subIdx, 'imageUrl')} />
                                             </label>
                                         </div>
                                     <div className="space-y-1 mt-2">
@@ -856,3 +811,5 @@ export default function LandingPublicPage() {
     </div>
   );
 }
+
+    
