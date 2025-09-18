@@ -94,15 +94,46 @@ export default function LandingPublicPage() {
     }
   }, [landingConfig]);
 
+  // 🔍 CÓDIGO DE DIAGNÓSTICO INTEGRADO
+  const debugContentSize = (data: any) => {
+    console.log("=== DIAGNÓSTICO DE TAMAÑO DE CONTENIDO ===");
+    
+    Object.keys(data).forEach(key => {
+      const value = data[key];
+      let size = 0;
+      
+      try {
+        if (typeof value === 'string') {
+          size = new Blob([value]).size;
+        } else if (value && typeof value === 'object') {
+          size = new Blob([JSON.stringify(value)]).size;
+        }
+      } catch (e) {
+        console.warn(`No se pudo calcular el tamaño para ${key}:`, e);
+      }
+      
+      console.log(`${key}: ${size} bytes`);
+      
+      if (size > 1000000) { // 1MB
+        console.error(`🚨 CAMPO PROBLEMÁTICO: ${key} - ${size} bytes`);
+        console.log("Primeros 100 caracteres:", String(value).substring(0, 100));
+      }
+    });
+    console.log("=========================================");
+  };
+
   const handleSave = async () => {
     if (!currentUser) {
       toast({ title: "Error de autenticación", description: "No se pudo verificar el usuario.", variant: "destructive" });
       return;
     }
     setSaving(true);
+    
+    // 🔍 DIAGNÓSTICO - Llamada a la función de diagnóstico
+    debugContentSize(formData);
+
     try {
-      const configToSave: Partial<LandingConfig> = { ...formData };
-      await updateConfig(configToSave, currentUser.id, currentUser.email);
+      await updateConfig(formData, currentUser.id, currentUser.email);
       
       toast({
         title: "Éxito",
