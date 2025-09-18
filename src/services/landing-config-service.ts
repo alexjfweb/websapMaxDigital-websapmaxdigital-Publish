@@ -1,9 +1,8 @@
-
 // src/services/landing-config-service.ts
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import { getDb } from '@/lib/firebase';
-import { collection, doc, getDoc, setDoc, serverTimestamp, Timestamp, writeBatch } from 'firebase/firestore';
 import { auditService } from './audit-service';
+import { handleSaveInParts, readMultiPartDocument } from './multipart-document-service';
 
 // Interfaces for structured data
 export interface LandingSubsection {
@@ -65,8 +64,6 @@ export interface LandingConfig {
 }
 
 const CONFIG_COLLECTION_NAME = 'landing_configs';
-const SUBSECTIONS_COLLECTION_NAME = 'landing_subsections';
-const CONTENT_COLLECTION_NAME = 'landing_content';
 const MAIN_CONFIG_DOC_ID = 'main';
 
 const getDefaultConfig = (): LandingConfig => ({
@@ -126,18 +123,6 @@ class LandingConfigService {
     return getDb();
   }
 
-  private getConfigDocRef() {
-    return doc(this.db, CONFIG_COLLECTION_NAME, MAIN_CONFIG_DOC_ID);
-  }
-
-  private getSubsectionsDocRef(sectionId: string) {
-    return doc(this.db, SUBSECTIONS_COLLECTION_NAME, `${sectionId}_subsections`);
-  }
-  
-  private getContentDocRef(contentId: string) {
-    return doc(this.db, CONTENT_COLLECTION_NAME, contentId);
-  }
-
   private async getImageUrl(path: string): Promise<string> {
     const placeholder = 'https://placehold.co/400x300.png?text=...';
     if (!path) return placeholder;
@@ -165,59 +150,20 @@ class LandingConfigService {
   }
 
   async getLandingConfig(): Promise<LandingConfig> {
-    const docRef = this.getConfigDocRef();
-    const docSnap = await getDoc(docRef);
-    const defaultConfig = getDefaultConfig();
-    
-    if (!docSnap.exists()) {
-      console.warn("Landing config not found in DB. Returning default config.");
-      return defaultConfig;
+    const data = await readMultiPartDocument(this.db, CONFIG_COLLECTION_NAME, MAIN_CONFIG_DOC_ID);
+
+    if (!data) {
+        console.warn("Landing config not found in DB. Returning default config.");
+        return this.getDefaultConfig();
     }
     
-    const dbData = docSnap.data();
-
-    const heroContentDocRef = this.getContentDocRef('hero_content');
-    const heroContentSnap = await getDoc(heroContentDocRef);
-    const heroContent = heroContentSnap.exists() ? heroContentSnap.data().content : '';
+    // Aquí puedes añadir la lógica para resolver URLs si es necesario,
+    // aunque es mejor hacerlo solo cuando se guardan para mantener la lectura rápida.
     
-    const resolvedSections = await Promise.all(
-        (dbData.sections || []).map(async (section: LandingSection) => {
-            const subsectionsDocRef = this.getSubsectionsDocRef(section.id);
-            const contentDocRef = this.getContentDocRef(section.id);
-
-            const [subsectionsSnap, contentSnap] = await Promise.all([
-                getDoc(subsectionsDocRef),
-                getDoc(contentDocRef)
-            ]);
-            
-            let resolvedSubsections: LandingSubsection[] = [];
-            if (subsectionsSnap.exists()) {
-                const subsectionsData = subsectionsSnap.data().subsections || [];
-                resolvedSubsections = await Promise.all(
-                    subsectionsData.map(async (sub: LandingSubsection) => ({
-                        ...sub,
-                        imageUrl: await this.getImageUrl(sub.imageUrl),
-                    }))
-                );
-            }
-            
-            const sectionContent = contentSnap.exists() ? contentSnap.data().content : '';
-            
-            return { 
-                ...section, 
-                content: sectionContent,
-                subsections: resolvedSubsections 
-            };
-        })
-    );
-
     return {
-      ...defaultConfig,
-      ...dbData,
-      id: docSnap.id,
-      heroContent: heroContent,
-      sections: resolvedSections,
-      seo: { ...defaultConfig.seo, ...(dbData?.seo || {}) },
+      ...this.getDefaultConfig(),
+      ...data,
+      id: MAIN_CONFIG_DOC_ID,
     };
   }
 
@@ -226,76 +172,19 @@ class LandingConfigService {
     userId: string,
     userEmail: string
   ): Promise<void> {
-    const originalDoc = await this.getLandingConfig().catch(() => getDefaultConfig());
-    const batch = writeBatch(this.db);
-    const mainDocRef = this.getConfigDocRef();
-
-    // 1. Crear un objeto explícito solo con los campos ligeros.
-    const mainDocData: any = {};
-    const lightFields: (keyof LandingConfig)[] = [
-      'heroTitle', 'heroSubtitle', 'heroButtonText', 'heroButtonUrl',
-      'heroBackgroundColor', 'heroTextColor', 'heroButtonColor', 'heroAnimation', 'seo'
-    ];
-    lightFields.forEach(field => {
-      if (configUpdate[field] !== undefined) {
-        mainDocData[field] = configUpdate[field];
-      }
-    });
-
-    // Añadir el array de secciones pero sin el contenido pesado
-    if (configUpdate.sections) {
-        mainDocData.sections = configUpdate.sections.map(
-            ({ content, subsections, ...sectionData }) => sectionData
-        );
-    }
-
-    mainDocData.updatedAt = serverTimestamp();
-
-    // 2. Guardar el documento principal solo con datos ligeros
-    batch.set(mainDocRef, mainDocData, { merge: true });
+    // Los datos originales no son necesarios para la lógica de guardado, pero sí para la auditoría.
+    // const originalDoc = await this.getLandingConfig().catch(() => this.getDefaultConfig());
     
-    // 3. Guardar el heroContent pesado por separado
-    if (configUpdate.heroContent !== undefined) {
-      const heroContentDocRef = this.getContentDocRef('hero_content');
-      batch.set(heroContentDocRef, { 
-        content: configUpdate.heroContent || '', 
-        updatedAt: serverTimestamp() 
-      }, { merge: true });
-    }
+    await handleSaveInParts(this.db, CONFIG_COLLECTION_NAME, MAIN_CONFIG_DOC_ID, configUpdate);
   
-    // 4. Guardar el contenido pesado y las subsecciones de cada sección por separado
-    if (configUpdate.sections) {
-      for (const section of configUpdate.sections) {
-        // Guardar el 'content' pesado de la sección en su propio documento
-        const contentDocRef = this.getContentDocRef(section.id);
-        batch.set(contentDocRef, { 
-            content: section.content || '', 
-            updatedAt: serverTimestamp() 
-        }, { merge: true });
-  
-        // Guardar las 'subsections' pesadas en su propio documento
-        if (section.subsections) {
-          const subsectionsDocRef = this.getSubsectionsDocRef(section.id);
-          batch.set(subsectionsDocRef, { 
-            subsections: section.subsections, 
-            updatedAt: serverTimestamp() 
-          }, { merge: true });
-        }
-      }
-    }
-  
-    // 5. Ejecutar todas las operaciones de escritura atómicamente
-    await batch.commit();
-  
-    // 6. Registrar la auditoría después de que todo se haya guardado con éxito
+    // La auditoría se puede simplificar o hacer más robusta si es necesario
     await auditService.log({
       entity: 'landingConfigs' as any,
       entityId: MAIN_CONFIG_DOC_ID,
       action: 'updated',
       performedBy: { uid: userId, email: userEmail },
-      previousData: originalDoc,
-      newData: configUpdate,
-      details: 'Landing page configuration updated.'
+      details: 'Landing page configuration updated using multi-part save.',
+      newData: { summary: `Updated ${Object.keys(configUpdate).length} fields.` } // No guardar el objeto completo para evitar el mismo error en la auditoría
     });
   }
 
@@ -304,44 +193,7 @@ class LandingConfigService {
       userId: string,
       userEmail: string
   ): Promise<void> {
-      const { id, heroContent, sections, ...dataToSave } = configData;
-      const docRef = this.getConfigDocRef();
-      
-      const batch = writeBatch(this.db);
-
-      const sectionsForMainDoc = sections.map(({ subsections, content, ...sectionData }) => sectionData);
-      
-      batch.set(docRef, {
-          ...dataToSave,
-          sections: sectionsForMainDoc,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-      });
-
-      if (heroContent) {
-          const heroContentDocRef = this.getContentDocRef('hero_content');
-          batch.set(heroContentDocRef, { content: heroContent, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-      }
-
-      for (const section of sections) {
-          const contentDocRef = this.getContentDocRef(section.id);
-          batch.set(contentDocRef, { content: section.content, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-
-          if (section.subsections && section.subsections.length > 0) {
-              const subsectionsDocRef = this.getSubsectionsDocRef(section.id);
-              batch.set(subsectionsDocRef, { subsections: section.subsections, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-          }
-      }
-
-      await batch.commit();
-
-      await auditService.log({
-          entity: 'landingConfigs' as any,
-          entityId: MAIN_CONFIG_DOC_ID,
-          action: 'created',
-          performedBy: { uid: userId, email: userEmail },
-          newData: configData,
-      });
+      await this.updateLandingConfig(configData, userId, userEmail);
   }
 
   getDefaultConfig() {
