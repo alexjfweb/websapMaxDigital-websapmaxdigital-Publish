@@ -554,7 +554,7 @@ export default function LandingPublicPage() {
                                           {pendingFiles[subsectionId] && (
                                               <Button size="sm" onClick={() => handleSubsectionImageUpload(index, subIdx)} disabled={uploading[subsectionId]}>
                                                   {uploading[subsectionId] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}
-                                                  Subir
+                                                  Subir ahora
                                               </Button>
                                           )}
                                       </div>
@@ -618,8 +618,8 @@ export default function LandingPublicPage() {
                                             </Button>
                                             {pendingFiles[sub.id] && (
                                                 <Button size="sm" onClick={() => handleSubsectionImageUpload(testimonialsSectionIndex, subIdx)} disabled={uploading[sub.id]}>
-                                                    {uploading[sub.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                                                    Subir
+                                                    {uploading[sub.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4" />}
+                                                    Subir ahora
                                                 </Button>
                                             )}
                                         </div>
@@ -856,7 +856,3 @@ export default function LandingPublicPage() {
     </div>
   );
 }
-
-    
-
-    
