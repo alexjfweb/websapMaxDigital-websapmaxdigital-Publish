@@ -74,22 +74,23 @@ export default function LandingPublicPage() {
   const [formData, setFormData] = useState<LandingConfig>(getDefaultConfig());
   const [activeTab, setActiveTab] = useState('hero');
   const [previewMode, setPreviewMode] = useState(false);
+  
+  const [pendingFiles, setPendingFiles] = useState<Record<string, File | null>>({});
 
-  // Sincronizar con la configuración de Firebase
   useEffect(() => {
     if (landingConfig) {
-      setFormData({
-        ...getDefaultConfig(),
-        ...landingConfig,
-        sections: (landingConfig.sections || []).map(s => ({
-          ...s,
-          subsections: (s.subsections || []).map(sub => ({
-              ...sub,
-              imageRadius: sub.imageRadius ?? 50,
-          }))
-        })),
-        seo: { ...getDefaultConfig().seo, ...(landingConfig.seo || {}) }
-      });
+        setFormData({
+            ...getDefaultConfig(),
+            ...landingConfig,
+            sections: (landingConfig.sections || []).map(s => ({
+                ...s,
+                subsections: (s.subsections || []).map(sub => ({
+                    ...sub,
+                    imageRadius: sub.imageRadius ?? 50,
+                }))
+            })),
+            seo: { ...getDefaultConfig().seo, ...(landingConfig.seo || {}) }
+        });
     }
   }, [landingConfig]);
 
@@ -142,56 +143,68 @@ export default function LandingPublicPage() {
     }
   };
 
-  const handleSubsectionImageUpload = async (e: ChangeEvent<HTMLInputElement>, sectionIndex: number, subIndex: number) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const handleFileSelection = (e: ChangeEvent<HTMLInputElement>, subsectionId: string) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setPendingFiles(prev => ({ ...prev, [subsectionId]: file }));
+        }
+    };
+  
+    const handleSubsectionImageUpload = async (sectionIndex: number, subIndex: number) => {
+        const subsectionId = formData.sections[sectionIndex].subsections![subIndex].id;
+        const file = pendingFiles[subsectionId];
+        
+        if (!file) {
+            toast({ title: 'No hay archivo', description: 'Por favor, selecciona una imagen primero.', variant: 'destructive' });
+            return;
+        }
 
-    const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    const maxSize = 5 * 1024 * 1024; // 5MB
+        const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+        const fileExtension = file.name.split('.').pop()?.toLowerCase();
+        const maxSize = 5 * 1024 * 1024; // 5MB
 
-    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
-      toast({
-        title: "Archivo no válido",
-        description: "Por favor, selecciona una imagen (JPG, PNG, WEBP).",
-        variant: "destructive",
-      });
-      return;
-    }
+        if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
+          toast({
+            title: "Archivo no válido",
+            description: "Por favor, selecciona una imagen (JPG, PNG, WEBP).",
+            variant: "destructive",
+          });
+          return;
+        }
 
-    if (file.size > maxSize) {
-      toast({
-        title: "Archivo demasiado grande",
-        description: "La imagen no puede pesar más de 5MB antes de la compresión.",
-        variant: "destructive",
-      });
-      return;
-    }
+        if (file.size > maxSize) {
+          toast({
+            title: "Archivo demasiado grande",
+            description: "La imagen no puede pesar más de 5MB antes de la compresión.",
+            variant: "destructive",
+          });
+          return;
+        }
 
-    const subsectionId = formData.sections[sectionIndex].subsections![subIndex].id;
-    setUploading(prev => ({ ...prev, [subsectionId]: true }));
+        setUploading(prev => ({ ...prev, [subsectionId]: true }));
 
-    try {
-      toast({ title: "Comprimiendo imagen...", description: "Este proceso puede tardar unos segundos." });
-      const imageUrl = await storageService.compressAndUploadFile(file, `subsections/`);
-      
-      updateSubsection(sectionIndex, subIndex, 'imageUrl', imageUrl);
+        try {
+          toast({ title: "Comprimiendo imagen...", description: "Este proceso puede tardar unos segundos." });
+          const imageUrl = await storageService.compressAndUploadFile(file, `subsections/`);
+          
+          updateSubsection(sectionIndex, subIndex, 'imageUrl', imageUrl);
+          setPendingFiles(prev => ({ ...prev, [subsectionId]: null }));
 
-      toast({
-        title: "Imagen subida",
-        description: "La imagen se ha subido y comprimido correctamente.",
-      });
+          toast({
+            title: "Imagen subida",
+            description: "La imagen se ha subido y comprimido correctamente.",
+          });
 
-    } catch (error: any) {
-      toast({
-        title: "Error de subida",
-        description: error.message || "No se pudo subir la imagen.",
-        variant: "destructive",
-      });
-    } finally {
-      setUploading(prev => ({ ...prev, [subsectionId]: false }));
-    }
-  };
+        } catch (error: any) {
+          toast({
+            title: "Error de subida",
+            description: error.message || "No se pudo subir la imagen.",
+            variant: "destructive",
+          });
+        } finally {
+          setUploading(prev => ({ ...prev, [subsectionId]: false }));
+        }
+    };
   
   const updateSubsection = (sectionIndex: number, subIndex: number, field: string, value: any) => {
      setFormData(prev => {
@@ -277,9 +290,9 @@ export default function LandingPublicPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Cargando configuración...</div>
-      </div>
+        <div className="flex items-center justify-center h-64">
+            <div className="text-lg">Cargando configuración...</div>
+        </div>
     );
   }
   
@@ -567,31 +580,44 @@ export default function LandingPublicPage() {
                             </Button>
                           </div>
                           <div className="space-y-3">
-                            {section.subsections?.map((sub, subIdx) => (
-                              <div key={sub.id} className="p-3 border rounded-md bg-background space-y-2">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-xs font-medium text-muted-foreground">Tarjeta {subIdx + 1}</span>
-                                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => removeSubsection(index, subIdx)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                            {section.subsections?.map((sub, subIdx) => {
+                              const subsectionId = sub.id;
+                              const previewUrl = pendingFiles[subsectionId]
+                                ? URL.createObjectURL(pendingFiles[subsectionId]!)
+                                : sub.imageUrl || "https://placehold.co/100x100.png?text=IMG";
+
+                              return (
+                                <div key={sub.id} className="p-3 border rounded-md bg-background space-y-2">
+                                  <div className="flex justify-between items-center">
+                                      <span className="text-xs font-medium text-muted-foreground">Tarjeta {subIdx + 1}</span>
+                                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => removeSubsection(index, subIdx)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                                  </div>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <Input value={sub.title} onChange={(e) => updateSubsection(index, subIdx, 'title', e.target.value)} placeholder="Título de la tarjeta" />
+                                    <RichTextEditor value={sub.content} onChange={(value) => updateSubsection(index, subIdx, 'content', value || '')} placeholder="Contenido de la tarjeta" />
+                                  </div>
+                                  <div>
+                                    <Label>Imagen</Label>
+                                     <div className="flex items-center gap-2">
+                                          <Image src={previewUrl} alt="Vista previa" width={64} height={64} className="rounded-md border object-cover h-16 w-16" />
+                                          <Button variant="outline" asChild size="sm">
+                                              <label htmlFor={`sub-img-${sub.id}`} className="cursor-pointer">
+                                                  <UploadCloud className="mr-2 h-4 w-4"/>
+                                                  Seleccionar
+                                                  <input id={`sub-img-${sub.id}`} type="file" className="hidden" accept="image/*" onChange={(e) => handleFileSelection(e, subsectionId)}/>
+                                              </label>
+                                          </Button>
+                                          {pendingFiles[subsectionId] && (
+                                              <Button size="sm" onClick={() => handleSubsectionImageUpload(index, subIdx)} disabled={uploading[subsectionId]}>
+                                                  {uploading[subsectionId] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}
+                                                  Subir
+                                              </Button>
+                                          )}
+                                      </div>
+                                  </div>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                  <Input value={sub.title} onChange={(e) => updateSubsection(index, subIdx, 'title', e.target.value)} placeholder="Título de la tarjeta" />
-                                  <RichTextEditor value={sub.content} onChange={(value) => updateSubsection(index, subIdx, 'content', value || '')} placeholder="Contenido de la tarjeta" />
-                                </div>
-                                <div>
-                                  <Label>Imagen</Label>
-                                   <div className="flex items-center gap-2">
-                                        <Image src={sub.imageUrl || "https://placehold.co/100x100.png?text=IMG"} alt="Vista previa" width={64} height={64} className="rounded-md border object-cover h-16 w-16" />
-                                        <Button variant="outline" asChild size="sm">
-                                            <label htmlFor={`sub-img-${sub.id}`} className="cursor-pointer">
-                                            {uploading[sub.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}
-                                            {uploading[sub.id] ? "Subiendo..." : "Subir"}
-                                            <input id={`sub-img-${sub.id}`} type="file" className="hidden" accept="image/*" onChange={(e) => handleSubsectionImageUpload(e, index, subIdx)} disabled={uploading[sub.id]}/>
-                                            </label>
-                                        </Button>
-                                    </div>
-                                </div>
-                              </div>
-                            ))}
+                              )
+                            })}
                           </div>
                         </div>
                       </CardContent>
@@ -641,11 +667,16 @@ export default function LandingPublicPage() {
                                         type="file"
                                         className="hidden"
                                         accept="image/png, image/jpeg, image/jpg, image/webp"
-                                        onChange={(e) => handleSubsectionImageUpload(e, testimonialsSectionIndex, subIdx)}
+                                        onChange={(e) => handleFileSelection(e, sub.id)}
                                         disabled={uploading[sub.id]}
                                         />
                                     </label>
                                     </Button>
+                                    {pendingFiles[sub.id] && (
+                                        <Button size="sm" onClick={() => handleSubsectionImageUpload(testimonialsSectionIndex, subIdx)} disabled={uploading[sub.id]}>
+                                            <UploadCloud className="mr-2 h-4 w-4"/> Subir
+                                        </Button>
+                                    )}
                                 <div className="space-y-1 mt-2">
                                     <Label>Radio del Círculo</Label>
                                     <Slider
@@ -852,5 +883,7 @@ export default function LandingPublicPage() {
     </div>
   );
 }
+
+    
 
     
