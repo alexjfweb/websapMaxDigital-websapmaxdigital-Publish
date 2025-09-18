@@ -135,7 +135,8 @@ export default function AdminDishesPage() {
       let imageUrl = editingDish?.imageUrl || "https://placehold.co/800x450.png";
   
       if (values.image instanceof File) {
-        // Nueva lógica: convertir a Base64
+        // Nueva lógica de compresión inteligente
+        toast({ title: "Procesando imagen...", description: "Comprimiendo la imagen antes de guardar. Esto puede tardar unos segundos." });
         imageUrl = await storageService.compressAndConvertToBase64(values.image);
       } else if (isUpdating && !imagePreview) {
         // Si se quita la imagen en edición
@@ -150,7 +151,7 @@ export default function AdminDishesPage() {
         price: Number(values.price),
         category: values.category,
         stock: Number(values.stock),
-        imageUrl,
+        imageUrl, // Ahora guarda la imagen en Base64
         updatedAt: new Date().toISOString(),
       };
   
@@ -197,7 +198,6 @@ export default function AdminDishesPage() {
     
     try {
       const db = getDb();
-      // Ya no es necesario borrar de Storage, la imagen está en el documento.
       await deleteDoc(doc(db, 'dishes', dishToDelete.id));
       toast({ title: 'Plato eliminado', description: `El plato "${dishToDelete.name}" se ha eliminado correctamente.`, variant: "destructive" });
       await refreshDishes();
