@@ -85,9 +85,9 @@ const getDefaultConfig = (): LandingConfig => ({
       backgroundColor: '#FFFFFF', textColor: '#1f2937', buttonColor: '#FF4500', buttonText: '', buttonUrl: '', imageUrl: '',
       order: 1, isActive: true, animation: 'fadeIn',
       subsections: [
-        { id: 'sub-1-1', title: 'Pago Móvil', content: 'Agiliza tus mesas, aumenta la rotación y mejora la rentabilidad.', imageUrl: 'gs://websapmax.appspot.com/subsections/pago-movil.jpg', authorRole: '', imageRadius: 0 },
-        { id: 'sub-1-2', title: 'Menú con Video', content: 'Captura la atención de tus clientes con una experiencia visual única.', imageUrl: 'gs://websapmax.appspot.com/subsections/menu-video.jpg', authorRole: '', imageRadius: 0 },
-        { id: 'sub-1-3', title: 'Gestión Online', content: 'Recibe órdenes desde cualquier lugar, directo a tu cocina.', imageUrl: 'gs://websapmax.appspot.com/subsections/gestion-online.jpg', authorRole: '', imageRadius: 0 },
+        { id: 'sub-1-1', title: 'Herramienta para personalizar menú digital con videos', content: 'Imagina un menú que cobra vida: nuestra herramienta te permite **personalizar tu menú digital con videos** de tus deliciosos platos, directamente desde Bucaramanga.', imageUrl: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', authorRole: '', imageRadius: 0 },
+        { id: 'sub-1-2', title: 'Sistema de gestión para restaurante con integración de pedidos en línea', content: '¡Lleva tu restaurante en al siguiente nivel! Nuestro sistema de gestión con integración de pedidos en línea te permite recibir órdenes desde cualquier lugar.', imageUrl: 'https://images.pexels.com/photos/376464/pexels-photo-376464.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', authorRole: '', imageRadius: 0 },
+        { id: 'sub-1-3', title: 'Sistema de menú digital con pago desde el móvil', content: 'Olvídate de los menús físicos y ofrece a tus clientes un menú moderno y seguro. Elige entre diseños elegantes, añade fotos y videos, y actualízalo en tiempo real. Reduce costos de impresión, mejora la experiencia del cliente y agiliza el servicio.', imageUrl: 'https://images.pexels.com/photos/580612/pexels-photo-580612.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', authorRole: '', imageRadius: 0 },
       ],
     },
     {
