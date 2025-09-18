@@ -66,7 +66,7 @@ const getDefaultConfig = (): LandingConfig => ({
 
 
 export default function LandingPublicPage() {
-  const { landingConfig, isLoading, updateConfig, isSaving, lastSavedContent } = useLandingConfig();
+  const { landingConfig, isLoading, updateConfig, isSaving } = useLandingConfig();
   const { currentUser } = useSession();
   const { toast } = useToast();
   
@@ -81,7 +81,7 @@ export default function LandingPublicPage() {
   useEffect(() => {
     if (!isLoading && landingConfig && Object.keys(landingConfig).length > 0) {
       setFormData(landingConfig);
-      setEditorKey(prev => prev + 1);
+      setEditorKey(prev => prev + 1); // Forzar re-render del editor si la config cambia
     }
   }, [landingConfig, isLoading]);
 
@@ -853,25 +853,6 @@ export default function LandingPublicPage() {
             </Card>
         </div>
       </div>
-      
-       {process.env.NODE_ENV === 'development' && (
-        <div style={{ 
-          position: 'fixed', 
-          bottom: '10px', 
-          right: '10px', 
-          background: 'black', 
-          color: 'white', 
-          padding: '10px',
-          fontSize: '12px',
-          zIndex: 9999
-        }}>
-          <div>isSaving: {isSaving.toString()}</div>
-          <div>editorKey: {editorKey}</div>
-          <div>formData.heroContent: {(formData.heroContent || '').length} chars</div>
-          <div>landingConfig.heroContent: {(landingConfig.heroContent || '').length} chars</div>
-          <div>lastSavedContent: {lastSavedContent.length} chars</div>
-        </div>
-      )}
     </div>
   );
 }

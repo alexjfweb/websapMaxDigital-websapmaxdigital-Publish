@@ -4,7 +4,7 @@
 import useSWR from 'swr';
 import { landingConfigService, LandingConfig } from '@/services/landing-config-service';
 import { useToast } from './use-toast';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 const SWR_KEY = 'landing-page-config';
 
@@ -13,7 +13,6 @@ const fetcher = () => landingConfigService.getLandingConfig();
 export function useLandingConfig() {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
-  const [lastSavedContent, setLastSavedContent] = useState<string>('');
   
   const { data, error, isLoading, mutate } = useSWR<LandingConfig | null, Error>(
     SWR_KEY,
@@ -35,12 +34,10 @@ export function useLandingConfig() {
   const updateConfig = async (configUpdate: Partial<LandingConfig>, userId: string, userEmail: string) => {
     setIsSaving(true);
     try {
-      const currentHeroContent = configUpdate.heroContent || '';
-      setLastSavedContent(currentHeroContent);
-      
+      // Directamente llama al servicio para guardar la configuración
       await landingConfigService.updateLandingConfig(configUpdate, userId, userEmail);
       
-      // Forzar la revalidación para obtener los datos reconstruidos
+      // Forzar la revalidación para obtener los datos reconstruidos desde el servidor
       await mutate();
       
       toast({
@@ -54,12 +51,13 @@ export function useLandingConfig() {
           description: `No se pudieron guardar los cambios: ${e.message}`,
           variant: "destructive",
         });
-        throw e;
+        throw e; // Relanzar el error para que el componente que llama pueda manejarlo si es necesario
     } finally {
         setIsSaving(false);
     }
   };
 
+  // Si hay un error o no hay datos, usa la configuración por defecto.
   const configToShow = error || !data ? landingConfigService.getDefaultConfig() : data;
 
   return {
@@ -69,6 +67,5 @@ export function useLandingConfig() {
     error: error || null,
     updateConfig,
     refetch: mutate,
-    lastSavedContent,
   };
 }
