@@ -1,3 +1,4 @@
+
 // src/services/storage-service.ts
 import imageCompression from 'browser-image-compression';
 
@@ -42,7 +43,7 @@ const compressAndUploadFile = async (file: File, path: string): Promise<string> 
 
   } catch (error) {
     console.error('Error durante la compresión y subida:', error);
-    throw new Error('No se pudo procesar y subir la imagen.');
+    throw error; // Relanzar el error para que el componente que llama pueda manejarlo
   }
 };
 

@@ -1,3 +1,4 @@
+
 // src/app/api/upload/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getStorage } from 'firebase-admin/storage';
@@ -5,8 +6,8 @@ import { getFirebaseAdmin } from '@/lib/firebase-admin'; // Importar el iniciali
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Inicializar el SDK de Admin del lado del servidor.
-    // getFirebaseAdmin() se encargará de verificar las credenciales.
+    // 1. Inicializar el SDK de Admin del lado del servidor DENTRO del handler.
+    // Esto asegura que las variables de entorno se lean en el contexto de ejecución de la API.
     const adminApp = getFirebaseAdmin();
     const storage = getStorage(adminApp);
     const bucket = storage.bucket();

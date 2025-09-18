@@ -1,7 +1,8 @@
+
 // src/lib/firebase-admin.ts
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 
-// Esta función ahora es la única responsable de la configuración y la inicialización del Admin SDK.
+// Esta función es la única responsable de la configuración y la inicialización del Admin SDK.
 function getFirebaseAdmin(): App {
   // Si la app admin ya está inicializada, la devolvemos para evitar errores.
   const existingApp = getApps().find(app => app.name === 'websapmax-admin');
