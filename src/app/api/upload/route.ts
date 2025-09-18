@@ -1,4 +1,3 @@
-
 // src/app/api/upload/route.ts - VERSIÓN CORREGIDA Y ROBUSTA
 import { NextRequest, NextResponse } from 'next/server';
 import { getStorage } from 'firebase-admin/storage';
@@ -6,10 +5,9 @@ import { getFirebaseAdmin } from '@/lib/firebase-admin'; // Importar el iniciali
 
 export async function POST(request: NextRequest) {
   try {
-    // Obtiene la instancia de Firebase Admin ya inicializada y de forma segura.
     const adminApp = getFirebaseAdmin();
     const storage = getStorage(adminApp);
-    const bucket = storage.bucket(); // El bucket se obtiene de la inicialización
+    const bucket = storage.bucket();
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -37,10 +35,8 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Hacer el archivo público para que pueda ser visto
     await fileRef.makePublic();
 
-    // Construir la URL pública correctamente
     const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
     
     return NextResponse.json({ 
@@ -50,7 +46,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('❌ Error en la API de subida:', error);
-    // Devolvemos un mensaje de error claro al cliente
     return NextResponse.json({ 
       success: false,
       error: `Error interno del servidor: ${error.message}`,
