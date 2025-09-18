@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, ChangeEvent, lazy, Suspense } from 'react';
@@ -544,19 +545,29 @@ export default function LandingPublicPage() {
                                     <Label>Imagen</Label>
                                      <div className="flex items-center gap-2">
                                           <Image src={previewUrl} alt="Vista previa" width={64} height={64} className="rounded-md border object-cover h-16 w-16" />
-                                          <Button variant="outline" asChild size="sm">
-                                              <label htmlFor={`sub-img-${sub.id}`} className="cursor-pointer">
-                                                  <UploadCloud className="mr-2 h-4 w-4"/>
-                                                  Seleccionar
-                                                  <input id={`sub-img-${sub.id}`} type="file" className="hidden" accept="image/*" onChange={(e) => handleFileSelection(e, subsectionId)}/>
-                                              </label>
-                                          </Button>
-                                          {pendingFiles[subsectionId] && (
-                                              <Button size="sm" onClick={() => handleSubsectionImageUpload(index, subIdx)} disabled={uploading[subsectionId]}>
-                                                  {uploading[subsectionId] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}
-                                                  Subir ahora
-                                              </Button>
-                                          )}
+                                          <label htmlFor={`sub-img-${sub.id}`} className="cursor-pointer">
+                                            <Button variant="outline" asChild size="sm">
+                                                <span>
+                                                {pendingFiles[subsectionId] ? (
+                                                    <div
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            handleSubsectionImageUpload(index, subIdx);
+                                                        }}
+                                                    >
+                                                        {uploading[subsectionId] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}
+                                                        {uploading[subsectionId] ? 'Subiendo...' : 'Subir ahora'}
+                                                    </div>
+                                                ) : (
+                                                    <span>
+                                                        <UploadCloud className="mr-2 h-4 w-4"/>
+                                                        Seleccionar
+                                                    </span>
+                                                )}
+                                                </span>
+                                            </Button>
+                                            <input id={`sub-img-${sub.id}`} type="file" className="hidden" accept="image/png, image/jpeg" onChange={(e) => handleFileSelection(e, subsectionId)}/>
+                                          </label>
                                       </div>
                                   </div>
                                 </div>
@@ -609,19 +620,27 @@ export default function LandingPublicPage() {
                                             />
                                         </div>
                                          <div className="flex items-center gap-2 pt-2">
-                                            <Button variant="outline" asChild size="sm">
-                                                <label htmlFor={`sub-img-${sub.id}`} className="cursor-pointer">
-                                                    <UploadCloud className="mr-2 h-3 w-3"/>
-                                                    Seleccionar
-                                                    <input id={`sub-img-${sub.id}`} type="file" className="hidden" accept="image/png, image/jpeg" onChange={(e) => handleFileSelection(e, sub.id)} />
-                                                </label>
-                                            </Button>
-                                            {pendingFiles[sub.id] && (
-                                                <Button size="sm" onClick={() => handleSubsectionImageUpload(testimonialsSectionIndex, subIdx)} disabled={uploading[sub.id]}>
-                                                    {uploading[sub.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4" />}
-                                                    Subir ahora
+                                            <label htmlFor={`sub-img-${sub.id}`} className="cursor-pointer">
+                                                <Button variant="outline" asChild size="sm">
+                                                    <span>
+                                                        {pendingFiles[subsectionId] ? (
+                                                            <div onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    handleSubsectionImageUpload(testimonialsSectionIndex, subIdx);
+                                                                }}>
+                                                                {uploading[subsectionId] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}
+                                                                {uploading[subsectionId] ? 'Subiendo...' : 'Subir ahora'}
+                                                            </div>
+                                                        ) : (
+                                                            <span>
+                                                                <UploadCloud className="mr-2 h-3 w-3"/>
+                                                                Seleccionar
+                                                            </span>
+                                                        )}
+                                                    </span>
                                                 </Button>
-                                            )}
+                                                <input id={`sub-img-${sub.id}`} type="file" className="hidden" accept="image/png, image/jpeg" onChange={(e) => handleFileSelection(e, sub.id)} />
+                                            </label>
                                         </div>
                                     <div className="space-y-1 mt-2">
                                         <Label>Radio del Círculo</Label>
