@@ -21,7 +21,6 @@ import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import FooterNavigation from './footer-navigation';
-import { OrderProvider } from '@/contexts/order-context';
 import { doc, getDoc } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import type { Company } from '@/types';
@@ -83,7 +82,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <OrderProvider>
+        <>
             <Sidebar collapsible="icon" variant="sidebar" side="left">
                 <SidebarHeader className="p-4 flex flex-col items-center gap-2">
                 <Link href="/" className="flex items-center gap-2 font-semibold text-lg text-primary">
@@ -150,6 +149,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 </main>
                 <FooterNavigation role={currentUser.role} />
             </SidebarInset>
-        </OrderProvider>
+        </>
     );
 }
