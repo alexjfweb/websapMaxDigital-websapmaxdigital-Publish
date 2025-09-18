@@ -230,28 +230,31 @@ class LandingConfigService {
     const batch = writeBatch(this.db);
     const mainDocRef = this.getConfigDocRef();
 
-    // 1. Explicitly create a lightweight object for the main document.
-    // DO NOT use spread operator on configUpdate here.
-    const mainDocData = {
-        heroTitle: configUpdate.heroTitle,
-        heroSubtitle: configUpdate.heroSubtitle,
-        heroButtonText: configUpdate.heroButtonText,
-        heroButtonUrl: configUpdate.heroButtonUrl,
-        heroBackgroundColor: configUpdate.heroBackgroundColor,
-        heroTextColor: configUpdate.heroTextColor,
-        heroButtonColor: configUpdate.heroButtonColor,
-        heroAnimation: configUpdate.heroAnimation,
-        seo: configUpdate.seo,
-        updatedAt: serverTimestamp(),
-        // Store only the lightweight structure of sections
-        sections: (configUpdate.sections || []).map(
-            ({ content, subsections, ...sectionData }) => sectionData
-        ),
-    };
+    // 1. Crear un objeto explícito solo con los campos ligeros.
+    const mainDocData: any = {};
+    const lightFields: (keyof LandingConfig)[] = [
+      'heroTitle', 'heroSubtitle', 'heroButtonText', 'heroButtonUrl',
+      'heroBackgroundColor', 'heroTextColor', 'heroButtonColor', 'heroAnimation', 'seo'
+    ];
+    lightFields.forEach(field => {
+      if (configUpdate[field] !== undefined) {
+        mainDocData[field] = configUpdate[field];
+      }
+    });
 
+    // Añadir el array de secciones pero sin el contenido pesado
+    if (configUpdate.sections) {
+        mainDocData.sections = configUpdate.sections.map(
+            ({ content, subsections, ...sectionData }) => sectionData
+        );
+    }
+
+    mainDocData.updatedAt = serverTimestamp();
+
+    // 2. Guardar el documento principal solo con datos ligeros
     batch.set(mainDocRef, mainDocData, { merge: true });
     
-    // 2. Save the heavy heroContent separately.
+    // 3. Guardar el heroContent pesado por separado
     if (configUpdate.heroContent !== undefined) {
       const heroContentDocRef = this.getContentDocRef('hero_content');
       batch.set(heroContentDocRef, { 
@@ -260,17 +263,17 @@ class LandingConfigService {
       }, { merge: true });
     }
   
-    // 3. Save heavy content for each section separately.
+    // 4. Guardar el contenido pesado y las subsecciones de cada sección por separado
     if (configUpdate.sections) {
       for (const section of configUpdate.sections) {
-        // Save the heavy 'content' field in its own document
+        // Guardar el 'content' pesado de la sección en su propio documento
         const contentDocRef = this.getContentDocRef(section.id);
         batch.set(contentDocRef, { 
             content: section.content || '', 
             updatedAt: serverTimestamp() 
         }, { merge: true });
   
-        // Save the heavy 'subsections' array in its own document
+        // Guardar las 'subsections' pesadas en su propio documento
         if (section.subsections) {
           const subsectionsDocRef = this.getSubsectionsDocRef(section.id);
           batch.set(subsectionsDocRef, { 
@@ -281,10 +284,10 @@ class LandingConfigService {
       }
     }
   
-    // 4. Commit all operations atomically.
+    // 5. Ejecutar todas las operaciones de escritura atómicamente
     await batch.commit();
   
-    // 5. Log the audit trail.
+    // 6. Registrar la auditoría después de que todo se haya guardado con éxito
     await auditService.log({
       entity: 'landingConfigs' as any,
       entityId: MAIN_CONFIG_DOC_ID,
