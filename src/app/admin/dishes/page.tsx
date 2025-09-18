@@ -23,8 +23,69 @@ import { getDb } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, Timestamp, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { useDishes } from "@/hooks/use-dishes";
 import { Skeleton } from "@/components/ui/skeleton";
-import { storageService } from "@/services/storage-service";
 import { useSession } from "@/contexts/session-context";
+
+// Función de compresión movida directamente al componente del cliente
+const compressAndConvertToBase64 = async (file: File): Promise<string> => {
+  const MAX_SIZE_BYTES = 800 * 1024; // Límite seguro de 800KB para Firestore
+
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return reject(new Error('No se pudo obtener el contexto del canvas.'));
+    }
+    const img = new Image();
+    
+    img.onload = () => {
+      let { width, height } = calculateOptimalSize(img.width, img.height);
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      compressUntilFits(canvas, resolve, reject, MAX_SIZE_BYTES);
+    };
+
+    img.onerror = (error) => {
+        console.error("Error al cargar la imagen en el objeto Image:", error);
+        reject(new Error("No se pudo cargar el archivo de imagen."));
+    };
+
+    img.src = URL.createObjectURL(file);
+  });
+};
+
+const calculateOptimalSize = (originalWidth: number, originalHeight: number) => {
+    const originalSize = originalWidth * originalHeight;
+    let maxDimension;
+    
+    if (originalSize > 2000000) maxDimension = 800;
+    else if (originalSize > 1000000) maxDimension = 1000;
+    else if (originalSize > 500000) maxDimension = 1200;
+    else maxDimension = 1400;
+
+    const ratio = Math.min(maxDimension / originalWidth, maxDimension / originalHeight, 1);
+    
+    return {
+      width: Math.floor(originalWidth * ratio),
+      height: Math.floor(originalHeight * ratio)
+    };
+};
+
+const compressUntilFits = (canvas: HTMLCanvasElement, resolve: (dataUrl: string) => void, reject: (reason?: any) => void, limit: number, quality = 0.9) => {
+    const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+    const sizeInBytes = compressedDataUrl.length * (3 / 4);
+
+    if (sizeInBytes <= limit || quality <= 0.1) {
+      if (sizeInBytes > limit) {
+        console.warn(`La imagen no pudo ser comprimida por debajo del límite. Tamaño final: ${(sizeInBytes / 1024).toFixed(2)}KB`);
+      }
+      resolve(compressedDataUrl);
+    } else {
+      setTimeout(() => compressUntilFits(canvas, resolve, reject, limit, quality - 0.1), 0);
+    }
+};
+
 
 export default function AdminDishesPage() {
   const { currentUser } = useSession();
@@ -135,11 +196,9 @@ export default function AdminDishesPage() {
       let imageUrl = editingDish?.imageUrl || "https://placehold.co/800x450.png";
   
       if (values.image instanceof File) {
-        // Nueva lógica de compresión inteligente
         toast({ title: "Procesando imagen...", description: "Comprimiendo la imagen antes de guardar. Esto puede tardar unos segundos." });
-        imageUrl = await storageService.compressAndConvertToBase64(values.image);
+        imageUrl = await compressAndConvertToBase64(values.image);
       } else if (isUpdating && !imagePreview) {
-        // Si se quita la imagen en edición
         imageUrl = "https://placehold.co/800x450.png";
       }
       
@@ -151,7 +210,7 @@ export default function AdminDishesPage() {
         price: Number(values.price),
         category: values.category,
         stock: Number(values.stock),
-        imageUrl, // Ahora guarda la imagen en Base64
+        imageUrl, 
         updatedAt: new Date().toISOString(),
       };
   
