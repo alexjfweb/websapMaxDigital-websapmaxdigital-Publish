@@ -229,19 +229,18 @@ class LandingConfigService {
     const originalDoc = await this.getLandingConfig().catch(() => getDefaultConfig());
     const batch = writeBatch(this.db);
     const mainDocRef = this.getConfigDocRef();
-  
-    // 1. Preparar el documento principal (solo con datos ligeros)
-    const mainDocData = {
-      heroTitle: configUpdate.heroTitle ?? originalDoc.heroTitle,
-      heroSubtitle: configUpdate.heroSubtitle ?? originalDoc.heroSubtitle,
-      heroButtonText: configUpdate.heroButtonText ?? originalDoc.heroButtonText,
-      heroButtonUrl: configUpdate.heroButtonUrl ?? originalDoc.heroButtonUrl,
-      heroBackgroundColor: configUpdate.heroBackgroundColor ?? originalDoc.heroBackgroundColor,
-      heroTextColor: configUpdate.heroTextColor ?? originalDoc.heroTextColor,
-      heroButtonColor: configUpdate.heroButtonColor ?? originalDoc.heroButtonColor,
-      heroAnimation: configUpdate.heroAnimation ?? originalDoc.heroAnimation,
-      seo: configUpdate.seo ?? originalDoc.seo,
-      updatedAt: serverTimestamp(),
+
+    // 1. Crear el objeto para el documento principal solo con datos ligeros
+    const mainDocData: Partial<Omit<LandingConfig, 'id' | 'heroContent' | 'sections'>> = {
+      heroTitle: configUpdate.heroTitle,
+      heroSubtitle: configUpdate.heroSubtitle,
+      heroButtonText: configUpdate.heroButtonText,
+      heroButtonUrl: configUpdate.heroButtonUrl,
+      heroBackgroundColor: configUpdate.heroBackgroundColor,
+      heroTextColor: configUpdate.heroTextColor,
+      heroButtonColor: configUpdate.heroButtonColor,
+      heroAnimation: configUpdate.heroAnimation,
+      seo: configUpdate.seo,
     };
     
     // Si hay secciones, guardar solo su estructura ligera en el doc principal
@@ -251,15 +250,15 @@ class LandingConfigService {
       );
     }
   
-    batch.set(mainDocRef, mainDocData, { merge: true });
+    batch.set(mainDocRef, { ...mainDocData, updatedAt: serverTimestamp() }, { merge: true });
   
-    // 2. Guardar el contenido del Hero por separado
+    // 2. Guardar el contenido pesado del Hero por separado
     if (configUpdate.heroContent !== undefined) {
       const heroContentDocRef = this.getContentDocRef('hero_content');
       batch.set(heroContentDocRef, { content: configUpdate.heroContent || '', updatedAt: serverTimestamp() }, { merge: true });
     }
   
-    // 3. Guardar el contenido y las subsecciones de cada sección por separado
+    // 3. Guardar el contenido y subsecciones de cada sección por separado
     if (configUpdate.sections) {
       for (const section of configUpdate.sections) {
         // Guardar el 'content' pesado en su propio documento

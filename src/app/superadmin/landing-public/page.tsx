@@ -268,8 +268,8 @@ export default function LandingPublicPage() {
 
   if (isLoading) {
     return (
-        <div class="flex items-center justify-center h-64">
-            <div class="text-lg">Cargando configuración...</div>
+        <div className="flex items-center justify-center h-64">
+            <div className="text-lg">Cargando configuración...</div>
         </div>
     );
   }
