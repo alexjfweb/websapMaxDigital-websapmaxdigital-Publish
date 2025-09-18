@@ -131,11 +131,13 @@ class LandingConfigService {
   private async getImageUrl(path: string): Promise<string> {
     const placeholder = 'https://placehold.co/400x300.png?text=...';
     if (!path) return placeholder;
+    // Si ya es una URL pública (http o https), devuélvela directamente.
     if (path.startsWith('http')) return path;
     
     // Ahora es seguro obtener Storage porque getDb() ya aseguró la inicialización.
     const storage = getStorage();
 
+    // Si es una ruta gs://, resuélvela.
     if (path.startsWith('gs://')) {
       try {
         const imageRef = ref(storage, path);
@@ -146,11 +148,12 @@ class LandingConfigService {
       }
     }
     
+    // Intenta resolver como si fuera una ruta relativa dentro del bucket.
     try {
-        const imageRef = ref(storage, `subsections/${path}`);
+        const imageRef = ref(storage, path); // Asume que la ruta es correcta si no es gs://
         return await getDownloadURL(imageRef);
     } catch(e) {
-        console.warn(`[Servicio Landing] No se pudo obtener la URL para el archivo "${path}".`, e);
+        console.warn(`[Servicio Landing] No se pudo obtener la URL para el archivo "${path}". Puede que sea una ruta antigua o incorrecta.`, e);
         return placeholder;
     }
   }
@@ -167,7 +170,7 @@ class LandingConfigService {
     
     const dbData = docSnap.data();
     
-    // Mapea las subsecciones para resolver sus URLs de imagen
+    // CORRECCIÓN: Mapea las subsecciones para resolver SIEMPRE sus URLs de imagen
     const resolvedSections = await Promise.all(
         (dbData.sections || []).map(async (section: LandingSection) => {
             if (section.subsections && section.subsections.length > 0) {

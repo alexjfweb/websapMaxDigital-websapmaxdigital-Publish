@@ -78,19 +78,22 @@ export default function LandingPublicPage() {
   const [pendingFiles, setPendingFiles] = useState<Record<string, File | null>>({});
 
   useEffect(() => {
+    // CORRECCIÓN: Este efecto sincroniza de forma segura los datos del hook al estado local del formulario.
+    // Se ejecuta solo cuando landingConfig (del hook) cambia, asegurando que el estado del formulario
+    // refleje los datos cargados de la base de datos sin causar reinicios inesperados.
     if (landingConfig) {
-        setFormData({
-            ...getDefaultConfig(),
-            ...landingConfig,
-            sections: (landingConfig.sections || []).map(s => ({
-                ...s,
-                subsections: (s.subsections || []).map(sub => ({
-                    ...sub,
-                    imageRadius: sub.imageRadius ?? 50,
-                }))
-            })),
-            seo: { ...getDefaultConfig().seo, ...(landingConfig.seo || {}) }
-        });
+      setFormData({
+        ...getDefaultConfig(),
+        ...landingConfig,
+        sections: (landingConfig.sections || []).map(s => ({
+            ...s,
+            subsections: (s.subsections || []).map(sub => ({
+                ...sub,
+                imageRadius: sub.imageRadius ?? 50,
+            }))
+        })),
+        seo: { ...getDefaultConfig().seo, ...(landingConfig.seo || {}) }
+      });
     }
   }, [landingConfig]);
 
@@ -883,7 +886,3 @@ export default function LandingPublicPage() {
     </div>
   );
 }
-
-    
-
-    
