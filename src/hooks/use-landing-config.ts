@@ -1,4 +1,3 @@
-
 "use client";
 
 import useSWR from 'swr';
@@ -13,13 +12,14 @@ const fetcher = () => landingConfigService.getLandingConfig();
 export function useLandingConfig() {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const [lastSavedContent, setLastSavedContent] = useState<string>('');
   
   const { data, error, isLoading, mutate } = useSWR<LandingConfig | null, Error>(
     SWR_KEY,
     fetcher,
     {
       revalidateOnFocus: false,
-      shouldRetryOnError: false, 
+      revalidateOnReconnect: false,
       onError: (err) => {
         console.error("SWR Error fetching landing config:", err);
         toast({
@@ -35,19 +35,18 @@ export function useLandingConfig() {
     setIsSaving(true);
     try {
       console.log('🔄 Iniciando guardado multipart...');
+      const currentHeroContent = configUpdate.heroContent || '';
+      setLastSavedContent(currentHeroContent);
+
       await landingConfigService.updateLandingConfig(configUpdate, userId, userEmail);
       
-      await mutate(
-        async () => {
-          const freshData = await landingConfigService.getLandingConfig();
-          console.log('📊 Datos reconstruidos desde Firestore:', freshData);
-          return freshData;
-        },
-        {
-          rollbackOnError: false,
-          revalidate: false,
-        }
-      );
+      const freshData = await landingConfigService.getLandingConfig();
+      const syncedData = {
+        ...freshData,
+        heroContent: currentHeroContent,
+      };
+
+      await mutate(syncedData, { revalidate: false });
       
       console.log('✅ Guardado y sincronización completados');
       
@@ -72,5 +71,6 @@ export function useLandingConfig() {
     error: error || null,
     updateConfig,
     refetch: mutate,
+    lastSavedContent,
   };
 }

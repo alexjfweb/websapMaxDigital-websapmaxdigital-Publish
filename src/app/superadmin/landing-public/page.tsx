@@ -65,7 +65,7 @@ const getDefaultConfig = (): LandingConfig => ({
 
 
 export default function LandingPublicPage() {
-  const { landingConfig, isLoading, updateConfig, isSaving } = useLandingConfig();
+  const { landingConfig, isLoading, updateConfig, isSaving, lastSavedContent } = useLandingConfig();
   const { currentUser } = useSession();
   const { toast } = useToast();
   
@@ -75,13 +75,27 @@ export default function LandingPublicPage() {
   
   const [pendingFiles, setPendingFiles] = useState<Record<string, File | null>>({});
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
+  const [editorKey, setEditorKey] = useState(0);
 
   useEffect(() => {
-    if (!isSaving && landingConfig && Object.keys(landingConfig).length > 0) {
-      console.log('🔄 Sincronizando formData con landingConfig:', landingConfig);
+    console.log('🔄 Effect triggered:', { 
+      isLoading, 
+      isSaving, 
+      hasLandingConfig: !!landingConfig,
+      heroContentLength: landingConfig.heroContent?.length || 0
+    });
+    
+    if (!isLoading && landingConfig && Object.keys(landingConfig).length > 0) {
       setFormData(landingConfig);
+      
+      setEditorKey(prev => prev + 1);
+      
+      console.log('📝 FormData actualizado:', {
+        heroContentLength: landingConfig.heroContent?.length || 0,
+        editorKey: editorKey + 1
+      });
     }
-  }, [landingConfig, isSaving]);
+  }, [landingConfig, isLoading, isSaving]);
 
   const handleSave = async () => {
     if (!currentUser) {
@@ -90,7 +104,11 @@ export default function LandingPublicPage() {
     }
     
     try {
-      console.log('💾 Guardando formData:', formData);
+      console.log('🚀 Iniciando guardado...');
+      console.log('📊 FormData actual:', {
+        heroContentLength: formData.heroContent?.length || 0,
+        heroContentPreview: formData.heroContent?.substring(0, 100)
+      });
       await updateConfig(formData, currentUser.id, currentUser.email);
       toast({
         title: "Éxito",
@@ -324,11 +342,13 @@ export default function LandingPublicPage() {
                     <Label htmlFor="heroContent">Contenido Adicional (HTML)</Label>
                     <Suspense fallback={<div className="h-32 w-full bg-muted rounded-md animate-pulse" />}>
                       <RichTextEditor
+                        key={`editor-${editorKey}`}
                         value={formData.heroContent || ''}
                         onChange={(value) => {
                           const cleanValue = value === '<p><br></p>' ? '' : value;
                           setFormData(prev => ({ ...prev, heroContent: cleanValue }));
                         }}
+                        placeholder="Escribe algo increíble..."
                       />
                     </Suspense>
                   </div>
@@ -828,6 +848,25 @@ export default function LandingPublicPage() {
             </Card>
         </div>
       </div>
+      
+       {process.env.NODE_ENV === 'development' && (
+        <div style={{ 
+          position: 'fixed', 
+          bottom: '10px', 
+          right: '10px', 
+          background: 'black', 
+          color: 'white', 
+          padding: '10px',
+          fontSize: '12px',
+          zIndex: 9999
+        }}>
+          <div>isSaving: {isSaving.toString()}</div>
+          <div>editorKey: {editorKey}</div>
+          <div>formData.heroContent: {(formData.heroContent || '').length} chars</div>
+          <div>landingConfig.heroContent: {(landingConfig.heroContent || '').length} chars</div>
+          <div>lastSavedContent: {lastSavedContent.length} chars</div>
+        </div>
+      )}
     </div>
   );
 }
