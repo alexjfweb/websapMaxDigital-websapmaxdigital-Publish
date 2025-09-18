@@ -1,145 +1,237 @@
 
-// src/services/database-sync-service.ts
-import { getDb } from '@/lib/firebase';
-import { collection, doc, writeBatch, serverTimestamp, getDoc } from 'firebase/firestore';
-import { landingPlansService } from './landing-plans-service';
+// src/services/multipart-document-service.ts
+import { doc, getDoc, collection, writeBatch, getDocs, deleteDoc, type Firestore, serverTimestamp } from 'firebase/firestore';
 
-// --- INICIO DE CORRECCIÓN: Se elimina la dependencia de landingConfigService ---
-// Se define la configuración por defecto directamente aquí para evitar el ciclo de importación.
-const getDefaultLandingConfig = () => ({
-  id: 'main',
-  heroTitle: 'Moderniza tu negocio y aumenta tus ventas.',
-  heroSubtitle: 'La solución completa para tu restaurante. Menú digital, gestión de pedidos, reservas y más.',
-  heroContent: 'Descubre la revolución para tu NEGOCIO. ¿Tienes una cafetería, pizzería, food truck, panadería, pastelería, servicio de catering o cualquier otro negocio gastronómico? ¡Esta solución es para ti! </br></br>Con nuestro menú digital interactivo, tus clientes explorarán tus platos con fotos de alta calidad y descripciones detalladas, facilitando su elección y aumentando su satisfacción.</br></br>Además, nuestro sistema de gestión integral te permite controlar cada aspecto de tu negocio: desde el inventario y los pedidos hasta las mesas y el personal, todo en una sola plataforma.</br></br>Optimiza tu operación, reduce costos y toma decisiones más inteligentes con datos en tiempo real. Es la solución completa para llevar tu restaurante a un nuevo nivel de eficiencia y rentabilidad.',
-  heroButtonText: 'Comenzar',
-  heroButtonUrl: '#planes',
-  heroBackgroundColor: '#FFFFFF',
-  heroTextColor: '#1f2937',
-  heroButtonColor: '#FF4500',
-  sections: [],
-  seo: {
-    title: 'WebSapMax - Menús Digitales para Restaurantes',
-    description: 'La solución completa para digitalizar tu restaurante. Ofrece menús con QR, gestiona pedidos y reservas.',
-    keywords: ['restaurante', 'menú digital', 'código qr', 'gestión de pedidos', 'software para restaurantes'],
-    ogTitle: 'WebSapMax: Digitaliza tu Restaurante Hoy',
-    ogDescription: 'Atrae más clientes y optimiza tu operación con nuestra plataforma.',
-    ogImage: 'https://placehold.co/1200x630.png',
-  },
-});
-// --- FIN DE CORRECCIÓN ---
-
-
-// Planes de ejemplo
-const examplePlans = [
-  {
-    id: 'plan_gratis_lite',
-    slug: 'plan-gratis-lite',
-    name: 'Plan Gratis Lite',
-    description: 'Funcionalidad limitada para mantener el acceso básico. Los datos no esenciales se limpian periódicamente.',
-    price: 0, currency: 'COP', period: 'monthly',
-    features: ['Hasta 3 platos', 'Hasta 2 pedidos diarios', 'Hasta 1 reserva diaria', '1 empleado', 'Sin personalización de logo/colores', 'Sin reportes'],
-    isActive: true, isPublic: false, isPopular: false, order: 0, icon: 'zap', color: 'gray', maxUsers: 1, maxProjects: 1, ctaText: 'Plan de Contingencia',
-  },
-  {
-    slug: 'plan-gratuito', name: 'Prueba Gratuita (7 días)',
-    description: 'Prueba las funciones del Plan Estándar durante 7 días sin compromiso. No se requiere tarjeta de crédito.',
-    price: 0, currency: 'COP', period: 'monthly',
-    features: ['Menú Digital con QR y personalización', 'Gestión de Pedidos Online', 'Sistema de Reservas Web', 'Hasta 5 usuarios', 'Soporte por email durante la prueba'],
-    isActive: true, isPublic: true, isPopular: false, order: 1, icon: 'zap', color: 'gray', maxUsers: 5, maxProjects: 1, ctaText: 'Comenzar Prueba Gratuita',
-  },
-  {
-    slug: 'plan-basico', name: 'Básico',
-    description: 'Funciones esenciales para restaurantes pequeños y startups que necesitan digitalizar su operación principal.',
-    price: 57000, currency: 'COP', period: 'monthly',
-    features: ['Menú Digital con QR', 'Gestión de Platos Ilimitada', 'Pedidos para consumo en el local', 'Reportes de Ventas Simples', 'Soporte por email (respuesta en 48h)'],
-    isActive: true, isPublic: true, isPopular: false, order: 2, icon: 'star', color: 'blue', maxUsers: 3, maxProjects: 1, ctaText: 'Elegir Plan Básico',
-    mp_preapproval_plan_id: '2c93808490a6994e0190b0728c7301d0',
-  },
-  {
-    slug: 'plan-estandar', name: 'Estándar',
-    description: 'La solución ideal para restaurantes en crecimiento que buscan ampliar su presencia online y optimizar su servicio.',
-    price: 79.99, currency: 'USD', period: 'monthly',
-    features: ['Todo en el Plan Básico', 'Pedidos Online para Domicilio y Recogida', 'Sistema de Reservas integrable en web', 'Personalización de Logo y Colores', 'Reportes Avanzados (platos más vendidos)', 'Soporte por Chat (respuesta en 24h)'],
-    isActive: true, isPublic: true, isPopular: true, order: 3, icon: 'dollar', color: 'purple', maxUsers: 10, maxProjects: 1, ctaText: 'Actualizar a Estándar',
-    mp_preapproval_plan_id: '2c93808490a6994e0190b072c44801d2',
-  },
-  {
-    slug: 'plan-premium', name: 'Premium',
-    description: 'Para restaurantes con alto volumen que requieren herramientas avanzadas de marketing y gestión de equipos.',
-    price: 99.99, currency: 'USD', period: 'monthly',
-    features: ['Todo en el Plan Premium', 'Herramientas de Fidelización (cupones, puntos)', 'Gestión de Empleados con Roles', 'Integración con Redes Sociales', 'Automatización de Marketing por Email', 'Soporte Prioritario por Chat'],
-    isActive: true, isPublic: true, isPopular: false, order: 4, icon: 'users', color: 'green', maxUsers: -1, maxProjects: 1, ctaText: 'Obtener Premium',
-    mp_preapproval_plan_id: '2c93808490a6994e0190b072f10501d4',
-  },
-];
-
-
-const syncAll = async (userId: string, userEmail: string): Promise<string> => {
-  const db = getDb();
-  if (!db) {
-    throw new Error("La base de datos no está disponible. La sincronización falló.");
+// Función para dividir objeto en chunks que respeten el límite de 1MB
+function divideIntoChunks(data: any, maxSizeBytes = 900000) { // 900KB para margen de seguridad
+  const chunks: any[] = [];
+  let currentChunk: { [key: string]: any } = {};
+  let currentSize = 0;
+  
+  for (const [key, value] of Object.entries(data)) {
+    const entrySize = new Blob([JSON.stringify({ [key]: value })]).size;
+    
+    // Si un solo campo es muy grande, lo dividimos
+    if (entrySize > maxSizeBytes) {
+      if (typeof value === 'string') {
+        // Dividir string largo en partes
+        const parts: string[] = [];
+        const chunkSize = Math.floor(maxSizeBytes / 2); // Tamaño conservador
+        for (let i = 0; i < value.length; i += chunkSize) {
+          parts.push(value.substring(i, i + chunkSize));
+        }
+        
+        // Guardar chunk actual si tiene datos
+        if (Object.keys(currentChunk).length > 0) {
+          chunks.push({ ...currentChunk });
+          currentChunk = {};
+          currentSize = 0;
+        }
+        
+        // Crear chunks para las partes del string
+        parts.forEach((part, index) => {
+          chunks.push({ [`${key}_part_${index}`]: part });
+        });
+        
+        // Metadata para reconstruir
+        chunks.push({ [`${key}_metadata`]: { 
+          type: 'split_string', 
+          parts: parts.length,
+          originalKey: key
+        }});
+        
+      } else {
+        console.warn(`Campo ${key} demasiado grande y no es string:`, entrySize);
+        // Para objetos grandes, convertir a JSON y dividir
+        const jsonStr = JSON.stringify(value);
+        const parts: string[] = [];
+        const chunkSize = Math.floor(maxSizeBytes / 2);
+        for (let i = 0; i < jsonStr.length; i += chunkSize) {
+          parts.push(jsonStr.substring(i, i + chunkSize));
+        }
+        
+        if (Object.keys(currentChunk).length > 0) {
+          chunks.push({ ...currentChunk });
+          currentChunk = {};
+          currentSize = 0;
+        }
+        
+        parts.forEach((part, index) => {
+          chunks.push({ [`${key}_part_${index}`]: part });
+        });
+        
+        chunks.push({ [`${key}_metadata`]: { 
+          type: 'split_json', 
+          parts: parts.length,
+          originalKey: key
+        }});
+      }
+    } else {
+      // Si agregar este campo excede el límite, guardar chunk actual
+      if (currentSize + entrySize > maxSizeBytes && Object.keys(currentChunk).length > 0) {
+        chunks.push({ ...currentChunk });
+        currentChunk = {};
+        currentSize = 0;
+      }
+      
+      currentChunk[key] = value;
+      currentSize += entrySize;
+    }
   }
   
+  // Agregar último chunk si tiene datos
+  if (Object.keys(currentChunk).length > 0) {
+    chunks.push(currentChunk);
+  }
+  
+  return chunks;
+}
+
+// Función principal para guardar en partes
+export async function handleSaveInParts(db: Firestore, collectionName: string, documentId: string, data: any) {
   try {
+    console.log('🚀 Iniciando guardado en partes...');
+    
+    // 1. Limpiar documentos existentes de este ID
+    await cleanupExistingParts(db, collectionName, documentId);
+    
+    // 2. Dividir datos en chunks
+    const chunks = divideIntoChunks(data);
+    console.log(`📦 Dividido en ${chunks.length} partes`);
+    
+    // 3. Usar batch para operaciones atómicas
     const batch = writeBatch(db);
-    let operationsCount = 0;
+    
+    // 4. Crear documento principal con metadata
+    const mainDocRef = doc(db, collectionName, documentId);
+    batch.set(mainDocRef, {
+      isMultiPart: true,
+      totalParts: chunks.length,
+      lastUpdated: serverTimestamp()
+    });
+    
+    // 5. Guardar cada chunk como subdocumento
+    chunks.forEach((chunk, index) => {
+      const partDocRef = doc(db, collectionName, documentId, 'parts', `part_${index}`);
+      batch.set(partDocRef, {
+        partIndex: index,
+        data: chunk,
+      });
+    });
+    
+    // 6. Ejecutar todas las operaciones
+    await batch.commit();
+    
+    console.log('✅ Guardado exitoso en múltiples documentos');
+    return { success: true, parts: chunks.length };
+    
+  } catch (error) {
+    console.error('❌ Error al guardar en partes:', error);
+    throw error;
+  }
+}
 
-    // 1. Sincronizar Planes
-    console.log('📝 Sincronizando planes por defecto...');
-    const plansCollectionRef = collection(db, 'landingPlans');
-    for (const planData of examplePlans) {
-      const docId = planData.id || planData.slug;
-      const docRef = doc(plansCollectionRef, docId);
-      const docSnap = await getDoc(docRef);
-      if (!docSnap.exists()) {
-        const fullPlanData = {
-            ...planData,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-            createdBy: userId,
-            updatedBy: userEmail,
-        };
-        batch.set(docRef, fullPlanData);
-        operationsCount++;
-      }
+// Función para limpiar partes existentes
+async function cleanupExistingParts(db: Firestore, collectionName: string, documentId: string) {
+  try {
+    const partsRef = collection(db, collectionName, documentId, 'parts');
+    const snapshot = await getDocs(partsRef);
+    
+    if (!snapshot.empty) {
+      console.log(`🧹 Limpiando ${snapshot.size} partes existentes...`);
+      const batch = writeBatch(db);
+      snapshot.docs.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
     }
+  } catch (error: any) {
+    // Es normal que falle si no existen partes, no es un error crítico
+    if (error.code !== 'permission-denied' && error.code !== 'not-found') {
+        console.warn('Info: No se encontraron partes existentes para limpiar o hubo un error menor.', error.message);
+    }
+  }
+}
 
-    // 2. Sincronizar Configuración de Landing
-    console.log('📝 Sincronizando configuración de landing por defecto...');
-    const configDocRef = doc(db, 'landing_configs', 'main');
-    const configDocSnap = await getDoc(configDocRef);
-    if (!configDocSnap.exists()) {
-        const defaultConfig = getDefaultLandingConfig(); // Usar la función local
-        const { id, ...dataToSave } = defaultConfig;
-        batch.set(configDocRef, { ...dataToSave, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-        operationsCount++;
+// Función para leer datos divididos
+export async function readMultiPartDocument(db: Firestore, collectionName: string, documentId: string): Promise<any | null> {
+  try {
+    const mainDocRef = doc(db, collectionName, documentId);
+    const mainDoc = await getDoc(mainDocRef);
+    
+    if (!mainDoc.exists()) {
+      console.warn(`Documento principal ${documentId} no encontrado. Se devolverá null.`);
+      return null;
     }
     
-    // 3. Ejecutar el batch si hay operaciones pendientes
-    if (operationsCount > 0) {
-      await batch.commit();
-      return `Sincronización completada. Se crearon ${operationsCount} documentos para asegurar los datos por defecto.`;
-    } else {
-      return "Todos los datos por defecto ya existían. No se realizaron cambios.";
+    const mainData = mainDoc.data();
+    if (!mainData.isMultiPart) {
+      return mainData; // Documento normal, no dividido
     }
+    
+    const partsRef = collection(db, collectionName, documentId, 'parts');
+    const partsSnapshot = await getDocs(partsRef);
+    
+    if (partsSnapshot.empty) {
+        console.warn(`El documento ${documentId} está marcado como multi-parte pero no tiene sub-documentos.`);
+        return { id: documentId };
+    }
+    
+    const parts = partsSnapshot.docs
+      .map(doc => doc.data())
+      .sort((a, b) => a.partIndex - b.partIndex);
+    
+    let reconstructedData: { [key: string]: any } = {};
+    const splitFields = new Map<string, { type: 'split_string' | 'split_json', parts: number, data: string[] }>();
 
+    // Primero procesar metadatos para inicializar splitFields
+    parts.forEach(part => {
+        const chunkData = part.data;
+        for (const [key, value] of Object.entries(chunkData)) {
+            if (key.endsWith('_metadata')) {
+                const metadata = value as any;
+                splitFields.set(metadata.originalKey, {
+                    type: metadata.type,
+                    parts: metadata.parts,
+                    data: new Array(metadata.parts)
+                });
+            }
+        }
+    });
+
+    // Segundo, rellenar los datos de las partes y los campos normales
+    parts.forEach(part => {
+      const chunkData = part.data;
+      for (const [key, value] of Object.entries(chunkData)) {
+        if (key.includes('_part_')) {
+          const originalKey = key.split('_part_')[0];
+          const partIndex = parseInt(key.split('_part_')[1]);
+          if (splitFields.has(originalKey)) {
+            splitFields.get(originalKey)!.data[partIndex] = value as string;
+          }
+        } else if (!key.endsWith('_metadata')) {
+          reconstructedData[key] = value;
+        }
+      }
+    });
+    
+    // Tercero, reconstruir los campos divididos
+    for (const [originalKey, fieldData] of splitFields.entries()) {
+      const joinedData = fieldData.data.join('');
+      if (fieldData.type === 'split_string') {
+        reconstructedData[originalKey] = joinedData;
+      } else if (fieldData.type === 'split_json') {
+        try {
+            reconstructedData[originalKey] = JSON.parse(joinedData);
+        } catch(e) {
+            console.error(`Error parseando JSON reconstruido para el campo ${originalKey}:`, e);
+            reconstructedData[originalKey] = {};
+        }
+      }
+    }
+    
+    return reconstructedData;
+    
   } catch (error) {
-    console.error('Error durante la sincronización de la base de datos:', error);
-    throw new Error('No se pudo completar la sincronización de la base de datos.');
+    console.error('❌ Error al leer documento multi-parte:', error);
+    throw error;
   }
-};
-
-async function runSync() {
-    console.log("Ejecutando script de sincronización...");
-    const message = await syncAll('system-script', 'script@websapmax.com');
-    console.log(message);
 }
-
-// Ejecutar si se llama directamente con tsx
-if (require.main === module) {
-    runSync();
-}
-
-export const databaseSyncService = {
-  syncAll,
-};

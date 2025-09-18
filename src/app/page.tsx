@@ -1,4 +1,5 @@
 
+
 "use client"; 
 
 import React from 'react';
@@ -32,10 +33,13 @@ function LandingPageSkeleton() {
 }
 
 function LandingPageContent() {
-  const { landingConfig, isLoading: isLoadingConfig, error: errorConfig, refetch: retryConfig } = useLandingConfig();
+  const { landingConfig, isLoading: isLoadingConfig, refetch: retryConfig } = useLandingConfig();
   const { plans, isLoading: isLoadingPlans, error: errorPlans, refetch: retryPlans } = useLandingPlans(true);
   
   const isLoading = isLoadingConfig || isLoadingPlans;
+
+  // No necesitamos un estado de error separado aquí, SWR maneja el estado de error
+  const errorConfig = useLandingConfig().error;
 
   if (isLoading) {
     return <LandingPageSkeleton />;

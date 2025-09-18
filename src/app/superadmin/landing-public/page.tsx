@@ -78,25 +78,11 @@ export default function LandingPublicPage() {
   const [editorKey, setEditorKey] = useState(0);
 
   useEffect(() => {
-    console.log('🔄 Effect triggered:', { 
-      isLoading, 
-      isSaving, 
-      hasLandingConfig: !!landingConfig,
-      heroContentLength: landingConfig.heroContent?.length || 0
-    });
-    
     if (!isLoading && landingConfig && Object.keys(landingConfig).length > 0) {
       setFormData(landingConfig);
-      
-      // FORZAR re-render del editor incrementando la key
       setEditorKey(prev => prev + 1);
-      
-      console.log('📝 FormData actualizado:', {
-        heroContentLength: landingConfig.heroContent?.length || 0,
-        editorKey: editorKey + 1
-      });
     }
-  }, [landingConfig, isLoading, isSaving]);
+  }, [landingConfig, isLoading]);
 
 
   const handleSave = async () => {
@@ -106,23 +92,10 @@ export default function LandingPublicPage() {
     }
     
     try {
-      console.log('🚀 Iniciando guardado...');
-      console.log('📊 FormData actual:', {
-        heroContentLength: formData.heroContent?.length || 0,
-        heroContentPreview: formData.heroContent?.substring(0, 100)
-      });
       await updateConfig(formData, currentUser.id, currentUser.email);
-      toast({
-        title: "Éxito",
-        description: "Configuración de la landing guardada correctamente",
-      });
     } catch (error: any) {
-      console.error("Error al guardar:", error);
-      toast({
-        title: "Error al Guardar",
-        description: `No se pudieron guardar los cambios: ${error.message}`,
-        variant: "destructive",
-      });
+      // El hook ya muestra el toast de error.
+      console.error("Error al guardar desde la página:", error);
     }
   };
 

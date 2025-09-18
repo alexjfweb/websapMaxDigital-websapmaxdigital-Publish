@@ -1,7 +1,7 @@
 
 "use client";
 
-import useSWR, { mutate } from 'swr';
+import useSWR from 'swr';
 import { landingConfigService, LandingConfig } from '@/services/landing-config-service';
 import { useToast } from './use-toast';
 import { useState, useEffect } from 'react';
@@ -15,7 +15,7 @@ export function useLandingConfig() {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSavedContent, setLastSavedContent] = useState<string>('');
   
-  const { data, error, isLoading, mutate: revalidate } = useSWR<LandingConfig | null, Error>(
+  const { data, error, isLoading, mutate } = useSWR<LandingConfig | null, Error>(
     SWR_KEY,
     fetcher,
     {
@@ -36,12 +36,17 @@ export function useLandingConfig() {
     setIsSaving(true);
     try {
       const currentHeroContent = configUpdate.heroContent || '';
-      setLastSavedContent(currentHeroContent); // For debugging
+      setLastSavedContent(currentHeroContent);
       
       await landingConfigService.updateLandingConfig(configUpdate, userId, userEmail);
       
-      // Revalidate the data to ensure the UI is in sync with the database.
-      await revalidate();
+      // Forzar la revalidación para obtener los datos reconstruidos
+      await mutate();
+      
+      toast({
+        title: "Éxito",
+        description: "Configuración de la landing guardada correctamente",
+      });
 
     } catch (e: any) {
         toast({
@@ -63,7 +68,7 @@ export function useLandingConfig() {
     isSaving,
     error: error || null,
     updateConfig,
-    refetch: revalidate,
+    refetch: mutate,
     lastSavedContent,
   };
 }
