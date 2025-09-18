@@ -4,6 +4,7 @@
 import useSWR from 'swr';
 import { landingConfigService, LandingConfig } from '@/services/landing-config-service';
 import { useToast } from './use-toast';
+import { useState, useEffect } from 'react';
 
 const SWR_KEY = 'landing-page-config';
 
@@ -11,6 +12,7 @@ const fetcher = () => landingConfigService.getLandingConfig();
 
 export function useLandingConfig() {
   const { toast } = useToast();
+  const [isSaving, setIsSaving] = useState(false);
   
   const { data, error, isLoading, mutate } = useSWR<LandingConfig | null, Error>(
     SWR_KEY,
@@ -30,16 +32,25 @@ export function useLandingConfig() {
   );
 
   const updateConfig = async (configUpdate: Partial<LandingConfig>, userId: string, userEmail: string) => {
-    if (!userId || !userEmail) {
-      throw new Error("Usuario no autenticado para realizar la actualización.");
-    }
-    
+    setIsSaving(true);
     try {
+      console.log('🔄 Iniciando guardado multipart...');
       await landingConfigService.updateLandingConfig(configUpdate, userId, userEmail);
-      // Forzar la revalidación de los datos desde el servidor.
-      // Esto ejecutará el 'fetcher' nuevamente, que a su vez llamará a 'readMultiPartDocument'.
-      await mutate();
-
+      
+      await mutate(
+        async () => {
+          const freshData = await landingConfigService.getLandingConfig();
+          console.log('📊 Datos reconstruidos desde Firestore:', freshData);
+          return freshData;
+        },
+        {
+          rollbackOnError: false,
+          revalidate: false,
+        }
+      );
+      
+      console.log('✅ Guardado y sincronización completados');
+      
     } catch (e: any) {
         toast({
           title: "Error al Guardar",
@@ -47,6 +58,8 @@ export function useLandingConfig() {
           variant: "destructive",
         });
         throw e;
+    } finally {
+        setIsSaving(false);
     }
   };
 
@@ -55,6 +68,7 @@ export function useLandingConfig() {
   return {
     landingConfig: configToShow,
     isLoading: isLoading && !data && !error,
+    isSaving,
     error: error || null,
     updateConfig,
     refetch: mutate,

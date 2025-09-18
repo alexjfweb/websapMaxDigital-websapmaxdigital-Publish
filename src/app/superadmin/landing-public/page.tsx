@@ -65,45 +65,33 @@ const getDefaultConfig = (): LandingConfig => ({
 
 
 export default function LandingPublicPage() {
-  const { landingConfig, isLoading, updateConfig } = useLandingConfig();
+  const { landingConfig, isLoading, updateConfig, isSaving } = useLandingConfig();
   const { currentUser } = useSession();
   const { toast } = useToast();
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState<Record<string, boolean>>({});
-
-  const [formData, setFormData] = useState<LandingConfig>(getDefaultConfig());
+  
+  const [formData, setFormData] = useState<LandingConfig>(landingConfig);
   const [activeTab, setActiveTab] = useState('hero');
   const [previewMode, setPreviewMode] = useState(false);
   
   const [pendingFiles, setPendingFiles] = useState<Record<string, File | null>>({});
+  const [uploading, setUploading] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    if (landingConfig && landingConfig.id !== 'main-default') {
-      setFormData({
-        ...getDefaultConfig(),
-        ...landingConfig,
-        sections: (landingConfig.sections || []).map(s => ({
-            ...s,
-            subsections: (s.subsections || []).map(sub => ({
-                ...sub,
-                imageRadius: sub.imageRadius ?? 50,
-            }))
-        })),
-        seo: { ...getDefaultConfig().seo, ...(landingConfig.seo || {}) }
-      });
+    if (!isSaving && landingConfig && Object.keys(landingConfig).length > 0) {
+      console.log('🔄 Sincronizando formData con landingConfig:', landingConfig);
+      setFormData(landingConfig);
     }
-  }, [landingConfig]);
+  }, [landingConfig, isSaving]);
 
   const handleSave = async () => {
     if (!currentUser) {
       toast({ title: "Error de autenticación", description: "No se pudo verificar el usuario.", variant: "destructive" });
       return;
     }
-    setSaving(true);
     
     try {
+      console.log('💾 Guardando formData:', formData);
       await updateConfig(formData, currentUser.id, currentUser.email);
-      
       toast({
         title: "Éxito",
         description: "Configuración de la landing guardada correctamente",
@@ -115,8 +103,6 @@ export default function LandingPublicPage() {
         description: `No se pudieron guardar los cambios: ${error.message}`,
         variant: "destructive",
       });
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -287,9 +273,9 @@ export default function LandingPublicPage() {
             <Plus className="w-4 h-4 mr-2" />
             Cargar Secciones por Defecto
           </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-            {saving ? 'Guardando...' : 'Guardar Cambios'}
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+            {isSaving ? 'Guardando...' : 'Guardar Cambios'}
           </Button>
         </div>
       </div>
