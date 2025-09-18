@@ -7,15 +7,18 @@ import { firebaseConfig, isFirebaseConfigValid } from './firebase-config'; // Im
 
 let app: FirebaseApp;
 
+// Esta validación se ejecuta una sola vez al cargar la app
 if (!isFirebaseConfigValid()) {
-    console.error("❌ Configuración de Firebase inválida. La aplicación no puede iniciarse.");
+    console.error("❌ Configuración de Firebase del cliente inválida. La aplicación no puede iniciarse correctamente.");
+    // En un entorno real, podrías querer mostrar un error en la UI aquí.
 }
 
 if (getApps().length === 0) {
     try {
         app = initializeApp(firebaseConfig);
     } catch(e) {
-        console.error("🚨 ERROR CRÍTICO AL INICIALIZAR FIREBASE:", e);
+        console.error("🚨 ERROR CRÍTICO AL INICIALIZAR FIREBASE (CLIENTE):", e);
+        // Fallback a un objeto vacío para evitar que la app crashee por completo.
         app = {} as FirebaseApp;
     }
 } else {
