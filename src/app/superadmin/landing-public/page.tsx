@@ -74,27 +74,24 @@ export default function LandingPublicPage() {
   const [formData, setFormData] = useState<LandingConfig>(getDefaultConfig());
   const [activeTab, setActiveTab] = useState('hero');
   const [previewMode, setPreviewMode] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
 
   // Sincronizar con la configuración de Firebase
   useEffect(() => {
-    // Esta condición asegura que la inicialización ocurra solo una vez.
-    if (landingConfig && !isInitialized && !isLoading) {
+    if (landingConfig) {
       setFormData({
-        ...getDefaultConfig(), // Asegura que todos los campos por defecto estén presentes
+        ...getDefaultConfig(),
         ...landingConfig,
         sections: (landingConfig.sections || []).map(s => ({
           ...s,
           subsections: (s.subsections || []).map(sub => ({
               ...sub,
-              imageRadius: sub.imageRadius ?? 50, // Set default radius if not present
+              imageRadius: sub.imageRadius ?? 50,
           }))
         })),
         seo: { ...getDefaultConfig().seo, ...(landingConfig.seo || {}) }
       });
-      setIsInitialized(true); // Marcar como inicializado para evitar reinicios.
     }
-  }, [landingConfig, isInitialized, isLoading]);
+  }, [landingConfig]);
 
   const handleSave = async () => {
     if (!currentUser) {
@@ -278,7 +275,7 @@ export default function LandingPublicPage() {
     setFormData(prev => ({ ...prev, sections: newSections }));
   };
 
-  if (isLoading || !isInitialized) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-lg">Cargando configuración...</div>
@@ -631,7 +628,7 @@ export default function LandingPublicPage() {
                                         src={sub.imageUrl || "https://placehold.co/100x100.png?text=Autor"}
                                         alt="Vista previa de autor"
                                         fill
-                                        className="border object-cover"
+                                        className="object-cover border-4 border-white shadow-lg"
                                         style={{ borderRadius: `50%` }}
                                     />
                                 </div>
@@ -855,3 +852,5 @@ export default function LandingPublicPage() {
     </div>
   );
 }
+
+    
