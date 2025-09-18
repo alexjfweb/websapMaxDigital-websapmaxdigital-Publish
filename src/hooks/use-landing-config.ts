@@ -13,7 +13,7 @@ const fetcher = () => landingConfigService.getLandingConfig();
 export function useLandingConfig() {
   const { toast } = useToast();
   
-  const { data, error, isLoading, mutate } = useSWR<LandingConfig, Error>(
+  const { data, error, isLoading, mutate } = useSWR<LandingConfig | null, Error>(
     SWR_KEY,
     fetcher,
     {
@@ -35,20 +35,23 @@ export function useLandingConfig() {
       throw new Error("Usuario no autenticado para realizar la actualización.");
     }
     
+    // Realiza una actualización optimista para una UI más rápida
     const currentData = data || landingConfigService.getDefaultConfig();
     const newData = { ...currentData, ...configUpdate };
-
+    // El 'false' al final evita una revalidación automática inmediata
     await mutate(newData, false);
 
     try {
         await landingConfigService.updateLandingConfig(configUpdate, userId, userEmail);
+        // Ahora, tras el guardado exitoso, forzamos una revalidación para obtener los datos frescos de la BD
         await mutate();
-    } catch (e) {
+    } catch (e: any) {
         toast({
           title: "Error al Guardar",
-          description: "No se pudieron guardar los cambios. Revirtiendo.",
+          description: `No se pudieron guardar los cambios: ${e.message}`,
           variant: "destructive",
         });
+        // Si el guardado falla, revertimos al estado original
         await mutate(currentData, false);
         throw e;
     }

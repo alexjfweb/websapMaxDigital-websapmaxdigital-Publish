@@ -1,5 +1,5 @@
 // src/services/multipart-document-service.ts
-import { doc, getDoc, collection, writeBatch, getDocs, deleteDoc, type Firestore } from 'firebase/firestore';
+import { doc, getDoc, collection, writeBatch, getDocs, deleteDoc, type Firestore, serverTimestamp } from 'firebase/firestore';
 
 // Función para dividir objeto en chunks que respeten el límite de 1MB
 function divideIntoChunks(data: any, maxSizeBytes = 900000) { // 900KB para margen de seguridad
@@ -106,8 +106,8 @@ export async function handleSaveInParts(db: Firestore, collectionName: string, d
     batch.set(mainDocRef, {
       isMultiPart: true,
       totalParts: chunks.length,
-      createdAt: new Date(),
-      lastUpdated: new Date()
+      createdAt: serverTimestamp(),
+      lastUpdated: serverTimestamp()
     });
     
     // 5. Guardar cada chunk como subdocumento
@@ -116,7 +116,6 @@ export async function handleSaveInParts(db: Firestore, collectionName: string, d
       batch.set(partDocRef, {
         partIndex: index,
         data: chunk,
-        createdAt: new Date()
       });
     });
     
@@ -152,15 +151,11 @@ async function cleanupExistingParts(db: Firestore, collectionName: string, docum
 // Función para leer datos divididos
 export async function readMultiPartDocument(db: Firestore, collectionName: string, documentId: string): Promise<any> {
   try {
-    console.log('📖 Leyendo documento multi-parte...');
-    
     // 1. Leer documento principal
     const mainDocRef = doc(db, collectionName, documentId);
     const mainDoc = await getDoc(mainDocRef);
     
     if (!mainDoc.exists()) {
-      // Si no existe, podría ser que nunca se ha guardado, o que es un documento simple.
-      // Devolver null para que el servicio que lo llama decida qué hacer (ej: usar valores por defecto).
       return null;
     }
     

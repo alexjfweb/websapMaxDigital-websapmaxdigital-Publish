@@ -3,6 +3,8 @@ import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import { getDb } from '@/lib/firebase';
 import { auditService } from './audit-service';
 import { handleSaveInParts, readMultiPartDocument } from './multipart-document-service';
+import { serverTimestamp } from 'firebase/firestore';
+
 
 // Interfaces for structured data
 export interface LandingSubsection {
@@ -123,42 +125,13 @@ class LandingConfigService {
     return getDb();
   }
 
-  private async getImageUrl(path: string): Promise<string> {
-    const placeholder = 'https://placehold.co/400x300.png?text=...';
-    if (!path) return placeholder;
-    if (path.startsWith('http')) return path;
-    
-    const storage = getStorage();
-
-    if (path.startsWith('gs://')) {
-      try {
-        const imageRef = ref(storage, path);
-        return await getDownloadURL(imageRef);
-      } catch (error) {
-        console.warn(`[Servicio Landing] No se pudo obtener la URL para gs path "${path}".`, error);
-        return placeholder;
-      }
-    }
-    
-    try {
-        const imageRef = ref(storage, path);
-        return await getDownloadURL(imageRef);
-    } catch(e) {
-        console.warn(`[Servicio Landing] No se pudo obtener la URL para el archivo "${path}".`, e);
-        return placeholder;
-    }
-  }
-
-  async getLandingConfig(): Promise<LandingConfig> {
+  async getLandingConfig(): Promise<LandingConfig | null> {
     const data = await readMultiPartDocument(this.db, CONFIG_COLLECTION_NAME, MAIN_CONFIG_DOC_ID);
 
     if (!data) {
         console.warn("Landing config not found in DB. Returning default config.");
         return this.getDefaultConfig();
     }
-    
-    // Aquí puedes añadir la lógica para resolver URLs si es necesario,
-    // aunque es mejor hacerlo solo cuando se guardan para mantener la lectura rápida.
     
     return {
       ...this.getDefaultConfig(),
@@ -172,19 +145,22 @@ class LandingConfigService {
     userId: string,
     userEmail: string
   ): Promise<void> {
-    // Los datos originales no son necesarios para la lógica de guardado, pero sí para la auditoría.
-    // const originalDoc = await this.getLandingConfig().catch(() => this.getDefaultConfig());
     
-    await handleSaveInParts(this.db, CONFIG_COLLECTION_NAME, MAIN_CONFIG_DOC_ID, configUpdate);
+    const dataToSave = {
+        ...configUpdate,
+        updatedAt: serverTimestamp(),
+        updatedBy: userEmail,
+    };
+
+    await handleSaveInParts(this.db, CONFIG_COLLECTION_NAME, MAIN_CONFIG_DOC_ID, dataToSave);
   
-    // La auditoría se puede simplificar o hacer más robusta si es necesario
     await auditService.log({
-      entity: 'landingConfigs' as any,
+      entity: 'landingConfigs',
       entityId: MAIN_CONFIG_DOC_ID,
       action: 'updated',
       performedBy: { uid: userId, email: userEmail },
       details: 'Landing page configuration updated using multi-part save.',
-      newData: { summary: `Updated ${Object.keys(configUpdate).length} fields.` } // No guardar el objeto completo para evitar el mismo error en la auditoría
+      newData: { summary: `Updated ${Object.keys(configUpdate).length} fields.` } 
     });
   }
 
