@@ -70,7 +70,7 @@ const CONTENT_COLLECTION_NAME = 'landing_content';
 const MAIN_CONFIG_DOC_ID = 'main';
 
 const getDefaultConfig = (): LandingConfig => ({
-  id: 'main',
+  id: 'main-default', // Usar un ID que indique que es la config por defecto
   heroTitle: 'Moderniza tu negocio y aumenta tus ventas.',
   heroSubtitle: 'La solución completa para tu restaurante. Menú digital, gestión de pedidos, reservas y más.',
   heroContent: 'Descubre la revolución para tu NEGOCIO. ¿Tienes una cafetería, pizzería, food truck, panadería, pastelería, servicio de catering o cualquier otro negocio gastronómico? ¡Esta solución es para ti! </br></br>Con nuestro menú digital interactivo, tus clientes explorarán tus platos con fotos de alta calidad y descripciones detalladas, facilitando su elección y aumentando su satisfacción.</br></br>Además, nuestro sistema de gestión integral te permite controlar cada aspecto de tu negocio: desde el inventario y los pedidos hasta las mesas y el personal, todo en una sola plataforma.</br></br>Optimiza tu operación, reduce costos y toma decisiones más inteligentes con datos en tiempo real. Es la solución completa para llevar tu restaurante a un nuevo nivel de eficiencia y rentabilidad.',
@@ -227,50 +227,65 @@ class LandingConfigService {
     userEmail: string
   ): Promise<void> {
     const originalDoc = await this.getLandingConfig().catch(() => getDefaultConfig());
-    const docRef = this.getConfigDocRef();
     const batch = writeBatch(this.db);
-
-    const { sections, heroContent, ...mainData } = configUpdate;
-
-    const mainDocUpdate = {
-        ...mainData,
-        seo: mainData.seo || originalDoc.seo, // Ensure SEO object is not lost
-        updatedAt: serverTimestamp()
+    const mainDocRef = this.getConfigDocRef();
+  
+    // 1. Preparar el documento principal (solo con datos ligeros)
+    const mainDocData = {
+      heroTitle: configUpdate.heroTitle ?? originalDoc.heroTitle,
+      heroSubtitle: configUpdate.heroSubtitle ?? originalDoc.heroSubtitle,
+      heroButtonText: configUpdate.heroButtonText ?? originalDoc.heroButtonText,
+      heroButtonUrl: configUpdate.heroButtonUrl ?? originalDoc.heroButtonUrl,
+      heroBackgroundColor: configUpdate.heroBackgroundColor ?? originalDoc.heroBackgroundColor,
+      heroTextColor: configUpdate.heroTextColor ?? originalDoc.heroTextColor,
+      heroButtonColor: configUpdate.heroButtonColor ?? originalDoc.heroButtonColor,
+      heroAnimation: configUpdate.heroAnimation ?? originalDoc.heroAnimation,
+      seo: configUpdate.seo ?? originalDoc.seo,
+      updatedAt: serverTimestamp(),
     };
     
-    if (sections) {
-      const sectionsForMainDoc = sections.map(({ content, subsections, ...sectionData }) => sectionData);
-      mainDocUpdate.sections = sectionsForMainDoc;
+    // Si hay secciones, guardar solo su estructura ligera en el doc principal
+    if (configUpdate.sections) {
+      (mainDocData as any).sections = configUpdate.sections.map(
+        ({ content, subsections, ...sectionData }) => sectionData
+      );
     }
-
-    batch.set(docRef, mainDocUpdate, { merge: true });
-
-    if (heroContent !== undefined) {
-        const heroContentDocRef = this.getContentDocRef('hero_content');
-        batch.set(heroContentDocRef, { content: heroContent, updatedAt: serverTimestamp() }, { merge: true });
+  
+    batch.set(mainDocRef, mainDocData, { merge: true });
+  
+    // 2. Guardar el contenido del Hero por separado
+    if (configUpdate.heroContent !== undefined) {
+      const heroContentDocRef = this.getContentDocRef('hero_content');
+      batch.set(heroContentDocRef, { content: configUpdate.heroContent || '', updatedAt: serverTimestamp() }, { merge: true });
     }
-
-    if (sections) {
-        for (const section of sections) {
-            const contentDocRef = this.getContentDocRef(section.id);
-            batch.set(contentDocRef, { content: section.content || '', updatedAt: serverTimestamp() }, { merge: true });
-
-            if (section.subsections) {
-                const subsectionsDocRef = this.getSubsectionsDocRef(section.id);
-                batch.set(subsectionsDocRef, { subsections: section.subsections, updatedAt: serverTimestamp() }, { merge: true });
-            }
+  
+    // 3. Guardar el contenido y las subsecciones de cada sección por separado
+    if (configUpdate.sections) {
+      for (const section of configUpdate.sections) {
+        // Guardar el 'content' pesado en su propio documento
+        const contentDocRef = this.getContentDocRef(section.id);
+        batch.set(contentDocRef, { content: section.content || '', updatedAt: serverTimestamp() }, { merge: true });
+  
+        // Guardar las 'subsections' pesadas en su propio documento
+        if (section.subsections) {
+          const subsectionsDocRef = this.getSubsectionsDocRef(section.id);
+          batch.set(subsectionsDocRef, { subsections: section.subsections, updatedAt: serverTimestamp() }, { merge: true });
         }
+      }
     }
-    
+  
+    // 4. Ejecutar todas las operaciones en un solo batch
     await batch.commit();
-
+  
+    // 5. Registrar en la auditoría
     await auditService.log({
       entity: 'landingConfigs' as any,
       entityId: MAIN_CONFIG_DOC_ID,
       action: 'updated',
       performedBy: { uid: userId, email: userEmail },
-      previousData: originalDoc,
-      newData: { ...originalDoc, ...configUpdate },
+      previousData: originalDoc, // Guarda el estado anterior completo
+      newData: configUpdate, // Guarda la actualización completa
+      details: 'Landing page configuration updated.'
     });
   }
 
