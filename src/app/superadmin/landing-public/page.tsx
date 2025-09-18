@@ -787,10 +787,16 @@ export default function LandingPublicPage() {
                         {section.subsections && section.subsections.length > 0 && section.type !== 'testimonials' && (
                             <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
                             {section.subsections.map(sub => (
-                                <div key={sub.id} className="bg-white rounded-lg shadow-md p-6 flex flex-col items-center text-center text-gray-800">
-                                {sub.imageUrl && <Image src={sub.imageUrl} alt={sub.title} width={80} height={80} className="mb-4 w-20 h-20 object-cover rounded-full" />}
-                                <h4 className="font-bold text-lg mb-2">{sub.title}</h4>
-                                <div className="text-sm" dangerouslySetInnerHTML={{ __html: sub.content }}/>
+                                <div key={sub.id} className="bg-white rounded-lg shadow-md text-gray-800 flex flex-col">
+                                    {sub.imageUrl && (
+                                        <div className="relative aspect-video w-full">
+                                            <Image src={sub.imageUrl} alt={sub.title} fill className="object-cover rounded-t-lg" />
+                                        </div>
+                                    )}
+                                    <div className="p-6 flex flex-col flex-grow">
+                                        <h4 className="font-bold text-lg mb-2">{sub.title}</h4>
+                                        <div className="text-sm flex-grow" dangerouslySetInnerHTML={{ __html: sub.content }}/>
+                                    </div>
                                 </div>
                             ))}
                             </div>
@@ -847,5 +853,7 @@ export default function LandingPublicPage() {
     </div>
   );
 }
+
+    
 
     
