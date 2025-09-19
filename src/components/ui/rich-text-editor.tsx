@@ -1,8 +1,5 @@
 "use client";
-
-import React, { useMemo } from 'react';
-
-// Importar ReactQuill de forma dinámica para evitar problemas con SSR
+import React, { useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import 'react-quill/dist/quill.snow.css';
 
@@ -13,8 +10,23 @@ interface RichTextEditorProps {
 }
 
 const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeholder }) => {
-  // Usar dynamic import para ReactQuill
   const ReactQuill = useMemo(() => dynamic(() => import('react-quill'), { ssr: false }), []);
+
+  // Registrar módulos de alineación explícitamente
+  useEffect(() => {
+    const registerQuillModules = async () => {
+      // Usamos un import() dinámico dentro de useEffect para asegurarnos que se ejecuta en el cliente
+      const Quill = (await import('react-quill')).default;
+      if (Quill) {
+          const AlignClass = Quill.import('attributors/class/align');
+          const AlignStyle = Quill.import('attributors/style/align');
+          Quill.register(AlignClass, true);
+          Quill.register(AlignStyle, true);
+      }
+    };
+    
+    registerQuillModules();
+  }, []);
 
   const modules = {
     toolbar: [
