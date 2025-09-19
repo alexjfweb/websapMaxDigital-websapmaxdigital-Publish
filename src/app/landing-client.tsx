@@ -9,6 +9,7 @@ import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import type { LandingConfig } from '@/services/landing-config-service';
+import Link from 'next/link';
 
 interface LandingClientProps {
   initialConfig: LandingConfig;
@@ -164,9 +165,32 @@ export default function LandingClient({ initialConfig: config, plans, errorPlans
           )}
         </div>
       </main>
-      <footer className="w-full bg-gray-100 dark:bg-gray-800 py-6">
-        <div className="container mx-auto text-center text-gray-600 dark:text-gray-400">
-            <p>&copy; {new Date().getFullYear()} WebSapMax. Todos los derechos reservados.</p>
+      <footer className="w-full bg-[#4A2F28] text-white py-12">
+        <div className="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 px-4">
+          <div>
+            <h3 className="font-bold mb-4">ACEPTAMOS</h3>
+            <div className="bg-white p-2 rounded-md">
+              <Image src="https://placehold.co/300x75.png?text=Metodos+de+Pago" alt="Métodos de pago" width={300} height={75} className="w-full" data-ai-hint="payment methods logos"/>
+            </div>
+          </div>
+          <div>
+            <h3 className="font-bold mb-4">LEGAL</h3>
+            <ul className="space-y-2 text-sm">
+              <li><Link href="/terms" className="hover:underline">Términos de Servicio</Link></li>
+              <li><Link href="/privacy" className="hover:underline">Política de Privacidad</Link></li>
+              <li><Link href="/cookies" className="hover:underline">Política de Cookies</Link></li>
+              <li><Link href="/legal" className="hover:underline">Aviso Legal</Link></li>
+              <li><Link href="/cancel" className="hover:underline">Cancelar suscripción</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h3 className="font-bold mb-4">CONTACTO</h3>
+            <p className="text-sm">Colombia</p>
+            <a href="mailto:info@websap.site" className="text-sm hover:underline">info@websap.site</a>
+          </div>
+        </div>
+        <div className="container mx-auto text-center text-sm text-gray-400 mt-8 pt-8 border-t border-gray-600">
+          <p>© {new Date().getFullYear()} WebSapMax - CIF B12345678</p>
         </div>
       </footer>
     </>
