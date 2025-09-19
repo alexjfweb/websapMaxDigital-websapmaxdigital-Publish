@@ -1,13 +1,11 @@
-
 // src/app/api/upload/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getStorage } from 'firebase-admin/storage';
-import { getFirebaseAdmin } from '@/lib/firebase-admin'; // Importar el inicializador centralizado del servidor
+import { getFirebaseAdmin } from '@/lib/firebase-admin';
 
 export async function POST(request: NextRequest) {
   try {
     // 1. Inicializar el SDK de Admin del lado del servidor DENTRO del handler.
-    // Esto asegura que las variables de entorno se lean en el contexto de ejecución de la API.
     const adminApp = getFirebaseAdmin();
     const storage = getStorage(adminApp);
     const bucket = storage.bucket();
@@ -53,8 +51,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    // Si algo falla (especialmente la inicialización de Firebase Admin),
-    // el error se capturará aquí y se devolverá una respuesta 500.
     console.error('❌ Error en la API de subida:', error);
     return NextResponse.json({ 
       success: false,
