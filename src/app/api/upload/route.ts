@@ -5,7 +5,7 @@ import { getFirebaseAdmin } from '@/lib/firebase-admin';
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Inicializar el SDK de Admin del lado del servidor DENTRO del handler.
+    // 1. Inicializar el SDK de Admin DENTRO del handler para asegurar que se ejecuta en el contexto correcto.
     const adminApp = getFirebaseAdmin();
     const storage = getStorage(adminApp);
     const bucket = storage.bucket();
@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('❌ Error en la API de subida:', error);
+    // Devolvemos el mensaje de error específico que viene desde getFirebaseAdmin.
     return NextResponse.json({ 
       success: false,
       error: `Error interno del servidor: ${error.message}`,
