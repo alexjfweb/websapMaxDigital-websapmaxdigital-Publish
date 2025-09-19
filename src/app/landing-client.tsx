@@ -79,7 +79,7 @@ export default function LandingClient({ initialConfig: config, plans, errorPlans
           </p>
           {config.heroContent && (
             <div 
-              className="text-lg max-w-3xl text-center mb-8"
+              className="text-lg max-w-3xl text-center mb-8 ql-editor"
               dangerouslySetInnerHTML={{ __html: config.heroContent }}
             />
           )}
@@ -107,7 +107,7 @@ export default function LandingClient({ initialConfig: config, plans, errorPlans
               <p className="text-lg text-muted-foreground mb-6 max-w-3xl mx-auto">{section.subtitle}</p>
               
               {section.content && (
-                  <div className="text-base text-muted-foreground mb-8 max-w-3xl mx-auto whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: section.content }} />
+                  <div className="text-base text-muted-foreground mb-8 max-w-3xl mx-auto ql-editor" dangerouslySetInnerHTML={{ __html: section.content }} />
               )}
               
               {section.buttonText && section.buttonUrl && (
@@ -146,7 +146,7 @@ export default function LandingClient({ initialConfig: config, plans, errorPlans
                       <Card key={sub.id} className="bg-white/80 backdrop-blur-sm text-gray-800">
                           <CardContent className="p-6 text-center">
                               <Image src={sub.imageUrl || 'https://placehold.co/100x100.png'} alt={sub.title} width={80} height={80} className="mx-auto mb-4 rounded-full border-4 border-white shadow-lg" />
-                              <div className="text-lg italic mb-4" dangerouslySetInnerHTML={{ __html: sub.content }}/>
+                              <div className="text-lg italic mb-4 ql-editor" dangerouslySetInnerHTML={{ __html: sub.content }}/>
                               <p className="font-bold text-primary">{sub.title}</p>
                               {sub.authorRole && <p className="text-sm text-muted-foreground">{sub.authorRole}</p>}
                           </CardContent>

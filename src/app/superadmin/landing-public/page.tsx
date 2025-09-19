@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, ChangeEvent, lazy, Suspense } from 'react';
@@ -820,7 +821,7 @@ export default function LandingEditorPage() {
                     >
                         <h1 className="text-4xl font-bold mb-4">{formData.heroTitle}</h1>
                         <p className="text-xl mb-6">{formData.heroSubtitle}</p>
-                         {formData.heroContent && <div className="text-base max-w-3xl mx-auto mb-8 whitespace-pre-wrap ql-editor" dangerouslySetInnerHTML={{ __html: formData.heroContent }} />}
+                         {formData.heroContent && <div className="text-base max-w-3xl mx-auto mb-8 ql-editor" dangerouslySetInnerHTML={{ __html: formData.heroContent }} />}
                         <button
                         className="px-8 py-3 rounded-lg font-semibold"
                         style={{ backgroundColor: formData.heroButtonColor, color: '#ffffff' }}
@@ -843,7 +844,7 @@ export default function LandingEditorPage() {
                             {section.subtitle && (
                             <p className="text-xl mb-6">{section.subtitle}</p>
                             )}
-                            {section.content && <div className="text-base max-w-3xl mx-auto mb-8 whitespace-pre-wrap ql-editor" dangerouslySetInnerHTML={{ __html: section.content }} />}
+                            {section.content && <div className="text-base max-w-3xl mx-auto mb-8 ql-editor" dangerouslySetInnerHTML={{ __html: section.content }} />}
                             {section.buttonText && <button
                             className="px-6 py-2 rounded-lg font-semibold"
                             style={{ backgroundColor: section.buttonColor, color: '#ffffff' }}
