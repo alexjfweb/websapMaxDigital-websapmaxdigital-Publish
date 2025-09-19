@@ -15,9 +15,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
   // Registrar módulos de alineación explícitamente
   useEffect(() => {
     const registerQuillModules = async () => {
-      // Usamos un import() dinámico dentro de useEffect para asegurarnos que se ejecuta en el cliente
+      // Usamos un import() dinámico para asegurarnos que se ejecuta en el cliente
       const Quill = (await import('react-quill')).default;
-      if (Quill) {
+      if (Quill && typeof window !== 'undefined') {
           const AlignClass = Quill.import('attributors/class/align');
           const AlignStyle = Quill.import('attributors/style/align');
           Quill.register(AlignClass, true);
