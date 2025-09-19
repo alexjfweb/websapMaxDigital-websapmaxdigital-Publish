@@ -22,6 +22,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
       ['bold', 'italic', 'underline', 'strike'],
       [{'list': 'ordered'}, {'list': 'bullet'}, {'indent': '-1'}, {'indent': '+1'}],
       [{ 'align': [] }],
+      [{ 'color': [] }],
       ['link', 'image'],
       ['clean']
     ],
@@ -32,6 +33,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
     'bold', 'italic', 'underline', 'strike',
     'list', 'bullet', 'indent',
     'align',
+    'color',
     'link', 'image'
   ];
 
