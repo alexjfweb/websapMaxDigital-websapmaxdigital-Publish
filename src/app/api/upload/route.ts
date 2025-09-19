@@ -9,7 +9,8 @@ export async function POST(request: NextRequest) {
     // 1. Inicializar el SDK de Admin DENTRO del handler para asegurar que se ejecuta en el contexto correcto.
     const adminApp = getFirebaseAdmin();
     const storage = getStorage(adminApp);
-    const bucket = storage.bucket();
+    // CORRECCIÓN: Especificar explícitamente el nombre del bucket.
+    const bucket = storage.bucket('websapmax-images');
 
     // 2. Procesar los datos del formulario.
     const formData = await request.formData();
