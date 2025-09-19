@@ -1,10 +1,10 @@
-
 "use client";
 
 import React, { useMemo } from 'react';
 
 // Importar ReactQuill de forma dinámica para evitar problemas con SSR
 import dynamic from 'next/dynamic';
+import 'react-quill/dist/quill.snow.css';
 
 interface RichTextEditorProps {
   value: string;
