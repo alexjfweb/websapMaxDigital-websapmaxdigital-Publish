@@ -1,4 +1,3 @@
-
 // src/lib/firebase-admin.ts
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 import { serviceAccountConfig } from './firebase-config-server'; // Importar la configuración directamente.
@@ -17,7 +16,7 @@ function getFirebaseAdmin(): App {
     // Aquí se utiliza cert() para crear las credenciales a partir del objeto importado.
     adminApp = initializeApp({
       credential: cert(serviceAccountConfig),
-      storageBucket: `${serviceAccountConfig.project_id}.appspot.com`,
+      storageBucket: 'websapmax-images',
     }, APP_NAME);
     
     console.log("✅ Firebase Admin SDK inicializado correctamente.");
