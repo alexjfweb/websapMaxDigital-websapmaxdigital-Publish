@@ -30,6 +30,18 @@ export default function ArticlePage() {
                 En un mundo cada vez más competitivo, la clave para destacar ya no está solo en el sabor de tus platillos, sino también en la experiencia que ofreces a tus clientes. La tecnología se ha convertido en un aliado indispensable para restaurantes, cafeterías, food trucks y servicios de catering que desean crecer, modernizarse y multiplicar sus ventas.
               </p>
 
+              <div className="my-8 flex justify-center">
+                <Image
+                  src="/imagen/carracteristica-QE-AJ.png"
+                  alt="Digitalización de restaurantes"
+                  width={800}
+                  height={450}
+                  className="rounded-lg shadow-lg"
+                  unoptimized
+                  data-ai-hint="restaurant management app"
+                />
+              </div>
+
               <section>
                 <h2 className="text-3xl font-bold font-sans text-gray-900 mb-4 border-b pb-2">Menús interactivos: conquista desde el primer vistazo</h2>
                 <p>
@@ -110,11 +122,12 @@ export default function ArticlePage() {
                     <h4 className="footer__title font-bold text-sm uppercase tracking-wider mb-4">Aceptamos</h4>
                     <div className="footer__logos flex items-center gap-4 bg-white p-2 rounded-md">
                         <Image 
-                            src="/image/tarjetadecreditos-websaap-2.png"
+                            src="/imagen/tarjetadecreditos-websaap-2.png"
                             alt="Métodos de pago aceptados"
                             width={250}
                             height={40}
                             className="object-contain"
+                            unoptimized
                         />
                     </div>
                     </div>
@@ -122,11 +135,11 @@ export default function ArticlePage() {
                     <div className="footer__section footer__legal-links">
                     <h4 className="footer__title font-bold text-sm uppercase tracking-wider mb-4">Legal</h4>
                     <ul className="footer__list space-y-2">
-                        <li><Link href="/terms" className="footer__link text-gray-300 hover:text-accent transition-colors" aria-label="Términos de Servicio">Términos de Servicio</Link></li>
-                        <li><Link href="/privacy" className="footer__link text-gray-300 hover:text-accent transition-colors" aria-label="Política de Privacidad">Política de Privacidad</Link></li>
-                        <li><Link href="/cookies" className="footer__link text-gray-300 hover:text-accent transition-colors" aria-label="Política de Cookies">Política de Cookies</Link></li>
-                        <li><Link href="/legal" className="footer__link text-gray-300 hover:text-accent transition-colors" aria-label="Aviso Legal">Aviso Legal</Link></li>
-                        <li><Link href="/unsubscribe" className="footer__link text-gray-300 hover:text-accent transition-colors" aria-label="Cancelar suscripción">Cancelar suscripción</Link></li>
+                        <li><Link href="/terms" className="footer__link text-gray-300 hover:text-[#E60023] transition-colors" aria-label="Términos de Servicio">Términos de Servicio</Link></li>
+                        <li><Link href="/privacy" className="footer__link text-gray-300 hover:text-[#E60023] transition-colors" aria-label="Política de Privacidad">Política de Privacidad</Link></li>
+                        <li><Link href="/cookies" className="footer__link text-gray-300 hover:text-[#E60023] transition-colors" aria-label="Política de Cookies">Política de Cookies</Link></li>
+                        <li><Link href="/legal" className="footer__link text-gray-300 hover:text-[#E60023] transition-colors" aria-label="Aviso Legal">Aviso Legal</Link></li>
+                        <li><Link href="/unsubscribe" className="footer__link text-gray-300 hover:text-[#E60023] transition-colors" aria-label="Cancelar suscripción">Cancelar suscripción</Link></li>
                     </ul>
                     </div>
 
