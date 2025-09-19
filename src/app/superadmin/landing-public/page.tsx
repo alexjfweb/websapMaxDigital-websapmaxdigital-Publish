@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import React, { useState, useEffect, ChangeEvent, lazy, Suspense } from 'react';
@@ -822,7 +820,7 @@ export default function LandingEditorPage() {
                     >
                         <h1 className="text-4xl font-bold mb-4">{formData.heroTitle}</h1>
                         <p className="text-xl mb-6">{formData.heroSubtitle}</p>
-                         {formData.heroContent && <div className="text-base max-w-3xl mx-auto mb-8 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: formData.heroContent }} />}
+                         {formData.heroContent && <div className="text-base max-w-3xl mx-auto mb-8 whitespace-pre-wrap ql-editor" dangerouslySetInnerHTML={{ __html: formData.heroContent }} />}
                         <button
                         className="px-8 py-3 rounded-lg font-semibold"
                         style={{ backgroundColor: formData.heroButtonColor, color: '#ffffff' }}
@@ -845,7 +843,7 @@ export default function LandingEditorPage() {
                             {section.subtitle && (
                             <p className="text-xl mb-6">{section.subtitle}</p>
                             )}
-                            {section.content && <div className="text-base max-w-3xl mx-auto mb-8 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: section.content }} />}
+                            {section.content && <div className="text-base max-w-3xl mx-auto mb-8 whitespace-pre-wrap ql-editor" dangerouslySetInnerHTML={{ __html: section.content }} />}
                             {section.buttonText && <button
                             className="px-6 py-2 rounded-lg font-semibold"
                             style={{ backgroundColor: section.buttonColor, color: '#ffffff' }}
@@ -865,7 +863,7 @@ export default function LandingEditorPage() {
                                     )}
                                     <div className="p-6 flex flex-col flex-grow">
                                         <h4 className="font-bold text-lg mb-2">{sub.title}</h4>
-                                        <div className="text-sm flex-grow" dangerouslySetInnerHTML={{ __html: sub.content }}/>
+                                        <div className="text-sm flex-grow ql-editor" dangerouslySetInnerHTML={{ __html: sub.content }}/>
                                     </div>
                                 </div>
                             ))}
@@ -886,7 +884,7 @@ export default function LandingEditorPage() {
                                                     style={{ borderRadius: `50%` }}
                                                 />
                                             </div>
-                                            <div className="text-lg italic mb-4" dangerouslySetInnerHTML={{ __html: sub.content }}/>
+                                            <div className="text-lg italic mb-4 ql-editor" dangerouslySetInnerHTML={{ __html: sub.content }}/>
                                             <p className="font-bold text-primary">{sub.title}</p>
                                             {sub.authorRole && <p className="text-sm text-muted-foreground">{sub.authorRole}</p>}
                                         </CardContent>
@@ -904,9 +902,3 @@ export default function LandingEditorPage() {
     </div>
   );
 }
-
-    
-
-    
-
-    
