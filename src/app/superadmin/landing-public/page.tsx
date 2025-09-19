@@ -624,6 +624,39 @@ export default function LandingEditorPage() {
                     <CardContent>
                     {testimonialsSection ? (
                         <div className="space-y-4">
+                         <div className="space-y-4 p-4 border-2 border-dashed rounded-lg">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <Label>Título de la Sección</Label>
+                                    <Input value={testimonialsSection.title} onChange={(e) => updateSection(testimonialsSectionIndex, 'title', e.target.value)} />
+                                </div>
+                                <div>
+                                    <Label>Subtítulo de la Sección</Label>
+                                    <Input value={testimonialsSection.subtitle} onChange={(e) => updateSection(testimonialsSectionIndex, 'subtitle', e.target.value)} />
+                                </div>
+                            </div>
+                            <div>
+                                <Label>Contenido Adicional</Label>
+                                <RichTextEditor 
+                                    key={`editor-testimonials-content-${editorKey}`}
+                                    value={testimonialsSection.content} 
+                                    onChange={(v) => updateSection(testimonialsSectionIndex, 'content', v)}
+                                />
+                            </div>
+                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                                <div>
+                                    <Label>Color de Fondo</Label>
+                                    <Input type="color" value={testimonialsSection.backgroundColor} onChange={(e) => updateSection(testimonialsSectionIndex, 'backgroundColor', e.target.value)} className="w-full h-10 p-1"/>
+                                </div>
+                                <div>
+                                    <Label>Color de Texto</Label>
+                                    <Input type="color" value={testimonialsSection.textColor} onChange={(e) => updateSection(testimonialsSectionIndex, 'textColor', e.target.value)} className="w-full h-10 p-1"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <Separator className="my-6"/>
+
                         {(testimonialsSection.subsections || []).map((sub, subIdx) => {
                             const fileKey = `${testimonialsSectionIndex}-${subIdx}-imageUrl`;
                             return (
@@ -869,6 +902,8 @@ export default function LandingEditorPage() {
     </div>
   );
 }
+
+    
 
     
 
