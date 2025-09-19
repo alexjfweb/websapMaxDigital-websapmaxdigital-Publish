@@ -11,7 +11,7 @@ const NavLinks = ({ className, onLinkClick }: { className?: string; onLinkClick?
   const links = [
     { href: '#features', label: 'Características' },
     { href: '#planes', label: 'Planes' },
-    { href: '#contact', label: 'Contacto' },
+    { href: '/contact', label: 'Contacto' },
   ];
 
   const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
