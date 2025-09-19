@@ -170,7 +170,7 @@ export default function LandingClient({ initialConfig: config, plans, errorPlans
           <div>
             <h3 className="font-bold mb-4">ACEPTAMOS</h3>
             <div className="bg-white p-2 rounded-md">
-              <Image src="https://placehold.co/300x75.png?text=Metodos+de+Pago" alt="Métodos de pago" width={300} height={75} className="w-full" data-ai-hint="payment methods logos"/>
+              <Image src="/imagen/tarjetadecreditos-websaap-2.png" alt="Métodos de pago" width={300} height={75} className="w-full" data-ai-hint="payment methods logos"/>
             </div>
           </div>
           <div>
