@@ -1,3 +1,4 @@
+
 "use client";
 
 import { motion } from 'framer-motion';
@@ -170,7 +171,7 @@ export default function LandingClient({ initialConfig: config, plans, errorPlans
           <div>
             <h3 className="font-bold mb-4">ACEPTAMOS</h3>
             <div className="bg-white p-2 rounded-md">
-              <Image src="/imagen/tarjetadecreditos-websaap-2.png" alt="Métodos de pago" width={300} height={75} className="w-full" data-ai-hint="payment methods logos"/>
+              <Image src="/imagen/tarjetadecreditos-websaap-2.png" alt="Métodos de pago" width={300} height={75} className="w-full" data-ai-hint="payment methods logos" unoptimized/>
             </div>
           </div>
           <div>
@@ -196,3 +197,5 @@ export default function LandingClient({ initialConfig: config, plans, errorPlans
     </>
   );
 }
+
+    
