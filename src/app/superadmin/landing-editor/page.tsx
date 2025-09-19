@@ -507,63 +507,61 @@ export default function LandingEditorPage() {
                                />
                             </Suspense>
                         </div>
-                         {/* NUEVOS CAMPOS */}
                         <Separator />
-                        <div className="space-y-2">
-                           <Label className="font-semibold text-primary">Estilo y Multimedia</Label>
-                           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                              <div>
-                                 <Label htmlFor={`section-bg-${index}`}>Color de Fondo</Label>
-                                 <Input id={`section-bg-${index}`} type="color" value={section.backgroundColor} onChange={(e) => updateSection(index, 'backgroundColor', e.target.value)} className="w-full h-10 p-1"/>
-                              </div>
-                              <div>
-                                 <Label htmlFor={`section-text-color-${index}`}>Color de Texto</Label>
-                                 <Input id={`section-text-color-${index}`} type="color" value={section.textColor} onChange={(e) => updateSection(index, 'textColor', e.target.value)} className="w-full h-10 p-1"/>
-                              </div>
-                              <div>
-                                 <Label htmlFor={`section-btn-color-${index}`}>Color de Botón</Label>
-                                 <Input id={`section-btn-color-${index}`} type="color" value={section.buttonColor} onChange={(e) => updateSection(index, 'buttonColor', e.target.value)} className="w-full h-10 p-1"/>
-                              </div>
-                           </div>
-                           <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                 <Label htmlFor={`section-btn-text-${index}`}>Texto del Botón</Label>
-                                 <Input id={`section-btn-text-${index}`} value={section.buttonText} onChange={(e) => updateSection(index, 'buttonText', e.target.value)} />
-                              </div>
-                              <div>
-                                 <Label htmlFor={`section-btn-url-${index}`}>URL del Botón</Label>
-                                 <Input id={`section-btn-url-${index}`} value={section.buttonUrl} onChange={(e) => updateSection(index, 'buttonUrl', e.target.value)} />
-                              </div>
-                           </div>
-                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <div>
-                                <Label>Tipo de Media</Label>
-                                <Select value={section.mediaType || 'image'} onValueChange={(value) => updateSection(index, 'mediaType', value)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="image"><span className="flex items-center gap-2"><ImageIcon/> Imagen</span></SelectItem>
-                                        <SelectItem value="video"><span className="flex items-center gap-2"><Film/> Video</span></SelectItem>
-                                    </SelectContent>
-                                </Select>
-                              </div>
-                              <div>
-                                <Label>Posición de Media</Label>
-                                <Select value={section.mediaPosition || 'top'} onValueChange={(value) => updateSection(index, 'mediaPosition', value)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="top">Arriba</SelectItem>
-                                        <SelectItem value="left">Izquierda</SelectItem>
-                                        <SelectItem value="right">Derecha</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="md:col-span-1">
-                                <Label>URL de Media</Label>
-                                <Input value={section.mediaUrl || ''} onChange={(e) => updateSection(index, 'mediaUrl', e.target.value)} placeholder="https://..."/>
-                              </div>
-                           </div>
+                        <div className="space-y-4">
+                            <Label className="font-semibold text-primary">Estilo y Multimedia</Label>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <Label htmlFor={`section-bg-color-${index}`}>Color de Fondo</Label>
+                                    <Input id={`section-bg-color-${index}`} type="color" value={section.backgroundColor || '#ffffff'} onChange={(e) => updateSection(index, 'backgroundColor', e.target.value)} className="w-full h-10 p-1" />
+                                </div>
+                                <div>
+                                    <Label htmlFor={`section-text-color-${index}`}>Color de Texto</Label>
+                                    <Input id={`section-text-color-${index}`} type="color" value={section.textColor || '#000000'} onChange={(e) => updateSection(index, 'textColor', e.target.value)} className="w-full h-10 p-1" />
+                                </div>
+                                <div>
+                                    <Label htmlFor={`section-btn-color-${index}`}>Color de Botón</Label>
+                                    <Input id={`section-btn-color-${index}`} type="color" value={section.buttonColor || '#ff4500'} onChange={(e) => updateSection(index, 'buttonColor', e.target.value)} className="w-full h-10 p-1" />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <Label htmlFor={`section-btn-text-${index}`}>Texto del Botón</Label>
+                                    <Input id={`section-btn-text-${index}`} value={section.buttonText || ''} onChange={(e) => updateSection(index, 'buttonText', e.target.value)} />
+                                </div>
+                                <div>
+                                    <Label htmlFor={`section-btn-url-${index}`}>URL del Botón</Label>
+                                    <Input id={`section-btn-url-${index}`} value={section.buttonUrl || ''} onChange={(e) => updateSection(index, 'buttonUrl', e.target.value)} />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <Label>Tipo de Media</Label>
+                                    <Select value={section.mediaType || 'image'} onValueChange={(value) => updateSection(index, 'mediaType', value)}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="image">Imagen</SelectItem>
+                                            <SelectItem value="video">Video</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div>
+                                    <Label>Posición de Media</Label>
+                                    <Select value={section.mediaPosition || 'top'} onValueChange={(value) => updateSection(index, 'mediaPosition', value)}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="top">Arriba</SelectItem>
+                                            <SelectItem value="left">Izquierda</SelectItem>
+                                            <SelectItem value="right">Derecha</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="md:col-span-1">
+                                    <Label>URL de Media</Label>
+                                    <Input value={section.mediaUrl || ''} onChange={(e) => updateSection(index, 'mediaUrl', e.target.value)} placeholder="https://..." />
+                                </div>
+                            </div>
                         </div>
-
                          {/* Gestión de Subsecciones */}
                         <Separator />
                         <div className="space-y-3">
