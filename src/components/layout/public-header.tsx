@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -9,7 +10,7 @@ import { cn } from '@/lib/utils';
 
 const NavLinks = ({ className, onLinkClick }: { className?: string; onLinkClick?: () => void }) => {
   const links = [
-    { href: '#features', label: 'Características' },
+    { href: '/blog/digitaliza-tu-negocio', label: 'Características' },
     { href: '#planes', label: 'Planes' },
     { href: '/contact', label: 'Contacto' },
   ];
