@@ -39,6 +39,7 @@ import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { useSession } from '@/contexts/session-context';
 import { Slider } from '@/components/ui/slider';
+import 'react-quill/dist/quill.snow.css';
 
 
 const RichTextEditor = dynamic(() => import('@/components/ui/rich-text-editor'), { ssr: false });
