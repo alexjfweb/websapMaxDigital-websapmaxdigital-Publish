@@ -176,17 +176,17 @@ export default function LandingClient({ initialConfig: config, plans, errorPlans
           <div>
             <h3 className="font-bold mb-4">LEGAL</h3>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/terms" className="hover:underline">Términos de Servicio</Link></li>
-              <li><Link href="/privacy" className="hover:underline">Política de Privacidad</Link></li>
-              <li><Link href="/cookies" className="hover:underline">Política de Cookies</Link></li>
-              <li><Link href="/legal" className="hover:underline">Aviso Legal</Link></li>
-              <li><Link href="/cancel" className="hover:underline">Cancelar suscripción</Link></li>
+              <li><Link href="/terms" className="hover:underline hover:text-[#E60023] transition-colors">Términos de Servicio</Link></li>
+              <li><Link href="/privacy" className="hover:underline hover:text-[#E60023] transition-colors">Política de Privacidad</Link></li>
+              <li><Link href="/cookies" className="hover:underline hover:text-[#E60023] transition-colors">Política de Cookies</Link></li>
+              <li><Link href="/legal" className="hover:underline hover:text-[#E60023] transition-colors">Aviso Legal</Link></li>
+              <li><Link href="/cancel" className="hover:underline hover:text-[#E60023] transition-colors">Cancelar suscripción</Link></li>
             </ul>
           </div>
           <div>
             <h3 className="font-bold mb-4">CONTACTO</h3>
             <p className="text-sm">Colombia</p>
-            <a href="mailto:info@websap.site" className="text-sm hover:underline">info@websap.site</a>
+            <a href="mailto:info@websap.site" className="text-sm hover:underline hover:text-[#E60023] transition-colors">info@websap.site</a>
           </div>
         </div>
         <div className="container mx-auto text-center text-sm text-gray-400 mt-8 pt-8 border-t border-gray-600">
