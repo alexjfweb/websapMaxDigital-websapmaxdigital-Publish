@@ -12,16 +12,30 @@ interface RichTextEditorProps {
 const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeholder }) => {
   const ReactQuill = useMemo(() => dynamic(() => import('react-quill'), { ssr: false }), []);
 
-  // Registrar módulos de alineación explícitamente
+  // Registrar módulos de alineación cuando el componente se monte
   useEffect(() => {
     const registerQuillModules = async () => {
-      // Usamos un import() dinámico para asegurarnos que se ejecuta en el cliente
-      const Quill = (await import('react-quill')).default;
-      if (Quill && typeof window !== 'undefined') {
-          const AlignClass = Quill.import('attributors/class/align');
-          const AlignStyle = Quill.import('attributors/style/align');
-          Quill.register(AlignClass, true);
-          Quill.register(AlignStyle, true);
+      if (typeof window !== 'undefined') {
+        try {
+          const ReactQuillModule = await import('react-quill');
+          // A robust way to get Quill, works with different module structures
+          const Quill = ReactQuillModule.default?.Quill || (ReactQuillModule as any).Quill;
+          
+          if (Quill) {
+            // Intentar registrar los módulos de alineación
+            try {
+              const AlignClass = Quill.import('attributors/class/align');
+              const AlignStyle = Quill.import('attributors/style/align');
+              
+              if (AlignClass) Quill.register(AlignClass, true);
+              if (AlignStyle) Quill.register(AlignStyle, true);
+            } catch (alignError) {
+              console.warn('Could not register alignment modules, they might be registered already:', alignError);
+            }
+          }
+        } catch (error) {
+          console.warn('Error loading Quill modules for registration:', error);
+        }
       }
     };
     
