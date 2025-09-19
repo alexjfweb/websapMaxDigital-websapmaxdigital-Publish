@@ -134,7 +134,7 @@ export default function LandingClient({ initialConfig: config, plans, errorPlans
                       </CardHeader>
                       <CardContent className="p-6">
                         <CardTitle className="text-xl mb-2 text-gray-800">{sub.title}</CardTitle>
-                        <p className="text-gray-600">{sub.content}</p>
+                        <div className="text-gray-600 ql-editor" dangerouslySetInnerHTML={{ __html: sub.content }} />
                       </CardContent>
                     </Card>
                   ))}
