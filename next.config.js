@@ -9,7 +9,8 @@ const nextConfig = {
   },
   productionBrowserSourceMaps: false, // Añadido para optimizar
   images: {
-    unoptimized: true,
+    loader: 'default',
+    unoptimized: false,
     remotePatterns: [
       {
         protocol: "https",
@@ -53,3 +54,5 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
+
+    

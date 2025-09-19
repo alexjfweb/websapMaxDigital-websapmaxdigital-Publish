@@ -140,7 +140,7 @@ export default function AdminDishesPage() {
         if (isUpdating && editingDish?.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
             await storageService.deleteFile(editingDish.imageUrl);
         }
-        imageUrl = await storageService.uploadFile(values.image, 'dishes/');
+        imageUrl = await storageService.compressAndUploadFile(values.image, 'dishes/');
       } else if (isUpdating && !imagePreview) {
         // Si el usuario eliminó la vista previa, eliminamos la imagen anterior si existe.
         if (editingDish?.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
@@ -620,3 +620,5 @@ export default function AdminDishesPage() {
     </div>
   );
 }
+
+    
