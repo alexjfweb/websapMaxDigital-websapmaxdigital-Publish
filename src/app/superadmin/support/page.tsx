@@ -200,7 +200,7 @@ export default function SuperAdminSupportPage() {
                           <div className="text-xs text-muted-foreground">{ticket.planName}</div>
                         </TableCell>
                         <TableCell>{ticket.subject}</TableCell>
-                        <TableCell>{format(ticket.createdAt.toDate(), "dd/MM/yyyy HH:mm", { locale: es })}</TableCell>
+                        <TableCell>{ticket.createdAt && format(ticket.createdAt.toDate(), "dd/MM/yyyy HH:mm", { locale: es })}</TableCell>
                         <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
                         <TableCell>{getStatusBadge(ticket.status)}</TableCell>
                         <TableCell className="text-right">
@@ -245,7 +245,7 @@ export default function SuperAdminSupportPage() {
                   <div className="p-3 bg-muted rounded-lg border">
                     <p className="whitespace-pre-wrap">{selectedTicket?.message}</p>
                   </div>
-                  <div className="text-xs text-muted-foreground">{selectedTicket && format(selectedTicket.createdAt.toDate(), "PPPp", { locale: es })}</div>
+                  <div className="text-xs text-muted-foreground">{selectedTicket && selectedTicket.createdAt && format(selectedTicket.createdAt.toDate(), "PPPp", { locale: es })}</div>
                 </div>
               </div>
               
