@@ -69,16 +69,12 @@ export default function AdminShareMenuPage() {
   };
 
   const handleShareViaWhatsApp = () => {
-    // Construir el mensaje con la estructura correcta para la vista previa
-    // Opción 1: Solo la imagen al final (RECOMENDADO)
-    const textoPrincipal = `${customMessage}\n\nHaz clic para ver el menú: ${menuUrl}`;
-    
-    let textoCompleto = textoPrincipal;
-    if (customImageUrl) {
-      textoCompleto += `\n\n${customImageUrl}`;
-    }
+    // CORRECCIÓN: Simplificar el mensaje para máxima compatibilidad.
+    // La imagen y los saltos de línea pueden causar problemas en algunos dispositivos.
+    // WhatsApp generará automáticamente una vista previa del enlace `menuUrl`.
+    const textoParaCompartir = `${customMessage} ${menuUrl}`;
 
-    const encodedMessage = encodeURIComponent(textoCompleto);
+    const encodedMessage = encodeURIComponent(textoParaCompartir);
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
     
     window.open(whatsappUrl, '_blank');
