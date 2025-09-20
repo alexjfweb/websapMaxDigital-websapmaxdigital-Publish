@@ -33,6 +33,7 @@ const baseSidebarItems: any[] = [
   { id: 'admin-reservations', href: '/admin/reservations', labelKey: 'Reservas', icon: 'CalendarCheck', allowedRoles: ['admin'], tooltipKey: 'Reservas' },
   { id: 'admin-orders', href: '/admin/orders', labelKey: 'Pedidos', icon: 'ShoppingBag', allowedRoles: ['admin'], tooltipKey: 'Gestión de pedidos' },
   { id: 'admin-share', href: '/admin/share-menu', labelKey: 'Compartir menú', icon: 'Share2', allowedRoles: ['admin'], tooltipKey: 'Compartir menú' },
+  { id: 'admin-support', href: '/admin/support', labelKey: 'Soporte', icon: 'LifeBuoy', allowedRoles: ['admin'], tooltipKey: 'Contactar a Soporte' },
   { id: 'emp-dashboard', href: '/employee/dashboard', labelKey: 'Panel', icon: 'ClipboardList', allowedRoles: ['employee'], tooltipKey: 'Panel de empleado' },
   { id: 'emp-orders', href: '/employee/orders', labelKey: 'Pedidos', icon: 'ShoppingBag', allowedRoles: ['employee'], tooltipKey: 'Gestionar pedidos' },
   { id: 'emp-tables', href: '/employee/tables', labelKey: 'Mesas', icon: 'ClipboardList', allowedRoles: ['employee'], tooltipKey: 'Ver mesas' },
@@ -53,6 +54,7 @@ const getDefaultNavConfig = (): NavConfig => ({
 });
 
 export function useNavigationConfig() {
+  const [navConfig, setNavConfig] = useState<NavConfig>(getDefaultNavConfig());
   const [isSaving, setIsSaving] = useState(false);
   
   const fetcher = async (): Promise<NavConfig> => {
@@ -72,18 +74,20 @@ export function useNavigationConfig() {
     return config;
   };
 
-  const { data: navConfig, error, isLoading, mutate } = useSWR(SWR_KEY, fetcher, {
+  const { data, error, isLoading, mutate } = useSWR(SWR_KEY, fetcher, {
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
     dedupingInterval: 60000,
+    onSuccess: (data) => {
+        setNavConfig(data);
+    }
   });
 
-  const saveConfig = async (configToSave: NavConfig) => {
+  const saveConfig = async () => {
     setIsSaving(true);
     try {
-      await navigationService.updateNavigationConfig(configToSave);
-      // Actualiza el cache local de SWR con los datos guardados sin necesidad de re-validar
-      mutate(configToSave, false); 
+      await navigationService.updateNavigationConfig(navConfig);
+      mutate(navConfig, false); 
     } catch (e) {
         console.error("Failed to save navigation config:", e);
         throw e;
@@ -93,8 +97,9 @@ export function useNavigationConfig() {
   };
   
   return {
-    navConfig: navConfig ?? getDefaultNavConfig(),
-    isLoading,
+    navConfig: navConfig,
+    setNavConfig: setNavConfig,
+    isLoading: isLoading && !data && !error,
     isError: !!error,
     saveConfig,
     isSaving,

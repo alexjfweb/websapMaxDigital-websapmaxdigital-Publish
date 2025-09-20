@@ -135,6 +135,16 @@ class NavigationService {
       throw error;
     }
   }
+
+  async checkAndInitializeDefaultConfig(): Promise<string> {
+    const docSnap = await getDoc(this.navConfigDocRef);
+    if (!docSnap.exists()) {
+        console.log("No hay configuración de navegación, inicializando...");
+        await this.initializeDefaultConfig([], []); // Se inicializa vacío, se llenará con el hook
+        return "Configuración de navegación inicializada.";
+    }
+    return "La configuración de navegación ya existe.";
+  }
 }
 
 export const navigationService = new NavigationService();
