@@ -10,7 +10,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Search, Filter, Eye, LifeBuoy, Inbox, Clock, Check, RefreshCw, Send, Loader2 } from "lucide-react";
 import { supportService } from "@/services/support-service";
@@ -23,6 +22,29 @@ import { Textarea } from '@/components/ui/textarea';
 import { useSession } from '@/contexts/session-context';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
+/**
+ * Formatea fecha ISO string de forma segura - SOLO para soporte
+ */
+const formatSupportDate = (dateString: string): string => {
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return 'Fecha inválida';
+    }
+    
+    return new Intl.DateTimeFormat('es-ES', {
+      day: '2-digit',
+      month: '2-digit', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  } catch {
+    return 'Fecha inválida';
+  }
+};
+
 
 export default function SuperAdminSupportPage() {
   const { currentUser } = useSession();
@@ -203,7 +225,7 @@ export default function SuperAdminSupportPage() {
                           <div className="text-xs text-muted-foreground">{ticket.planName}</div>
                         </TableCell>
                         <TableCell>{ticket.subject}</TableCell>
-                        <TableCell>{ticket.createdAt ? format(new Date(ticket.createdAt), "dd/MM/yyyy HH:mm", { locale: es }) : 'N/A'}</TableCell>
+                        <TableCell>{formatSupportDate(ticket.createdAt)}</TableCell>
                         <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
                         <TableCell>{getStatusBadge(ticket.status)}</TableCell>
                         <TableCell className="text-right">
@@ -246,7 +268,7 @@ export default function SuperAdminSupportPage() {
                   <div className="p-3 bg-muted rounded-lg border">
                     <p className="whitespace-pre-wrap">{selectedTicket?.message}</p>
                   </div>
-                  <div className="text-xs text-muted-foreground">{selectedTicket?.createdAt ? format(new Date(selectedTicket.createdAt), "PPPp", { locale: es }) : 'Fecha no disponible'}</div>
+                  <div className="text-xs text-muted-foreground">{selectedTicket?.createdAt ? formatSupportDate(selectedTicket.createdAt) : 'Fecha no disponible'}</div>
                 </div>
               </div>
               
@@ -263,7 +285,7 @@ export default function SuperAdminSupportPage() {
                        <p className="whitespace-pre-wrap">{reply.message}</p>
                      </div>
                      <div className="text-xs text-muted-foreground">
-                      {reply.createdAt ? format(new Date(reply.createdAt), "PPPp", { locale: es }) : 'Enviando...'}
+                      {reply.createdAt ? formatSupportDate(reply.createdAt) : 'Enviando...'}
                      </div>
                    </div>
                   {reply.userId === currentUser?.uid && (
