@@ -41,7 +41,7 @@ const serializeUser = (firebaseUser: FirebaseUserType, firestoreData: any): User
 };
 
 // Rutas que no requieren autenticación
-const publicRoutes = ['/', '/login', '/register'];
+const publicRoutes = ['/', '/login', '/register', '/contact', '/blog/digitaliza-tu-negocio', '/terms', '/privacy', '/cookies', '/legal', '/cancel'];
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -82,12 +82,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   // Redirección del lado del cliente
   useEffect(() => {
     if (!isLoading) {
-      const isPublic = publicRoutes.includes(pathname) || pathname.startsWith('/menu/');
+      const isPublic = publicRoutes.some(route => pathname === route) || pathname.startsWith('/menu/');
       
       if (!currentUser && !isPublic) {
         router.push('/login');
       } else if (currentUser && (pathname === '/login' || pathname === '/register')) {
-        const targetDashboard = currentUser.role === 'superadmin' ? '/superadmin/dashboard' : '/admin/dashboard';
+        const targetDashboard = currentUser.role === 'superadmin' ? '/superadmin/dashboard' : currentUser.role === 'admin' ? '/admin/dashboard' : '/employee/dashboard';
         router.push(targetDashboard);
       }
     }
