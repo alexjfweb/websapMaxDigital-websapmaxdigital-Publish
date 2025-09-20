@@ -87,8 +87,8 @@ export default function SuperAdminSupportPage() {
 
     return sourceFiltered.filter(ticket => {
       const searchTerm = filters.searchTerm.toLowerCase();
-      const statusMatch = filters.status === 'all' || ticket.status === filters.status;
-      const priorityMatch = filters.priority === 'all' || ticket.priority === filters.priority;
+      const statusMatch = filters.status === 'all' || ticket.status === statusMatch;
+      const priorityMatch = filters.priority === 'all' || ticket.priority === priorityMatch;
       const searchMatch = !searchTerm ||
         ticket.companyName.toLowerCase().includes(searchTerm) ||
         ticket.subject.toLowerCase().includes(searchTerm) ||
@@ -200,7 +200,7 @@ export default function SuperAdminSupportPage() {
                           <div className="text-xs text-muted-foreground">{ticket.planName}</div>
                         </TableCell>
                         <TableCell>{ticket.subject}</TableCell>
-                        <TableCell>{ticket.createdAt && format(ticket.createdAt.toDate(), "dd/MM/yyyy HH:mm", { locale: es })}</TableCell>
+                        <TableCell>{ticket.createdAt && ticket.createdAt.toDate && format(ticket.createdAt.toDate(), "dd/MM/yyyy HH:mm", { locale: es })}</TableCell>
                         <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
                         <TableCell>{getStatusBadge(ticket.status)}</TableCell>
                         <TableCell className="text-right">
@@ -245,7 +245,7 @@ export default function SuperAdminSupportPage() {
                   <div className="p-3 bg-muted rounded-lg border">
                     <p className="whitespace-pre-wrap">{selectedTicket?.message}</p>
                   </div>
-                  <div className="text-xs text-muted-foreground">{selectedTicket && selectedTicket.createdAt && format(selectedTicket.createdAt.toDate(), "PPPp", { locale: es })}</div>
+                  <div className="text-xs text-muted-foreground">{selectedTicket && selectedTicket.createdAt && selectedTicket.createdAt.toDate && format(selectedTicket.createdAt.toDate(), "PPPp", { locale: es })}</div>
                 </div>
               </div>
               
@@ -263,7 +263,7 @@ export default function SuperAdminSupportPage() {
                        <p className="whitespace-pre-wrap">{reply.message}</p>
                      </div>
                      <div className="text-xs text-muted-foreground">
-                      {reply.createdAt && format(reply.createdAt.toDate(), "PPPp", { locale: es })}
+                      {reply.createdAt && reply.createdAt.toDate ? format(reply.createdAt.toDate(), "PPPp", { locale: es }) : 'Enviando...'}
                      </div>
                    </div>
                   {reply.userId === currentUser?.uid && (
