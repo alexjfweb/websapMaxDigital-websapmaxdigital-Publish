@@ -254,7 +254,7 @@ export default function SuperAdminSupportPage() {
                 <div key={index} className={cn("flex gap-3", reply.userId === currentUser?.uid ? "justify-end" : "justify-start")}>
                   {reply.userId !== currentUser?.uid && (
                     <Avatar>
-                      <AvatarFallback>{reply.userName.charAt(0).toUpperCase()}</AvatarFallback>
+                      <AvatarFallback>{reply.userName ? reply.userName.charAt(0).toUpperCase() : '?'}</AvatarFallback>
                     </Avatar>
                   )}
                    <div className={cn("flex-1 space-y-2", reply.userId === currentUser?.uid ? "text-right" : "")} style={{maxWidth: '85%'}}>
@@ -268,7 +268,7 @@ export default function SuperAdminSupportPage() {
                    </div>
                   {reply.userId === currentUser?.uid && (
                      <Avatar>
-                      <AvatarFallback>{reply.userName.charAt(0).toUpperCase()}</AvatarFallback>
+                      <AvatarFallback>{reply.userName ? reply.userName.charAt(0).toUpperCase() : 'SA'}</AvatarFallback>
                     </Avatar>
                   )}
                 </div>
