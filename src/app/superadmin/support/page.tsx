@@ -83,9 +83,9 @@ export default function SuperAdminSupportPage() {
       <div>
         <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
           <LifeBuoy className="h-8 w-8" />
-          Gestión de Soporte
+          Mensajes de Contacto
         </h1>
-        <p className="text-lg text-muted-foreground">Administra y responde a las solicitudes de soporte de los clientes.</p>
+        <p className="text-lg text-muted-foreground">Administra y responde a las solicitudes de los clientes.</p>
       </div>
 
        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
