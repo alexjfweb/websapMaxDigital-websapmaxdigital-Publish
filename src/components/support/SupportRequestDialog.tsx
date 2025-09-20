@@ -60,6 +60,10 @@ export default function SupportRequestDialog({ isOpen, onClose, companyId, compa
   };
 
   const handleSubmit = async () => {
+    if (!currentUser) {
+        toast({ title: "Error", description: "No se pudo identificar al usuario. Por favor, recargue la página.", variant: "destructive"});
+        return;
+    }
     if (!subject.trim() || !message.trim()) {
       toast({
         title: "Campos requeridos",
@@ -83,7 +87,7 @@ export default function SupportRequestDialog({ isOpen, onClose, companyId, compa
         companyId,
         companyName,
         planName,
-        userId: currentUser.id,
+        userId: currentUser.uid,
         userEmail: currentUser.email,
         subject,
         message,
