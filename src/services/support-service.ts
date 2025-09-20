@@ -12,7 +12,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import type { SupportTicket, CreateSupportTicket } from '@/types';
-import { serializeSupportDate } from '@/lib/utils'; // <- CAMBIO: Usar la nueva función
+import { serializeSupportDate } from '@/lib/utils';
 
 /**
  * Serializa un ticket completo convirtiendo todas las fechas a ISO strings
@@ -80,20 +80,31 @@ class SupportService {
   }
 
   async addReply(ticketId: string, reply: { userId: string; userName: string; message: string; }): Promise<void> {
-    if (!reply.message.trim()) {
-        throw new Error("El mensaje de respuesta no puede estar vacío.");
+    // Validar que el mensaje no esté vacío
+    if (!reply.message || !reply.message.trim()) {
+      throw new Error("El mensaje de respuesta no puede estar vacío.");
+    }
+
+    // Validar que los datos requeridos estén presentes
+    if (!reply.userId || !reply.userName) {
+      throw new Error("Datos de usuario requeridos para la respuesta.");
     }
     
     const ticketRef = doc(this.ticketsCollection, ticketId);
     
+    // Crear la respuesta con Timestamp.now() en lugar de serverTimestamp()
+    // para evitar problemas con arrayUnion
     const newReply = {
-      ...reply,
-      createdAt: serverTimestamp(),
+      userId: reply.userId.trim(),
+      userName: reply.userName.trim(),
+      message: reply.message.trim(),
+      createdAt: Timestamp.now(), // Cambio crítico: usar Timestamp.now()
     };
     
+    // Actualizar el documento
     await updateDoc(ticketRef, {
-        replies: arrayUnion(newReply),
-        updatedAt: serverTimestamp(),
+      replies: arrayUnion(newReply),
+      updatedAt: serverTimestamp(), // Este sí puede usar serverTimestamp()
     });
   }
 }
