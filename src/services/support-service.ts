@@ -25,7 +25,7 @@ class SupportService {
    * @returns El ID del ticket creado.
    */
   async createTicket(ticketData: CreateSupportTicket): Promise<string> {
-    const ticketDoc = {
+    const ticketDoc: any = {
       ...ticketData,
       status: 'open' as const,
       // Diferenciar el origen del ticket
