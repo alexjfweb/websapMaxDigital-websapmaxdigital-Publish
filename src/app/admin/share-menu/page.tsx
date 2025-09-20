@@ -4,7 +4,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Copy, Download, Save, MessageSquare, Loader2 } from "lucide-react";
+import { Copy, Download, Save, MessageSquare, Loader2, UploadCloud, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import WhatsAppIcon from "@/components/icons/whatsapp-icon";
 import React, { useEffect, useState, ChangeEvent } from 'react';
@@ -25,6 +25,8 @@ export default function AdminShareMenuPage() {
   const [menuUrl, setMenuUrl] = useState('');
   const [customMessage, setCustomMessage] = useState('');
   const [customImageUrl, setCustomImageUrl] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -39,8 +41,8 @@ export default function AdminShareMenuPage() {
     async function fetchShareConfig() {
       if (!companyId) {
         setIsLoading(false);
-        return
-      };
+        return;
+      }
       setIsLoading(true);
       try {
         const db = getDb();
@@ -50,6 +52,7 @@ export default function AdminShareMenuPage() {
           const data = docSnap.data();
           setCustomMessage(data.customShareMessage || `¡Mira nuestro delicioso menú! 🌮🥗🍰`);
           setCustomImageUrl(data.customShareImageUrl || '');
+          setImagePreview(data.customShareImageUrl || '');
         }
       } catch (e) {
         toast({ title: 'Error', description: 'No se pudo cargar la configuración para compartir.', variant: 'destructive' });
@@ -69,14 +72,9 @@ export default function AdminShareMenuPage() {
   };
 
   const handleShareViaWhatsApp = () => {
-    // CORRECCIÓN: Simplificar el mensaje para máxima compatibilidad.
-    // La imagen y los saltos de línea pueden causar problemas en algunos dispositivos.
-    // WhatsApp generará automáticamente una vista previa del enlace `menuUrl`.
     const textoParaCompartir = `${customMessage} ${menuUrl}`;
-
     const encodedMessage = encodeURIComponent(textoParaCompartir);
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
-    
     window.open(whatsappUrl, '_blank');
   };
   
@@ -97,19 +95,46 @@ export default function AdminShareMenuPage() {
        toast({ title: "Error de descarga", description: "No se pudo descargar el código QR.", variant: "destructive" });
     }
   };
+
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const clearImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setCustomImageUrl(''); // También limpia la URL existente
+  };
   
   const handleSaveConfig = async () => {
     if (!currentUser.companyId) {
-      toast({ title: "Error de Autenticación", description: "No se pudo identificar la compañía. Por favor, recargue la página.", variant: "destructive" });
+      toast({ title: "Error de Autenticación", description: "No se pudo identificar la compañía.", variant: "destructive" });
       return;
     }
 
     setIsSaving(true);
     
     try {
+      let finalImageUrl = customImageUrl;
+
+      // Si hay un nuevo archivo de imagen, súbelo.
+      if (imageFile) {
+        toast({ title: "Subiendo imagen...", description: "Por favor espera." });
+        finalImageUrl = await storageService.compressAndUploadFile(imageFile, `share-images/${currentUser.companyId}`);
+        setCustomImageUrl(finalImageUrl); // Actualiza el estado con la nueva URL
+        setImageFile(null); // Limpia el archivo después de subirlo
+      } else if (!imagePreview) {
+        // Si no hay vista previa, significa que el usuario eliminó la imagen.
+        finalImageUrl = '';
+      }
+
       const configToSave = {
         customShareMessage: customMessage,
-        customShareImageUrl: customImageUrl,
+        customShareImageUrl: finalImageUrl,
         updatedAt: serverTimestamp(),
       };
       
@@ -166,28 +191,38 @@ export default function AdminShareMenuPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="customImageUrl">URL de la Imagen para Vista Previa</Label>
-            <Input
-              id="customImageUrl"
-              value={customImageUrl}
-              onChange={(e) => setCustomImageUrl(e.target.value)}
-              placeholder="https://ejemplo.com/imagen.png"
-            />
-             <p className="text-xs text-muted-foreground mt-1">Pega aquí la URL de la imagen que quieres mostrar en vistas previas.</p>
-             {customImageUrl && (
-                <div className="mt-2">
-                    <Label>Vista Previa de la Imagen</Label>
-                    <Image 
-                        src={customImageUrl}
-                        alt="Vista previa de imagen para compartir"
-                        width={100}
-                        height={100}
-                        className="rounded-md border object-cover mt-1"
-                        data-ai-hint="share image"
-                        unoptimized
-                    />
-                </div>
-             )}
+            <Label htmlFor="image-upload">Imagen para Vista Previa</Label>
+            <div className="flex items-center gap-4">
+               <Button asChild variant="outline">
+                    <label htmlFor="image-upload" className="cursor-pointer">
+                        <UploadCloud className="mr-2 h-4 w-4"/>
+                        Seleccionar Imagen
+                    </label>
+               </Button>
+                <Input id="image-upload" type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                {imagePreview && (
+                    <div className="relative">
+                        <Image 
+                            src={imagePreview}
+                            alt="Vista previa"
+                            width={80}
+                            height={80}
+                            className="rounded-md border object-cover"
+                            data-ai-hint="share image"
+                            unoptimized
+                        />
+                        <Button
+                            variant="destructive"
+                            size="icon"
+                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                            onClick={clearImage}
+                        >
+                            <XCircle className="h-4 w-4" />
+                        </Button>
+                    </div>
+                )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Sube una imagen para que aparezca en la vista previa al compartir el enlace.</p>
           </div>
           <Button onClick={handleSaveConfig} disabled={isSaving}>
             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
