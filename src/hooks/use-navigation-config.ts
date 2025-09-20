@@ -19,7 +19,7 @@ const baseSidebarItems: any[] = [
   { id: 'sa-pending-payments', href: '/superadmin/payments', labelKey: 'Pagos Pendientes', icon: 'CreditCard', allowedRoles: ['superadmin'], tooltipKey: 'Gestionar pagos pendientes' },
   { id: 'sa-reminders', href: '/superadmin/reminders', labelKey: 'Recordatorios', icon: 'BellRing', allowedRoles: ['superadmin'], tooltipKey: 'Recordatorios de pago' },
   { id: 'sa-navigation', href: '/superadmin/navigation', labelKey: 'Navegación', icon: 'Navigation', allowedRoles: ['superadmin'], tooltipKey: 'Configurar navegación' },
-  { id: 'sa-support', href: '/superadmin/support', labelKey: 'Soporte', icon: 'LifeBuoy', allowedRoles: ['superadmin'], tooltipKey: 'Gestión de Soporte' },
+  { id: 'sa-support', href: '/superadmin/support', labelKey: 'Mensajes de Contacto', icon: 'LifeBuoy', allowedRoles: ['superadmin'], tooltipKey: 'Gestión de Mensajes de Contacto' },
   { id: 'sa-audit', href: '/superadmin/audit', labelKey: 'Auditoría', icon: 'Archive', allowedRoles: ['superadmin'], tooltipKey: 'Registros de auditoría' },
   { id: 'sa-maintenance', href: '/superadmin/maintenance', labelKey: 'Mantenimiento', icon: 'Wrench', allowedRoles: ['superadmin'], tooltipKey: 'Mantenimiento' },
   { id: 'sa-database', href: '/superadmin/database', labelKey: 'Base de datos', icon: 'Database', allowedRoles: ['superadmin'], tooltipKey: 'Estado de la base de datos' },
@@ -62,6 +62,13 @@ export function useNavigationConfig() {
       await navigationService.initializeDefaultConfig(baseSidebarItems, baseFooterItems);
       config = await navigationService.getNavigationConfig({ sidebarItems: baseSidebarItems, footerItems: baseFooterItems });
     }
+    // Forzar la etiqueta correcta aquí
+    config.sidebarItems = config.sidebarItems.map(item => {
+        if (item.id === 'sa-support') {
+            return { ...item, label: 'Mensajes de Contacto' };
+        }
+        return item;
+    });
     return config;
   };
 
