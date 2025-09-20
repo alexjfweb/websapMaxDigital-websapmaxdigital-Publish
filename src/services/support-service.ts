@@ -102,8 +102,6 @@ class SupportService {
     await updateDoc(ticketRef, {
         replies: arrayUnion(newReply),
         updatedAt: serverTimestamp(),
-        // Opcional: Cambiar estado a "en progreso" si responde el superadmin
-        status: 'in_progress',
     });
   }
 }
