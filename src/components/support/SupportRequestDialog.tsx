@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Send, UploadCloud, Image as ImageIcon, XCircle } from 'lucide-react';
+import { Loader2, Send, UploadCloud, XCircle } from 'lucide-react';
 import { supportService, CreateSupportTicket } from '@/services/support-service';
 import { useSession } from '@/contexts/session-context';
 import { storageService } from '@/services/storage-service';
@@ -27,6 +28,7 @@ export default function SupportRequestDialog({ isOpen, onClose, companyId, compa
   const { toast } = useToast();
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [attachment, setAttachment] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
@@ -46,7 +48,6 @@ export default function SupportRequestDialog({ isOpen, onClose, companyId, compa
   const clearAttachment = () => {
     setAttachment(null);
     setPreview(null);
-    // Reset file input
     const fileInput = document.getElementById('attachment') as HTMLInputElement;
     if (fileInput) fileInput.value = '';
   };
@@ -54,6 +55,7 @@ export default function SupportRequestDialog({ isOpen, onClose, companyId, compa
   const resetForm = () => {
       setSubject('');
       setMessage('');
+      setPriority('medium');
       clearAttachment();
   };
 
@@ -74,7 +76,6 @@ export default function SupportRequestDialog({ isOpen, onClose, companyId, compa
       
       if (attachment) {
         toast({ title: "Subiendo adjunto...", description: "Por favor, espera un momento."});
-        // Usar una ruta específica para los adjuntos de soporte
         attachmentUrl = await storageService.compressAndUploadFile(attachment, `support-attachments/${companyId}/`);
       }
 
@@ -86,7 +87,8 @@ export default function SupportRequestDialog({ isOpen, onClose, companyId, compa
         userEmail: currentUser.email,
         subject,
         message,
-        attachmentUrl, // Añadir la URL si existe
+        priority,
+        attachmentUrl,
       };
 
       await supportService.createTicket(ticketData);
@@ -130,6 +132,19 @@ export default function SupportRequestDialog({ isOpen, onClose, companyId, compa
               placeholder="Ej: Problema con la facturación"
               disabled={isSending}
             />
+          </div>
+          <div>
+            <Label htmlFor="priority">Prioridad</Label>
+            <Select value={priority} onValueChange={(v) => setPriority(v as 'low' | 'medium' | 'high')} disabled={isSending}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Baja</SelectItem>
+                <SelectItem value="medium">Media</SelectItem>
+                <SelectItem value="high">Alta</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <Label htmlFor="message">Mensaje</Label>

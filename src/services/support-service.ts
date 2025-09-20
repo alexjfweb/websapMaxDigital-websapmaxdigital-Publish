@@ -27,9 +27,12 @@ class SupportService {
     const ticketDoc = {
       ...ticketData,
       status: 'open' as const,
+      // Diferenciar el origen del ticket
+      source: ticketData.companyId === 'public-contact' ? 'public' : 'internal',
+      // Asignar prioridad por defecto si no viene
+      priority: ticketData.priority || 'medium',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      // Asegurarse de que el campo attachmentUrl esté presente si existe, si no se añade.
       ...(ticketData.attachmentUrl && { attachmentUrl: ticketData.attachmentUrl }),
     };
 

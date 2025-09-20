@@ -308,8 +308,10 @@ export interface SupportTicket {
   userEmail: string;
   subject: string;
   message: string;
-  attachmentUrl?: string; // URL a la imagen adjunta
+  attachmentUrl?: string;
   status: 'open' | 'in_progress' | 'closed';
+  priority: 'low' | 'medium' | 'high'; // Campo añadido
+  source: 'public' | 'internal'; // Campo para diferenciar origen
   createdAt: Timestamp;
   updatedAt: Timestamp;
   replies?: {
@@ -327,7 +329,6 @@ export interface CreateSupportTicket {
   userEmail: string;
   subject: string;
   message: string;
+  priority?: 'low' | 'medium' | 'high'; // Campo añadido
   attachmentUrl?: string; // URL a la imagen adjunta
 }
-
-    

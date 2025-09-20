@@ -18,6 +18,7 @@ import type { SupportTicket } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import useSWR from 'swr';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const fetcher = () => supportService.getTickets();
 
@@ -25,8 +26,10 @@ export default function SuperAdminSupportPage() {
   const { data: tickets, error, isLoading, mutate } = useSWR('support-tickets', fetcher, { revalidateOnFocus: false });
   const { toast } = useToast();
 
+  const [activeTab, setActiveTab] = useState('internal');
   const [filters, setFilters] = useState({
     status: 'all',
+    priority: 'all',
     searchTerm: '',
   });
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
@@ -35,7 +38,7 @@ export default function SuperAdminSupportPage() {
   const handleStatusChange = async (ticketId: string, newStatus: SupportTicket['status']) => {
     try {
       await supportService.updateTicketStatus(ticketId, newStatus);
-      mutate(); // Revalida los datos
+      mutate();
       toast({ title: "Estado actualizado", description: "El estado del ticket ha sido cambiado." });
     } catch (err) {
       toast({ title: "Error", description: "No se pudo actualizar el estado del ticket.", variant: "destructive" });
@@ -45,15 +48,17 @@ export default function SuperAdminSupportPage() {
   const filteredTickets = useMemo(() => {
     if (!tickets) return [];
     return tickets.filter(ticket => {
+      const sourceMatch = ticket.source === activeTab;
       const searchTerm = filters.searchTerm.toLowerCase();
       const statusMatch = filters.status === 'all' || ticket.status === filters.status;
+      const priorityMatch = filters.priority === 'all' || ticket.priority === filters.priority;
       const searchMatch = !searchTerm ||
         ticket.companyName.toLowerCase().includes(searchTerm) ||
         ticket.subject.toLowerCase().includes(searchTerm) ||
         ticket.userEmail.toLowerCase().includes(searchTerm);
-      return statusMatch && searchMatch;
+      return sourceMatch && statusMatch && priorityMatch && searchMatch;
     });
-  }, [tickets, filters]);
+  }, [tickets, filters, activeTab]);
 
   const getStatusBadge = (status: SupportTicket['status']) => {
     switch (status) {
@@ -61,6 +66,15 @@ export default function SuperAdminSupportPage() {
       case "in_progress": return <Badge className="bg-yellow-500 text-white hover:bg-yellow-600">En Progreso</Badge>;
       case "closed": return <Badge variant="secondary">Cerrado</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+  
+  const getPriorityBadge = (priority: SupportTicket['priority']) => {
+    switch (priority) {
+      case "low": return <Badge variant="outline">Baja</Badge>;
+      case "medium": return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Media</Badge>;
+      case "high": return <Badge variant="destructive">Alta</Badge>;
+      default: return <Badge variant="outline">{priority}</Badge>;
     }
   };
 
@@ -72,6 +86,7 @@ export default function SuperAdminSupportPage() {
           <TableCell><Skeleton className="h-5 w-24" /></TableCell>
           <TableCell><Skeleton className="h-5 w-40" /></TableCell>
           <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+          <TableCell><Skeleton className="h-5 w-20" /></TableCell>
           <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto rounded-full" /></TableCell>
         </TableRow>
       ))}
@@ -83,108 +98,92 @@ export default function SuperAdminSupportPage() {
       <div>
         <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
           <LifeBuoy className="h-8 w-8" />
-          Mensajes de Contacto
+          Mensajes y Soporte
         </h1>
-        <p className="text-lg text-muted-foreground">Administra y responde a las solicitudes de los clientes.</p>
+        <p className="text-lg text-muted-foreground">Administra las solicitudes de los clientes y visitantes.</p>
       </div>
-
-       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tickets Abiertos</CardTitle>
-            <Inbox className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{tickets?.filter(t => t.status === 'open').length || 0}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">En Progreso</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{tickets?.filter(t => t.status === 'in_progress').length || 0}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Resueltos</CardTitle>
-            <Check className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{tickets?.filter(t => t.status === 'closed').length || 0}</div>
-          </CardContent>
-        </Card>
-      </div>
-
       <Card>
         <CardHeader>
-          <CardTitle>Bandeja de Entrada</CardTitle>
-          <CardDescription>Aquí puedes ver todas las solicitudes de soporte.</CardDescription>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4">
-            <Input
-              placeholder="Buscar por empresa, asunto, email..."
-              value={filters.searchTerm}
-              onChange={(e) => setFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
-              className="md:col-span-2"
-            />
-            <Select value={filters.status} onValueChange={(val) => setFilters(prev => ({ ...prev, status: val }))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los Estados</SelectItem>
-                <SelectItem value="open">Abierto</SelectItem>
-                <SelectItem value="in_progress">En Progreso</SelectItem>
-                <SelectItem value="closed">Cerrado</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline" onClick={() => mutate()} disabled={isLoading}>
-                <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                Actualizar
-            </Button>
-          </div>
+            <CardTitle>Bandeja de Entrada</CardTitle>
+            <CardDescription>Visualiza y gestiona todos los tickets de soporte y mensajes de contacto.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Empresa / Plan</TableHead>
-                <TableHead>Asunto</TableHead>
-                <TableHead>Usuario</TableHead>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            {isLoading ? renderSkeleton() : (
-              <TableBody>
-                {filteredTickets.map(ticket => (
-                  <TableRow key={ticket.id}>
-                    <TableCell>
-                      <div className="font-medium">{ticket.companyName}</div>
-                      <div className="text-xs text-muted-foreground">{ticket.planName}</div>
-                    </TableCell>
-                    <TableCell>{ticket.subject}</TableCell>
-                    <TableCell>{ticket.userEmail}</TableCell>
-                    <TableCell>{format(ticket.createdAt.toDate(), "dd/MM/yyyy HH:mm", { locale: es })}</TableCell>
-                    <TableCell>{getStatusBadge(ticket.status)}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => { setSelectedTicket(ticket); setIsDetailModalOpen(true); }}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="internal">Tickets de Soporte (Internos)</TabsTrigger>
+                    <TabsTrigger value="public">Mensajes de Contacto (Públicos)</TabsTrigger>
+                </TabsList>
+            </Tabs>
+            
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-6">
+                <Input
+                  placeholder="Buscar por empresa, asunto, email..."
+                  value={filters.searchTerm}
+                  onChange={(e) => setFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
+                  className="md:col-span-2"
+                />
+                <Select value={filters.status} onValueChange={(val) => setFilters(prev => ({ ...prev, status: val }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los Estados</SelectItem>
+                    <SelectItem value="open">Abierto</SelectItem>
+                    <SelectItem value="in_progress">En Progreso</SelectItem>
+                    <SelectItem value="closed">Cerrado</SelectItem>
+                  </SelectContent>
+                </Select>
+                 <Select value={filters.priority} onValueChange={(val) => setFilters(prev => ({ ...prev, priority: val }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas las Prioridades</SelectItem>
+                    <SelectItem value="low">Baja</SelectItem>
+                    <SelectItem value="medium">Media</SelectItem>
+                    <SelectItem value="high">Alta</SelectItem>
+                  </SelectContent>
+                </Select>
+            </div>
+            
+            <div className="mt-4 border rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Remitente / Plan</TableHead>
+                    <TableHead>Asunto</TableHead>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead>Prioridad</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
-                ))}
-                {filteredTickets.length === 0 && (
-                    <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                            No se encontraron tickets con los filtros actuales.
+                </TableHeader>
+                {isLoading ? renderSkeleton() : (
+                  <TableBody>
+                    {filteredTickets.map(ticket => (
+                      <TableRow key={ticket.id}>
+                        <TableCell>
+                          <div className="font-medium">{ticket.companyName}</div>
+                          <div className="text-xs text-muted-foreground">{ticket.planName}</div>
                         </TableCell>
-                    </TableRow>
+                        <TableCell>{ticket.subject}</TableCell>
+                        <TableCell>{format(ticket.createdAt.toDate(), "dd/MM/yyyy HH:mm", { locale: es })}</TableCell>
+                        <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
+                        <TableCell>{getStatusBadge(ticket.status)}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="icon" onClick={() => { setSelectedTicket(ticket); setIsDetailModalOpen(true); }}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredTickets.length === 0 && (
+                        <TableRow>
+                            <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                No se encontraron tickets con los filtros actuales.
+                            </TableCell>
+                        </TableRow>
+                    )}
+                  </TableBody>
                 )}
-              </TableBody>
-            )}
-          </Table>
+              </Table>
+            </div>
         </CardContent>
       </Card>
       
@@ -201,6 +200,14 @@ export default function SuperAdminSupportPage() {
             <div className="p-4 bg-muted rounded-md border">
               <p className="whitespace-pre-wrap">{selectedTicket?.message}</p>
             </div>
+            {selectedTicket?.attachmentUrl && (
+                <div>
+                    <Label>Adjunto</Label>
+                    <a href={selectedTicket.attachmentUrl} target="_blank" rel="noopener noreferrer">
+                        <img src={selectedTicket.attachmentUrl} alt="Adjunto" className="mt-2 rounded-md border max-w-xs cursor-pointer hover:opacity-80 transition-opacity"/>
+                    </a>
+                </div>
+            )}
             <div className="flex items-center gap-4">
               <Label>Cambiar estado:</Label>
               <Select 
