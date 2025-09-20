@@ -66,7 +66,7 @@ export default function SuperAdminSupportPage() {
         message: replyMessage,
       });
       setReplyMessage('');
-      mutate();
+      mutate(); // This will re-fetch the data and show the new reply
       toast({ title: "Respuesta enviada", description: "Tu respuesta ha sido añadida al ticket." });
     } catch (e) {
       toast({ title: "Error al responder", variant: "destructive" });
@@ -77,8 +77,15 @@ export default function SuperAdminSupportPage() {
   
   const filteredTickets = useMemo(() => {
     if (!tickets) return [];
-    return tickets.filter(ticket => {
-      const sourceMatch = ticket.source === activeTab;
+    
+    // CORRECCIÓN: Filtrar para que 'public' solo muestre tickets de 'public-contact'
+    const sourceFiltered = tickets.filter(ticket => {
+        if (activeTab === 'internal') return ticket.source === 'internal' || ticket.companyId !== 'public-contact';
+        if (activeTab === 'public') return ticket.source === 'public' || ticket.companyId === 'public-contact';
+        return false;
+    });
+
+    return sourceFiltered.filter(ticket => {
       const searchTerm = filters.searchTerm.toLowerCase();
       const statusMatch = filters.status === 'all' || ticket.status === filters.status;
       const priorityMatch = filters.priority === 'all' || ticket.priority === filters.priority;
@@ -86,7 +93,7 @@ export default function SuperAdminSupportPage() {
         ticket.companyName.toLowerCase().includes(searchTerm) ||
         ticket.subject.toLowerCase().includes(searchTerm) ||
         ticket.userEmail.toLowerCase().includes(searchTerm);
-      return sourceMatch && statusMatch && priorityMatch && searchMatch;
+      return statusMatch && priorityMatch && searchMatch;
     });
   }, [tickets, filters, activeTab]);
 
