@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -91,8 +92,8 @@ export default function SuperAdminSupportPage() {
     setIsReplying(true);
     try {
       await supportService.addReply(selectedTicket.id, {
-        userId: currentUser.uid,
-        userName: currentUser.firstName || currentUser.username || currentUser.email,
+        userId: currentUser?.uid || 'admin-user',
+        userName: currentUser?.firstName || currentUser?.username || currentUser?.email || 'Administrador',
         message: replyMessage,
       });
       setReplyMessage('');

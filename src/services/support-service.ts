@@ -80,31 +80,32 @@ class SupportService {
   }
 
   async addReply(ticketId: string, reply: { userId: string; userName: string; message: string; }): Promise<void> {
+    // Debug: log para ver qué datos llegan
+    console.log('addReply recibió:', { ticketId, reply });
+  
     // Validar que el mensaje no esté vacío
     if (!reply.message || !reply.message.trim()) {
       throw new Error("El mensaje de respuesta no puede estar vacío.");
     }
-
-    // Validar que los datos requeridos estén presentes
-    if (!reply.userId || !reply.userName) {
-      throw new Error("Datos de usuario requeridos para la respuesta.");
-    }
+  
+    // Crear valores seguros con fallbacks
+    const safeUserId = reply.userId || 'admin-user';
+    const safeUserName = reply.userName || 'Administrador';
     
     const ticketRef = doc(this.ticketsCollection, ticketId);
     
-    // Crear la respuesta con Timestamp.now() en lugar de serverTimestamp()
-    // para evitar problemas con arrayUnion
+    // Crear la respuesta con valores seguros
     const newReply = {
-      userId: reply.userId.trim(),
-      userName: reply.userName.trim(),
+      userId: safeUserId,
+      userName: safeUserName,
       message: reply.message.trim(),
-      createdAt: Timestamp.now(), // Cambio crítico: usar Timestamp.now()
+      createdAt: Timestamp.now(),
     };
     
     // Actualizar el documento
     await updateDoc(ticketRef, {
       replies: arrayUnion(newReply),
-      updatedAt: serverTimestamp(), // Este sí puede usar serverTimestamp()
+      updatedAt: serverTimestamp(),
     });
   }
 }
