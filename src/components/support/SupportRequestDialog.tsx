@@ -92,7 +92,8 @@ export default function SupportRequestDialog({ isOpen, onClose, companyId, compa
         subject,
         message,
         priority,
-        attachmentUrl,
+        // Solo incluir attachmentUrl si tiene un valor
+        ...(attachmentUrl && { attachmentUrl }),
       };
 
       await supportService.createTicket(ticketData);

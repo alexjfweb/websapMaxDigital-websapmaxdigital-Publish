@@ -33,9 +33,11 @@ class SupportService {
       priority: ticketData.priority || 'medium',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      ...(ticketData.attachmentUrl && { attachmentUrl: ticketData.attachmentUrl }),
     };
 
+    // No se usa el spread operator condicional aquí para asegurar que si
+    // `attachmentUrl` es `undefined`, simplemente no se incluya en el objeto final.
+    // El objeto `ticketData` ya solo lo incluirá si tiene valor.
     const docRef = await addDoc(this.ticketsCollection, ticketDoc);
     return docRef.id;
   }
