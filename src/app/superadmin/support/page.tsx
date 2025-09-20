@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,13 +24,16 @@ import { useSession } from '@/contexts/session-context';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-
-const fetcher = () => supportService.getTickets();
-
 export default function SuperAdminSupportPage() {
-  const { data: tickets, error, isLoading, mutate } = useSWR('support-tickets', fetcher, { revalidateOnFocus: false });
   const { currentUser } = useSession();
   const { toast } = useToast();
+
+  // Estrategia de Fetching Corregida: fetcher definido dentro del componente con useCallback
+  const fetcher = useCallback(async () => {
+    return supportService.getTickets();
+  }, []);
+
+  const { data: tickets, error, isLoading, mutate } = useSWR('support-tickets', fetcher, { revalidateOnFocus: false });
 
   const [activeTab, setActiveTab] = useState('internal');
   const [filters, setFilters] = useState({
@@ -66,9 +69,26 @@ export default function SuperAdminSupportPage() {
         message: replyMessage,
       });
       setReplyMessage('');
-      mutate(); // This will re-fetch the data and show the new reply
+      await mutate(); // Revalidar los datos para obtener la última versión
       toast({ title: "Respuesta enviada", description: "Tu respuesta ha sido añadida al ticket." });
+      
+      // Actualizar el ticket seleccionado en el estado local para reflejar la nueva respuesta inmediatamente
+      setSelectedTicket(prevTicket => {
+        if (!prevTicket) return null;
+        const newReply = {
+            userId: currentUser.uid,
+            userName: currentUser.firstName || currentUser.username,
+            message: replyMessage,
+            createdAt: new Date() as any, // Simulamos la fecha para la UI inmediata
+        };
+        return {
+            ...prevTicket,
+            replies: [...(prevTicket.replies || []), newReply]
+        };
+      });
+
     } catch (e) {
+      console.error("Error al enviar respuesta:", e);
       toast({ title: "Error al responder", variant: "destructive" });
     } finally {
       setIsReplying(false);
@@ -78,7 +98,6 @@ export default function SuperAdminSupportPage() {
   const filteredTickets = useMemo(() => {
     if (!tickets) return [];
     
-    // CORRECCIÓN: Filtrar para que 'public' solo muestre tickets de 'public-contact'
     const sourceFiltered = tickets.filter(ticket => {
         if (activeTab === 'internal') return ticket.source === 'internal' || ticket.companyId !== 'public-contact';
         if (activeTab === 'public') return ticket.source === 'public' || ticket.companyId === 'public-contact';
@@ -87,8 +106,8 @@ export default function SuperAdminSupportPage() {
 
     return sourceFiltered.filter(ticket => {
       const searchTerm = filters.searchTerm.toLowerCase();
-      const statusMatch = filters.status === 'all' || ticket.status === statusMatch;
-      const priorityMatch = filters.priority === 'all' || ticket.priority === priorityMatch;
+      const statusMatch = filters.status === 'all' || ticket.status === filters.status;
+      const priorityMatch = filters.priority === 'all' || ticket.priority === filters.priority;
       const searchMatch = !searchTerm ||
         ticket.companyName.toLowerCase().includes(searchTerm) ||
         ticket.subject.toLowerCase().includes(searchTerm) ||
@@ -245,7 +264,7 @@ export default function SuperAdminSupportPage() {
                   <div className="p-3 bg-muted rounded-lg border">
                     <p className="whitespace-pre-wrap">{selectedTicket?.message}</p>
                   </div>
-                  <div className="text-xs text-muted-foreground">{selectedTicket && selectedTicket.createdAt && selectedTicket.createdAt.toDate && format(selectedTicket.createdAt.toDate(), "PPPp", { locale: es })}</div>
+                  <div className="text-xs text-muted-foreground">{selectedTicket && selectedTicket.createdAt && selectedTicket.createdAt.toDate ? format(selectedTicket.createdAt.toDate(), "PPPp", { locale: es }) : 'Fecha no disponible'}</div>
                 </div>
               </div>
               
