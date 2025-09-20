@@ -28,7 +28,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
  */
 const formatSupportDate = (dateString: string): string => {
   try {
-    const date = new Date(dateString);
+    // Si la fecha es un objeto con segundos (como viene a veces de Firestore), conviértelo
+    const dateInput = (typeof dateString === 'object' && dateString !== null && 'seconds' in dateString)
+      // @ts-ignore
+      ? new Date(dateString.seconds * 1000)
+      : dateString;
+
+    const date = new Date(dateInput);
     if (isNaN(date.getTime())) {
       return 'Fecha inválida';
     }
@@ -79,23 +85,23 @@ export default function SuperAdminSupportPage() {
 
   const handleSendReply = async () => {
     if (!selectedTicket || !replyMessage.trim() || !currentUser) {
-      toast({ title: "Mensaje vacío", description: "La respuesta no puede estar vacía.", variant: "destructive" });
+      toast({ title: "Datos incompletos", description: "El mensaje no puede estar vacío y debes estar autenticado.", variant: "destructive" });
       return;
     }
     setIsReplying(true);
     try {
       await supportService.addReply(selectedTicket.id, {
         userId: currentUser.uid,
-        userName: currentUser.firstName || currentUser.username,
+        userName: currentUser.firstName || currentUser.username || currentUser.email,
         message: replyMessage,
       });
       setReplyMessage('');
-      await mutate();
+      await mutate(); // Recarga los datos para mostrar la nueva respuesta
       toast({ title: "Respuesta enviada", description: "Tu respuesta ha sido añadida al ticket." });
 
-    } catch (e) {
+    } catch (e: any) {
       console.error("Error al enviar respuesta:", e);
-      toast({ title: "Error al responder", variant: "destructive" });
+      toast({ title: "Error al responder", description: e.message || "Ocurrió un error inesperado.", variant: "destructive" });
     } finally {
       setIsReplying(false);
     }
