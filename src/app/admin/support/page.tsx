@@ -1,10 +1,10 @@
 
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { LifeBuoy, Send, Eye, MessageSquare, PlusCircle } from 'lucide-react';
+import { LifeBuoy, Send, Eye, MessageSquare, PlusCircle, Loader2 } from 'lucide-react';
 import SupportRequestDialog from '@/components/support/SupportRequestDialog';
 import { useSubscription } from '@/hooks/use-subscription';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,9 +16,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import { Textarea } from '@/components/ui/textarea';
 
 
 const fetchTicketsByCompany = async (companyId: string | undefined): Promise<SupportTicket[]> => {
@@ -31,19 +33,46 @@ export default function AdminSupportPage() {
   const [isSupportDialogOpen, setIsSupportDialogOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [replyMessage, setReplyMessage] = useState('');
+  const [isReplying, setIsReplying] = useState(false);
+  const { toast } = useToast();
 
   const { currentUser, isLoading: isSessionLoading } = useSession();
   const { subscription, isLoading: isSubscriptionLoading } = useSubscription();
 
   const companyId = currentUser?.companyId;
 
-  const { data: tickets, error, isLoading: isTicketsLoading } = useSWR(
+  const { data: tickets, error, isLoading: isTicketsLoading, mutate } = useSWR(
     companyId ? `support-tickets/${companyId}` : null,
-    () => fetchTicketsByCompany(companyId)
+    () => fetchTicketsByCompany(companyId),
+    { revalidateOnFocus: false }
   );
 
   const isLoading = isSessionLoading || isSubscriptionLoading || isTicketsLoading;
   const { company, plan } = subscription || {};
+
+  const handleSendReply = async () => {
+    if (!selectedTicket || !replyMessage.trim() || !currentUser) {
+      toast({ title: "Mensaje vacío", description: "La respuesta no puede estar vacía.", variant: "destructive" });
+      return;
+    }
+    setIsReplying(true);
+    try {
+      await supportService.addReply(selectedTicket.id, {
+        userId: currentUser.uid,
+        userName: currentUser.firstName || currentUser.username || currentUser.email || 'Usuario',
+        message: replyMessage,
+      });
+      setReplyMessage('');
+      await mutate();
+      toast({ title: "Respuesta Enviada", description: "Tu mensaje ha sido enviado al equipo de soporte." });
+    } catch (e: any) {
+      console.error("Error al enviar respuesta:", e);
+      toast({ title: "Error al Responder", description: e.message || "Ocurrió un error inesperado.", variant: "destructive" });
+    } finally {
+      setIsReplying(false);
+    }
+  };
 
   const getStatusBadge = (status: SupportTicket['status']) => {
     switch (status) {
@@ -61,7 +90,6 @@ export default function AdminSupportPage() {
       return "Fecha inválida";
     }
   };
-
 
   if (isLoading) {
     return (
@@ -101,7 +129,7 @@ export default function AdminSupportPage() {
                         Historial de la conversación.
                     </DialogDescription>
                 </DialogHeader>
-                 <div className="space-y-6 max-h-[60vh] overflow-y-auto p-4 border rounded-md my-4">
+                 <div className="space-y-6 max-h-[50vh] overflow-y-auto p-4 border rounded-md my-4">
                     {/* Mensaje original */}
                      <div className="flex gap-3">
                         <Avatar>
@@ -141,8 +169,28 @@ export default function AdminSupportPage() {
                         </div>
                     ))}
                  </div>
+                 {selectedTicket.status !== 'closed' && (
+                  <div className="pt-4 border-t">
+                    <Label htmlFor="replyMessage" className="font-semibold">Escribir una respuesta</Label>
+                    <Textarea
+                      id="replyMessage"
+                      value={replyMessage}
+                      onChange={(e) => setReplyMessage(e.target.value)}
+                      placeholder="Escribe tu respuesta aquí..."
+                      rows={3}
+                      className="mt-2"
+                      disabled={isReplying}
+                    />
+                    <div className="mt-4 flex justify-end">
+                      <Button onClick={handleSendReply} disabled={isReplying || !replyMessage.trim()}>
+                        {isReplying ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}
+                        {isReplying ? 'Enviando...' : 'Enviar Respuesta'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 <DialogFooter>
-                    <Button onClick={() => setIsDetailModalOpen(false)}>Cerrar</Button>
+                    <Button variant="outline" onClick={() => setIsDetailModalOpen(false)}>Cerrar</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
