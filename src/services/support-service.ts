@@ -9,6 +9,7 @@ import {
   query,
   orderBy,
   serverTimestamp,
+  arrayUnion,
 } from 'firebase/firestore';
 import type { SupportTicket, CreateSupportTicket } from '@/types';
 
@@ -33,11 +34,14 @@ class SupportService {
       priority: ticketData.priority || 'medium',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
+      replies: [], // Inicializar el array de respuestas
     };
 
-    // No se usa el spread operator condicional aquí para asegurar que si
-    // `attachmentUrl` es `undefined`, simplemente no se incluya en el objeto final.
-    // El objeto `ticketData` ya solo lo incluirá si tiene valor.
+    // Asegurarnos de no enviar 'undefined'
+    if (!ticketDoc.attachmentUrl) {
+      delete ticketDoc.attachmentUrl;
+    }
+    
     const docRef = await addDoc(this.ticketsCollection, ticketDoc);
     return docRef.id;
   }
@@ -82,10 +86,25 @@ class SupportService {
    * @param ticketId - El ID del ticket.
    * @param reply - El objeto de respuesta.
    */
-  async addReply(ticketId: string, reply: { userId: string; message: string; createdAt: any }): Promise<void> {
-    // Esta es una implementación simplificada. En una app real, las respuestas serían una subcolección.
-    // Aquí simplemente actualizaremos un array en el documento principal para mantenerlo simple.
-    console.log("Añadiendo respuesta (placeholder):", ticketId, reply);
+  async addReply(ticketId: string, reply: { userId: string; userName: string; message: string; }): Promise<void> {
+    if (!reply.message.trim()) {
+        throw new Error("El mensaje de respuesta no puede estar vacío.");
+    }
+    
+    const ticketRef = doc(this.ticketsCollection, ticketId);
+    
+    const newReply = {
+      ...reply,
+      createdAt: serverTimestamp(),
+    };
+    
+    // Atomically add a new reply to the "replies" array field.
+    await updateDoc(ticketRef, {
+        replies: arrayUnion(newReply),
+        updatedAt: serverTimestamp(),
+        // Opcional: Cambiar estado a "en progreso" si responde el superadmin
+        status: 'in_progress',
+    });
   }
 }
 

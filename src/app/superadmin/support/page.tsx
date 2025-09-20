@@ -9,21 +9,27 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Search, Filter, Eye, LifeBuoy, Inbox, Clock, Check, RefreshCw } from "lucide-react";
+import { Search, Filter, Eye, LifeBuoy, Inbox, Clock, Check, RefreshCw, Send, Loader2 } from "lucide-react";
 import { supportService } from "@/services/support-service";
-import type { SupportTicket } from "@/types";
+import type { SupportTicket, User } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import useSWR from 'swr';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { useSession } from '@/contexts/session-context';
+import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 
 const fetcher = () => supportService.getTickets();
 
 export default function SuperAdminSupportPage() {
   const { data: tickets, error, isLoading, mutate } = useSWR('support-tickets', fetcher, { revalidateOnFocus: false });
+  const { currentUser } = useSession();
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState('internal');
@@ -34,6 +40,8 @@ export default function SuperAdminSupportPage() {
   });
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [replyMessage, setReplyMessage] = useState('');
+  const [isReplying, setIsReplying] = useState(false);
 
   const handleStatusChange = async (ticketId: string, newStatus: SupportTicket['status']) => {
     try {
@@ -42,6 +50,28 @@ export default function SuperAdminSupportPage() {
       toast({ title: "Estado actualizado", description: "El estado del ticket ha sido cambiado." });
     } catch (err) {
       toast({ title: "Error", description: "No se pudo actualizar el estado del ticket.", variant: "destructive" });
+    }
+  };
+
+  const handleSendReply = async () => {
+    if (!selectedTicket || !replyMessage.trim() || !currentUser) {
+      toast({ title: "Mensaje vacío", description: "La respuesta no puede estar vacía.", variant: "destructive" });
+      return;
+    }
+    setIsReplying(true);
+    try {
+      await supportService.addReply(selectedTicket.id, {
+        userId: currentUser.uid,
+        userName: currentUser.firstName || currentUser.username,
+        message: replyMessage,
+      });
+      setReplyMessage('');
+      mutate();
+      toast({ title: "Respuesta enviada", description: "Tu respuesta ha sido añadida al ticket." });
+    } catch (e) {
+      toast({ title: "Error al responder", variant: "destructive" });
+    } finally {
+      setIsReplying(false);
     }
   };
   
@@ -98,7 +128,7 @@ export default function SuperAdminSupportPage() {
       <div>
         <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
           <LifeBuoy className="h-8 w-8" />
-          Mensajes y Soporte
+          Soporte
         </h1>
         <p className="text-lg text-muted-foreground">Administra las solicitudes de los clientes y visitantes.</p>
       </div>
@@ -187,7 +217,7 @@ export default function SuperAdminSupportPage() {
         </CardContent>
       </Card>
       
-      {/* Modal de Detalles */}
+      {/* Modal de Detalles y Respuestas */}
       <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -196,33 +226,81 @@ export default function SuperAdminSupportPage() {
               Ticket de: {selectedTicket?.companyName} ({selectedTicket?.userEmail})
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 max-h-[60vh] overflow-y-auto p-1">
-            <div className="p-4 bg-muted rounded-md border">
-              <p className="whitespace-pre-wrap">{selectedTicket?.message}</p>
-            </div>
-            {selectedTicket?.attachmentUrl && (
-                <div>
-                    <Label>Adjunto</Label>
-                    <a href={selectedTicket.attachmentUrl} target="_blank" rel="noopener noreferrer">
-                        <img src={selectedTicket.attachmentUrl} alt="Adjunto" className="mt-2 rounded-md border max-w-xs cursor-pointer hover:opacity-80 transition-opacity"/>
-                    </a>
+          <div className="space-y-6 max-h-[70vh] overflow-y-auto p-1 pr-4">
+            <div className="space-y-4">
+              {/* Mensaje Original */}
+              <div className="flex gap-3">
+                <Avatar>
+                  <AvatarFallback>{selectedTicket?.userEmail.charAt(0).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 space-y-2">
+                  <div className="font-semibold text-sm">{selectedTicket?.userEmail}</div>
+                  <div className="p-3 bg-muted rounded-lg border">
+                    <p className="whitespace-pre-wrap">{selectedTicket?.message}</p>
+                  </div>
+                  <div className="text-xs text-muted-foreground">{selectedTicket && format(selectedTicket.createdAt.toDate(), "PPPp", { locale: es })}</div>
                 </div>
-            )}
-            <div className="flex items-center gap-4">
-              <Label>Cambiar estado:</Label>
-              <Select 
-                value={selectedTicket?.status} 
-                onValueChange={(value) => handleStatusChange(selectedTicket!.id, value as SupportTicket['status'])}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="open">Abierto</SelectItem>
-                  <SelectItem value="in_progress">En Progreso</SelectItem>
-                  <SelectItem value="closed">Cerrado</SelectItem>
-                </SelectContent>
-              </Select>
+              </div>
+              
+              {/* Respuestas */}
+              {selectedTicket?.replies?.map((reply, index) => (
+                <div key={index} className={cn("flex gap-3", reply.userId === currentUser?.uid ? "justify-end" : "justify-start")}>
+                  {reply.userId !== currentUser?.uid && (
+                    <Avatar>
+                      <AvatarFallback>{reply.userName.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                  )}
+                   <div className={cn("flex-1 space-y-2", reply.userId === currentUser?.uid ? "text-right" : "")} style={{maxWidth: '85%'}}>
+                     <div className="font-semibold text-sm">{reply.userName}</div>
+                     <div className={cn("p-3 rounded-lg border", reply.userId === currentUser?.uid ? "bg-primary text-primary-foreground" : "bg-muted")}>
+                       <p className="whitespace-pre-wrap">{reply.message}</p>
+                     </div>
+                     <div className="text-xs text-muted-foreground">
+                      {reply.createdAt && format(reply.createdAt.toDate(), "PPPp", { locale: es })}
+                     </div>
+                   </div>
+                  {reply.userId === currentUser?.uid && (
+                     <Avatar>
+                      <AvatarFallback>{reply.userName.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-4 border-t">
+              <Label htmlFor="replyMessage" className="font-semibold">Escribir una respuesta</Label>
+              <Textarea
+                id="replyMessage"
+                value={replyMessage}
+                onChange={(e) => setReplyMessage(e.target.value)}
+                placeholder="Escribe tu respuesta aquí..."
+                rows={4}
+                className="mt-2"
+                disabled={isReplying}
+              />
+              <div className="mt-4 flex justify-between items-center">
+                 <div className="flex items-center gap-4">
+                  <Label>Cambiar estado:</Label>
+                  <Select 
+                    value={selectedTicket?.status} 
+                    onValueChange={(value) => handleStatusChange(selectedTicket!.id, value as SupportTicket['status'])}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="open">Abierto</SelectItem>
+                      <SelectItem value="in_progress">En Progreso</SelectItem>
+                      <SelectItem value="closed">Cerrado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button onClick={handleSendReply} disabled={isReplying || !replyMessage.trim()}>
+                  {isReplying ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}
+                  {isReplying ? 'Enviando...' : 'Enviar Respuesta'}
+                </Button>
+              </div>
             </div>
           </div>
         </DialogContent>

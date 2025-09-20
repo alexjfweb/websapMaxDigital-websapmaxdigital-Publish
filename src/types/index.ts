@@ -315,7 +315,8 @@ export interface SupportTicket {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   replies?: {
-    userId: string;
+    userId: string; // UID de quien responde
+    userName: string; // Nombre de quien responde
     message: string;
     createdAt: Timestamp;
   }[];
