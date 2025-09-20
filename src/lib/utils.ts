@@ -12,13 +12,17 @@ export const generateSlug = (name: string): string => {
 
 export const serializeDate = (date: any): string | null => {
   if (!date) return null;
-  if (date instanceof Timestamp) return date.toDate().toISOString();
-  if (date instanceof Date) return date.toISOString();
+  if (date.toDate && typeof date.toDate === 'function') { // Es un Timestamp de Firestore
+    return date.toDate().toISOString();
+  }
+  if (date instanceof Date) {
+    return date.toISOString();
+  }
   if (typeof date === 'string') {
     const d = new Date(date);
     if (!isNaN(d.getTime())) return d.toISOString();
   }
-  if (date && typeof date.seconds === 'number') {
+  if (date && typeof date.seconds === 'number' && typeof date.nanoseconds === 'number') {
     return new Date(date.seconds * 1000).toISOString();
   }
   return null;

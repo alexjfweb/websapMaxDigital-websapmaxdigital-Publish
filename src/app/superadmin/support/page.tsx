@@ -28,7 +28,6 @@ export default function SuperAdminSupportPage() {
   const { currentUser } = useSession();
   const { toast } = useToast();
 
-  // Estrategia de Fetching Corregida: fetcher definido dentro del componente con useCallback
   const fetcher = useCallback(async () => {
     return supportService.getTickets();
   }, []);
@@ -69,23 +68,8 @@ export default function SuperAdminSupportPage() {
         message: replyMessage,
       });
       setReplyMessage('');
-      await mutate(); // Revalidar los datos para obtener la última versión
+      await mutate();
       toast({ title: "Respuesta enviada", description: "Tu respuesta ha sido añadida al ticket." });
-      
-      // Actualizar el ticket seleccionado en el estado local para reflejar la nueva respuesta inmediatamente
-      setSelectedTicket(prevTicket => {
-        if (!prevTicket) return null;
-        const newReply = {
-            userId: currentUser.uid,
-            userName: currentUser.firstName || currentUser.username,
-            message: replyMessage,
-            createdAt: new Date() as any, // Simulamos la fecha para la UI inmediata
-        };
-        return {
-            ...prevTicket,
-            replies: [...(prevTicket.replies || []), newReply]
-        };
-      });
 
     } catch (e) {
       console.error("Error al enviar respuesta:", e);
@@ -219,7 +203,7 @@ export default function SuperAdminSupportPage() {
                           <div className="text-xs text-muted-foreground">{ticket.planName}</div>
                         </TableCell>
                         <TableCell>{ticket.subject}</TableCell>
-                        <TableCell>{ticket.createdAt && ticket.createdAt.toDate && format(ticket.createdAt.toDate(), "dd/MM/yyyy HH:mm", { locale: es })}</TableCell>
+                        <TableCell>{ticket.createdAt ? format(new Date(ticket.createdAt), "dd/MM/yyyy HH:mm", { locale: es }) : 'N/A'}</TableCell>
                         <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
                         <TableCell>{getStatusBadge(ticket.status)}</TableCell>
                         <TableCell className="text-right">
@@ -243,7 +227,6 @@ export default function SuperAdminSupportPage() {
         </CardContent>
       </Card>
       
-      {/* Modal de Detalles y Respuestas */}
       <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -254,7 +237,6 @@ export default function SuperAdminSupportPage() {
           </DialogHeader>
           <div className="space-y-6 max-h-[70vh] overflow-y-auto p-1 pr-4">
             <div className="space-y-4">
-              {/* Mensaje Original */}
               <div className="flex gap-3">
                 <Avatar>
                   <AvatarFallback>{selectedTicket?.userEmail.charAt(0).toUpperCase()}</AvatarFallback>
@@ -264,11 +246,10 @@ export default function SuperAdminSupportPage() {
                   <div className="p-3 bg-muted rounded-lg border">
                     <p className="whitespace-pre-wrap">{selectedTicket?.message}</p>
                   </div>
-                  <div className="text-xs text-muted-foreground">{selectedTicket && selectedTicket.createdAt && selectedTicket.createdAt.toDate ? format(selectedTicket.createdAt.toDate(), "PPPp", { locale: es }) : 'Fecha no disponible'}</div>
+                  <div className="text-xs text-muted-foreground">{selectedTicket?.createdAt ? format(new Date(selectedTicket.createdAt), "PPPp", { locale: es }) : 'Fecha no disponible'}</div>
                 </div>
               </div>
               
-              {/* Respuestas */}
               {selectedTicket?.replies?.map((reply, index) => (
                 <div key={index} className={cn("flex gap-3", reply.userId === currentUser?.uid ? "justify-end" : "justify-start")}>
                   {reply.userId !== currentUser?.uid && (
@@ -282,7 +263,7 @@ export default function SuperAdminSupportPage() {
                        <p className="whitespace-pre-wrap">{reply.message}</p>
                      </div>
                      <div className="text-xs text-muted-foreground">
-                      {reply.createdAt && reply.createdAt.toDate ? format(reply.createdAt.toDate(), "PPPp", { locale: es }) : 'Enviando...'}
+                      {reply.createdAt ? format(new Date(reply.createdAt), "PPPp", { locale: es }) : 'Enviando...'}
                      </div>
                    </div>
                   {reply.userId === currentUser?.uid && (

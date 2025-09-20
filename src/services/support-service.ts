@@ -10,8 +10,10 @@ import {
   orderBy,
   serverTimestamp,
   arrayUnion,
+  Timestamp,
 } from 'firebase/firestore';
 import type { SupportTicket, CreateSupportTicket } from '@/types';
+import { serializeDate } from '@/lib/utils';
 
 class SupportService {
   private get ticketsCollection() {
@@ -37,9 +39,8 @@ class SupportService {
       replies: [], // Inicializar el array de respuestas
     };
 
-    // Asegurarnos de no enviar 'undefined'
     if (!ticketDoc.attachmentUrl) {
-      delete ticketDoc.attachmentUrl;
+        delete ticketDoc.attachmentUrl;
     }
     
     const docRef = await addDoc(this.ticketsCollection, ticketDoc);
@@ -57,11 +58,17 @@ class SupportService {
     const tickets: SupportTicket[] = [];
     querySnapshot.forEach(doc => {
       const data = doc.data();
+      const replies = (data.replies || []).map((reply: any) => ({
+        ...reply,
+        createdAt: serializeDate(reply.createdAt)
+      }));
+
       tickets.push({
         id: doc.id,
         ...data,
-        createdAt: data.createdAt, // Mantener como Timestamp de Firestore
-        updatedAt: data.updatedAt,
+        createdAt: serializeDate(data.createdAt),
+        updatedAt: serializeDate(data.updatedAt),
+        replies,
       } as SupportTicket);
     });
 
@@ -98,7 +105,6 @@ class SupportService {
       createdAt: serverTimestamp(),
     };
     
-    // Atomically add a new reply to the "replies" array field.
     await updateDoc(ticketRef, {
         replies: arrayUnion(newReply),
         updatedAt: serverTimestamp(),
