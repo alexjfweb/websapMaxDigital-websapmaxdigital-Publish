@@ -51,6 +51,12 @@ export async function POST(request: NextRequest) {
     const planSnap = planQuerySnap.docs[0];
     const plan = { id: planSnap.id, ...planSnap.data() } as LandingPlan;
 
+    // **NUEVA VALIDACIÓN**: Prevenir pagos para planes gratuitos.
+    if (plan.price <= 0) {
+      console.error(`🔴 [Checkout API] - Error: Intento de pago para un plan gratuito (precio: ${plan.price}).`);
+      return NextResponse.json({ error: 'No se puede procesar un pago para un plan gratuito.' }, { status: 400 });
+    }
+
     const companySnap = await getDoc(doc(db, 'companies', companyId));
     if (!companySnap.exists()) {
       console.error(`🔴 [Checkout API] - Error: Empresa con ID ${companyId} no encontrada.`);
@@ -170,6 +176,10 @@ export async function POST(request: NextRequest) {
 
   } catch (e: any) {
     console.error('❌ [Checkout API] - Error fatal en el handler:', e);
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    // Verificar si el error es de Mercado Pago por monto inválido
+    if (e.cause?.error?.message?.includes('transaction_amount must be a positive number')) {
+        return NextResponse.json({ error: 'El monto de la transacción debe ser un número positivo. Los planes gratuitos no se pueden procesar.' }, { status: 400 });
+    }
+    return NextResponse.json({ error: e.message || 'Error interno del servidor.' }, { status: 500 });
   }
 }

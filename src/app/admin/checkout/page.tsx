@@ -7,7 +7,7 @@ import { useLandingPlans } from '@/hooks/use-landing-plans';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Check, AlertCircle, ArrowLeft, Gem, CreditCard, Banknote, HelpCircle, Loader2 } from 'lucide-react';
+import { Check, AlertCircle, ArrowLeft, Gem, CreditCard, Banknote, HelpCircle, Loader2, Info } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
@@ -122,8 +122,10 @@ function CheckoutContent() {
     const selectedPlan = plans.find(p => p.slug === planSlug);
     
     useEffect(() => {
-        if (selectedPlan) {
+        if (selectedPlan && selectedPlan.price > 0) { // **NUEVO**: Solo buscar pagos si el plan no es gratuito
             fetchAvailablePayments(selectedPlan).then(setAvailablePayments);
+        } else if (selectedPlan) {
+            setAvailablePayments({ stripe: false, mercadopago: false, manual: false }); // No hay pagos para planes gratuitos
         }
     }, [selectedPlan]);
     
@@ -139,7 +141,7 @@ function CheckoutContent() {
     }, [paymentStatus, router, planSlug, toast]);
 
 
-    if (isLoading || availablePayments === null) {
+    if (isLoading || (selectedPlan && selectedPlan.price > 0 && availablePayments === null)) {
         return <CheckoutSkeleton />;
     }
 
@@ -295,70 +297,92 @@ function CheckoutContent() {
                     </div>
 
                     <div className="md:col-span-2">
-                        <Card className="sticky top-6">
-                            <CardHeader>
-                                <CardTitle>Métodos de Pago</CardTitle>
-                                 <CardDescription>Elige un método para continuar.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <Accordion type="single" collapsible className="w-full" defaultValue="automatic">
-                                    {(availablePayments.stripe || availablePayments.mercadopago) && (
-                                    <AccordionItem value="automatic">
-                                        <AccordionTrigger className="font-semibold text-base">Pago Automático (Recomendado)</AccordionTrigger>
-                                        <AccordionContent className="space-y-3 pt-3">
-                                            {availablePayments.stripe && (
-                                                <Button 
-                                                    className="w-full"
-                                                    onClick={() => handleAutomaticPayment('stripe')}
-                                                    disabled={isProcessingPayment === 'stripe'}
-                                                >
-                                                     {isProcessingPayment === 'stripe' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CreditCard className="mr-2 h-4 w-4" />}
-                                                     {isProcessingPayment === 'stripe' ? 'Procesando...' : 'Pagar con Tarjeta (Stripe)'}
-                                                </Button>
-                                            )}
-                                            {availablePayments.mercadopago && (
-                                                <Button 
-                                                    className="w-full"
-                                                    onClick={() => handleAutomaticPayment('mercadopago')}
-                                                    disabled={isProcessingPayment === 'mercadopago'}
-                                                >
-                                                    {isProcessingPayment === 'mercadopago' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <MercadoPagoIcon className="mr-2 h-4 w-4"/>}
-                                                    {isProcessingPayment === 'mercadopago' ? 'Procesando...' : 'Pagar con Mercado Pago'}
-                                                </Button>
-                                            )}
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                    )}
-                                    
-                                     {availablePayments.manual && (
-                                        <AccordionItem value="manual">
-                                            <AccordionTrigger className="font-semibold text-base">Pago Manual (QR)</AccordionTrigger>
-                                             <AccordionContent className="space-y-4 pt-3">
-                                                {availablePayments.bancolombiaQr?.enabled && availablePayments.bancolombiaQr.qrImageUrl && (
-                                                    <div className="text-center space-y-2">
-                                                        <p className="text-sm">Escanea el código QR desde la App Bancolombia.</p>
-                                                        <Image src={availablePayments.bancolombiaQr.qrImageUrl} alt="QR Bancolombia" width={150} height={150} className="mx-auto rounded-md border" data-ai-hint="payment QR code"/>
-                                                    </div>
+                        {/* **NUEVO**: Renderizado condicional basado en el precio del plan */}
+                        {selectedPlan.price > 0 ? (
+                            <Card className="sticky top-6">
+                                <CardHeader>
+                                    <CardTitle>Métodos de Pago</CardTitle>
+                                    <CardDescription>Elige un método para continuar.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Accordion type="single" collapsible className="w-full" defaultValue="automatic">
+                                        {(availablePayments?.stripe || availablePayments?.mercadopago) && (
+                                        <AccordionItem value="automatic">
+                                            <AccordionTrigger className="font-semibold text-base">Pago Automático (Recomendado)</AccordionTrigger>
+                                            <AccordionContent className="space-y-3 pt-3">
+                                                {availablePayments?.stripe && (
+                                                    <Button 
+                                                        className="w-full"
+                                                        onClick={() => handleAutomaticPayment('stripe')}
+                                                        disabled={isProcessingPayment === 'stripe'}
+                                                    >
+                                                        {isProcessingPayment === 'stripe' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CreditCard className="mr-2 h-4 w-4" />}
+                                                        {isProcessingPayment === 'stripe' ? 'Procesando...' : 'Pagar con Tarjeta (Stripe)'}
+                                                    </Button>
                                                 )}
-                                                {availablePayments.nequiQr?.enabled && availablePayments.nequiQr.qrImageUrl && (
-                                                    <div className="text-center space-y-2">
-                                                        <p className="text-sm">Escanea el código QR desde tu app Nequi.</p>
-                                                        <Image src={availablePayments.nequiQr.qrImageUrl} alt="QR Nequi" width={150} height={150} className="mx-auto rounded-md border" data-ai-hint="payment QR code"/>
-                                                    </div>
+                                                {availablePayments?.mercadopago && (
+                                                    <Button 
+                                                        className="w-full"
+                                                        onClick={() => handleAutomaticPayment('mercadopago')}
+                                                        disabled={isProcessingPayment === 'mercadopago'}
+                                                    >
+                                                        {isProcessingPayment === 'mercadopago' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <MercadoPagoIcon className="mr-2 h-4 w-4"/>}
+                                                        {isProcessingPayment === 'mercadopago' ? 'Procesando...' : 'Pagar con Mercado Pago'}
+                                                    </Button>
                                                 )}
-                                                 <Button className="w-full" size="lg" onClick={handleConfirmManualPayment}>
-                                                    He realizado el pago
-                                                </Button>
                                             </AccordionContent>
                                         </AccordionItem>
-                                     )}
+                                        )}
+                                        
+                                        {availablePayments?.manual && (
+                                            <AccordionItem value="manual">
+                                                <AccordionTrigger className="font-semibold text-base">Pago Manual (QR)</AccordionTrigger>
+                                                <AccordionContent className="space-y-4 pt-3">
+                                                    {availablePayments.bancolombiaQr?.enabled && availablePayments.bancolombiaQr.qrImageUrl && (
+                                                        <div className="text-center space-y-2">
+                                                            <p className="text-sm">Escanea el código QR desde la App Bancolombia.</p>
+                                                            <Image src={availablePayments.bancolombiaQr.qrImageUrl} alt="QR Bancolombia" width={150} height={150} className="mx-auto rounded-md border" data-ai-hint="payment QR code"/>
+                                                        </div>
+                                                    )}
+                                                    {availablePayments.nequiQr?.enabled && availablePayments.nequiQr.qrImageUrl && (
+                                                        <div className="text-center space-y-2">
+                                                            <p className="text-sm">Escanea el código QR desde tu app Nequi.</p>
+                                                            <Image src={availablePayments.nequiQr.qrImageUrl} alt="QR Nequi" width={150} height={150} className="mx-auto rounded-md border" data-ai-hint="payment QR code"/>
+                                                        </div>
+                                                    )}
+                                                    <Button className="w-full" size="lg" onClick={handleConfirmManualPayment}>
+                                                        He realizado el pago
+                                                    </Button>
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        )}
 
-                                     {!availablePayments.stripe && !availablePayments.mercadopago && !availablePayments.manual && (
-                                        <p className="text-sm text-muted-foreground text-center py-4">No hay métodos de pago habilitados para este plan.</p>
-                                     )}
-                                </Accordion>
-                            </CardContent>
-                        </Card>
+                                        {!availablePayments?.stripe && !availablePayments?.mercadopago && !availablePayments?.manual && (
+                                            <p className="text-sm text-muted-foreground text-center py-4">No hay métodos de pago habilitados para este plan.</p>
+                                        )}
+                                    </Accordion>
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            <Card className="sticky top-6 bg-blue-50 border-blue-200">
+                                <CardHeader className="text-center">
+                                    <Info className="h-8 w-8 text-blue-600 mx-auto mb-2"/>
+                                    <CardTitle className="text-blue-800">Plan Gratuito</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-center text-blue-700">
+                                        Este es un plan gratuito. No se requiere pago. Puedes comenzar a usar sus beneficios inmediatamente.
+                                    </p>
+                                </CardContent>
+                                <CardFooter>
+                                    <Button asChild className="w-full">
+                                        <Link href="/admin/dashboard">
+                                            Ir al Panel
+                                        </Link>
+                                    </Button>
+                                </CardFooter>
+                            </Card>
+                        )}
                     </div>
                 </div>
             </div>
