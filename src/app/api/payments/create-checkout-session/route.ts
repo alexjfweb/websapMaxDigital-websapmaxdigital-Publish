@@ -139,21 +139,21 @@ export async function POST(request: NextRequest) {
 
       const client = new MercadoPagoConfig({ accessToken: mpConfig.accessToken });
       const preapproval = new PreApproval(client);
-
-      if (!plan.mp_preapproval_plan_id) {
-          console.error(`🔴 [Checkout API] - Error: El plan ${plan.name} (${plan.id}) no tiene un 'mp_preapproval_plan_id' configurado.`);
-          return NextResponse.json({ error: `Configuración de suscripción para este plan está incompleta.` }, { status: 500 });
-      }
       
-      console.log(`[Checkout API] - Creando suscripción de Mercado Pago con preapproval_plan_id: ${plan.mp_preapproval_plan_id}`);
+      console.log(`[Checkout API] - Creando suscripción de Mercado Pago dinámicamente.`);
       
       const result = await preapproval.create({
           body: {
-            preapproval_plan_id: plan.mp_preapproval_plan_id,
-            payer_email: company.email,
-            back_url: `${baseUrl}/admin/subscription?payment=success&provider=mercadopago`,
             reason: `Suscripción al Plan ${plan.name} de WebSapMax`,
-            external_reference: `${companyId}|${plan.slug}`, // CORREGIDO: Enviar el slug
+            auto_recurring: {
+                frequency: 1,
+                frequency_type: 'months',
+                transaction_amount: plan.price,
+                currency_id: 'USD'
+            },
+            back_url: `${baseUrl}/admin/subscription?payment=success&provider=mercadopago`,
+            payer_email: company.email,
+            external_reference: `${companyId}|${plan.slug}`,
           }
       });
       
