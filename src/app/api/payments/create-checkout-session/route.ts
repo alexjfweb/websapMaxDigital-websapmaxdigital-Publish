@@ -155,7 +155,10 @@ export async function POST(request: NextRequest) {
                 frequency: 1,
                 frequency_type: 'months',
                 transaction_amount: plan.price,
-                // CORRECCIÓN: El campo currency_id se elimina para evitar el error.
+                // CORRECCIÓN FINAL: La API de suscripciones SÍ requiere currency_id.
+                // El error anterior pudo ser por una combinación inválida.
+                // Usamos la moneda del plan, o COP por defecto.
+                currency_id: plan.currency || 'COP',
             },
             back_url: `https://websap.site/admin/subscription?payment=success&provider=mercadopago`,
             payer_email: company.email,
@@ -176,10 +179,14 @@ export async function POST(request: NextRequest) {
 
   } catch (e: any) {
     console.error('❌ [Checkout API] - Error fatal en el handler:', e);
-    // Verificar si el error es de Mercado Pago por monto inválido
-    if (e.cause?.error?.message?.includes('transaction_amount must be a positive number')) {
-        return NextResponse.json({ error: 'El monto de la transacción debe ser un número positivo. Los planes gratuitos no se pueden procesar.' }, { status: 400 });
+    // Verificar si el error es de Mercado Pago
+    const mpError = e.cause?.error || e.cause;
+    if (mpError) {
+        console.error('Detalle del error de Mercado Pago:', JSON.stringify(mpError, null, 2));
+        const errorMessage = mpError.message || JSON.stringify(mpError);
+        return NextResponse.json({ error: `Error de Mercado Pago: ${errorMessage}` }, { status: 400 });
     }
+    
     return NextResponse.json({ error: e.message || 'Error interno del servidor.' }, { status: 500 });
   }
 }
