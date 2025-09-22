@@ -116,8 +116,8 @@ export async function POST(request: NextRequest) {
         }],
         mode: 'subscription',
         customer: customerId,
-        success_url: `${baseUrl}/admin/subscription?payment=success&session_id={CHECKOUT_SESSION_ID}&company_id=${companyId}&plan_id=${plan.slug}`,
-        cancel_url: `${baseUrl}/admin/checkout?plan=${plan.slug}&payment=cancelled`,
+        success_url: `https://websap.site/admin/subscription?payment=success&session_id={CHECKOUT_SESSION_ID}&company_id=${companyId}&plan_id=${plan.slug}`,
+        cancel_url: `https://websap.site/admin/checkout?plan=${plan.slug}&payment=cancelled`,
         metadata: {
           companyId: companyId,
           planId: plan.slug,
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
                 transaction_amount: plan.price,
                 currency_id: 'USD'
             },
-            back_url: `${baseUrl}/admin/subscription?payment=success&provider=mercadopago`,
+            back_url: `https://websap.site/admin/subscription?payment=success&provider=mercadopago`,
             payer_email: company.email,
             external_reference: `${companyId}|${plan.slug}`,
           }
