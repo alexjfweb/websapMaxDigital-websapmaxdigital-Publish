@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
                 frequency: 1,
                 frequency_type: 'months',
                 transaction_amount: plan.price,
-                currency_id: 'USD'
+                currency_id: plan.currency || 'COP' // CORRECCIÓN: Usar la moneda del plan
             },
             back_url: `https://websap.site/admin/subscription?payment=success&provider=mercadopago`,
             payer_email: company.email,
