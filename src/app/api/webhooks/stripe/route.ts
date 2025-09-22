@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
     const paymentDoc = await getDoc(doc(db, 'payment_methods', 'main_payment_methods'));
     const paymentData = paymentDoc.data();
 
+    // CORRECCIÓN: El campo en Firestore es 'secretKey', no 'stripe_secret_key'
     if (!paymentData?.stripe?.secretKey || !paymentData?.stripe_webhook_secret) {
       console.error('Webhook error: Missing Stripe secret key or webhook secret in Firestore document payment_methods/main_payment_methods');
       return NextResponse.json({ error: 'Missing Stripe configuration' }, { status: 500 });
@@ -43,7 +44,8 @@ export async function POST(request: NextRequest) {
       if (companyId && planId) {
         console.log(`Processing subscription for company: ${companyId}, plan: ${planId}`);
 
-        // Actualizar la suscripción en Firestore
+        // CORRECCIÓN: Actualizar los campos directamente en el documento de la empresa,
+        // no dentro de un sub-objeto 'subscription'.
         await updateDoc(doc(db, 'companies', companyId), {
           subscriptionStatus: 'active',
           planId: planId,
