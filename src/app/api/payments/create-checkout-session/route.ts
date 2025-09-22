@@ -15,7 +15,7 @@ function getBaseUrl() {
   }
   // Fallback para el entorno de producción de Firebase si no hay variable de entorno.
   if (process.env.NODE_ENV === 'production') {
-    return 'https://websapmax.web.app';
+    return 'https://websap.site';
   }
   // Fallback para desarrollo local
   return 'http://localhost:9003';
@@ -116,11 +116,11 @@ export async function POST(request: NextRequest) {
         }],
         mode: 'subscription',
         customer: customerId,
-        success_url: `${baseUrl}/admin/subscription?payment=success&provider=stripe&session_id={CHECKOUT_SESSION_ID}`,
+        success_url: `${baseUrl}/admin/subscription?payment=success&session_id={CHECKOUT_SESSION_ID}&company_id=${companyId}&plan_id=${plan.slug}`,
         cancel_url: `${baseUrl}/admin/checkout?plan=${plan.slug}&payment=cancelled`,
         metadata: {
-          companyId,
-          planId: plan.slug, // CORREGIDO: Usar siempre el slug
+          companyId: companyId,
+          planId: plan.slug,
         },
       });
 
