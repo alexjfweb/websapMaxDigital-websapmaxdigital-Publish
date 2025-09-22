@@ -154,11 +154,23 @@ export async function POST(request: NextRequest) {
                 frequency: 1,
                 frequency_type: 'months',
                 transaction_amount: plan.price,
-                currency_id: 'COP', // CORRECCIÓN DEFINITIVA
+                currency_id: 'COP', 
             },
             back_url: `https://websap.site/admin/subscription?payment=success&provider=mercadopago`,
             payer_email: company.email,
             external_reference: `${companyId}|${plan.slug}`,
+            payer: {
+              email: company.email,
+              address: {
+                zip_code: "110111", // Código postal válido de Colombia
+                street_name: company.addressStreet || "Calle Falsa",
+                street_number: 123,
+              },
+              phone: {
+                area_code: "57", // Código de área de Colombia
+                number: company.phone || "3001234567"
+              }
+            },
           }
       });
       
