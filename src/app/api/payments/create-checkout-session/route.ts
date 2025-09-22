@@ -51,7 +51,6 @@ export async function POST(request: NextRequest) {
     const planSnap = planQuerySnap.docs[0];
     const plan = { id: planSnap.id, ...planSnap.data() } as LandingPlan;
 
-    // **NUEVA VALIDACIÓN**: Prevenir pagos para planes gratuitos.
     if (plan.price <= 0) {
       console.error(`🔴 [Checkout API] - Error: Intento de pago para un plan gratuito (precio: ${plan.price}).`);
       return NextResponse.json({ error: 'No se puede procesar un pago para un plan gratuito.' }, { status: 400 });
@@ -155,10 +154,6 @@ export async function POST(request: NextRequest) {
                 frequency: 1,
                 frequency_type: 'months',
                 transaction_amount: plan.price,
-                // CORRECCIÓN FINAL: La API de suscripciones SÍ requiere currency_id.
-                // El error anterior pudo ser por una combinación inválida.
-                // Usamos la moneda del plan, o COP por defecto.
-                currency_id: plan.currency || 'COP',
             },
             back_url: `https://websap.site/admin/subscription?payment=success&provider=mercadopago`,
             payer_email: company.email,
