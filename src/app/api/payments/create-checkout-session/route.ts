@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { Stripe } from 'stripe';
-import { MercadoPagoConfig, PreApproval } from 'mercadopago';
+import { MercadoPagoConfig, Preference } from 'mercadopago';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import type { LandingPlan } from '@/services/landing-plans-service';
@@ -133,49 +133,60 @@ export async function POST(request: NextRequest) {
       console.log('✅ [Checkout API] - Sesión de Stripe (suscripción) creada exitosamente.');
 
     } else if (provider === 'mercadopago') {
-      const mpConfig = paymentMethodsConfig.mercadoPago;
-      if (!mpConfig?.enabled) {
-        return NextResponse.json({ error: 'El método de pago Mercado Pago no está habilitado para este plan.' }, { status: 400 });
-      }
-      if (!mpConfig.accessToken) {
-        console.error('🔴 [Checkout API] - Error: El Access Token de Mercado Pago no está configurado.');
-        return NextResponse.json({ error: 'El método de pago Mercado Pago no está configurado.' }, { status: 400 });
-      }
+        const mpConfig = paymentMethodsConfig.mercadoPago;
+        if (!mpConfig?.enabled) {
+            return NextResponse.json({ error: 'El método de pago Mercado Pago no está habilitado para este plan.' }, { status: 400 });
+        }
+        if (!mpConfig.accessToken) {
+            console.error('🔴 [Checkout API] - Error: El Access Token de Mercado Pago no está configurado.');
+            return NextResponse.json({ error: 'El método de pago Mercado Pago no está configurado.' }, { status: 400 });
+        }
 
-      const client = new MercadoPagoConfig({ accessToken: mpConfig.accessToken });
-      const preapproval = new PreApproval(client);
-      
-      console.log(`[Checkout API] - Creando suscripción de Mercado Pago dinámicamente.`);
-      
-      const result = await preapproval.create({
-          body: {
-            reason: `Suscripción al Plan ${plan.name} de WebSapMax`,
-            auto_recurring: {
-                frequency: 1,
-                frequency_type: 'months',
-                transaction_amount: plan.price,
-                currency_id: 'COP',
-            },
-            back_url: `https://websap.site/admin/subscription?payment=success&provider=mercadopago`,
-            payer_email: company.email,
-            external_reference: `${companyId}|${plan.slug}`,
-            payer: {
-              email: company.email,
-              address: {
-                zip_code: "110111", // Código postal válido de Colombia
-                street_name: company.addressStreet || "Calle Falsa",
-                street_number: 123,
-              },
-              phone: {
-                area_code: "57", // Código de área de Colombia
-                number: company.phone || "3001234567"
-              }
-            },
-          }
-      });
-      
-      checkoutUrl = result.init_point!;
-      console.log('✅ [Checkout API] - URL de suscripción de Mercado Pago creada exitosamente.');
+        const client = new MercadoPagoConfig({ accessToken: mpConfig.accessToken });
+        const preference = new Preference(client);
+
+        console.log(`[Checkout API] - Creando preferencia de pago para sandbox.`);
+
+        const result = await preference.create({
+            body: {
+                items: [
+                    {
+                        id: plan.slug,
+                        title: `Plan ${plan.name} - WebSapMax`,
+                        description: `Suscripción mensual al plan ${plan.name}`,
+                        category_id: 'services',
+                        quantity: 1,
+                        currency_id: 'COP',
+                        unit_price: plan.price,
+                    }
+                ],
+                payer: {
+                  email: company.email,
+                  name: company.name || 'Test User',
+                  surname: '', // Surname is often not available
+                  phone: {
+                    area_code: "57",
+                    number: company.phone?.replace(/\D/g, '') || "3001234567"
+                  },
+                  address: {
+                    street_name: company.addressStreet || 'Calle Test',
+                    street_number: 123,
+                    zip_code: '110111'
+                  }
+                },
+                back_urls: {
+                    success: `https://websap.site/admin/subscription?payment=success&provider=mercadopago&plan=${plan.slug}`,
+                    failure: `https://websap.site/admin/checkout?plan=${plan.slug}&payment=failure`,
+                    pending: `https://websap.site/admin/checkout?plan=${plan.slug}&payment=pending`
+                },
+                auto_return: 'approved',
+                external_reference: `${companyId}|${plan.slug}`,
+            }
+        });
+
+        checkoutUrl = result.init_point!;
+        console.log('✅ [Checkout API] - URL de preferencia de pago creada para sandbox.');
+
 
     } else {
       console.error(`🔴 [Checkout API] - Error: Proveedor de pago no soportado: ${provider}.`);
