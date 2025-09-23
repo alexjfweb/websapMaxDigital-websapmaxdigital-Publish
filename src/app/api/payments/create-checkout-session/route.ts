@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
                       frequency: 1,
                       frequency_type: 'months',
                       transaction_amount: plan.price,
-                      currency_id: 'COP',
+                      currency_id: 'COP', // Moneda obligatoria para producción en Colombia
                   },
                   back_url: `https://websap.site/admin/subscription?payment=success&provider=mercadopago`,
                   payer_email: company.email,
@@ -177,8 +177,6 @@ export async function POST(request: NextRequest) {
                         {
                             id: plan.slug,
                             title: `Plan ${plan.name} - WebSapMax`,
-                            description: `Suscripción mensual al plan ${plan.name}`,
-                            category_id: 'services',
                             quantity: 1,
                             currency_id: 'COP',
                             unit_price: plan.price,
@@ -186,17 +184,6 @@ export async function POST(request: NextRequest) {
                     ],
                     payer: {
                         email: company.email,
-                        name: 'Test',
-                        surname: 'User',
-                        identification: {
-                            type: 'CC',
-                            number: '12345678',
-                        },
-                        address: {
-                            street_name: "Calle Falsa",
-                            street_number: 123,
-                            zip_code: "110111",
-                        },
                     },
                     back_urls: {
                         success: `https://websap.site/admin/subscription?payment=success&provider=mercadopago&plan=${plan.slug}`,
