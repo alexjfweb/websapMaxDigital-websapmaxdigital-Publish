@@ -1,82 +1,76 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { MercadoPagoConfig, PreApproval } from 'mercadopago';
-import { doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { headers } from 'next/headers';
+import Stripe from 'stripe';
 import { getDb } from '@/lib/firebase';
-import { auditService } from '@/services/audit-service';
-import type { Company } from '@/types';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
 
-// NOTE: The Stripe webhook functionality has been moved to /api/webhooks/stripe/route.ts
-// This file is now ONLY for Mercado Pago.
+// NOTA: La funcionalidad de webhook de Mercado Pago ha sido movida a /api/webhooks/mercadopago
+// Este archivo ahora está reservado para el webhook de Stripe.
 
-async function getMercadoPagoAccessToken() {
-  const db = getDb();
-  const docRef = doc(db, "payment_methods", "main_payment_methods");
-  const docSnap = await getDoc(docRef);
-  if (!docSnap.exists()) {
-    throw new Error("El documento de configuración de métodos de pago no existe.");
-  }
-  const config = docSnap.data();
-  // Asumimos que las claves están en el plan premium como referencia, esto podría necesitar ajuste.
-  return config.premium?.mercadoPago?.accessToken;
-}
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.text();
+    const signature = headers().get('stripe-signature') as string;
 
-// Handler para webhooks de Mercado Pago
-async function handleMercadoPagoWebhook(request: NextRequest) {
-    const mpAccessToken = await getMercadoPagoAccessToken();
-    if (!mpAccessToken) {
-        console.error('El Access Token de Mercado Pago no está configurado.');
-        return new NextResponse('Configuración de servidor incompleta', { status: 500 });
+    if (!signature) {
+      console.warn('[Stripe Webhook] No signature provided.');
+      return NextResponse.json({ error: 'No signature provided' }, { status: 400 });
     }
+
+    const db = getDb();
+    const paymentDoc = await getDoc(doc(db, 'payment_methods', 'main_payment_methods'));
     
-    const { searchParams } = new URL(request.url);
-    const topic = searchParams.get('topic');
-    const id = searchParams.get('id');
+    if (!paymentDoc.exists()) {
+        console.error('Webhook error: Missing payment_methods/main_payment_methods document in Firestore.');
+        return NextResponse.json({ error: 'Stripe configuration is missing on the server.' }, { status: 500 });
+    }
+    const paymentData = paymentDoc.data();
+    
+    // Asumimos que las claves de producción están en 'premium', y las de sandbox en 'estándar'
+    const stripeConfig = paymentData.premium?.stripe?.enabled 
+      ? paymentData.premium.stripe 
+      : paymentData.estándar?.stripe;
 
-    if (topic === 'preapproval') {
-        const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
-        const preapproval = new PreApproval(client);
-        const subscription = await preapproval.get({ id: id! });
-        
-        const externalReference = subscription.external_reference;
-        if (!externalReference) return NextResponse.json({ received: true });
-        
-        const [companyId, planId] = externalReference!.split('|');
+    const stripeWebhookSecret = stripeConfig?.webhookSecret; // Asumiendo que guardas el secret del webhook aquí
 
-        let newStatus: Company['subscriptionStatus'] = 'pending_payment';
-        if (subscription.status === 'authorized') {
-            newStatus = 'active';
-        } else if (subscription.status === 'cancelled' || subscription.status === 'paused') {
-            newStatus = 'canceled';
-        }
+    if (!stripeConfig?.secretKey || !stripeWebhookSecret) {
+      console.error('Webhook error: Missing Stripe secret key or webhook secret in Firestore.');
+      return NextResponse.json({ error: 'Missing Stripe configuration' }, { status: 500 });
+    }
 
-        const db = getDb();
+    const stripe = new Stripe(stripeConfig.secretKey);
+    let event: Stripe.Event;
+
+    try {
+      event = stripe.webhooks.constructEvent(body, signature, stripeWebhookSecret);
+    } catch (err: any) {
+      console.error('Webhook signature verification failed:', err.message);
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+    }
+
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const { companyId, planId } = session.metadata || {};
+
+      if (companyId && planId) {
+        console.log(`[Stripe Webhook] Processing subscription for company: ${companyId}, plan: ${planId}`);
         await updateDoc(doc(db, 'companies', companyId), {
-            subscriptionStatus: newStatus,
-            planId: planId,
-            mpPreapprovalId: id,
-            updatedAt: serverTimestamp(),
+          subscriptionStatus: 'active',
+          planId: planId,
+          stripeCustomerId: session.customer as string,
+          stripeSubscriptionId: session.subscription as string,
+          updatedAt: new Date(),
         });
-
-        await auditService.log({
-          entity: 'companies', entityId: companyId, action: 'updated',
-          performedBy: { uid: 'mercadopago-webhook', email: 'webhook@mercadopago.com' },
-          newData: { planId, subscriptionStatus: newStatus, mpPreapprovalId: id },
-          details: `Suscripción actualizada por webhook de MP. Nuevo estado: ${newStatus}.`
-        });
-        console.log(`✅ [MP Webhook] Suscripción actualizada para ${companyId}. Estado: ${newStatus}`);
+        console.log(`[Stripe Webhook] Subscription activated successfully for company: ${companyId}`);
+      } else {
+        console.error('[Stripe Webhook] Missing companyId or planId in session metadata');
+      }
     }
 
     return NextResponse.json({ received: true });
-}
-
-export async function POST(request: NextRequest) {
-  // This endpoint is now dedicated to Mercado Pago.
-  console.log("Recibiendo webhook de Mercado Pago...");
-  try {
-    return await handleMercadoPagoWebhook(request);
-  } catch (e: any) {
-    console.error(`❌ Error procesando webhook de Mercado Pago:`, e);
-    return new NextResponse(`Error interno del servidor: ${e.message}`, { status: 500 });
+  } catch (error: any) {
+    console.error('[Stripe Webhook] Error:', error.message);
+    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
   }
 }
