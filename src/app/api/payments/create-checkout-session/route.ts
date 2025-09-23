@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
                     frequency: 1,
                     frequency_type: 'months',
                     transaction_amount: plan.price,
-                    currency_id: 'COP',
+                    currency_id: 'COP', 
                 },
                 back_url: `https://websap.site/admin/subscription?payment=success&provider=mercadopago`,
                 payer_email: company.email,
@@ -182,12 +182,17 @@ export async function POST(request: NextRequest) {
                       }
                   ],
                   payer: {
-                      name: "Test",
-                      surname: "User",
-                      email: "test_user_132185202@testuser.com",
+                      name: 'Test',
+                      surname: 'User',
+                      email: 'test_user_63274208@testuser.com',
                       identification: {
-                        type: "CC",
-                        number: "12345678"
+                        type: 'CC',
+                        number: '12345678'
+                      },
+                      address: {
+                          street_name: "Calle Falsa",
+                          street_number: 123,
+                          zip_code: "110111"
                       }
                   },
                   back_urls: {
