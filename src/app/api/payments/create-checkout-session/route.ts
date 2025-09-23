@@ -80,7 +80,6 @@ export async function POST(request: NextRequest) {
     
     console.log(`[Checkout API] - Configuración de pago encontrada para el plan: ${planNameKey}`);
 
-    const baseUrl = getBaseUrl();
     let checkoutUrl = '';
 
     if (provider === 'stripe') {
@@ -186,18 +185,18 @@ export async function POST(request: NextRequest) {
                         }
                     ],
                     payer: {
-                      email: company.email,
-                      name: company.name || 'Test User',
-                      surname: '',
-                      phone: {
-                        area_code: "57",
-                        number: company.phone?.replace(/\D/g, '') || "3001234567"
-                      },
-                      address: {
-                        street_name: company.addressStreet || 'Calle Test',
-                        street_number: 123,
-                        zip_code: '110111'
-                      }
+                        email: company.email,
+                        name: 'Test',
+                        surname: 'User',
+                        identification: {
+                            type: 'CC',
+                            number: '12345678',
+                        },
+                        address: {
+                            street_name: "Calle Falsa",
+                            street_number: 123,
+                            zip_code: "110111",
+                        },
                     },
                     back_urls: {
                         success: `https://websap.site/admin/subscription?payment=success&provider=mercadopago&plan=${plan.slug}`,
