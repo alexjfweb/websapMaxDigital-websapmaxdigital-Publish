@@ -182,7 +182,13 @@ export async function POST(request: NextRequest) {
                       }
                   ],
                   payer: {
-                      email: 'test_user_132185202@testuser.com', // **CORRECCIÓN CLAVE**
+                      name: "Test",
+                      surname: "User",
+                      email: "test_user_132185202@testuser.com",
+                      identification: {
+                        type: "CC",
+                        number: "12345678"
+                      }
                   },
                   back_urls: {
                       success: `https://websap.site/admin/subscription?payment=success&provider=mercadopago&plan=${plan.slug}`,
