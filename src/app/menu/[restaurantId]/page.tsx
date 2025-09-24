@@ -178,9 +178,10 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
     );
   }
   
-  const ogTitle = restaurant.name;
-  const ogDescription = restaurant.customShareMessage || restaurant.description || `Menú digital de ${restaurant.name}`;
-  const ogImage = restaurant.customShareImageUrl || restaurant.logoUrl || 'https://placehold.co/1200x630.png';
+  const ogTitle = restaurant.customShareMessage || `¡Menú de ${restaurant.name}! 🍽️`;
+  const ogDescription = restaurant.description || `Descubre los deliciosos platillos que ${restaurant.name} tiene para ofrecer.`;
+  const ogImage = restaurant.customShareImageUrl || restaurant.bannerUrl || restaurant.logoUrl || 'https://storage.googleapis.com/websapmax-images/share-images/default-share-image.png';
+  const ogUrl = typeof window !== 'undefined' ? window.location.href : '';
 
 
   const restaurantInfoForDisplay = { ...restaurant, address: restaurant.addressStreet, logoUrl: restaurant.logoUrl, bannerUrl: restaurant.bannerUrl };
@@ -188,18 +189,20 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
   return (
     <>
     <Head>
-        <title>{ogTitle}</title>
-        <meta name="description" content={ogDescription} />
-        {/* Open Graph / Facebook */}
-        <meta property="og:type" content="website" />
+        <title>{restaurant.name} - Menú Digital</title>
         <meta property="og:title" content={ogTitle} />
         <meta property="og:description" content={ogDescription} />
         <meta property="og:image" content={ogImage} />
-        {/* Twitter */}
-        <meta property="twitter:card" content="summary_large_image" />
-        <meta property="twitter:title" content={ogTitle} />
-        <meta property="twitter:description" content={ogDescription} />
-        <meta property="twitter:image" content={ogImage} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:url" content={ogUrl} />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content={restaurant.name} />
+
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={ogTitle} />
+        <meta name="twitter:description" content={ogDescription} />
+        <meta name="twitter:image" content={ogImage} />
     </Head>
     <div
       style={{
