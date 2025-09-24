@@ -39,7 +39,7 @@ function AdminLoader() {
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const { currentUser, isLoading: isSessionLoading, logout } = useSession();
-    const { isLoading: isNavLoading } = useNavigationConfig();
+    const { navConfig, isLoading: isNavLoading } = useNavigationConfig();
     const { setOpenMobile } = useSidebar();
     const router = useRouter();
     const [companyProfile, setCompanyProfile] = React.useState<Partial<Company>>({});
@@ -104,7 +104,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 </div>
                 </SidebarHeader>
                 <SidebarContent className="flex-grow">
-                <NavigationMenu role={currentUser.role} onLinkClick={handleMobileLinkClick} />
+                  <NavigationMenu 
+                    role={currentUser.role} 
+                    items={navConfig.sidebarItems} 
+                    isLoading={isNavLoading} 
+                    onLinkClick={handleMobileLinkClick} 
+                  />
                 </SidebarContent>
                 <SidebarFooter className="p-2 mt-auto">
                 <DropdownMenu>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from 'react';
@@ -14,12 +13,9 @@ import {
   Share2, UserCog, Server, History, CalendarCheck, Megaphone, Store, BarChart3, Wrench, Database,
   Gem, BellRing, Palette, Archive, CreditCard, Rocket, Navigation, LifeBuoy
 } from 'lucide-react';
-import { useNavigationConfig } from '@/hooks/use-navigation-config';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { NavItemConfig } from '@/services/navigation-service';
 
-// Este mapa ya no es necesario aquí porque el hook se encarga de todo,
-// pero lo mantenemos por si se necesita referenciar íconos en otro lugar.
 const iconMap: { [key: string]: React.ElementType } = {
   'sa-dashboard': ShieldCheck,
   'sa-analytics': BarChart3,
@@ -45,6 +41,7 @@ const iconMap: { [key: string]: React.ElementType } = {
   'admin-reservations': CalendarCheck,
   'admin-orders': ShoppingBag,
   'admin-share': Share2,
+  'admin-support': LifeBuoy,
   'emp-dashboard': ClipboardList,
   'emp-orders': ShoppingBag,
   'emp-tables': ClipboardList,
@@ -59,49 +56,53 @@ const iconMap: { [key: string]: React.ElementType } = {
 
 interface NavigationMenuProps {
   role: string;
+  items: NavItemConfig[];
+  isLoading: boolean;
   onLinkClick?: () => void;
 }
 
-export default function NavigationMenu({ role, onLinkClick }: NavigationMenuProps) {
+export default function NavigationMenu({ role, items, isLoading, onLinkClick }: NavigationMenuProps) {
   const pathname = usePathname();
-  const { navConfig, isLoading, isError } = useNavigationConfig();
 
-  const renderNavItems = (items: NavItemConfig[]) => {
-    if (isLoading) {
-      return Array.from({ length: 8 }).map((_, i) => (
-         <div key={i} className="flex items-center gap-3 p-2 ml-1">
-            <Skeleton className="h-5 w-5 rounded-md"/>
-            <Skeleton className="h-4 w-32"/>
-        </div>
-      ));
-    }
+  if (isLoading) {
+    return (
+        <SidebarMenu>
+            {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 p-2 ml-1">
+                    <Skeleton className="h-5 w-5 rounded-md"/>
+                    <Skeleton className="h-4 w-32"/>
+                </div>
+            ))}
+        </SidebarMenu>
+    );
+  }
     
-    if (isError) {
+  if (!items || items.length === 0) {
       return <p className="p-2 text-xs text-destructive">Error al cargar menú.</p>;
-    }
+  }
 
-    const userRole = role?.toLowerCase() || 'guest';
-
-    return items
+  const userRole = role?.toLowerCase() || 'guest';
+  const visibleItems = items
       .filter(item => item.visible && item.roles.includes(userRole))
-      .sort((a, b) => a.order - b.order)
-      .map((item) => {
-        const IconComponent = iconMap[item.icon as string] || LayoutDashboard;
-        const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
-        
-        return (
-          <SidebarMenuItem key={item.id}>
-            <SidebarMenuButton asChild isActive={isActive} tooltip={item.tooltip} onClick={onLinkClick}>
-              <Link href={item.href}>
-                <IconComponent />
-                <span>{item.label}</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        );
-      });
-  };
+      .sort((a, b) => a.order - b.order);
 
-  // Accede a `navConfig.sidebarItems` de forma segura, usando un array vacío como fallback
-  return <SidebarMenu>{renderNavItems(navConfig?.sidebarItems || [])}</SidebarMenu>;
+  return (
+    <SidebarMenu>
+        {visibleItems.map((item) => {
+            const IconComponent = iconMap[item.icon as string] || LayoutDashboard;
+            const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+            
+            return (
+                <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.tooltip} onClick={onLinkClick}>
+                    <Link href={item.href}>
+                        <IconComponent />
+                        <span>{item.label}</span>
+                    </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            );
+        })}
+    </SidebarMenu>
+  );
 }
