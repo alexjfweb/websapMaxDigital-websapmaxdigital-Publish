@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useSession } from '@/contexts/session-context';
 import AppHeader from './header';
 import {
@@ -10,8 +10,6 @@ import {
   SidebarHeader,
   SidebarContent,
   SidebarFooter,
-  SidebarInset,
-  SidebarRail,
   useSidebar, 
 } from '@/components/ui/sidebar';
 import NavigationMenu from '@/components/layout/navigation-menu';
@@ -79,7 +77,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     const profileLink = currentUser.role === 'superadmin' ? '/superadmin/profile' : '/admin/profile';
     const businessName = companyProfile?.name || currentUser.businessName || currentUser.name || currentUser.username;
-    const avatarUrl = companyProfile?.logoUrl || currentUser.avatarUrl; // Prioritize company logo as avatar
+    const avatarUrl = companyProfile?.logoUrl || currentUser.avatarUrl;
 
     const handleMobileLinkClick = () => {
         setOpenMobile(false);
@@ -150,14 +148,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 </DropdownMenu>
                 </SidebarFooter>
             </Sidebar>
-            <SidebarRail />
-            <SidebarInset className="flex flex-col">
-                <AppHeader />
-                <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background pb-20 md:pb-8">
-                {children}
-                </main>
-                <FooterNavigation role={currentUser.role} />
-            </SidebarInset>
+            <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background pb-20 md:pb-8">
+              {children}
+            </main>
+            <FooterNavigation role={currentUser.role} />
         </>
     );
 }
