@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from 'react';
@@ -24,6 +23,7 @@ import FooterNavigation from './footer-navigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import type { Company } from '@/types';
+import { useNavigationConfig } from '@/hooks/use-navigation-config';
 
 
 function AdminLoader() {
@@ -38,10 +38,13 @@ function AdminLoader() {
 }
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
-    const { currentUser, isLoading, logout } = useSession();
+    const { currentUser, isLoading: isSessionLoading, logout } = useSession();
+    const { isLoading: isNavLoading } = useNavigationConfig();
     const { setOpenMobile } = useSidebar();
     const router = useRouter();
     const [companyProfile, setCompanyProfile] = React.useState<Partial<Company>>({});
+
+    const isLoading = isSessionLoading || isNavLoading;
 
     React.useEffect(() => {
         const fetchCompanyProfile = async () => {
