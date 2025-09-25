@@ -9,8 +9,7 @@ export async function POST(request: NextRequest) {
     // 1. Inicializar el SDK de Admin DENTRO del handler para asegurar que se ejecuta en el contexto correcto.
     const adminApp = getFirebaseAdmin();
     const storage = getStorage(adminApp);
-    // CORRECCIÓN: Especificar explícitamente el nombre del bucket.
-    const bucket = storage.bucket('websapmax-images');
+    const bucket = storage.bucket('websapmax-images'); // Especificar el bucket por defecto
 
     // 2. Procesar los datos del formulario.
     const formData = await request.formData();
@@ -34,17 +33,15 @@ export async function POST(request: NextRequest) {
     
     const fileRef = bucket.file(fileName);
 
-    // 4. Subir el archivo a Firebase Storage.
+    // 4. Subir el archivo a Firebase Storage con metadata pública.
     await fileRef.save(buffer, {
+      public: true, // Esto hace que el archivo sea públicamente legible (ACL: allUsers=READER)
       metadata: { 
-        contentType: file.type,
+        contentType: file.type, // Asegura que el Content-Type sea correcto
       }
     });
 
-    // 5. Hacer el archivo público para que se pueda visualizar.
-    await fileRef.makePublic();
-
-    // 6. Devolver la URL pública del archivo.
+    // 5. La URL pública se construye de esta forma para los buckets de Google Cloud Storage.
     const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
     
     return NextResponse.json({ 
@@ -54,7 +51,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('❌ Error en la API de subida:', error);
-    // Devolvemos el mensaje de error específico que viene desde getFirebaseAdmin.
     return NextResponse.json({ 
       success: false,
       error: `Error interno del servidor: ${error.message}`,
