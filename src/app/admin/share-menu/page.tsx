@@ -34,8 +34,11 @@ export default function AdminShareMenuPage() {
 
   useEffect(() => {
     const companyId = currentUser.companyId;
-    if (typeof window !== 'undefined' && companyId) {
-      setMenuUrl(`${window.location.origin}/menu/${companyId}`);
+    
+    // CORRECCIÓN: Usar la URL base del entorno o un fallback de producción.
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://websap.site';
+    if (companyId) {
+      setMenuUrl(`${baseUrl}/menu/${companyId}`);
     }
     
     async function fetchShareConfig() {
