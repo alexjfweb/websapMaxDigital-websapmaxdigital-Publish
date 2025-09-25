@@ -33,9 +33,8 @@ export default function AdminShareMenuPage() {
   const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
-    const companyId = currentUser.companyId;
+    const companyId = currentUser?.companyId;
     
-    // CORRECCIÓN: Usar la URL base del entorno o un fallback de producción.
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://websap.site';
     if (companyId) {
       setMenuUrl(`${baseUrl}/menu/${companyId}`);
@@ -64,14 +63,14 @@ export default function AdminShareMenuPage() {
       }
     }
     
-    if(currentUser.companyId) fetchShareConfig();
-  }, [currentUser.companyId, toast]);
+    if(currentUser?.companyId) fetchShareConfig();
+  }, [currentUser?.companyId, toast]);
 
-  const handleCopyToClipboard = () => {
-    if (!menuUrl) return;
-    navigator.clipboard.writeText(menuUrl)
-      .then(() => toast({ title: "¡Enlace copiado!", description: "El enlace del menú ha sido copiado al portapapeles." }))
-      .catch(() => toast({ title: 'Error', description: 'No se pudo copiar el enlace', variant: "destructive" }));
+  const handleCopyToClipboard = (textToCopy: string, successMessage: string) => {
+    if (!textToCopy) return;
+    navigator.clipboard.writeText(textToCopy)
+      .then(() => toast({ title: "¡Copiado!", description: successMessage }))
+      .catch(() => toast({ title: 'Error', description: 'No se pudo copiar el texto.', variant: "destructive" }));
   };
 
   const handleShareViaWhatsApp = () => {
@@ -110,11 +109,11 @@ export default function AdminShareMenuPage() {
   const clearImage = () => {
     setImageFile(null);
     setImagePreview(null);
-    setCustomImageUrl(''); // También limpia la URL existente
+    setCustomImageUrl('');
   };
   
   const handleSaveConfig = async () => {
-    if (!currentUser.companyId) {
+    if (!currentUser?.companyId) {
       toast({ title: "Error de Autenticación", description: "No se pudo identificar la compañía.", variant: "destructive" });
       return;
     }
@@ -124,14 +123,12 @@ export default function AdminShareMenuPage() {
     try {
       let finalImageUrl = customImageUrl;
 
-      // Si hay un nuevo archivo de imagen, súbelo.
       if (imageFile) {
         toast({ title: "Subiendo imagen...", description: "Por favor espera." });
         finalImageUrl = await storageService.compressAndUploadFile(imageFile, `share-images/${currentUser.companyId}`);
-        setCustomImageUrl(finalImageUrl); // Actualiza el estado con la nueva URL
-        setImageFile(null); // Limpia el archivo después de subirlo
+        setCustomImageUrl(finalImageUrl);
+        setImageFile(null);
       } else if (!imagePreview) {
-        // Si no hay vista previa, significa que el usuario eliminó la imagen.
         finalImageUrl = '';
       }
 
@@ -227,6 +224,22 @@ export default function AdminShareMenuPage() {
             </div>
             <p className="text-xs text-muted-foreground mt-1">Sube una imagen para que aparezca en la vista previa al compartir el enlace.</p>
           </div>
+          {customImageUrl && (
+            <div className="space-y-2">
+                <Label htmlFor="imageUrl">URL de la Imagen (para vista previa)</Label>
+                <div className="flex items-center space-x-2">
+                    <Input id="imageUrl" value={customImageUrl} readOnly />
+                    <Button 
+                      onClick={() => handleCopyToClipboard(customImageUrl, 'URL de la imagen copiada.')} 
+                      variant="outline" 
+                      size="icon" 
+                      aria-label="Copiar URL de la imagen"
+                    >
+                        <Copy className="h-4 w-4" />
+                    </Button>
+                </div>
+            </div>
+          )}
           <Button onClick={handleSaveConfig} disabled={isSaving}>
             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
             {isSaving ? 'Guardando...' : 'Guardar Cambios'}
@@ -242,7 +255,7 @@ export default function AdminShareMenuPage() {
         <CardContent className="space-y-4">
           <div className="flex items-center space-x-2">
             <Input id="menuLink" value={menuUrl} readOnly className="flex-grow" />
-            <Button onClick={handleCopyToClipboard} variant="outline" size="icon" aria-label="Copiar enlace">
+            <Button onClick={() => handleCopyToClipboard(menuUrl, 'El enlace del menú ha sido copiado.')} variant="outline" size="icon" aria-label="Copiar enlace">
               <Copy className="h-4 w-4" />
             </Button>
           </div>
