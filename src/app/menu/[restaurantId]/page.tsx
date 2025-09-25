@@ -3,7 +3,6 @@
 
 import * as React from 'react';
 import Image from 'next/image';
-import type { Metadata } from 'next';
 import type { Company, Dish, CartItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -16,62 +15,6 @@ import { getDb } from '@/lib/firebase';
 import { doc, getDoc, collection } from 'firebase/firestore';
 import ReservationForm from '@/components/forms/reservation-form';
 import { useDishes } from '@/hooks/use-dishes';
-
-// NOTE: The metadata generation is now handled by generateMetadata function below.
-// This client component will focus on the interactive parts of the page.
-
-// Helper function to fetch data for metadata - must be defined outside the component
-const fetchRestaurantForMetadata = async (restaurantId: string): Promise<Partial<Company>> => {
-  if (!restaurantId) return {};
-  try {
-    const db = getDb();
-    const companyDocRef = doc(collection(db, 'companies'), restaurantId);
-    const companySnapshot = await getDoc(companyDocRef);
-    if (companySnapshot.exists()) {
-      return companySnapshot.data();
-    }
-    return {};
-  } catch (error) {
-    console.error("Error fetching restaurant for metadata:", error);
-    return {};
-  }
-};
-
-
-export async function generateMetadata({ params }: { params: { restaurantId: string } }): Promise<Metadata> {
-  const restaurant = await fetchRestaurantForMetadata(params.restaurantId);
-
-  const ogTitle = restaurant.customShareMessage || `¡Menú de ${restaurant.name || 'nuestro restaurante'}! 🍽️`;
-  const ogDescription = restaurant.description || `Descubre los deliciosos platillos que ${restaurant.name || 'tenemos'} para ofrecer.`;
-  const ogImage = restaurant.customShareImageUrl || restaurant.bannerUrl || restaurant.logoUrl || 'https://storage.googleapis.com/websapmax-images/share-images/default-share-image.png';
-
-  return {
-    title: `${restaurant.name || 'Menú Digital'}`,
-    description: ogDescription,
-    openGraph: {
-      title: ogTitle,
-      description: ogDescription,
-      images: [
-        {
-          url: ogImage,
-          width: 1200,
-          height: 630,
-          alt: `${restaurant.name || 'Restaurante'}`,
-        },
-      ],
-      url: `https://websap.site/menu/${params.restaurantId}`, // Make sure this is your production URL
-      type: 'website',
-      siteName: restaurant.name || 'WebSapMax',
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: ogTitle,
-      description: ogDescription,
-      images: [ogImage],
-    },
-  };
-}
-
 
 interface CartStore {
   items: CartItem[];
@@ -332,4 +275,3 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
     </>
   );
 }
-
