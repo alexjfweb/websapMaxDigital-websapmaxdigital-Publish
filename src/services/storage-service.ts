@@ -39,6 +39,14 @@ const compressAndUploadFile = async (file: File, path: string): Promise<string> 
       throw new Error(result.error || 'Error en el servidor al subir la imagen.');
     }
     
+    // Si estamos en producción, transformamos la URL para que use nuestro proxy
+    if (process.env.NODE_ENV === 'production') {
+      const gcsUrl = new URL(result.url);
+      const filePath = gcsUrl.pathname.split('/').slice(2).join('/'); // Extrae la ruta del archivo sin el nombre del bucket
+      const proxyUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://websap.site'}/api/proxy-image/${filePath}`;
+      return proxyUrl;
+    }
+
     return result.url;
 
   } catch (error) {
