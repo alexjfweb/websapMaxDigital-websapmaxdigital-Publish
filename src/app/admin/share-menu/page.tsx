@@ -101,12 +101,13 @@ export default function AdminShareMenuPage() {
         return;
     }
     
-    // Obtiene el nombre del archivo de la URL de GCS
-    const gcsUrl = new URL(customImageUrl);
-    const imageName = gcsUrl.pathname.split('/').pop() || 'share-image.png';
-    const shareUrl = `${baseUrl}/landing/restaurant/${companyId}/${imageName}`;
+    // Extraer la ruta del archivo de la URL completa de GCS
+    const imagePath = customImageUrl.replace('https://storage.googleapis.com/websapmax-images/', '');
     
+    // 🔥 CAMBIO CRÍTICO: Construir la URL para la página intermedia /landing
+    const shareUrl = `${baseUrl}/landing/${imagePath}`;
     const textoParaCompartir = `${customMessage} ${shareUrl}`;
+    
     const encodedMessage = encodeURIComponent(textoParaCompartir);
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank');
@@ -345,3 +346,4 @@ export default function AdminShareMenuPage() {
     </>
   );
 }
+

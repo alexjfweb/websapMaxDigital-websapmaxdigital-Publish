@@ -39,7 +39,7 @@ const compressAndUploadFile = async (file: File, path: string): Promise<string> 
       throw new Error(result.error || 'Error en el servidor al subir la imagen.');
     }
     
-    // Devolvemos la URL directa a Google Cloud Storage, que es lo que necesitan los crawlers
+    // 🔥 CAMBIO CRÍTICO: Devolver la URL directa del bucket, tal como la entrega la API.
     return result.url;
 
   } catch (error) {
@@ -68,3 +68,4 @@ export const storageService = {
   compressAndUploadFile,
   deleteFile,
 };
+
