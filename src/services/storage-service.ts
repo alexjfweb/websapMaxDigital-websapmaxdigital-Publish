@@ -39,7 +39,7 @@ const compressAndUploadFile = async (file: File, path: string): Promise<string> 
       throw new Error(result.error || 'Error en el servidor al subir la imagen.');
     }
     
-    // 🔥 CAMBIO CRÍTICO: Devolver la URL directa del bucket, tal como la entrega la API.
+    // Devolvemos la URL pública y directa al bucket de GCS, tal como la entrega la API.
     return result.url;
 
   } catch (error) {
@@ -68,4 +68,3 @@ export const storageService = {
   compressAndUploadFile,
   deleteFile,
 };
-

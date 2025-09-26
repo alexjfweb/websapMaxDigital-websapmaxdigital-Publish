@@ -94,18 +94,13 @@ export default function AdminShareMenuPage() {
       });
       return;
     }
-    
-    const companyId = currentUser?.companyId;
-    if (!companyId) {
-        toast({ title: "Error", description: "No se pudo obtener el ID de la compañía.", variant: "destructive" });
-        return;
-    }
-    
+  
     // Extraer la ruta del archivo de la URL completa de GCS
+    // Ej: "https://storage.googleapis.com/bucket-name/path/to/image.jpg" -> "path/to/image.jpg"
     const imagePath = customImageUrl.replace('https://storage.googleapis.com/websapmax-images/', '');
     
-    // 🔥 CAMBIO CRÍTICO: Construir la URL para la página intermedia /landing
-    const shareUrl = `${baseUrl}/landing/${imagePath}`;
+    // Construir la URL de compartición que apunta a nuestro servidor
+    const shareUrl = `${baseUrl}/share/${imagePath}`;
     const textoParaCompartir = `${customMessage} ${shareUrl}`;
     
     const encodedMessage = encodeURIComponent(textoParaCompartir);
@@ -159,15 +154,15 @@ export default function AdminShareMenuPage() {
       if (imageFile) {
         toast({ title: "Subiendo imagen...", description: "Por favor espera." });
         if (customImageUrl && customImageUrl.startsWith('https://storage.googleapis.com')) {
-          await storageService.deleteFile(customImageUrl).catch(e => console.warn("Could not delete old file. It might not exist."));
+          // No necesitamos eliminar, compressAndUploadFile se encarga si es necesario
         }
         finalImageUrl = await storageService.compressAndUploadFile(imageFile, `share-images/${currentUser.companyId}`);
         setCustomImageUrl(finalImageUrl);
         setImageFile(null);
       } else if (!imagePreview && customImageUrl) {
-        // Si el usuario eliminó la vista previa, pero no había un nuevo archivo
+        // El usuario eliminó la vista previa
         if (customImageUrl.startsWith('https://storage.googleapis.com')) {
-            await storageService.deleteFile(customImageUrl).catch(e => console.warn("Could not delete old file. It might not exist."));
+            // Lógica de eliminación si es necesario, aunque es mejor no hacerlo automáticamente
         }
         finalImageUrl = '';
       }
@@ -346,4 +341,3 @@ export default function AdminShareMenuPage() {
     </>
   );
 }
-
