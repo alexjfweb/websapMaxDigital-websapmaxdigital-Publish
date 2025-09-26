@@ -78,18 +78,15 @@ export default function AdminShareMenuPage() {
       .catch(() => toast({ title: 'Error', description: 'No se pudo copiar el texto.', variant: "destructive" }));
   };
 
-  // Botón Verde: Envía enlace directo que GENERA PREVIEW
+  // Botón Verde: Redirección directa al menú.
   const handleShareViaWhatsApp = () => {
     const companyId = currentUser?.companyId;
     if (!companyId) {
         toast({ title: "Error", description: "No se pudo obtener el ID de la compañía.", variant: "destructive" });
         return;
     }
-    // Usa la imagen de banner del perfil o una por defecto si no existe
-    const imageUrlToUse = customImageUrl || "https://websap.site/imagen/carracteristica-QE-AJ.png"; 
-    const imageName = imageUrlToUse.split('/').pop() || 'default-image.png';
-    
-    const shareUrl = `${baseUrl}/share/restaurant/${companyId}/${imageName}`;
+    // Usa la ruta /share/ que hace la redirección directa.
+    const shareUrl = `${baseUrl}/share/restaurant/${companyId}/default-preview`;
     const textoParaCompartir = `${customMessage} ${shareUrl}`;
 
     const encodedMessage = encodeURIComponent(textoParaCompartir);
@@ -97,7 +94,7 @@ export default function AdminShareMenuPage() {
     window.open(whatsappUrl, '_blank');
   };
 
-  // Botón Azul: Envía enlace con imagen personalizada que GENERA PREVIEW
+  // Botón Azul: Página intermedia para publicidad.
   const handleShareWithPreview = () => {
     if (!customImageUrl) {
       toast({
@@ -115,7 +112,8 @@ export default function AdminShareMenuPage() {
     }
     
     const imageName = customImageUrl.split('/').pop() || 'share-image.png';
-    const shareUrl = `${baseUrl}/share/restaurant/${companyId}/${imageName}`;
+    // Usa la nueva ruta /landing/ que muestra la página intermedia.
+    const shareUrl = `${baseUrl}/landing/restaurant/${companyId}/${imageName}`;
     const textoParaCompartir = `${customMessage} ${shareUrl}`;
     
     const encodedMessage = encodeURIComponent(textoParaCompartir);
@@ -240,7 +238,7 @@ export default function AdminShareMenuPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="image-upload">Imagen para Vista Previa</Label>
+              <Label htmlFor="image-upload">Imagen para Vista Previa del Botón Azul</Label>
               <div className="flex items-center gap-4">
                  <Button asChild variant="outline">
                       <label htmlFor="image-upload" className="cursor-pointer">
@@ -271,7 +269,7 @@ export default function AdminShareMenuPage() {
                       </div>
                   )}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Sube una imagen para que aparezca en la vista previa al compartir el enlace.</p>
+              <p className="text-xs text-muted-foreground mt-1">Esta imagen se usará para el botón "Compartir con Vista Previa".</p>
             </div>
             <Button onClick={handleSaveConfig} disabled={isSaving}>
               {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
@@ -326,5 +324,3 @@ export default function AdminShareMenuPage() {
     </>
   );
 }
-
-    

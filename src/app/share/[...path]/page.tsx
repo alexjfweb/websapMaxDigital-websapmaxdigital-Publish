@@ -1,70 +1,59 @@
 
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
-import { headers } from 'next/headers';
+import { doc, getDoc } from 'firebase/firestore';
+import { getDb } from '@/lib/firebase';
 
 type Props = {
   params: { path: string[] };
 };
 
-// Genera los metadatos para la vista previa en redes sociales
+// Esta página está dedicada a la REDIRECCIÓN DIRECTA (Botón Verde)
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const pathParts = params.path;
 
-  if (pathParts.length < 3 || pathParts[0] !== 'restaurant') {
-    // Fallback si la URL no tiene el formato esperado
-    return {
-      title: 'Menú Digital QR',
-      description: 'Descubre nuestro delicioso menú',
-    };
+  if (pathParts.length < 2 || pathParts[0] !== 'restaurant') {
+    return { title: 'WebSapMax' };
   }
 
-  const menuId = pathParts[1];
-  const imageName = pathParts[2];
+  const companyId = pathParts[1];
+  const db = getDb();
+  const companyRef = doc(db, 'companies', companyId);
+  const companySnap = await getDoc(companyRef);
   
-  // Construye la URL de la imagen en base a la convención de almacenamiento
-  const imageUrl = `https://storage.googleapis.com/websapmax-images/share-images/${menuId}/${imageName}`;
-  const menuUrl = `https://websap.site/menu/${menuId}`;
+  let imageUrl = 'https://websap.site/imagen/carracteristica-QE-AJ.png';
+  if (companySnap.exists()) {
+      const companyData = companySnap.data();
+      // Usa el banner o el logo como imagen de vista previa
+      imageUrl = companyData.bannerUrl || companyData.logoUrl || imageUrl;
+  }
   
   return {
-    title: 'Menú Digital QR',
-    description: '¡Descubre nuestro delicioso menú!',
+    title: "Menú Digital",
+    description: "¡Descubre nuestro delicioso menú!",
     openGraph: {
-      title: 'Menú Digital QR',
-      description: '¡Descubre nuestro delicioso menú!',
-      url: menuUrl,
-      images: [
-        {
-          url: imageUrl,
-          width: 1200,
-          height: 630,
-          alt: 'Vista previa del menú',
-        },
-      ],
+      title: "Menú Digital",
+      description: "¡Haz clic para ver nuestras delicias!",
+      url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://websap.site'}/menu/${companyId}`,
+      images: [imageUrl],
       type: 'website',
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'Menú Digital QR',
-      description: '¡Descubre nuestro delicioso menú!',
+      title: "Menú Digital",
+      description: "¡Haz clic para ver nuestras delicias!",
       images: [imageUrl],
     },
   };
 }
 
-// Este componente solo se ejecuta en el servidor y redirige inmediatamente
 export default function SharePage({ params }: Props) {
   const pathParts = params.path;
 
   if (pathParts.length < 2 || pathParts[0] !== 'restaurant') {
-    // Si la URL no es válida, redirige a la página principal
     redirect('/');
   }
 
   const menuId = pathParts[1];
   redirect(`/menu/${menuId}`);
-
-  // No se renderiza ningún JSX. La redirección es inmediata.
 }
-
-    
