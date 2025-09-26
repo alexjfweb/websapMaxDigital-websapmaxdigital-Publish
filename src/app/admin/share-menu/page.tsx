@@ -103,10 +103,12 @@ export default function AdminShareMenuPage() {
         return;
     }
     
-    const imageName = customImageUrl.split('/').pop()?.split('?')[0] || 'share-image.png';
+    // Obtiene el nombre del archivo de la URL de GCS
+    const gcsUrl = new URL(customImageUrl);
+    const imageName = gcsUrl.pathname.split('/').pop() || 'share-image.png';
     const shareUrl = `${baseUrl}/landing/restaurant/${companyId}/${imageName}`;
-    const textoParaCompartir = `${customMessage} ${shareUrl}`;
     
+    const textoParaCompartir = `${customMessage} ${shareUrl}`;
     const encodedMessage = encodeURIComponent(textoParaCompartir);
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank');
@@ -157,15 +159,16 @@ export default function AdminShareMenuPage() {
 
       if (imageFile) {
         toast({ title: "Subiendo imagen...", description: "Por favor espera." });
-        if (customImageUrl && !customImageUrl.includes('placehold.co')) {
+        if (customImageUrl && customImageUrl.startsWith('https://storage.googleapis.com')) {
           await storageService.deleteFile(customImageUrl).catch(e => console.warn("Could not delete old file. It might not exist."));
         }
         finalImageUrl = await storageService.compressAndUploadFile(imageFile, `share-images/${currentUser.companyId}`);
         setCustomImageUrl(finalImageUrl);
         setImageFile(null);
-      } else if (!imagePreview) {
-        if (customImageUrl && !customImageUrl.includes('placehold.co')) {
-          await storageService.deleteFile(customImageUrl).catch(e => console.warn("Could not delete old file. It might not exist."));
+      } else if (!imagePreview && customImageUrl) {
+        // Si el usuario eliminó la vista previa, pero no había un nuevo archivo
+        if (customImageUrl.startsWith('https://storage.googleapis.com')) {
+            await storageService.deleteFile(customImageUrl).catch(e => console.warn("Could not delete old file. It might not exist."));
         }
         finalImageUrl = '';
       }
@@ -263,7 +266,6 @@ export default function AdminShareMenuPage() {
               <p className="text-xs text-muted-foreground mt-1">Sube una imagen para que aparezca en la vista previa al compartir el enlace.</p>
             </div>
             
-            {/* URL de la Imagen (para vista previa) - RESTAURADO */}
             {customImageUrl && (
               <div>
                 <Label>URL de la Imagen (para vista previa)</Label>
@@ -326,7 +328,6 @@ export default function AdminShareMenuPage() {
           </Card>
         </div>
 
-        {/* Enlace del Menú - RESTAURADO */}
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle>Enlace del Menú</CardTitle>
