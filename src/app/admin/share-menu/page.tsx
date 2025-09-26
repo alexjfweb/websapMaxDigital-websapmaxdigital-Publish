@@ -78,13 +78,26 @@ export default function AdminShareMenuPage() {
       .catch(() => toast({ title: 'Error', description: 'No se pudo copiar el texto.', variant: "destructive" }));
   };
 
+  // Botón Verde: Envía enlace directo que GENERA PREVIEW
   const handleShareViaWhatsApp = () => {
-    const textoParaCompartir = `${customMessage} ${menuUrl}`;
+    const companyId = currentUser?.companyId;
+    if (!companyId) {
+        toast({ title: "Error", description: "No se pudo obtener el ID de la compañía.", variant: "destructive" });
+        return;
+    }
+    // Usa la imagen de banner del perfil o una por defecto si no existe
+    const imageUrlToUse = customImageUrl || "https://websap.site/imagen/carracteristica-QE-AJ.png"; 
+    const imageName = imageUrlToUse.split('/').pop() || 'default-image.png';
+    
+    const shareUrl = `${baseUrl}/share/restaurant/${companyId}/${imageName}`;
+    const textoParaCompartir = `${customMessage} ${shareUrl}`;
+
     const encodedMessage = encodeURIComponent(textoParaCompartir);
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank');
   };
 
+  // Botón Azul: Envía enlace con imagen personalizada que GENERA PREVIEW
   const handleShareWithPreview = () => {
     if (!customImageUrl) {
       toast({
@@ -101,8 +114,8 @@ export default function AdminShareMenuPage() {
         return;
     }
     
-    // Usar la ruta share con companyId dos veces, ya que el ID del restaurante y del menú es el mismo
-    const shareUrl = `${baseUrl}/share/restaurant/${companyId}/${companyId}`;
+    const imageName = customImageUrl.split('/').pop() || 'share-image.png';
+    const shareUrl = `${baseUrl}/share/restaurant/${companyId}/${imageName}`;
     const textoParaCompartir = `${customMessage} ${shareUrl}`;
     
     const encodedMessage = encodeURIComponent(textoParaCompartir);
@@ -260,41 +273,10 @@ export default function AdminShareMenuPage() {
               </div>
               <p className="text-xs text-muted-foreground mt-1">Sube una imagen para que aparezca en la vista previa al compartir el enlace.</p>
             </div>
-            {customImageUrl && (
-              <div className="space-y-2">
-                  <Label htmlFor="imageUrl">URL de la Imagen (para vista previa)</Label>
-                  <div className="flex items-center space-x-2">
-                      <Input id="imageUrl" value={customImageUrl} readOnly />
-                      <Button 
-                        onClick={() => handleCopyToClipboard(customImageUrl, 'URL de la imagen copiada.')} 
-                        variant="outline" 
-                        size="icon" 
-                        aria-label="Copiar URL de la imagen"
-                      >
-                          <Copy className="h-4 w-4" />
-                      </Button>
-                  </div>
-              </div>
-            )}
             <Button onClick={handleSaveConfig} disabled={isSaving}>
               {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
               {isSaving ? 'Guardando...' : 'Guardar Cambios'}
             </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle>Enlace del Menú</CardTitle>
-            <CardDescription>Usa este enlace para compartir tu menú digital donde quieras.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Input id="menuLink" value={menuUrl} readOnly className="flex-grow" />
-              <Button onClick={() => handleCopyToClipboard(menuUrl, 'El enlace del menú ha sido copiado.')} variant="outline" size="icon" aria-label="Copiar enlace">
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
           </CardContent>
         </Card>
 
@@ -344,3 +326,5 @@ export default function AdminShareMenuPage() {
     </>
   );
 }
+
+    

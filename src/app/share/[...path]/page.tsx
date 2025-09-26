@@ -1,4 +1,5 @@
 
+import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import { headers } from 'next/headers';
 
@@ -6,53 +7,64 @@ type Props = {
   params: { path: string[] };
 };
 
+// Genera los metadatos para la vista previa en redes sociales
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const imagePath = params.path.join('/');
-  const imageUrl = `https://storage.googleapis.com/websapmax-images/${imagePath}`;
-  const menuId = params.path.length > 1 ? params.path[1] : '';
+  const pathParts = params.path;
+
+  if (pathParts.length < 3 || pathParts[0] !== 'restaurant') {
+    // Fallback si la URL no tiene el formato esperado
+    return {
+      title: 'Menú Digital QR',
+      description: 'Descubre nuestro delicioso menú',
+    };
+  }
+
+  const menuId = pathParts[1];
+  const imageName = pathParts[2];
+  
+  // Construye la URL de la imagen en base a la convención de almacenamiento
+  const imageUrl = `https://storage.googleapis.com/websapmax-images/share-images/${menuId}/${imageName}`;
+  const menuUrl = `https://websap.site/menu/${menuId}`;
   
   return {
     title: 'Menú Digital QR',
-    description: 'Descubre nuestro delicioso menú',
+    description: '¡Descubre nuestro delicioso menú!',
     openGraph: {
       title: 'Menú Digital QR',
-      description: 'Descubre nuestro delicioso menú',
-      images: [imageUrl],
+      description: '¡Descubre nuestro delicioso menú!',
+      url: menuUrl,
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: 'Vista previa del menú',
+        },
+      ],
       type: 'website',
-      url: `/menu/${menuId}`,
     },
     twitter: {
       card: 'summary_large_image',
       title: 'Menú Digital QR',
-      description: 'Descubre nuestro delicioso menú',
+      description: '¡Descubre nuestro delicioso menú!',
       images: [imageUrl],
     },
   };
 }
 
+// Este componente solo se ejecuta en el servidor y redirige inmediatamente
 export default function SharePage({ params }: Props) {
-  const imagePath = params.path.join('/');
-  const imageUrl = `https://storage.googleapis.com/websapmax-images/${imagePath}`;
-  // Asumimos que la estructura es /share/restaurant/{companyId}/{imageName} o similar
-  // por lo que el ID del menú/restaurante estaría en una posición fija.
-  const menuId = params.path.length > 2 ? params.path[2] : params.path[1];
-  
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full text-center">
-        <h1 className="text-2xl font-bold mb-4">Menú Digital QR</h1>
-        <img 
-          src={imageUrl} 
-          alt="Menú Digital"
-          className="w-full max-w-md mx-auto rounded-lg shadow-lg mb-6"
-        />
-        <a 
-          href={`/menu/${menuId}`}
-          className="inline-block bg-orange-500 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-orange-600 transition-colors"
-        >
-          Ver Menú Completo
-        </a>
-      </div>
-    </div>
-  );
+  const pathParts = params.path;
+
+  if (pathParts.length < 2 || pathParts[0] !== 'restaurant') {
+    // Si la URL no es válida, redirige a la página principal
+    redirect('/');
+  }
+
+  const menuId = pathParts[1];
+  redirect(`/menu/${menuId}`);
+
+  // No se renderiza ningún JSX. La redirección es inmediata.
 }
+
+    
