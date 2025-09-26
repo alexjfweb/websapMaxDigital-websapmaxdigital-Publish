@@ -96,11 +96,11 @@ export default function AdminShareMenuPage() {
     }
   
     const companyId = currentUser?.companyId;
-    // CORRECCIÓN: Extraer solo el nombre del archivo (sin carpetas)
+    // Extraer solo el nombre del archivo (sin carpetas)
     const imagePath = customImageUrl.replace(`https://storage.googleapis.com/websapmax-images/share-images/${companyId}/`, '');
     
-    // CORRECCIÓN CRÍTICA: Usar ruta /share/ en lugar de /landing/restaurant/
-    const shareUrl = `${baseUrl}/share/${imagePath}`;
+    // CORRECCIÓN CRÍTICA: Incluir companyId en la URL para hacerla dinámica
+    const shareUrl = `${baseUrl}/share/${companyId}/${imagePath}`;
     const textoParaCompartir = `${customMessage} ${shareUrl}`;
     
     const encodedMessage = encodeURIComponent(textoParaCompartir);
