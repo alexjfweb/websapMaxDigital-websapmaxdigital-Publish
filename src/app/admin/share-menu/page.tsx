@@ -27,6 +27,7 @@ export default function AdminShareMenuPage() {
   const [customImageUrl, setCustomImageUrl] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [baseUrl, setBaseUrl] = useState('');
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -35,12 +36,13 @@ export default function AdminShareMenuPage() {
   useEffect(() => {
     const companyId = currentUser?.companyId;
     
-    const baseUrl = process.env.NODE_ENV === 'production' 
+    const currentBaseUrl = process.env.NODE_ENV === 'production' 
       ? (process.env.NEXT_PUBLIC_BASE_URL || 'https://websap.site')
       : (window.location.origin);
+    setBaseUrl(currentBaseUrl);
     
     if (companyId) {
-      setMenuUrl(`${baseUrl}/menu/${companyId}`);
+      setMenuUrl(`${currentBaseUrl}/menu/${companyId}`);
     }
     
     async function fetchShareConfig() {
@@ -85,14 +87,25 @@ export default function AdminShareMenuPage() {
 
   const handleShareWithPreview = () => {
     if (!customImageUrl) {
-        toast({
-            title: "Imagen requerida",
-            description: "Por favor, sube una imagen para la vista previa antes de compartir.",
-            variant: "destructive"
-        });
+      toast({
+        title: "Imagen requerida",
+        description: "Por favor, sube una imagen para la vista previa antes de compartir.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const companyId = currentUser?.companyId;
+    if (!companyId) {
+        toast({ title: "Error", description: "No se pudo obtener el ID de la compañía.", variant: "destructive" });
         return;
     }
-    const textoParaCompartir = `${customMessage} ${customImageUrl}`;
+    
+    // Construye la URL estructurada para la redirección
+    const imageName = customImageUrl.split('/').pop() || 'image';
+    const shareUrl = `${baseUrl}/share/restaurant/${companyId}/${imageName}`;
+    const textoParaCompartir = `${customMessage} ${shareUrl}`;
+    
     const encodedMessage = encodeURIComponent(textoParaCompartir);
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank');
@@ -144,15 +157,14 @@ export default function AdminShareMenuPage() {
       if (imageFile) {
         toast({ title: "Subiendo imagen...", description: "Por favor espera." });
         if (customImageUrl && !customImageUrl.includes('placehold.co')) {
-          await storageService.deleteFile(customImageUrl);
+          await storageService.deleteFile(customImageUrl).catch(e => console.warn("Could not delete old file. It might not exist."));
         }
-        // Llamada al servicio que ahora genera la URL con /share/
         finalImageUrl = await storageService.compressAndUploadFile(imageFile, `share-images/${currentUser.companyId}`);
         setCustomImageUrl(finalImageUrl);
         setImageFile(null);
       } else if (!imagePreview) {
         if (customImageUrl && !customImageUrl.includes('placehold.co')) {
-          await storageService.deleteFile(customImageUrl);
+          await storageService.deleteFile(customImageUrl).catch(e => console.warn("Could not delete old file. It might not exist."));
         }
         finalImageUrl = '';
       }
