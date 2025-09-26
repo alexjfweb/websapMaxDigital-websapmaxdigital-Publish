@@ -9,7 +9,6 @@ const nextConfig = {
   },
   productionBrowserSourceMaps: false, // Añadido para optimizar
   images: {
-    loader: 'default',
     unoptimized: false,
     remotePatterns: [
       {
@@ -50,6 +49,20 @@ const nextConfig = {
       asyncWebAssembly: true,
     };
     return config;
+  },
+  async headers() {
+    return [
+      {
+        // Aplicar estos encabezados a todas las rutas de la app
+        source: '/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'X-Frame-Options', value: 'ALLOWALL' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Cache-Control', value: 'public, max-age=600, s-maxage=1200' },
+        ],
+      },
+    ];
   },
 };
 

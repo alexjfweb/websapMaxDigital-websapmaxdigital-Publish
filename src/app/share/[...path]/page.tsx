@@ -17,11 +17,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const pathParts = params.path;
   
   if (pathParts.length < 2) {
-    console.warn("[Share Metadata] Path inválido, no se pudo extraer companyId/imageName.");
-    return { title: 'WebSapMax' };
+    return {
+      title: 'WebSapMax',
+      description: '¡Descubre nuestro delicioso menú!',
+    };
   }
 
-  const companyId = pathParts[0]; 
+  const companyId = pathParts[0];
   const imagePath = pathParts.slice(1).join('/');
   
   const db = getDb();
@@ -37,9 +39,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       companyDescription = companyData.customShareMessage || companyData.description || companyDescription;
   }
   
+  // Imagen OG optimizada
   const imageUrl = `https://storage.googleapis.com/${BUCKET_NAME}/share-images/${companyId}/${imagePath}`;
   const menuUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://websap.site'}/menu/${companyId}`;
-  
+
   return {
     title: companyName,
     description: companyDescription,
@@ -47,15 +50,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: companyName,
       description: companyDescription,
       url: menuUrl,
+      type: 'website',
+      siteName: 'WebSapMax',
+      locale: 'es_ES',
       images: [
         {
           url: imageUrl,
+          secureUrl: imageUrl, // ✅ requerido para WhatsApp
           width: 1200,
           height: 630,
-          alt: `Menú de ${companyName}`,
+          type: 'image/png', // O el tipo correcto si lo conoces, ej. 'image/jpeg'
+          alt: `Vista previa del menú de ${companyName}`,
         },
       ],
-      type: 'website',
     },
     twitter: {
       card: 'summary_large_image',
@@ -63,10 +70,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: companyDescription,
       images: [imageUrl],
     },
-    // Añadir el fb:app_id
     other: {
-        'fb:app_id': firebaseConfig.appId,
-    }
+      'fb:app_id': firebaseConfig.appId,
+    },
+    alternates: {
+      canonical: menuUrl, // ✅ recomendado para SEO
+    },
   };
 }
 
