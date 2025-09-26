@@ -4,7 +4,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Copy, Download, Save, MessageSquare, Loader2, UploadCloud, XCircle } from "lucide-react";
+import { Copy, Download, Save, MessageSquare, Loader2, UploadCloud, XCircle, Share } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import WhatsAppIcon from "@/components/icons/whatsapp-icon";
 import React, { useEffect, useState, ChangeEvent } from 'react';
@@ -35,7 +35,6 @@ export default function AdminShareMenuPage() {
   useEffect(() => {
     const companyId = currentUser?.companyId;
     
-    // CORRECCIÓN: Usar variable de entorno para la URL base de producción
     const baseUrl = process.env.NODE_ENV === 'production' 
       ? (process.env.NEXT_PUBLIC_BASE_URL || 'https://websap.site')
       : (window.location.origin);
@@ -78,9 +77,22 @@ export default function AdminShareMenuPage() {
   };
 
   const handleShareViaWhatsApp = () => {
-    // CORRECCIÓN: Usar la URL de la imagen para la vista previa, y la del menú en el texto.
-    const urlParaCompartir = customImageUrl || menuUrl;
-    const textoParaCompartir = `${customMessage} ${urlParaCompartir}`;
+    const textoParaCompartir = `${customMessage} ${menuUrl}`;
+    const encodedMessage = encodeURIComponent(textoParaCompartir);
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const handleShareWithPreview = () => {
+    if (!customImageUrl) {
+        toast({
+            title: "Imagen requerida",
+            description: "Por favor, sube una imagen para la vista previa antes de compartir.",
+            variant: "destructive"
+        });
+        return;
+    }
+    const textoParaCompartir = `${customMessage} ${customImageUrl}`;
     const encodedMessage = encodeURIComponent(textoParaCompartir);
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank');
@@ -131,15 +143,14 @@ export default function AdminShareMenuPage() {
 
       if (imageFile) {
         toast({ title: "Subiendo imagen...", description: "Por favor espera." });
-        // Si ya hay una URL y no es un placeholder, intenta borrar la antigua.
         if (customImageUrl && !customImageUrl.includes('placehold.co')) {
           await storageService.deleteFile(customImageUrl);
         }
+        // Llamada al servicio que ahora genera la URL con /share/
         finalImageUrl = await storageService.compressAndUploadFile(imageFile, `share-images/${currentUser.companyId}`);
         setCustomImageUrl(finalImageUrl);
         setImageFile(null);
       } else if (!imagePreview) {
-        // Si el usuario quitó la imagen, borramos la URL.
         if (customImageUrl && !customImageUrl.includes('placehold.co')) {
           await storageService.deleteFile(customImageUrl);
         }
@@ -281,10 +292,19 @@ export default function AdminShareMenuPage() {
             <CardHeader>
               <CardTitle>Compartir por WhatsApp</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
               <Button onClick={handleShareViaWhatsApp} className="w-full bg-green-500 hover:bg-green-600 text-white">
-                <WhatsAppIcon className="mr-2 h-5 w-5" /> Enviar por WhatsApp
+                <WhatsAppIcon className="mr-2 h-5 w-5" /> Enviar Enlace Directo
               </Button>
+              <Button 
+                onClick={handleShareWithPreview} 
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+                disabled={!customImageUrl}
+                title={!customImageUrl ? "Sube una imagen para habilitar esta opción" : "Comparte con una vista previa de la imagen"}
+              >
+                <Share className="mr-2 h-5 w-5" /> Compartir con Vista Previa
+              </Button>
+              {!customImageUrl && <p className="text-xs text-muted-foreground text-center">Sube una imagen para habilitar la vista previa.</p>}
             </CardContent>
           </Card>
           
