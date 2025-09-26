@@ -1,6 +1,6 @@
 
-import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import { Metadata } from 'next';
 
 type Props = {
   params: { path: string[] };
@@ -8,17 +8,15 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const imagePath = params.path.join('/');
-  // La URL de la imagen para los metadatos debe ser la URL pública directa de Google Storage
   const imageUrl = `https://storage.googleapis.com/websapmax-images/${imagePath}`;
-  const menuId = params.path[1];
+  const menuId = params.path[1]; // Asumiendo que el ID del restaurante es el segundo segmento de la ruta
   
   return {
     title: 'Menú Digital QR',
-    description: 'Descubre nuestro delicioso menú',
+    description: '¡Mira nuestro delicioso menú! 🍽️🥘🍽️',
     openGraph: {
       title: 'Menú Digital QR',
-      description: 'Descubre nuestro delicioso menú',
-      // La URL canónica a la que apunta el enlace
+      description: '¡Mira nuestro delicioso menú! 🍽️🥘🍽️',
       url: `https://websap.site/menu/${menuId}`,
       images: [
         {
@@ -33,15 +31,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     twitter: {
       card: 'summary_large_image',
       title: 'Menú Digital QR',
-      description: 'Descubre nuestro delicioso menú',
+      description: '¡Mira nuestro delicioso menú! 🍽️🥘🍽️',
       images: [imageUrl],
     },
   };
 }
 
-// Este componente ahora es el responsable de la redirección
 export default function SharePage({ params }: Props) {
-  // Extraemos el ID del restaurante de la ruta. Ej: /share/share-images/COMPANY_ID/image.jpg -> COMPANY_ID
+  // La ruta es algo como /share/share-images/COMPANY_ID/image.jpg
+  // El ID del menú es el segundo segmento después de 'share-images'
   const menuId = params.path[1];
   
   // Si no hay ID, redirigimos a la página principal por seguridad.
@@ -52,7 +50,6 @@ export default function SharePage({ params }: Props) {
   // Redirigimos al usuario directamente al menú del restaurante.
   redirect(`/menu/${menuId}`);
 
-  // No se renderiza ningún HTML, la redirección es del lado del servidor.
-  // Next.js se encarga de servir los metadatos y luego ejecutar la redirección.
+  // No se renderiza ningún HTML, Next.js maneja la redirección en el servidor.
   return null;
 }
