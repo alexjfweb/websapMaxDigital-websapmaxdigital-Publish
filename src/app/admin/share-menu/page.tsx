@@ -95,11 +95,11 @@ export default function AdminShareMenuPage() {
       return;
     }
   
-    // Extraer la ruta del archivo de la URL completa de GCS
-    // Ej: "https://storage.googleapis.com/bucket-name/path/to/image.jpg" -> "path/to/image.jpg"
-    const imagePath = customImageUrl.replace('https://storage.googleapis.com/websapmax-images/', '');
+    const companyId = currentUser?.companyId;
+    // CORRECCIÓN: Extraer solo el nombre del archivo (sin carpetas)
+    const imagePath = customImageUrl.replace(`https://storage.googleapis.com/websapmax-images/share-images/${companyId}/`, '');
     
-    // Construir la URL de compartición que apunta a nuestro servidor
+    // CORRECCIÓN CRÍTICA: Usar ruta /share/ en lugar de /landing/restaurant/
     const shareUrl = `${baseUrl}/share/${imagePath}`;
     const textoParaCompartir = `${customMessage} ${shareUrl}`;
     
@@ -153,17 +153,10 @@ export default function AdminShareMenuPage() {
 
       if (imageFile) {
         toast({ title: "Subiendo imagen...", description: "Por favor espera." });
-        if (customImageUrl && customImageUrl.startsWith('https://storage.googleapis.com')) {
-          // No necesitamos eliminar, compressAndUploadFile se encarga si es necesario
-        }
         finalImageUrl = await storageService.compressAndUploadFile(imageFile, `share-images/${currentUser.companyId}`);
         setCustomImageUrl(finalImageUrl);
         setImageFile(null);
       } else if (!imagePreview && customImageUrl) {
-        // El usuario eliminó la vista previa
-        if (customImageUrl.startsWith('https://storage.googleapis.com')) {
-            // Lógica de eliminación si es necesario, aunque es mejor no hacerlo automáticamente
-        }
         finalImageUrl = '';
       }
 
