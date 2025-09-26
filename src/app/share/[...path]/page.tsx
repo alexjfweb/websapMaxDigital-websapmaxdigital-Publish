@@ -21,7 +21,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: 'WebSapMax' };
   }
 
-  const companyId = pathParts[1]; 
+  const companyId = pathParts[0]; 
+  const imagePath = pathParts.slice(1).join('/');
   
   const db = getDb();
   const companyRef = doc(db, 'companies', companyId);
@@ -36,8 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       companyDescription = companyData.customShareMessage || companyData.description || companyDescription;
   }
   
-  const imagePath = pathParts.join('/');
-  const imageUrl = `https://storage.googleapis.com/${BUCKET_NAME}/${imagePath}`;
+  const imageUrl = `https://storage.googleapis.com/${BUCKET_NAME}/share-images/${companyId}/${imagePath}`;
   const menuUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://websap.site'}/menu/${companyId}`;
   
   return {
@@ -78,7 +78,8 @@ export default async function SharePage({ params }: Props) {
     return notFound();
   }
 
-  const companyId = pathParts[1];
+  const companyId = pathParts[0];
+  const imagePath = pathParts.slice(1).join('/');
   
   const db = getDb();
   const companySnap = await getDoc(doc(db, 'companies', companyId));
@@ -88,8 +89,7 @@ export default async function SharePage({ params }: Props) {
   }
   
   const companyData = companySnap.data();
-  const imagePath = pathParts.join('/');
-  const imageUrl = `https://storage.googleapis.com/${BUCKET_NAME}/${imagePath}`;
+  const imageUrl = `https://storage.googleapis.com/${BUCKET_NAME}/share-images/${companyId}/${imagePath}`;
   const menuUrl = `/menu/${companyId}`;
 
   return (
