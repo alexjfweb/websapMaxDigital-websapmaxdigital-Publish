@@ -1,62 +1,58 @@
 
-import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
+import { headers } from 'next/headers';
 
 type Props = {
   params: { path: string[] };
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  // La nueva estructura es: /share/restaurant/{companyId}/{imageName}
-  // params.path será: ['restaurant', 'companyId', 'imageName.jpg']
-  if (!params.path || params.path.length < 3) {
-    return { title: 'Menú Digital' };
-  }
-
-  const restaurantId = params.path[1];
-  const imageName = params.path[2];
-
-  // La imagen se encuentra en la subcarpeta del companyId
-  const imageUrl = `https://storage.googleapis.com/websapmax-images/share-images/${restaurantId}/${imageName}`;
-  const menuUrl = `/menu/${restaurantId}`;
-
+  const imagePath = params.path.join('/');
+  const imageUrl = `https://storage.googleapis.com/websapmax-images/${imagePath}`;
+  const menuId = params.path.length > 1 ? params.path[1] : '';
+  
   return {
     title: 'Menú Digital QR',
-    description: '¡Mira nuestro delicioso menú! 🍽️🥘🍽️',
+    description: 'Descubre nuestro delicioso menú',
     openGraph: {
       title: 'Menú Digital QR',
-      description: '¡Mira nuestro delicioso menú! 🍽️🥘🍽️',
-      url: menuUrl,
-      images: [
-        {
-          url: imageUrl,
-          width: 1200,
-          height: 630,
-          alt: 'Vista previa del Menú Digital',
-        },
-      ],
+      description: 'Descubre nuestro delicioso menú',
+      images: [imageUrl],
       type: 'website',
+      url: `/menu/${menuId}`,
     },
     twitter: {
       card: 'summary_large_image',
       title: 'Menú Digital QR',
-      description: '¡Mira nuestro delicioso menú! 🍽️🥘🍽️',
+      description: 'Descubre nuestro delicioso menú',
       images: [imageUrl],
     },
   };
 }
 
 export default function SharePage({ params }: Props) {
-  // La nueva estructura es: /share/restaurant/{companyId}/{imageName}
-  if (!params.path || params.path.length < 3) {
-    redirect('/');
-  }
-
-  const restaurantId = params.path[1]; // Extraemos el ID del restaurante
+  const imagePath = params.path.join('/');
+  const imageUrl = `https://storage.googleapis.com/websapmax-images/${imagePath}`;
+  // Asumimos que la estructura es /share/restaurant/{companyId}/{imageName} o similar
+  // por lo que el ID del menú/restaurante estaría en una posición fija.
+  const menuId = params.path.length > 2 ? params.path[2] : params.path[1];
   
-  // Redirige al usuario directamente al menú del restaurante.
-  redirect(`/menu/${restaurantId}`);
-
-  // No se devuelve ningún JSX, Next.js manejará la redirección del servidor.
-  return null;
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="max-w-2xl w-full text-center">
+        <h1 className="text-2xl font-bold mb-4">Menú Digital QR</h1>
+        <img 
+          src={imageUrl} 
+          alt="Menú Digital"
+          className="w-full max-w-md mx-auto rounded-lg shadow-lg mb-6"
+        />
+        <a 
+          href={`/menu/${menuId}`}
+          className="inline-block bg-orange-500 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-orange-600 transition-colors"
+        >
+          Ver Menú Completo
+        </a>
+      </div>
+    </div>
+  );
 }
