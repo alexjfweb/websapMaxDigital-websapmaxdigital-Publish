@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -93,7 +94,7 @@ export default function AdminShareMenuPage() {
       });
       return;
     }
-  
+
     const companyId = currentUser?.companyId;
     // Extraer solo el nombre del archivo (sin carpetas)
     const imagePath = customImageUrl.replace(`https://storage.googleapis.com/websapmax-images/share-images/${companyId}/`, '');
@@ -156,6 +157,9 @@ export default function AdminShareMenuPage() {
         setCustomImageUrl(finalImageUrl);
         setImageFile(null);
       } else if (!imagePreview && customImageUrl) {
+        // Si la vista previa se eliminó (imagePreview es null) pero aún hay una URL guardada, la borramos.
+        // También borraremos la imagen de storage si es necesario (asumimos que el servicio lo maneja)
+        await storageService.deleteFile(customImageUrl);
         finalImageUrl = '';
       }
 
