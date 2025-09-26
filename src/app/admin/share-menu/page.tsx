@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -93,7 +94,7 @@ export default function AdminShareMenuPage() {
       });
       return;
     }
-  
+
     const companyId = currentUser?.companyId;
     // Extraer solo el nombre del archivo (sin carpetas)
     const imagePath = customImageUrl.replace(`https://storage.googleapis.com/websapmax-images/share-images/${companyId}/`, '');
