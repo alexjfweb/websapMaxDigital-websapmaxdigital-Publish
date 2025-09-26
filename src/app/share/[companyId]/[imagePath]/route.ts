@@ -1,4 +1,5 @@
 // src/app/share/[companyId]/[imagePath]/route.ts
+
 import { NextRequest, NextResponse } from 'next/server';
 import { doc, getDoc } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
@@ -24,14 +25,11 @@ export async function GET(
     
     if (docSnap.exists()) {
       const data = docSnap.data();
-      // Usar el nombre de la empresa si está disponible
       companyName = data.businessName || data.name || companyName;
-      // Usar el mensaje personalizado si está disponible
       customMessage = data.customShareMessage || customMessage;
     }
   } catch (error) {
     console.error('Error fetching company data:', error);
-    // Continuar con valores por defecto si hay error
   }
   
   const html = `<!DOCTYPE html>
@@ -41,21 +39,33 @@ export async function GET(
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${companyName}</title>
     
-    <!-- Meta tags Open Graph para WhatsApp -->
+    <!-- Meta tags básicos -->
+    <meta name="description" content="${customMessage}" />
+    
+    <!-- Meta tags Open Graph para WhatsApp/Facebook -->
     <meta property="og:title" content="${companyName}" />
     <meta property="og:description" content="${customMessage}" />
     <meta property="og:image" content="${imageUrl}" />
-    <meta property="og:image:width" content="800" />
-    <meta property="og:image:height" content="600" />
+    <meta property="og:image:secure_url" content="${imageUrl}" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:url" content="${request.url}" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="WebSap" />
+    <meta property="og:locale" content="es_ES" />
     
     <!-- Meta tags Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@websap" />
     <meta name="twitter:title" content="${companyName}" />
     <meta name="twitter:description" content="${customMessage}" />
     <meta name="twitter:image" content="${imageUrl}" />
+    <meta name="twitter:image:alt" content="Menú de ${companyName}" />
+    
+    <!-- Meta tags adicionales para mejor compatibilidad -->
+    <meta name="robots" content="index, follow" />
+    <meta name="author" content="WebSap" />
     
     <style>
         body {
@@ -74,7 +84,7 @@ export async function GET(
             padding: 40px;
             text-align: center;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-width: 500px;
+            max-w: 500px;
             width: 90%;
         }
         .image {
@@ -135,7 +145,7 @@ export async function GET(
         <h1 class="title">🍽️ ${companyName}</h1>
         <p class="subtitle">${customMessage}</p>
         
-        <img src="${imageUrl}" alt="Menú del restaurante" class="image" onerror="this.style.display='none'" />
+        <img src="${imageUrl}" alt="Menú del restaurante ${companyName}" class="image" />
         
         <div>
             <a href="https://websap.site/menu/${companyId}" target="_blank" class="btn menu-btn">
@@ -157,7 +167,14 @@ export async function GET(
   return new NextResponse(html, {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, max-age=3600',
+      'Cache-Control': 'public, max-age=300, s-maxage=3600',
+      'X-Robots-Tag': 'index, follow',
+      // Headers específicos para que Facebook pueda acceder
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET',
+      'X-Frame-Options': 'ALLOWALL',
+      // Header para identificar el tipo de contenido para Facebook
+      'X-Content-Type-Options': 'nosniff',
     },
   });
 }
