@@ -101,9 +101,8 @@ export default function AdminShareMenuPage() {
         return;
     }
     
-    // Construye la URL estructurada para la redirección
-    const imageName = customImageUrl.split('/').pop() || 'image';
-    const shareUrl = `${baseUrl}/share/restaurant/${companyId}/${imageName}`;
+    // Usar la ruta share con companyId dos veces, ya que el ID del restaurante y del menú es el mismo
+    const shareUrl = `${baseUrl}/share/restaurant/${companyId}/${companyId}`;
     const textoParaCompartir = `${customMessage} ${shareUrl}`;
     
     const encodedMessage = encodeURIComponent(textoParaCompartir);
