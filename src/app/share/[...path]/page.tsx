@@ -1,6 +1,6 @@
 
 import { Metadata } from 'next';
-import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 type Props = {
   params: { path: string[] };
@@ -9,6 +9,7 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const imagePath = params.path.join('/');
   const imageUrl = `https://storage.googleapis.com/websapmax-images/${imagePath}`;
+  const menuId = params.path[1]; // El ID del restaurante está en la segunda parte de la ruta.
   
   return {
     title: 'Menú Digital QR',
@@ -16,7 +17,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: 'Menú Digital QR',
       description: 'Descubre nuestro delicioso menú',
-      images: [imageUrl],
+      url: `https://websap.site/menu/${menuId}`, // URL canónica a la que se redirige
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: 'Vista previa del Menú Digital',
+        },
+      ],
       type: 'website',
     },
     twitter: {
@@ -29,26 +38,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default function SharePage({ params }: Props) {
-  const imagePath = params.path.join('/');
-  const imageUrl = `https://storage.googleapis.com/websapmax-images/${imagePath}`;
+  // La ruta es como ['share-images', 'COMPANY_ID', 'image-name.jpg']
+  // El ID del menú es el segundo elemento del path.
   const menuId = params.path[1];
   
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full text-center">
-        <h1 className="text-2xl font-bold mb-4">Menú Digital QR</h1>
-        <img 
-          src={imageUrl} 
-          alt="Menú Digital"
-          className="w-full max-w-md mx-auto rounded-lg shadow-lg mb-6"
-        />
-        <a 
-          href={`/menu/${menuId}`}
-          className="inline-block bg-orange-500 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-orange-600 transition-colors"
-        >
-          Ver Menú Completo
-        </a>
-      </div>
-    </div>
-  );
+  // Redirige al usuario directamente al menú del restaurante.
+  // Los rastreadores de redes sociales leerán los metadatos antes de seguir la redirección.
+  redirect(`/menu/${menuId}`);
 }
