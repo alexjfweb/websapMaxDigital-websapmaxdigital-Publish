@@ -1,4 +1,3 @@
-
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 
@@ -6,18 +5,30 @@ type Props = {
   params: { path: string[] };
 };
 
+// Esta función genera los metadatos para las vistas previas en redes sociales.
+// Los rastreadores de WhatsApp/Facebook la leen antes de intentar renderizar la página.
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  // path: ['share-images', 'COMPANY_ID', 'image.jpg']
+  if (!params.path || params.path.length < 3) {
+    return { title: 'Menú Digital' };
+  }
+
   const imagePath = params.path.join('/');
+  const menuId = params.path[1]; // El ID de la compañía es el segundo segmento
+
+  // URL pública de la imagen en Google Storage
   const imageUrl = `https://storage.googleapis.com/websapmax-images/${imagePath}`;
-  const menuId = params.path[1]; // Asumiendo que el ID del restaurante es el segundo segmento de la ruta
-  
+
+  // URL del menú al que se redirigirá
+  const menuUrl = `/menu/${menuId}`;
+
   return {
     title: 'Menú Digital QR',
     description: '¡Mira nuestro delicioso menú! 🍽️🥘🍽️',
     openGraph: {
       title: 'Menú Digital QR',
       description: '¡Mira nuestro delicioso menú! 🍽️🥘🍽️',
-      url: `https://websap.site/menu/${menuId}`,
+      url: menuUrl,
       images: [
         {
           url: imageUrl,
@@ -37,19 +48,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+// Este es el componente que se ejecuta cuando un USUARIO visita la URL.
+// No renderiza nada, solo redirige.
 export default function SharePage({ params }: Props) {
-  // La ruta es algo como /share/share-images/COMPANY_ID/image.jpg
-  // El ID del menú es el segundo segmento después de 'share-images'
-  const menuId = params.path[1];
-  
-  // Si no hay ID, redirigimos a la página principal por seguridad.
-  if (!menuId) {
+  // path: ['share-images', 'COMPANY_ID', 'image.jpg']
+  if (!params.path || params.path.length < 2) {
+    // Si la ruta no es válida, redirige a la página principal por seguridad.
     redirect('/');
   }
 
-  // Redirigimos al usuario directamente al menú del restaurante.
+  const menuId = params.path[1]; // El ID de la compañía es el segundo segmento
+  
+  // Redirige al usuario directamente al menú del restaurante.
   redirect(`/menu/${menuId}`);
 
-  // No se renderiza ningún HTML, Next.js maneja la redirección en el servidor.
+  // No se devuelve ningún JSX, Next.js manejará la redirección.
   return null;
 }
