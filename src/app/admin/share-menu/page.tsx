@@ -79,7 +79,6 @@ export default function AdminShareMenuPage() {
   };
 
   const handleShareViaWhatsApp = () => {
-    // Botón verde: Envía el enlace directo al menú
     const textoParaCompartir = `${customMessage} ${menuUrl}`;
     const encodedMessage = encodeURIComponent(textoParaCompartir);
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
@@ -87,7 +86,6 @@ export default function AdminShareMenuPage() {
   };
 
   const handleShareWithPreview = () => {
-    // Botón azul: Envía a la página intermedia para publicidad
     if (!customImageUrl) {
       toast({
         title: "Imagen requerida",
@@ -312,13 +310,15 @@ export default function AdminShareMenuPage() {
             </CardHeader>
             <CardContent className="flex flex-col items-center space-y-4">
               <div className="p-4 border rounded-lg bg-white">
-                <Image 
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(menuUrl)}`} 
-                    alt="Menu QR Code" 
-                    width={150} 
-                    height={150}
-                    data-ai-hint="QR code"
-                />
+                {menuUrl && (
+                  <Image 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(menuUrl)}`} 
+                      alt="Menu QR Code" 
+                      width={150} 
+                      height={150}
+                      data-ai-hint="QR code"
+                  />
+                )}
               </div>
               <Button variant="outline" onClick={handleDownloadQR}>
                 <Download className="mr-2 h-4 w-4"/>

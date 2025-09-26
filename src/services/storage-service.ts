@@ -6,7 +6,7 @@ import imageCompression from 'browser-image-compression';
  * Comprime una imagen en el cliente y la sube al servidor a través de un endpoint de API.
  * @param file El archivo de imagen a subir.
  * @param path La ruta de destino en el bucket (ej. 'landing-images').
- * @returns Una promesa que se resuelve con la URL pública de la imagen subida.
+ * @returns Una promesa que se resuelve con la URL pública directa de la imagen subida desde Google Cloud Storage.
  */
 const compressAndUploadFile = async (file: File, path: string): Promise<string> => {
   if (!file) {
@@ -39,15 +39,7 @@ const compressAndUploadFile = async (file: File, path: string): Promise<string> 
       throw new Error(result.error || 'Error en el servidor al subir la imagen.');
     }
     
-    // Si estamos en producción, transformamos la URL para que use nuestra página de compartición con meta-tags.
-    if (process.env.NODE_ENV === 'production') {
-      const gcsUrl = new URL(result.url);
-      const filePath = gcsUrl.pathname.split('/').slice(2).join('/'); // Extrae la ruta del archivo sin el nombre del bucket
-      const shareUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://websap.site'}/share/${filePath}`;
-      return shareUrl;
-    }
-
-    // En desarrollo, devolvemos la URL directa para facilitar las pruebas.
+    // Devolvemos la URL directa a Google Cloud Storage, que es lo que necesitan los crawlers
     return result.url;
 
   } catch (error) {
