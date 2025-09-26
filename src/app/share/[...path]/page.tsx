@@ -8,8 +8,9 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const imagePath = params.path.join('/');
+  // La URL de la imagen para los metadatos debe ser la URL pública directa de Google Storage
   const imageUrl = `https://storage.googleapis.com/websapmax-images/${imagePath}`;
-  const menuId = params.path[1]; // El ID del restaurante está en la segunda parte de la ruta.
+  const menuId = params.path[1];
   
   return {
     title: 'Menú Digital QR',
@@ -17,7 +18,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: 'Menú Digital QR',
       description: 'Descubre nuestro delicioso menú',
-      url: `https://websap.site/menu/${menuId}`, // URL canónica a la que se redirige
+      // La URL canónica a la que apunta el enlace
+      url: `https://websap.site/menu/${menuId}`,
       images: [
         {
           url: imageUrl,
@@ -37,12 +39,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+// Este componente ahora es el responsable de la redirección
 export default function SharePage({ params }: Props) {
-  // La ruta es como ['share-images', 'COMPANY_ID', 'image-name.jpg']
-  // El ID del menú es el segundo elemento del path.
+  // Extraemos el ID del restaurante de la ruta. Ej: /share/share-images/COMPANY_ID/image.jpg -> COMPANY_ID
   const menuId = params.path[1];
   
-  // Redirige al usuario directamente al menú del restaurante.
-  // Los rastreadores de redes sociales leerán los metadatos antes de seguir la redirección.
+  // Si no hay ID, redirigimos a la página principal por seguridad.
+  if (!menuId) {
+    redirect('/');
+  }
+
+  // Redirigimos al usuario directamente al menú del restaurante.
   redirect(`/menu/${menuId}`);
+
+  // No se renderiza ningún HTML, la redirección es del lado del servidor.
+  // Next.js se encarga de servir los metadatos y luego ejecutar la redirección.
+  return null;
 }
