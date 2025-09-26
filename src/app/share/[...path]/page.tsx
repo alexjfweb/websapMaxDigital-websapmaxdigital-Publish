@@ -1,5 +1,6 @@
 
 import { Metadata } from 'next';
+import { headers } from 'next/headers';
 
 type Props = {
   params: { path: string[] };
@@ -8,7 +9,6 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const imagePath = params.path.join('/');
   const imageUrl = `https://storage.googleapis.com/websapmax-images/${imagePath}`;
-  const menuId = params.path[1];
   
   return {
     title: '¡Mira nuestro delicioso menú! 🍽️',
@@ -22,11 +22,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     twitter: {
       card: 'summary_large_image',
       title: '¡Mira nuestro delicioso menú! 🍽️',
-      description: 'Descubre todos nuestros platillos especiales.',
+      description: 'Descubre nuestro delicioso menú',
       images: [imageUrl],
-    },
-    other: {
-      refresh: `2; url=/menu/${menuId}`,
     },
   };
 }
@@ -37,19 +34,21 @@ export default function SharePage({ params }: Props) {
   const menuId = params.path[1];
   
   return (
-    <>
-      <meta httpEquiv="refresh" content={`2; url=/menu/${menuId}`} />
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-2xl w-full text-center">
-          <h1 className="text-2xl font-bold text-center mb-4">Menú Digital QR</h1>
-          <img 
-            src={imageUrl} 
-            alt="Menú Digital"
-            className="w-full max-w-md mx-auto rounded-lg shadow-lg mb-4"
-          />
-          <p className="text-gray-600">Redirigiendo al menú...</p>
-        </div>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="max-w-2xl w-full text-center">
+        <h1 className="text-2xl font-bold text-primary mb-4">Menú Digital</h1>
+        <img 
+          src={imageUrl} 
+          alt="Menú Digital"
+          className="w-full max-w-md mx-auto rounded-lg shadow-lg mb-6"
+        />
+        <a 
+          href={`/menu/${menuId}`}
+          className="inline-block bg-primary text-primary-foreground px-8 py-3 rounded-lg text-lg font-semibold hover:bg-primary/90 transition-colors"
+        >
+          Ver Menú Completo
+        </a>
       </div>
-    </>
+    </div>
   );
 }
