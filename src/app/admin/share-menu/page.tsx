@@ -78,24 +78,16 @@ export default function AdminShareMenuPage() {
       .catch(() => toast({ title: 'Error', description: 'No se pudo copiar el texto.', variant: "destructive" }));
   };
 
-  // Botón Verde: Redirección directa al menú.
   const handleShareViaWhatsApp = () => {
-    const companyId = currentUser?.companyId;
-    if (!companyId) {
-        toast({ title: "Error", description: "No se pudo obtener el ID de la compañía.", variant: "destructive" });
-        return;
-    }
-    // Usa la ruta /share/ que hace la redirección directa.
-    const shareUrl = `${baseUrl}/share/restaurant/${companyId}/default-preview`;
-    const textoParaCompartir = `${customMessage} ${shareUrl}`;
-
+    // Botón verde: Envía el enlace directo al menú
+    const textoParaCompartir = `${customMessage} ${menuUrl}`;
     const encodedMessage = encodeURIComponent(textoParaCompartir);
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank');
   };
 
-  // Botón Azul: Página intermedia para publicidad.
   const handleShareWithPreview = () => {
+    // Botón azul: Envía a la página intermedia para publicidad
     if (!customImageUrl) {
       toast({
         title: "Imagen requerida",
@@ -111,8 +103,7 @@ export default function AdminShareMenuPage() {
         return;
     }
     
-    const imageName = customImageUrl.split('/').pop() || 'share-image.png';
-    // Usa la nueva ruta /landing/ que muestra la página intermedia.
+    const imageName = customImageUrl.split('/').pop()?.split('?')[0] || 'share-image.png';
     const shareUrl = `${baseUrl}/landing/restaurant/${companyId}/${imageName}`;
     const textoParaCompartir = `${customMessage} ${shareUrl}`;
     
@@ -238,7 +229,7 @@ export default function AdminShareMenuPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="image-upload">Imagen para Vista Previa del Botón Azul</Label>
+              <Label htmlFor="image-upload">Imagen para Vista Previa</Label>
               <div className="flex items-center gap-4">
                  <Button asChild variant="outline">
                       <label htmlFor="image-upload" className="cursor-pointer">
@@ -269,8 +260,22 @@ export default function AdminShareMenuPage() {
                       </div>
                   )}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Esta imagen se usará para el botón "Compartir con Vista Previa".</p>
+              <p className="text-xs text-muted-foreground mt-1">Sube una imagen para que aparezca en la vista previa al compartir el enlace.</p>
             </div>
+            
+            {/* URL de la Imagen (para vista previa) - RESTAURADO */}
+            {customImageUrl && (
+              <div>
+                <Label>URL de la Imagen (para vista previa)</Label>
+                <div className="flex items-center space-x-2">
+                  <Input type="text" value={customImageUrl} readOnly className="bg-muted" />
+                  <Button variant="outline" size="icon" onClick={() => handleCopyToClipboard(customImageUrl, 'URL de la imagen copiada.')}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <Button onClick={handleSaveConfig} disabled={isSaving}>
               {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
               {isSaving ? 'Guardando...' : 'Guardar Cambios'}
@@ -320,6 +325,21 @@ export default function AdminShareMenuPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Enlace del Menú - RESTAURADO */}
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle>Enlace del Menú</CardTitle>
+            <CardDescription>Usa este enlace para compartir tu menú digital donde quieras.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex items-center space-x-2">
+            <Input type="text" value={menuUrl} readOnly className="bg-muted" />
+            <Button variant="outline" size="icon" onClick={() => handleCopyToClipboard(menuUrl, 'Enlace del menú copiado.')}>
+              <Copy className="h-4 w-4" />
+            </Button>
+          </CardContent>
+        </Card>
+
       </div>
     </>
   );
