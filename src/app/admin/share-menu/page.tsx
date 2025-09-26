@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -99,8 +98,8 @@ export default function AdminShareMenuPage() {
     // Extraer solo el nombre del archivo (sin carpetas)
     const imagePath = customImageUrl.replace(`https://storage.googleapis.com/websapmax-images/share-images/${companyId}/`, '');
     
-    // CORRECCIÓN CRÍTICA: Incluir companyId en la URL para hacerla dinámica
-    const shareUrl = `${baseUrl}/share/${companyId}/${imagePath}`;
+    // NUEVA ESTRUCTURA: Usar query parameters en lugar de path parameters
+    const shareUrl = `${baseUrl}/share?company=${companyId}&image=${encodeURIComponent(imagePath)}`;
     const textoParaCompartir = `${customMessage} ${shareUrl}`;
     
     const encodedMessage = encodeURIComponent(textoParaCompartir);
