@@ -35,7 +35,11 @@ export default function AdminShareMenuPage() {
   useEffect(() => {
     const companyId = currentUser?.companyId;
     
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://websap.site';
+    // CORRECCIÓN: Usar variable de entorno para la URL base de producción
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? (process.env.NEXT_PUBLIC_BASE_URL || 'https://websap.site')
+      : (window.location.origin);
+    
     if (companyId) {
       setMenuUrl(`${baseUrl}/menu/${companyId}`);
     }
@@ -74,7 +78,9 @@ export default function AdminShareMenuPage() {
   };
 
   const handleShareViaWhatsApp = () => {
-    const textoParaCompartir = `${customMessage} ${menuUrl}`;
+    // CORRECCIÓN: Usar la URL de la imagen para la vista previa, y la del menú en el texto.
+    const urlParaCompartir = customImageUrl || menuUrl;
+    const textoParaCompartir = `${customMessage} ${urlParaCompartir}`;
     const encodedMessage = encodeURIComponent(textoParaCompartir);
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank');
@@ -125,10 +131,18 @@ export default function AdminShareMenuPage() {
 
       if (imageFile) {
         toast({ title: "Subiendo imagen...", description: "Por favor espera." });
+        // Si ya hay una URL y no es un placeholder, intenta borrar la antigua.
+        if (customImageUrl && !customImageUrl.includes('placehold.co')) {
+          await storageService.deleteFile(customImageUrl);
+        }
         finalImageUrl = await storageService.compressAndUploadFile(imageFile, `share-images/${currentUser.companyId}`);
         setCustomImageUrl(finalImageUrl);
         setImageFile(null);
       } else if (!imagePreview) {
+        // Si el usuario quitó la imagen, borramos la URL.
+        if (customImageUrl && !customImageUrl.includes('placehold.co')) {
+          await storageService.deleteFile(customImageUrl);
+        }
         finalImageUrl = '';
       }
 
@@ -164,138 +178,138 @@ export default function AdminShareMenuPage() {
 
   return (
     <>
-    <SuccessModal
+      <SuccessModal
         isOpen={showSuccess}
         onClose={() => setShowSuccess(false)}
         title="¡Guardado Correctamente!"
         message="La configuración para compartir tu menú ha sido actualizada."
-    />
-    <div className="space-y-8 max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold text-primary text-center">Compartir menú</h1>
-      <p className="text-lg text-muted-foreground text-center">Personaliza cómo se ve tu menú al compartirlo y usa las herramientas para llegar a más clientes.</p>
+      />
+      <div className="space-y-8 max-w-2xl mx-auto">
+        <h1 className="text-3xl font-bold text-primary text-center">Compartir menú</h1>
+        <p className="text-lg text-muted-foreground text-center">Personaliza cómo se ve tu menú al compartirlo y usa las herramientas para llegar a más clientes.</p>
 
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5" /> Personaliza tu Mensaje</CardTitle>
-          <CardDescription>Edita el mensaje y la imagen que se mostrarán al compartir tu menú.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="customMessage">Mensaje para WhatsApp</Label>
-            <Textarea
-              id="customMessage"
-              value={customMessage}
-              onChange={(e) => setCustomMessage(e.target.value)}
-              placeholder="¡Mira nuestro delicioso menú! 🌮🥗🍰"
-              rows={3}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="image-upload">Imagen para Vista Previa</Label>
-            <div className="flex items-center gap-4">
-               <Button asChild variant="outline">
-                    <label htmlFor="image-upload" className="cursor-pointer">
-                        <UploadCloud className="mr-2 h-4 w-4"/>
-                        Seleccionar Imagen
-                    </label>
-               </Button>
-                <Input id="image-upload" type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
-                {imagePreview && (
-                    <div className="relative">
-                        <Image 
-                            src={imagePreview}
-                            alt="Vista previa"
-                            width={80}
-                            height={80}
-                            className="rounded-md border object-cover"
-                            data-ai-hint="share image"
-                            unoptimized
-                        />
-                        <Button
-                            variant="destructive"
-                            size="icon"
-                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                            onClick={clearImage}
-                        >
-                            <XCircle className="h-4 w-4" />
-                        </Button>
-                    </div>
-                )}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">Sube una imagen para que aparezca en la vista previa al compartir el enlace.</p>
-          </div>
-          {customImageUrl && (
-            <div className="space-y-2">
-                <Label htmlFor="imageUrl">URL de la Imagen (para vista previa)</Label>
-                <div className="flex items-center space-x-2">
-                    <Input id="imageUrl" value={customImageUrl} readOnly />
-                    <Button 
-                      onClick={() => handleCopyToClipboard(customImageUrl, 'URL de la imagen copiada.')} 
-                      variant="outline" 
-                      size="icon" 
-                      aria-label="Copiar URL de la imagen"
-                    >
-                        <Copy className="h-4 w-4" />
-                    </Button>
-                </div>
-            </div>
-          )}
-          <Button onClick={handleSaveConfig} disabled={isSaving}>
-            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-            {isSaving ? 'Guardando...' : 'Guardar Cambios'}
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle>Enlace del Menú</CardTitle>
-          <CardDescription>Usa este enlace para compartir tu menú digital donde quieras.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Input id="menuLink" value={menuUrl} readOnly className="flex-grow" />
-            <Button onClick={() => handleCopyToClipboard(menuUrl, 'El enlace del menú ha sido copiado.')} variant="outline" size="icon" aria-label="Copiar enlace">
-              <Copy className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle>Compartir por WhatsApp</CardTitle>
+            <CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5" /> Personaliza tu Mensaje</CardTitle>
+            <CardDescription>Edita el mensaje y la imagen que se mostrarán al compartir tu menú.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button onClick={handleShareViaWhatsApp} className="w-full bg-green-500 hover:bg-green-600 text-white">
-              <WhatsAppIcon className="mr-2 h-5 w-5" /> Enviar por WhatsApp
-            </Button>
-          </CardContent>
-        </Card>
-        
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle>Código QR</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center space-y-4">
-            <div className="p-4 border rounded-lg bg-white">
-              <Image 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(menuUrl)}`} 
-                  alt="Menu QR Code" 
-                  width={150} 
-                  height={150}
-                  data-ai-hint="QR code"
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="customMessage">Mensaje para WhatsApp</Label>
+              <Textarea
+                id="customMessage"
+                value={customMessage}
+                onChange={(e) => setCustomMessage(e.target.value)}
+                placeholder="¡Mira nuestro delicioso menú! 🌮🥗🍰"
+                rows={3}
               />
             </div>
-            <Button variant="outline" onClick={handleDownloadQR}>
-              <Download className="mr-2 h-4 w-4"/>
-              Descargar QR
+            <div className="space-y-2">
+              <Label htmlFor="image-upload">Imagen para Vista Previa</Label>
+              <div className="flex items-center gap-4">
+                 <Button asChild variant="outline">
+                      <label htmlFor="image-upload" className="cursor-pointer">
+                          <UploadCloud className="mr-2 h-4 w-4"/>
+                          Seleccionar Imagen
+                      </label>
+                 </Button>
+                  <Input id="image-upload" type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                  {imagePreview && (
+                      <div className="relative">
+                          <Image 
+                              src={imagePreview}
+                              alt="Vista previa"
+                              width={80}
+                              height={80}
+                              className="rounded-md border object-cover"
+                              data-ai-hint="share image"
+                              unoptimized
+                          />
+                          <Button
+                              variant="destructive"
+                              size="icon"
+                              className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                              onClick={clearImage}
+                          >
+                              <XCircle className="h-4 w-4" />
+                          </Button>
+                      </div>
+                  )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Sube una imagen para que aparezca en la vista previa al compartir el enlace.</p>
+            </div>
+            {customImageUrl && (
+              <div className="space-y-2">
+                  <Label htmlFor="imageUrl">URL de la Imagen (para vista previa)</Label>
+                  <div className="flex items-center space-x-2">
+                      <Input id="imageUrl" value={customImageUrl} readOnly />
+                      <Button 
+                        onClick={() => handleCopyToClipboard(customImageUrl, 'URL de la imagen copiada.')} 
+                        variant="outline" 
+                        size="icon" 
+                        aria-label="Copiar URL de la imagen"
+                      >
+                          <Copy className="h-4 w-4" />
+                      </Button>
+                  </div>
+              </div>
+            )}
+            <Button onClick={handleSaveConfig} disabled={isSaving}>
+              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              {isSaving ? 'Guardando...' : 'Guardar Cambios'}
             </Button>
           </CardContent>
         </Card>
+
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle>Enlace del Menú</CardTitle>
+            <CardDescription>Usa este enlace para compartir tu menú digital donde quieras.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Input id="menuLink" value={menuUrl} readOnly className="flex-grow" />
+              <Button onClick={() => handleCopyToClipboard(menuUrl, 'El enlace del menú ha sido copiado.')} variant="outline" size="icon" aria-label="Copiar enlace">
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle>Compartir por WhatsApp</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={handleShareViaWhatsApp} className="w-full bg-green-500 hover:bg-green-600 text-white">
+                <WhatsAppIcon className="mr-2 h-5 w-5" /> Enviar por WhatsApp
+              </Button>
+            </CardContent>
+          </Card>
+          
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle>Código QR</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center space-y-4">
+              <div className="p-4 border rounded-lg bg-white">
+                <Image 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(menuUrl)}`} 
+                    alt="Menu QR Code" 
+                    width={150} 
+                    height={150}
+                    data-ai-hint="QR code"
+                />
+              </div>
+              <Button variant="outline" onClick={handleDownloadQR}>
+                <Download className="mr-2 h-4 w-4"/>
+                Descargar QR
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
     </>
   );
 }
