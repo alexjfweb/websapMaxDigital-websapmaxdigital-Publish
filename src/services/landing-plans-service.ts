@@ -211,7 +211,8 @@ class LandingPlansService {
       throw new Error(`Plan with id ${id} not found.`);
     }
 
-    await deleteDoc(docRef);
+    // CORRECCIÓN: En lugar de borrar, se desactiva y se hace no público.
+    await this.updatePlan(id, { isActive: false, isPublic: false }, userId, userEmail);
 
     await auditService.log({
         entity: 'landingPlans',
@@ -219,7 +220,7 @@ class LandingPlansService {
         action: 'deleted',
         performedBy: { uid: userId, email: userEmail },
         previousData: cleanupObject(originalDoc),
-        details: `Plan "${originalDoc.name}" permanentemente eliminado.`,
+        details: `Plan "${originalDoc.name}" marcado como inactivo y no público.`,
         ipAddress,
         userAgent
     });
@@ -374,4 +375,5 @@ class LandingPlansService {
 }
 
 export const landingPlansService = new LandingPlansService();
+
 
