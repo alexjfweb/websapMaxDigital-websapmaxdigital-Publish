@@ -4,6 +4,11 @@
 import { NextResponse } from 'next/server';
 import { landingPlansService } from '@/services/landing-plans-service';
 
+// SOLUCIÓN: Desactiva el cacheo estático para esta ruta.
+// Esto asegura que cada vez que se pida la lista de planes, se consulte
+// la base de datos en tiempo real, evitando mostrar datos desactualizados.
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     // Usamos el nuevo método para obtener solo los planes públicos
