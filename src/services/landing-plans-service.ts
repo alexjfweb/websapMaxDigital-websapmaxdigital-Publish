@@ -1,4 +1,5 @@
 
+
 import {
   collection,
   doc,
@@ -145,7 +146,7 @@ class LandingPlansService {
       slug,
       order: data.order ?? 999,
       isActive: data.isActive ?? true,
-      isPublic: data.isPublic ?? true,
+      isPublic: data.isPublic ?? true, // CORRECCIÓN: Por defecto es público
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       createdBy: userId,
@@ -283,6 +284,92 @@ class LandingPlansService {
       ipAddress,
       userAgent
     });
+  }
+  
+  async initializeDefaultPlans(userId: string, userEmail: string): Promise<string> {
+    const plansSnapshot = await getDocs(this.getPlansCollection());
+    if (plansSnapshot.empty) {
+      console.log('No existen planes, creando planes por defecto...');
+      const defaultPlans: CreatePlanRequest[] = [
+        {
+            name: 'Plan Gratis Lite',
+            slug: 'plan-gratis-lite',
+            description: 'Una versión gratuita y limitada para siempre después de cualquier prueba.',
+            price: 0,
+            currency: 'USD',
+            period: 'lifetime',
+            features: ['5 Mesas', '5 Empleados', '10 Reservas/mes', 'Menú Digital Básico'],
+            isActive: true,
+            isPublic: false, // Este plan no debe ser elegible por el usuario
+            order: 99,
+            icon: 'zap',
+            color: 'gray',
+            maxUsers: 5,
+            maxProjects: 5,
+            ctaText: 'Asignado Automáticamente'
+        },
+        {
+          name: 'Plan Básico',
+          slug: 'plan-basico',
+          description: 'Ideal para pequeños negocios que empiezan a digitalizarse.',
+          price: 10,
+          currency: 'USD',
+          period: 'monthly',
+          features: ['20 Mesas', '10 Empleados', '50 Reservas/mes', 'Menú Digital con QR', 'Gestión de Pedidos'],
+          isActive: true,
+          isPublic: true,
+          isPopular: false,
+          order: 1,
+          icon: 'zap',
+          color: 'blue',
+          maxUsers: 10,
+          maxProjects: 20,
+          ctaText: 'Empezar Ahora'
+        },
+        {
+          name: 'Plan Estándar',
+          slug: 'plan-estandar',
+          description: 'La solución completa para restaurantes en crecimiento.',
+          price: 25,
+          currency: 'USD',
+          period: 'monthly',
+          features: ['Mesas Ilimitadas', 'Empleados Ilimitados', 'Reservas Ilimitadas', 'Personalización de Menú', 'Soporte Prioritario'],
+          isActive: true,
+          isPublic: true,
+          isPopular: true,
+          order: 2,
+          icon: 'star',
+          color: 'green',
+          maxUsers: -1,
+          maxProjects: -1,
+          ctaText: 'Elegir Plan'
+        },
+        {
+            name: 'Plan Premium',
+            slug: 'plan-premium',
+            description: 'Funcionalidades avanzadas y analítica para grandes operaciones.',
+            price: 50,
+            currency: 'USD',
+            period: 'monthly',
+            features: ['Todo en Estándar', 'Analítica Avanzada', 'Integración con APIs', 'Asesor Personalizado'],
+            isActive: true,
+            isPublic: true,
+            isPopular: false,
+            order: 3,
+            icon: 'gem',
+            color: 'purple',
+            maxUsers: -1,
+            maxProjects: -1,
+            ctaText: 'Contactar a Ventas'
+        }
+      ];
+
+      for (const planData of defaultPlans) {
+        await this.createPlan(planData, userId, userEmail);
+      }
+      return 'Planes por defecto creados exitosamente.';
+    }
+    return 'Los planes ya existen, no se requiere inicialización.';
   }
 }
 
