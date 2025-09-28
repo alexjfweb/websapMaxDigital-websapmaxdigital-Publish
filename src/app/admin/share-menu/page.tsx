@@ -35,6 +35,7 @@ export default function AdminShareMenuPage() {
   useEffect(() => {
     const companyId = currentUser?.companyId;
     
+    // CORRECCIÓN: La URL base para el menú SIEMPRE debe ser la de producción
     const prodBaseUrl = 'https://www.websap.site';
     
     if (companyId) {
@@ -90,18 +91,14 @@ export default function AdminShareMenuPage() {
       });
       return;
     }
-
-    const companyId = currentUser?.companyId;
-    const imagePath = customImageUrl.split('/').pop()?.split('?')[0] || '';
-
-    if (!imagePath || !companyId) {
-      toast({ title: 'Error de Configuración', description: 'No se pudo generar el enlace. Faltan datos de compañía o imagen.', variant: 'destructive' });
-      return;
-    }
     
-    // CORRECCIÓN: La URL debe apuntar a la nueva página de landing/vista previa
-    const shareUrl = `https://www.websap.site/landing/restaurant/${companyId}/${encodeURIComponent(imagePath)}`;
-    const textoParaCompartir = `${customMessage} ${shareUrl}`;
+    // URL del proxy de imagen para que sea rastreable
+    const proxiedImageUrl = `https://www.websap.site/api/proxy-image/${customImageUrl.split('/o/')[1].split('?')[0]}`;
+    
+    // La URL que compartimos es la del menú, pero con parámetros OG para que los rastreadores los usen
+    const shareUrl = `${menuUrl}?og_title=${encodeURIComponent(customMessage)}&og_image=${encodeURIComponent(proxiedImageUrl)}`;
+
+    const textoParaCompartir = `${customMessage}\n${shareUrl}`;
     
     const encodedMessage = encodeURIComponent(textoParaCompartir);
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;

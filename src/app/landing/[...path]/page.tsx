@@ -12,15 +12,18 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const pathParts = params.path;
   
-  if (pathParts.length < 3 || pathParts[0] !== 'restaurant') {
+  if (pathParts.length < 2 || pathParts[0] !== 'restaurant') {
     return { title: 'WebSapMax' };
   }
 
   const companyId = pathParts[1];
-  const imageName = pathParts[2];
+  const imageName = pathParts.length > 2 ? pathParts[2] : null;
   
   // La URL de la imagen debe apuntar a la ubicación pública y directa en GCS
-  const imageUrl = `https://storage.googleapis.com/websapmax-images/share-images/${companyId}/${imageName}`;
+  const imageUrl = imageName 
+    ? `https://storage.googleapis.com/websapmax-images/share-images/${companyId}/${decodeURIComponent(imageName)}`
+    : `https://storage.googleapis.com/websapmax-images/default-share-image.jpg`;
+    
   const menuUrl = `https://www.websap.site/menu/${companyId}`;
   
   return {
