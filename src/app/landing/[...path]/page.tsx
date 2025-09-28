@@ -19,8 +19,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const companyId = pathParts[1];
   const imageName = pathParts[2];
   
+  // La URL de la imagen debe apuntar a la ubicación pública y directa en GCS
   const imageUrl = `https://storage.googleapis.com/websapmax-images/share-images/${companyId}/${imageName}`;
-  const menuUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://websap.site'}/menu/${companyId}`;
+  const menuUrl = `https://www.websap.site/menu/${companyId}`;
   
   return {
     title: "Menú Digital - Vista Previa",
@@ -44,12 +45,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function LandingSharePage({ params }: Props) {
   const pathParts = params.path;
 
-  if (pathParts.length < 3 || pathParts[0] !== 'restaurant') {
+  // Validamos que la URL tenga la estructura correcta
+  if (pathParts.length < 2 || pathParts[0] !== 'restaurant') {
     return notFound();
   }
 
   const companyId = pathParts[1];
-  const imageName = pathParts[2];
+  const imageName = pathParts.length > 2 ? pathParts[2] : null;
 
   const db = getDb();
   const companySnap = await getDoc(doc(db, 'companies', companyId));
@@ -59,8 +61,13 @@ export default async function LandingSharePage({ params }: Props) {
   }
 
   const companyData = companySnap.data();
-  const imageUrl = `https://storage.googleapis.com/websapmax-images/share-images/${companyId}/${imageName}`;
-  const menuUrl = `/menu/${companyId}`;
+  // La URL de la imagen debe ser la de GCS, y solo si se proporciona
+  const imageUrl = imageName
+    ? `https://storage.googleapis.com/websapmax-images/share-images/${companyId}/${decodeURIComponent(imageName)}`
+    : companyData.logoUrl || "https://placehold.co/1200x630.png?text=WebSapMax";
+
+  // CORRECCIÓN: La URL del menú debe usar el dominio de producción con 'www'
+  const menuUrl = `https://www.websap.site/menu/${companyId}`;
   
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">

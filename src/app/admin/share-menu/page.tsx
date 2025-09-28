@@ -35,14 +35,9 @@ export default function AdminShareMenuPage() {
   useEffect(() => {
     const companyId = currentUser?.companyId;
     
-    // La URL base de producción es fija.
     const prodBaseUrl = 'https://www.websap.site';
-    const currentBaseUrl = process.env.NODE_ENV === 'production' 
-      ? prodBaseUrl
-      : (window.location.origin);
     
     if (companyId) {
-      // El enlace del menú siempre debe apuntar a la URL pública canónica.
       setMenuUrl(`${prodBaseUrl}/menu/${companyId}`);
     }
     
@@ -97,8 +92,6 @@ export default function AdminShareMenuPage() {
     }
 
     const companyId = currentUser?.companyId;
-    
-    // Extraer solo el nombre del archivo de la URL completa.
     const imagePath = customImageUrl.split('/').pop()?.split('?')[0] || '';
 
     if (!imagePath || !companyId) {
@@ -106,8 +99,8 @@ export default function AdminShareMenuPage() {
       return;
     }
     
-    // CORRECCIÓN: Hardcodear la URL de producción para el enlace de la API.
-    const shareUrl = `https://www.websap.site/api/share?company=${companyId}&image=${encodeURIComponent(imagePath)}`;
+    // CORRECCIÓN: La URL debe apuntar a la nueva página de landing/vista previa
+    const shareUrl = `https://www.websap.site/landing/restaurant/${companyId}/${encodeURIComponent(imagePath)}`;
     const textoParaCompartir = `${customMessage} ${shareUrl}`;
     
     const encodedMessage = encodeURIComponent(textoParaCompartir);
