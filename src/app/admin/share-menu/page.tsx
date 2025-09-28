@@ -97,11 +97,10 @@ export default function AdminShareMenuPage() {
     }
 
     const companyId = currentUser?.companyId;
-    // Extraer solo el nombre del archivo (sin carpetas)
     const imagePath = customImageUrl.replace(`https://storage.googleapis.com/websapmax-images/share-images/${companyId}/`, '');
     
-    // NUEVA ESTRUCTURA: Usar query parameters en lugar de path parameters
-    const shareUrl = `${baseUrl}/share?company=${companyId}&image=${encodeURIComponent(imagePath)}`;
+    // APUNTAR A LA NUEVA RUTA DE API
+    const shareUrl = `${baseUrl}/api/share?company=${companyId}&image=${encodeURIComponent(imagePath)}`;
     const textoParaCompartir = `${customMessage} ${shareUrl}`;
     
     const encodedMessage = encodeURIComponent(textoParaCompartir);
