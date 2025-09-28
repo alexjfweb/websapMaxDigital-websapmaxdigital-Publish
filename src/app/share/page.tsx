@@ -1,12 +1,14 @@
-// src/app/share/[...path]/page.tsx
+// src/app/share/page.tsx
 // NOTA: Este archivo ahora maneja la ruta /share?company=...&image=...
 // y genera la página intermedia con las metaetiquetas correctas.
 
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getDb, firebaseConfig } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import Image from 'next/image';
+import { firebaseConfig } from '@/lib/firebase-config';
+
 
 const BUCKET_NAME = 'websapmax-images';
 
@@ -41,7 +43,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   
   // Construcción de la URL de la imagen y del menú
   const imageUrl = `https://storage.googleapis.com/${BUCKET_NAME}/share-images/${companyId}/${decodeURIComponent(imagePath)}`;
-  const menuUrl = `https://www.websap.site/menu/${companyId}`; // ✅ CORREGIDO: Añadido 'www.'
+  const menuUrl = `https://www.websap.site/menu/${companyId}`;
 
   return {
     title: companyName,
@@ -56,10 +58,10 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
       images: [
         {
           url: imageUrl,
-          secure_url: imageUrl, // ✅ REQUERIDO: HTTPS seguro para WhatsApp
+          secureUrl: imageUrl,
           width: 1200,
           height: 630,
-          type: 'image/png', // O el tipo de imagen que subas
+          type: 'image/png',
           alt: `Vista previa del menú de ${companyName}`,
         },
       ],
@@ -71,7 +73,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
       images: [imageUrl],
     },
     other: {
-      'fb:app_id': firebaseConfig.appId, // ✅ AÑADIDO: fb:app_id
+      'fb:app_id': firebaseConfig.appId,
     },
     alternates: {
       canonical: menuUrl,
@@ -97,7 +99,7 @@ export default async function SharePage({ searchParams }: Props) {
   
   const companyData = companySnap.data();
   const imageUrl = `https://storage.googleapis.com/${BUCKET_NAME}/share-images/${companyId}/${decodeURIComponent(imagePath)}`;
-  const menuUrl = `/menu/${companyId}`; // El enlace en la página puede ser relativo
+  const menuUrl = `/menu/${companyId}`;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
@@ -116,7 +118,7 @@ export default async function SharePage({ searchParams }: Props) {
           <h1 className="text-3xl md:text-4xl font-bold mb-2 text-gray-800">{companyData.name}</h1>
           <p className="text-lg text-gray-600 mb-6">{companyData.customShareMessage || '¡Descubre nuestro delicioso menú!'}</p>
           <a 
-            href={`https://www.websap.site${menuUrl}`} // ✅ CORREGIDO: URL absoluta con 'www.'
+            href={`https://www.websap.site${menuUrl}`}
             className="inline-block bg-primary text-white px-10 py-4 rounded-lg text-xl font-semibold hover:bg-primary/90 transition-transform hover:scale-105"
           >
             Ver Menú Completo
