@@ -3,12 +3,23 @@ import { Metadata } from 'next';
 import { doc, getDoc } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import { notFound } from 'next/navigation';
+import {firebaseConfig} from '@/lib/firebase-config';
 
 type Props = {
   params: { path: string[] };
 };
 
-// Esta página está dedicada a la PÁGINA INTERMEDIA (Botón Azul)
+// Función para escapar texto HTML y evitar inyección de código
+function escapeHtml(text: string) {
+    if (!text) return '';
+    return text
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const pathParts = params.path;
   
@@ -18,29 +29,54 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const companyId = pathParts[1];
   const imageName = pathParts.length > 2 ? pathParts[2] : null;
+
+  let companyName = "Menú Digital";
+  let companyDescription = "¡Haz clic para ver nuestras delicias!";
+  let finalImageUrl: string | null = null;
   
-  // La URL de la imagen debe apuntar a la ubicación pública y directa en GCS
-  const imageUrl = imageName 
-    ? `https://storage.googleapis.com/websapmax-images/share-images/${companyId}/${decodeURIComponent(imageName)}`
-    : `https://storage.googleapis.com/websapmax-images/default-share-image.jpg`;
-    
+  try {
+      const db = getDb();
+      const companySnap = await getDoc(doc(db, 'companies', companyId));
+      if (companySnap.exists()) {
+          const companyData = companySnap.data();
+          companyName = companyData.name || companyName;
+          companyDescription = companyData.customShareMessage || companyDescription;
+          // Construir la URL del proxy si hay una imagen
+          if(imageName) {
+            finalImageUrl = `https://www.websap.site/api/proxy-image/share-images/${companyId}/${decodeURIComponent(imageName)}`;
+          } else if (companyData.customShareImageUrl) {
+            // Fallback a la imagen guardada en la compañía si no se pasa por URL
+            const storedImageName = companyData.customShareImageUrl.split('/').pop()?.split('?')[0];
+            if (storedImageName) {
+                finalImageUrl = `https://www.websap.site/api/proxy-image/share-images/${companyId}/${decodeURIComponent(storedImageName)}`;
+            }
+          }
+      }
+  } catch (e) {
+      console.error("Error fetching metadata:", e);
+  }
+  
   const menuUrl = `https://www.websap.site/menu/${companyId}`;
   
   return {
-    title: "Menú Digital - Vista Previa",
-    description: "¡Haz clic para ver nuestras delicias!",
+    title: escapeHtml(companyName),
+    description: escapeHtml(companyDescription),
     openGraph: {
-      title: "Menú Digital",
-      description: "¡Haz clic para ver nuestras delicias!",
+      title: escapeHtml(companyName),
+      description: escapeHtml(companyDescription),
       url: menuUrl,
-      images: [imageUrl],
+      images: finalImageUrl ? [finalImageUrl] : [],
       type: 'website',
+      siteName: 'WebSapMax',
+      locale: 'es_ES',
+      // @ts-ignore - fb:app_id is a valid property for OpenGraph
+      'fb:app_id': firebaseConfig.appId,
     },
     twitter: {
       card: 'summary_large_image',
-      title: "Menú Digital",
-      description: "¡Haz clic para ver nuestras delicias!",
-      images: [imageUrl],
+      title: escapeHtml(companyName),
+      description: escapeHtml(companyDescription),
+      images: finalImageUrl ? [finalImageUrl] : [],
     },
   };
 }
@@ -54,7 +90,6 @@ export default async function LandingSharePage({ params }: Props) {
   }
 
   const companyId = pathParts[1];
-  const imageName = pathParts.length > 2 ? pathParts[2] : null;
 
   const db = getDb();
   const companySnap = await getDoc(doc(db, 'companies', companyId));
@@ -64,9 +99,10 @@ export default async function LandingSharePage({ params }: Props) {
   }
 
   const companyData = companySnap.data();
-  // La URL de la imagen debe ser la de GCS, y solo si se proporciona
+  // La URL de la imagen debe ser la de la vista previa, usando el proxy
+  const imageName = pathParts.length > 2 ? pathParts[2] : companyData.customShareImageUrl?.split('/').pop()?.split('?')[0];
   const imageUrl = imageName
-    ? `https://storage.googleapis.com/websapmax-images/share-images/${companyId}/${decodeURIComponent(imageName)}`
+    ? `https://www.websap.site/api/proxy-image/share-images/${companyId}/${decodeURIComponent(imageName)}`
     : companyData.logoUrl || "https://placehold.co/1200x630.png?text=WebSapMax";
 
   // CORRECCIÓN: La URL del menú debe usar el dominio de producción con 'www'
@@ -75,9 +111,9 @@ export default async function LandingSharePage({ params }: Props) {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
         <div 
-            className="w-full max-w-4xl mx-auto rounded-lg shadow-2xl overflow-hidden bg-white"
+            className="w-full max-w-2xl mx-auto rounded-lg shadow-2xl overflow-hidden bg-white"
         >
-            <div className="relative w-full aspect-[16/9]">
+            <div className="relative w-full aspect-video">
                  <img 
                     src={imageUrl} 
                     alt={companyData.name || 'Vista previa del menú'}
@@ -101,3 +137,5 @@ export default async function LandingSharePage({ params }: Props) {
     </div>
   );
 }
+
+    

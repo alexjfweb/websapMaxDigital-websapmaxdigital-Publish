@@ -83,21 +83,30 @@ export default function AdminShareMenuPage() {
   };
 
   const handleShareWithPreview = () => {
-    if (!customImageUrl) {
+    const companyId = currentUser?.companyId;
+    if (!customImageUrl || !companyId) {
       toast({
-        title: "Imagen requerida",
-        description: "Por favor, sube una imagen para la vista previa antes de compartir.",
+        title: "Faltan datos",
+        description: "Por favor, sube una imagen y asegúrate de que la compañía esté configurada.",
         variant: "destructive"
       });
       return;
     }
-    
-    // URL del proxy de imagen para que sea rastreable
-    const proxiedImageUrl = `https://www.websap.site/api/proxy-image/${customImageUrl.split('/o/')[1].split('?')[0]}`;
-    
-    // La URL que compartimos es la del menú, pero con parámetros OG para que los rastreadores los usen
-    const shareUrl = `${menuUrl}?og_title=${encodeURIComponent(customMessage)}&og_image=${encodeURIComponent(proxiedImageUrl)}`;
+  
+    // Extraer solo el nombre del archivo de la URL completa
+    // Ejemplo URL: https://storage.googleapis.com/bucket/folder/image.jpg
+    // Resultado: image.jpg
+    const imageFileName = customImageUrl.split('/').pop()?.split('?')[0];
+    if (!imageFileName) {
+        toast({ title: "Error", description: "La URL de la imagen no es válida.", variant: "destructive" });
+        return;
+    }
 
+    // CORRECCIÓN: La URL debe apuntar a la nueva página de aterrizaje /landing/restaurant/...
+    const shareUrl = `https://www.websap.site/landing/restaurant/${companyId}/${encodeURIComponent(imageFileName)}`;
+
+    // El mensaje que se envía por WhatsApp ahora solo contiene la URL de aterrizaje.
+    // La página de aterrizaje se encargará de la redirección y los metadatos.
     const textoParaCompartir = `${customMessage}\n${shareUrl}`;
     
     const encodedMessage = encodeURIComponent(textoParaCompartir);
@@ -150,6 +159,7 @@ export default function AdminShareMenuPage() {
 
       if (imageFile) {
         toast({ title: "Subiendo imagen...", description: "Por favor espera." });
+        // Asegúrate de que la ruta de la imagen sea única y fácil de encontrar
         finalImageUrl = await storageService.compressAndUploadFile(imageFile, `share-images/${currentUser.companyId}`);
         setCustomImageUrl(finalImageUrl);
         setImageFile(null);
@@ -332,3 +342,5 @@ export default function AdminShareMenuPage() {
     </>
   );
 }
+
+    
