@@ -48,6 +48,36 @@ const compressAndUploadFile = async (file: File, path: string): Promise<string> 
   }
 };
 
+/**
+ * Sube un archivo sin comprimir. Útil para archivos que no son imágenes o que ya están optimizados.
+ * @param file El archivo a subir.
+ * @param path La ruta de destino en el bucket.
+ * @returns Una promesa que se resuelve con la URL pública directa del archivo subido.
+ */
+const uploadFile = async (file: File, path: string): Promise<string> => {
+  if (!file) throw new Error("No se proporcionó ningún archivo.");
+  
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('path', path);
+
+  try {
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || 'Error en el servidor al subir el archivo.');
+    }
+    return result.url;
+  } catch (error) {
+    console.error('Error durante la subida del archivo:', error);
+    throw error;
+  }
+};
+
 
 /**
  * Elimina un archivo de Cloud Storage usando su URL pública.
@@ -66,5 +96,6 @@ const deleteFile = async (fileUrl: string): Promise<void> => {
 
 export const storageService = {
   compressAndUploadFile,
+  uploadFile,
   deleteFile,
 };

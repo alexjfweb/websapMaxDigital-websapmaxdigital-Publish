@@ -6,8 +6,6 @@ import { doc, getDoc } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import { firebaseConfig } from '@/lib/firebase-config';
 
-const BUCKET_NAME = 'websapmax-images';
-
 function escapeHtml(text: string) {
     return text
          .replace(/&/g, "&amp;")
@@ -46,7 +44,8 @@ export async function GET(request: NextRequest) {
   }
 
   // 2. Construir las URLs necesarias
-  const imageUrl = `https://storage.googleapis.com/${BUCKET_NAME}/share-images/${companyId}/${decodeURIComponent(imagePath)}`;
+  // **CORRECCIÓN**: La URL de la imagen ahora apunta a nuestro propio proxy de API.
+  const imageUrl = `https://www.websap.site/api/proxy-image/share-images/${companyId}/${decodeURIComponent(imagePath)}`;
   const menuUrl = `https://www.websap.site/menu/${companyId}`;
 
   // 3. Generar el HTML con todas las metaetiquetas necesarias
