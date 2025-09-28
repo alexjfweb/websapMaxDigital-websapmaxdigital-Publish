@@ -22,9 +22,8 @@ function escapeHtml(text: string) {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const companyId = searchParams.get('company');
-  const imagePath = searchParams.get('image'); // Esto ahora es solo el nombre del archivo
+  const imagePath = searchParams.get('image');
 
-  // CORRECCIÓN: Si faltan parámetros, devolver un error claro en lugar de fallar silenciosamente.
   if (!companyId) {
     return new NextResponse('Falta el parámetro "company".', { status: 400 });
   }
@@ -47,11 +46,11 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching company data:', error);
   }
   
-  // CORRECCIÓN: Construir la URL de la imagen para el proxy y la URL canónica del menú.
-  // La URL del proxy es relativa al dominio principal.
+  // CORRECCIÓN: La URL del proxy siempre debe usar el dominio de producción.
   const imageUrl = imagePath 
     ? `https://www.websap.site/api/proxy-image/share-images/${companyId}/${decodeURIComponent(imagePath)}` 
     : '';
+  // CORRECCIÓN: La URL canónica del menú también debe usar el dominio de producción.
   const menuUrl = `https://www.websap.site/menu/${companyId}`;
 
   // 3. Generar el HTML con todas las metaetiquetas necesarias

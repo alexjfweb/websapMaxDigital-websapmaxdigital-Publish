@@ -27,7 +27,6 @@ export default function AdminShareMenuPage() {
   const [customImageUrl, setCustomImageUrl] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [baseUrl, setBaseUrl] = useState('');
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -36,13 +35,15 @@ export default function AdminShareMenuPage() {
   useEffect(() => {
     const companyId = currentUser?.companyId;
     
+    // La URL base de producción es fija.
+    const prodBaseUrl = 'https://www.websap.site';
     const currentBaseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://www.websap.site'
+      ? prodBaseUrl
       : (window.location.origin);
-    setBaseUrl(currentBaseUrl);
     
     if (companyId) {
-      setMenuUrl(`${currentBaseUrl}/menu/${companyId}`);
+      // El enlace del menú siempre debe apuntar a la URL pública canónica.
+      setMenuUrl(`${prodBaseUrl}/menu/${companyId}`);
     }
     
     async function fetchShareConfig() {
@@ -97,15 +98,16 @@ export default function AdminShareMenuPage() {
 
     const companyId = currentUser?.companyId;
     
-    // CORRECCIÓN: Extraer solo el nombre del archivo de la URL completa.
+    // Extraer solo el nombre del archivo de la URL completa.
     const imagePath = customImageUrl.split('/').pop()?.split('?')[0] || '';
 
-    if (!imagePath) {
-      toast({ title: 'Error de Imagen', description: 'La URL de la imagen no es válida.', variant: 'destructive' });
+    if (!imagePath || !companyId) {
+      toast({ title: 'Error de Configuración', description: 'No se pudo generar el enlace. Faltan datos de compañía o imagen.', variant: 'destructive' });
       return;
     }
     
-    const shareUrl = `${baseUrl}/api/share?company=${companyId}&image=${encodeURIComponent(imagePath)}`;
+    // CORRECCIÓN: Hardcodear la URL de producción para el enlace de la API.
+    const shareUrl = `https://www.websap.site/api/share?company=${companyId}&image=${encodeURIComponent(imagePath)}`;
     const textoParaCompartir = `${customMessage} ${shareUrl}`;
     
     const encodedMessage = encodeURIComponent(textoParaCompartir);
