@@ -36,8 +36,9 @@ export default function AdminShareMenuPage() {
   useEffect(() => {
     const companyId = currentUser?.companyId;
     
+    // CORRECCIÓN: La URL de producción ahora incluye 'www.' por defecto.
     const currentBaseUrl = process.env.NODE_ENV === 'production' 
-      ? (process.env.NEXT_PUBLIC_BASE_URL || 'https://websap.site')
+      ? (process.env.NEXT_PUBLIC_BASE_URL || 'https://www.websap.site')
       : (window.location.origin);
     setBaseUrl(currentBaseUrl);
     
