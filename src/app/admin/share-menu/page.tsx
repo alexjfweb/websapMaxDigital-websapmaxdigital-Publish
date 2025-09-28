@@ -36,7 +36,6 @@ export default function AdminShareMenuPage() {
   useEffect(() => {
     const companyId = currentUser?.companyId;
     
-    // CORRECCIÓN: La URL de producción ahora incluye 'www.' por defecto.
     const currentBaseUrl = process.env.NODE_ENV === 'production' 
       ? 'https://www.websap.site'
       : (window.location.origin);
@@ -97,10 +96,16 @@ export default function AdminShareMenuPage() {
     }
 
     const companyId = currentUser?.companyId;
-    const imagePath = customImageUrl.split('/').pop();
     
-    // APUNTAR A LA NUEVA RUTA DE API
-    const shareUrl = `${baseUrl}/api/share?company=${companyId}&image=${encodeURIComponent(imagePath || '')}`;
+    // CORRECCIÓN: Extraer solo el nombre del archivo de la URL completa.
+    const imagePath = customImageUrl.split('/').pop()?.split('?')[0] || '';
+
+    if (!imagePath) {
+      toast({ title: 'Error de Imagen', description: 'La URL de la imagen no es válida.', variant: 'destructive' });
+      return;
+    }
+    
+    const shareUrl = `${baseUrl}/api/share?company=${companyId}&image=${encodeURIComponent(imagePath)}`;
     const textoParaCompartir = `${customMessage} ${shareUrl}`;
     
     const encodedMessage = encodeURIComponent(textoParaCompartir);
@@ -157,8 +162,6 @@ export default function AdminShareMenuPage() {
         setCustomImageUrl(finalImageUrl);
         setImageFile(null);
       } else if (!imagePreview && customImageUrl) {
-        // Si la vista previa se eliminó (imagePreview es null) pero aún hay una URL guardada, la borramos.
-        // También borraremos la imagen de storage si es necesario (asumimos que el servicio lo maneja)
         await storageService.deleteFile(customImageUrl);
         finalImageUrl = '';
       }

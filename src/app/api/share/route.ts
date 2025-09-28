@@ -6,7 +6,10 @@ import { doc, getDoc } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import { firebaseConfig } from '@/lib/firebase-config';
 
+const BUCKET_NAME = 'websapmax-images';
+
 function escapeHtml(text: string) {
+    if (!text) return '';
     return text
          .replace(/&/g, "&amp;")
          .replace(/</g, "&lt;")
@@ -19,10 +22,11 @@ function escapeHtml(text: string) {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const companyId = searchParams.get('company');
-  const imagePath = searchParams.get('image');
+  const imagePath = searchParams.get('image'); // Esto ahora es solo el nombre del archivo
 
-  if (!companyId || !imagePath) {
-    return new NextResponse('Faltan parámetros: company e image son requeridos.', { status: 400 });
+  // CORRECCIÓN: Si faltan parámetros, devolver un error claro en lugar de fallar silenciosamente.
+  if (!companyId) {
+    return new NextResponse('Falta el parámetro "company".', { status: 400 });
   }
 
   // 1. Obtener la información de la compañía desde Firestore
@@ -42,10 +46,12 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching company data:', error);
   }
-
-  // 2. Construir las URLs necesarias
-  // **CORRECCIÓN**: La URL de la imagen ahora apunta a nuestro propio proxy de API.
-  const imageUrl = `https://www.websap.site/api/proxy-image/share-images/${companyId}/${decodeURIComponent(imagePath)}`;
+  
+  // CORRECCIÓN: Construir la URL de la imagen para el proxy y la URL canónica del menú.
+  // La URL del proxy es relativa al dominio principal.
+  const imageUrl = imagePath 
+    ? `https://www.websap.site/api/proxy-image/share-images/${companyId}/${decodeURIComponent(imagePath)}` 
+    : '';
   const menuUrl = `https://www.websap.site/menu/${companyId}`;
 
   // 3. Generar el HTML con todas las metaetiquetas necesarias
@@ -63,8 +69,8 @@ export async function GET(request: NextRequest) {
         <!-- Meta tags Open Graph para WhatsApp/Facebook -->
         <meta property="og:title" content="${escapeHtml(companyName)}" />
         <meta property="og:description" content="${escapeHtml(companyDescription)}" />
-        <meta property="og:image" content="${imageUrl}" />
-        <meta property="og:image:secure_url" content="${imageUrl}" />
+        ${imageUrl ? `<meta property="og:image" content="${imageUrl}" />` : ''}
+        ${imageUrl ? `<meta property="og:image:secure_url" content="${imageUrl}" />` : ''}
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:image:type" content="image/jpeg" />
@@ -78,8 +84,8 @@ export async function GET(request: NextRequest) {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="${escapeHtml(companyName)}" />
         <meta name="twitter:description" content="${escapeHtml(companyDescription)}" />
-        <meta name="twitter:image" content="${imageUrl}" />
-        <meta name="twitter:image:alt" content="Vista previa del menú de ${escapeHtml(companyName)}" />
+        ${imageUrl ? `<meta name="twitter:image" content="${imageUrl}" />` : ''}
+        ${imageUrl ? `<meta name="twitter:image:alt" content="Vista previa del menú de ${escapeHtml(companyName)}" />` : ''}
         
         <!-- Redirección con meta refresh. Esto se ejecutará después de que el rastreador lea las etiquetas. -->
         <meta http-equiv="refresh" content="0; url=${menuUrl}" />
