@@ -38,7 +38,7 @@ export default function AdminShareMenuPage() {
     
     // CORRECCIÓN: La URL de producción ahora incluye 'www.' por defecto.
     const currentBaseUrl = process.env.NODE_ENV === 'production' 
-      ? (process.env.NEXT_PUBLIC_BASE_URL || 'https://www.websap.site')
+      ? 'https://www.websap.site'
       : (window.location.origin);
     setBaseUrl(currentBaseUrl);
     
@@ -97,10 +97,10 @@ export default function AdminShareMenuPage() {
     }
 
     const companyId = currentUser?.companyId;
-    const imagePath = customImageUrl.replace(`https://storage.googleapis.com/websapmax-images/share-images/${companyId}/`, '');
+    const imagePath = customImageUrl.split('/').pop();
     
     // APUNTAR A LA NUEVA RUTA DE API
-    const shareUrl = `${baseUrl}/api/share?company=${companyId}&image=${encodeURIComponent(imagePath)}`;
+    const shareUrl = `${baseUrl}/api/share?company=${companyId}&image=${encodeURIComponent(imagePath || '')}`;
     const textoParaCompartir = `${customMessage} ${shareUrl}`;
     
     const encodedMessage = encodeURIComponent(textoParaCompartir);
