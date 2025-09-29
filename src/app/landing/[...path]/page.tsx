@@ -3,13 +3,14 @@ import { Metadata } from 'next';
 import { doc, getDoc } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import { notFound } from 'next/navigation';
-import {firebaseConfig} from '@/lib/firebase-config';
+import Image from 'next/image';
 
 type Props = {
   params: { path: string[] };
 };
 
-// Función para escapar texto HTML y evitar inyección de código
+const BUCKET_NAME = 'websapmax-images';
+
 function escapeHtml(text: string) {
     if (!text) return '';
     return text
@@ -40,16 +41,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       if (companySnap.exists()) {
           const companyData = companySnap.data();
           companyName = companyData.name || companyName;
-          companyDescription = companyData.customShareMessage || companyDescription;
-          // Construir la URL del proxy si hay una imagen
-          if(imageName) {
-            finalImageUrl = `https://www.websap.site/api/proxy-image/share-images/${companyId}/${decodeURIComponent(imageName)}`;
-          } else if (companyData.customShareImageUrl) {
-            // Fallback a la imagen guardada en la compañía si no se pasa por URL
-            const storedImageName = companyData.customShareImageUrl.split('/').pop()?.split('?')[0];
-            if (storedImageName) {
-                finalImageUrl = `https://www.websap.site/api/proxy-image/share-images/${companyId}/${decodeURIComponent(storedImageName)}`;
-            }
+          companyDescription = companyData.customShareMessage || companyData.description || companyDescription;
+          
+          const effectiveImageName = imageName || companyData.customShareImageUrl?.split('/').pop()?.split('?')[0];
+          
+          if (effectiveImageName) {
+            finalImageUrl = `https://storage.googleapis.com/${BUCKET_NAME}/share-images/${companyId}/${decodeURIComponent(effectiveImageName)}`;
           }
       }
   } catch (e) {
@@ -69,8 +66,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: 'website',
       siteName: 'WebSapMax',
       locale: 'es_ES',
-      // @ts-ignore - fb:app_id is a valid property for OpenGraph
-      'fb:app_id': firebaseConfig.appId,
     },
     twitter: {
       card: 'summary_large_image',
@@ -84,7 +79,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function LandingSharePage({ params }: Props) {
   const pathParts = params.path;
 
-  // Validamos que la URL tenga la estructura correcta
   if (pathParts.length < 2 || pathParts[0] !== 'restaurant') {
     return notFound();
   }
@@ -99,13 +93,11 @@ export default async function LandingSharePage({ params }: Props) {
   }
 
   const companyData = companySnap.data();
-  // La URL de la imagen debe ser la de la vista previa, usando el proxy
   const imageName = pathParts.length > 2 ? pathParts[2] : companyData.customShareImageUrl?.split('/').pop()?.split('?')[0];
   const imageUrl = imageName
-    ? `https://www.websap.site/api/proxy-image/share-images/${companyId}/${decodeURIComponent(imageName)}`
+    ? `https://storage.googleapis.com/${BUCKET_NAME}/share-images/${companyId}/${decodeURIComponent(imageName)}`
     : companyData.logoUrl || "https://placehold.co/1200x630.png?text=WebSapMax";
 
-  // CORRECCIÓN: La URL del menú debe usar el dominio de producción con 'www'
   const menuUrl = `https://www.websap.site/menu/${companyId}`;
   
   return (
@@ -114,10 +106,12 @@ export default async function LandingSharePage({ params }: Props) {
             className="w-full max-w-2xl mx-auto rounded-lg shadow-2xl overflow-hidden bg-white"
         >
             <div className="relative w-full aspect-video">
-                 <img 
+                 <Image 
                     src={imageUrl} 
                     alt={companyData.name || 'Vista previa del menú'}
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
+                    unoptimized
                 />
             </div>
             <div className="p-8 text-center">
@@ -137,5 +131,3 @@ export default async function LandingSharePage({ params }: Props) {
     </div>
   );
 }
-
-    

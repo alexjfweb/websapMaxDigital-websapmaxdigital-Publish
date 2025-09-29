@@ -35,7 +35,6 @@ export default function AdminShareMenuPage() {
   useEffect(() => {
     const companyId = currentUser?.companyId;
     
-    // CORRECCIÓN: La URL base para el menú SIEMPRE debe ser la de producción
     const prodBaseUrl = 'https://www.websap.site';
     
     if (companyId) {
@@ -84,29 +83,21 @@ export default function AdminShareMenuPage() {
 
   const handleShareWithPreview = () => {
     const companyId = currentUser?.companyId;
-    if (!customImageUrl || !companyId) {
+    if (!companyId) {
       toast({
         title: "Faltan datos",
-        description: "Por favor, sube una imagen y asegúrate de que la compañía esté configurada.",
+        description: "No se ha podido identificar la compañía. Por favor, recarga la página.",
         variant: "destructive"
       });
       return;
     }
   
-    // Extraer solo el nombre del archivo de la URL completa
-    // Ejemplo URL: https://storage.googleapis.com/bucket/folder/image.jpg
-    // Resultado: image.jpg
-    const imageFileName = customImageUrl.split('/').pop()?.split('?')[0];
-    if (!imageFileName) {
-        toast({ title: "Error", description: "La URL de la imagen no es válida.", variant: "destructive" });
-        return;
-    }
+    // Extraer solo el nombre del archivo de la URL completa.
+    const imageFileName = customImageUrl ? customImageUrl.split('/').pop()?.split('?')[0] : '';
+    
+    // Construir la URL de la página de aterrizaje.
+    const shareUrl = `https://www.websap.site/landing/restaurant/${companyId}/${imageFileName ? encodeURIComponent(imageFileName) : ''}`;
 
-    // CORRECCIÓN: La URL debe apuntar a la nueva página de aterrizaje /landing/restaurant/...
-    const shareUrl = `https://www.websap.site/landing/restaurant/${companyId}/${encodeURIComponent(imageFileName)}`;
-
-    // El mensaje que se envía por WhatsApp ahora solo contiene la URL de aterrizaje.
-    // La página de aterrizaje se encargará de la redirección y los metadatos.
     const textoParaCompartir = `${customMessage}\n${shareUrl}`;
     
     const encodedMessage = encodeURIComponent(textoParaCompartir);
@@ -159,7 +150,6 @@ export default function AdminShareMenuPage() {
 
       if (imageFile) {
         toast({ title: "Subiendo imagen...", description: "Por favor espera." });
-        // Asegúrate de que la ruta de la imagen sea única y fácil de encontrar
         finalImageUrl = await storageService.compressAndUploadFile(imageFile, `share-images/${currentUser.companyId}`);
         setCustomImageUrl(finalImageUrl);
         setImageFile(null);
@@ -258,21 +248,9 @@ export default function AdminShareMenuPage() {
                       </div>
                   )}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Sube una imagen para que aparezca en la vista previa al compartir el enlace.</p>
+              <p className="text-xs text-muted-foreground mt-1">Sube una imagen (1200x630px recomendado) para que aparezca en la vista previa al compartir el enlace.</p>
             </div>
             
-            {customImageUrl && (
-              <div>
-                <Label>URL de la Imagen (para vista previa)</Label>
-                <div className="flex items-center space-x-2">
-                  <Input type="text" value={customImageUrl} readOnly className="bg-muted" />
-                  <Button variant="outline" size="icon" onClick={() => handleCopyToClipboard(customImageUrl, 'URL de la imagen copiada.')}>
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-
             <Button onClick={handleSaveConfig} disabled={isSaving}>
               {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
               {isSaving ? 'Guardando...' : 'Guardar Cambios'}
@@ -342,5 +320,3 @@ export default function AdminShareMenuPage() {
     </>
   );
 }
-
-    
