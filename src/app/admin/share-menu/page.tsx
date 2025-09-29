@@ -92,7 +92,7 @@ export default function AdminShareMenuPage() {
       return;
     }
   
-    // SOLUCIÓN: Usar una URL corta y limpia, sin el nombre de la imagen.
+    // CORRECCIÓN: Usar la URL de la landing page simplificada.
     const shareUrl = `https://www.websap.site/landing/restaurant/${companyId}`;
 
     const textoParaCompartir = `${customMessage}\n${shareUrl}`;
@@ -151,7 +151,10 @@ export default function AdminShareMenuPage() {
         setCustomImageUrl(finalImageUrl);
         setImageFile(null);
       } else if (!imagePreview && customImageUrl) {
-        await storageService.deleteFile(customImageUrl);
+        // CORRECCIÓN LÓGICA: Solo se debe eliminar si existía una URL previa
+        if (customImageUrl) {
+            await storageService.deleteFile(customImageUrl);
+        }
         finalImageUrl = '';
       }
 
