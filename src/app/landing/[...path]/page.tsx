@@ -43,9 +43,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           companyName = companyData.name || companyName;
           companyDescription = companyData.customShareMessage || companyData.description || companyDescription;
           
+          // Usa la imagen de la URL o la imagen custom de la compañía como fallback
           const effectiveImageName = imageName || companyData.customShareImageUrl?.split('/').pop()?.split('?')[0];
           
           if (effectiveImageName) {
+            // Apunta directamente a la URL de Google Cloud Storage
             finalImageUrl = `https://storage.googleapis.com/${BUCKET_NAME}/share-images/${companyId}/${decodeURIComponent(effectiveImageName)}`;
           }
       }
@@ -76,6 +78,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+// Este es el componente de la página que se muestra al usuario.
+// Su función principal es redirigir al menú después de que el rastreador ha leído los metadatos.
 export default async function LandingSharePage({ params }: Props) {
   const pathParts = params.path;
 
