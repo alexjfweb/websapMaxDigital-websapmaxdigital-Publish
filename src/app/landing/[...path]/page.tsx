@@ -29,8 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const companyId = pathParts[1];
-  const imageName = pathParts.length > 2 ? pathParts[2] : null;
-
+  
   let companyName = "Menú Digital";
   let companyDescription = "¡Haz clic para ver nuestras delicias!";
   let finalImageUrl: string | null = null;
@@ -38,21 +37,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
       const db = getDb();
       const companySnap = await getDoc(doc(db, 'companies', companyId));
+      
       if (companySnap.exists()) {
           const companyData = companySnap.data();
           companyName = companyData.name || companyName;
           companyDescription = companyData.customShareMessage || companyData.description || companyDescription;
           
-          const effectiveImageName = imageName || companyData.customShareImageUrl?.split('/').pop()?.split('?')[0];
-          
-          if (effectiveImageName) {
-            finalImageUrl = `https://storage.googleapis.com/${BUCKET_NAME}/share-images/${companyId}/${decodeURIComponent(effectiveImageName)}`;
-          } else {
-            finalImageUrl = companyData.logoUrl;
-          }
+          // SOLUCIÓN: Buscar la imagen personalizada guardada, sino el logo, sino el placeholder.
+          finalImageUrl = companyData.customShareImageUrl || companyData.logoUrl || `https://placehold.co/1200x630.png?text=${encodeURIComponent(companyName)}`;
+
+      } else {
+        // Si no existe la compañía, usa el placeholder como fallback
+        finalImageUrl = "https://placehold.co/1200x630.png?text=WebSapMax";
       }
   } catch (e) {
       console.error("Error fetching metadata:", e);
+      // En caso de error, usa el placeholder como fallback
+      finalImageUrl = "https://placehold.co/1200x630.png?text=Error";
   }
   
   const menuUrl = `https://www.websap.site/menu/${companyId}`;
@@ -103,10 +104,7 @@ export default async function LandingSharePage({ params }: Props) {
   }
 
   const companyData = companySnap.data();
-  const imageName = pathParts.length > 2 ? pathParts[2] : companyData.customShareImageUrl?.split('/').pop()?.split('?')[0];
-  const imageUrl = imageName
-    ? `https://storage.googleapis.com/${BUCKET_NAME}/share-images/${companyId}/${decodeURIComponent(imageName)}`
-    : companyData.logoUrl || "https://placehold.co/1200x630.png?text=WebSapMax";
+  const imageUrl = companyData.customShareImageUrl || companyData.logoUrl || "https://placehold.co/1200x630.png?text=WebSapMax";
 
   const menuUrl = `https://www.websap.site/menu/${companyId}`;
   
@@ -141,4 +139,3 @@ export default async function LandingSharePage({ params }: Props) {
     </div>
   );
 }
-

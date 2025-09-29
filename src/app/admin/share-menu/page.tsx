@@ -92,11 +92,8 @@ export default function AdminShareMenuPage() {
       return;
     }
   
-    // Extraer solo el nombre del archivo de la URL completa.
-    const imageFileName = customImageUrl ? customImageUrl.split('/').pop()?.split('?')[0] : '';
-    
-    // Construir la URL de la página de aterrizaje.
-    const shareUrl = `https://www.websap.site/landing/restaurant/${companyId}/${imageFileName ? encodeURIComponent(imageFileName) : ''}`;
+    // SOLUCIÓN: Usar una URL corta y limpia, sin el nombre de la imagen.
+    const shareUrl = `https://www.websap.site/landing/restaurant/${companyId}`;
 
     const textoParaCompartir = `${customMessage}\n${shareUrl}`;
     
