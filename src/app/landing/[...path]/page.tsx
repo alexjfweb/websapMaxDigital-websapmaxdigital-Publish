@@ -43,23 +43,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           companyName = companyData.name || companyName;
           companyDescription = companyData.customShareMessage || companyData.description || companyDescription;
           
-          // Usa la imagen de la URL o la imagen custom de la compañía como fallback
           const effectiveImageName = imageName || companyData.customShareImageUrl?.split('/').pop()?.split('?')[0];
           
           if (effectiveImageName) {
-            // Apunta directamente a la URL de Google Cloud Storage
             finalImageUrl = `https://storage.googleapis.com/${BUCKET_NAME}/share-images/${companyId}/${decodeURIComponent(effectiveImageName)}`;
           } else {
-            finalImageUrl = companyData.logoUrl || "https://placehold.co/1200x630.png?text=WebSapMax";
+            finalImageUrl = companyData.logoUrl;
           }
-      } else {
-        // Si no existe la compañía, usa el placeholder como fallback
-        finalImageUrl = "https://placehold.co/1200x630.png?text=WebSapMax";
       }
   } catch (e) {
       console.error("Error fetching metadata:", e);
-      // En caso de error, usa el placeholder como fallback
-      finalImageUrl = "https://placehold.co/1200x630.png?text=WebSapMax";
   }
   
   const menuUrl = `https://www.websap.site/menu/${companyId}`;
@@ -71,7 +64,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: escapeHtml(companyName),
       description: escapeHtml(companyDescription),
       url: menuUrl,
-      images: finalImageUrl ? [finalImageUrl] : ["https://placehold.co/1200x630.png?text=WebSapMax"], // Fallback garantizado
+      images: [{
+        url: finalImageUrl || "https://placehold.co/1200x630.png?text=WebSapMax",
+        width: 1200,
+        height: 630,
+        alt: escapeHtml(companyName)
+      }],
       type: 'website',
       siteName: 'WebSapMax',
       locale: 'es_ES',
@@ -80,7 +78,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: 'summary_large_image',
       title: escapeHtml(companyName),
       description: escapeHtml(companyDescription),
-      images: finalImageUrl ? [finalImageUrl] : ["https://placehold.co/1200x630.png?text=WebSapMax"], // Fallback garantizado
+      images: [finalImageUrl || "https://placehold.co/1200x630.png?text=WebSapMax"],
     },
   };
 }
@@ -143,3 +141,4 @@ export default async function LandingSharePage({ params }: Props) {
     </div>
   );
 }
+
