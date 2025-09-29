@@ -49,10 +49,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           if (effectiveImageName) {
             // Apunta directamente a la URL de Google Cloud Storage
             finalImageUrl = `https://storage.googleapis.com/${BUCKET_NAME}/share-images/${companyId}/${decodeURIComponent(effectiveImageName)}`;
+          } else {
+            finalImageUrl = companyData.logoUrl || "https://placehold.co/1200x630.png?text=WebSapMax";
           }
+      } else {
+        // Si no existe la compañía, usa el placeholder como fallback
+        finalImageUrl = "https://placehold.co/1200x630.png?text=WebSapMax";
       }
   } catch (e) {
       console.error("Error fetching metadata:", e);
+      // En caso de error, usa el placeholder como fallback
+      finalImageUrl = "https://placehold.co/1200x630.png?text=WebSapMax";
   }
   
   const menuUrl = `https://www.websap.site/menu/${companyId}`;
@@ -64,7 +71,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: escapeHtml(companyName),
       description: escapeHtml(companyDescription),
       url: menuUrl,
-      images: finalImageUrl ? [finalImageUrl] : [],
+      images: finalImageUrl ? [finalImageUrl] : ["https://placehold.co/1200x630.png?text=WebSapMax"], // Fallback garantizado
       type: 'website',
       siteName: 'WebSapMax',
       locale: 'es_ES',
@@ -73,10 +80,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: 'summary_large_image',
       title: escapeHtml(companyName),
       description: escapeHtml(companyDescription),
-      images: finalImageUrl ? [finalImageUrl] : [],
+      images: finalImageUrl ? [finalImageUrl] : ["https://placehold.co/1200x630.png?text=WebSapMax"], // Fallback garantizado
     },
   };
 }
+
 
 // Este es el componente de la página que se muestra al usuario.
 // Su función principal es redirigir al menú después de que el rastreador ha leído los metadatos.
