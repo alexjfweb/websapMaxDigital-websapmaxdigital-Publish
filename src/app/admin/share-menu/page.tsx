@@ -4,7 +4,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Copy, Download, Save, MessageSquare, Loader2, UploadCloud, XCircle, Share } from "lucide-react";
+import { Copy, Download, Save, MessageSquare, Loader2, UploadCloud, XCircle, Share, Link as LinkIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import WhatsAppIcon from "@/components/icons/whatsapp-icon";
 import React, { useEffect, useState, ChangeEvent } from 'react';
@@ -23,6 +23,7 @@ export default function AdminShareMenuPage() {
   const { currentUser } = useSession();
 
   const [menuUrl, setMenuUrl] = useState('');
+  const [sharePreviewUrl, setSharePreviewUrl] = useState('');
   const [customMessage, setCustomMessage] = useState('');
   const [customImageUrl, setCustomImageUrl] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -39,6 +40,7 @@ export default function AdminShareMenuPage() {
     
     if (companyId) {
       setMenuUrl(`${prodBaseUrl}/menu/${companyId}`);
+      setSharePreviewUrl(`${prodBaseUrl}/landing/restaurant/${companyId}`);
     }
     
     async function fetchShareConfig() {
@@ -92,9 +94,7 @@ export default function AdminShareMenuPage() {
       return;
     }
   
-    // CORRECCIÓN: Usar la URL de la landing page simplificada.
     const shareUrl = `https://www.websap.site/landing/restaurant/${companyId}`;
-
     const textoParaCompartir = `${customMessage}\n${shareUrl}`;
     
     const encodedMessage = encodeURIComponent(textoParaCompartir);
@@ -147,14 +147,14 @@ export default function AdminShareMenuPage() {
 
       if (imageFile) {
         toast({ title: "Subiendo imagen...", description: "Por favor espera." });
+        if (finalImageUrl) {
+            await storageService.deleteFile(finalImageUrl).catch(e => console.warn("No se pudo eliminar la imagen anterior:", e));
+        }
         finalImageUrl = await storageService.compressAndUploadFile(imageFile, `share-images/${currentUser.companyId}`);
         setCustomImageUrl(finalImageUrl);
         setImageFile(null);
       } else if (!imagePreview && customImageUrl) {
-        // CORRECCIÓN LÓGICA: Solo se debe eliminar si existía una URL previa
-        if (customImageUrl) {
-            await storageService.deleteFile(customImageUrl);
-        }
+        await storageService.deleteFile(customImageUrl);
         finalImageUrl = '';
       }
 
@@ -302,6 +302,32 @@ export default function AdminShareMenuPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Nueva sección para copiar el enlace con vista previa */}
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle>Copiar enlace al portapapeles</CardTitle>
+            <CardDescription>Usa este enlace para compartir tu menú con vista previa en cualquier plataforma.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex items-center space-x-2">
+            <Input 
+              type="text" 
+              value={sharePreviewUrl} 
+              readOnly 
+              className="bg-muted"
+              aria-label="Enlace con vista previa"
+            />
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => handleCopyToClipboard(sharePreviewUrl, 'Enlace con vista previa copiado.')}
+              aria-label="Copiar enlace con vista previa"
+              disabled={!sharePreviewUrl}
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          </CardContent>
+        </Card>
 
         <Card className="shadow-lg">
           <CardHeader>
