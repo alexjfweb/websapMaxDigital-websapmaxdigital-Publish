@@ -94,6 +94,7 @@ export default function AdminShareMenuPage() {
       return;
     }
   
+    // CORRECCIÓN: La URL a compartir es la de la landing, no la de la API.
     const shareUrl = `https://www.websap.site/landing/restaurant/${companyId}`;
     const textoParaCompartir = `${customMessage}\n${shareUrl}`;
     
@@ -147,15 +148,14 @@ export default function AdminShareMenuPage() {
 
       if (imageFile) {
         toast({ title: "Subiendo imagen...", description: "Por favor espera." });
-        if (finalImageUrl) {
-            await storageService.deleteFile(finalImageUrl).catch(e => console.warn("No se pudo eliminar la imagen anterior:", e));
-        }
+        // No eliminamos la imagen anterior aquí por si la subida falla.
+        // La lógica de eliminación debería estar en un backend seguro.
         finalImageUrl = await storageService.compressAndUploadFile(imageFile, `share-images/${currentUser.companyId}`);
         setCustomImageUrl(finalImageUrl);
         setImageFile(null);
       } else if (!imagePreview && customImageUrl) {
-        await storageService.deleteFile(customImageUrl);
-        finalImageUrl = '';
+         console.log("[handleSaveConfig] Se ha solicitado eliminar la imagen. Esta operación debe ser manejada por un endpoint seguro.");
+         finalImageUrl = '';
       }
 
       const configToSave = {
@@ -171,7 +171,17 @@ export default function AdminShareMenuPage() {
 
     } catch (e: any) {
       console.error("Error al guardar:", e);
-      toast({ title: 'Error al Guardar', description: e.message || 'No se pudo guardar la configuración.', variant: 'destructive' });
+      // CORRECCIÓN: Mostrar el mensaje de error específico de facturación.
+      if (e.message?.includes("billing account")) {
+          toast({
+              title: 'Error de Facturación de Proyecto',
+              description: 'La subida de archivos está deshabilitada. Por favor, revisa la cuenta de facturación de tu proyecto en Firebase/Google Cloud.',
+              variant: 'destructive',
+              duration: 10000,
+          });
+      } else {
+          toast({ title: 'Error al Guardar', description: e.message || 'No se pudo guardar la configuración.', variant: 'destructive' });
+      }
     } finally {
       setIsSaving(false);
     }

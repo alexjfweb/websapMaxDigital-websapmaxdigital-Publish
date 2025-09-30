@@ -1,4 +1,3 @@
-
 // src/services/storage-service.ts
 import imageCompression from 'browser-image-compression';
 
@@ -36,6 +35,10 @@ const compressAndUploadFile = async (file: File, path: string): Promise<string> 
     const result = await response.json();
 
     if (!response.ok || !result.success) {
+      // CORRECCIÓN: Detectar el error de facturación específico
+      if (result.error?.includes("billing account") && result.error?.includes("disabled")) {
+          throw new Error("La cuenta de facturación del proyecto está deshabilitada. No se pueden subir archivos.");
+      }
       throw new Error(result.error || 'Error en el servidor al subir la imagen.');
     }
     
@@ -69,6 +72,9 @@ const uploadFile = async (file: File, path: string): Promise<string> => {
 
     const result = await response.json();
     if (!response.ok || !result.success) {
+      if (result.error?.includes("billing account") && result.error?.includes("disabled")) {
+          throw new Error("La cuenta de facturación del proyecto está deshabilitada. No se pueden subir archivos.");
+      }
       throw new Error(result.error || 'Error en el servidor al subir el archivo.');
     }
     return result.url;
