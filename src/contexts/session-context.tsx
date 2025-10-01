@@ -82,7 +82,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   // Redirección del lado del cliente
   useEffect(() => {
     if (!isLoading) {
-      const isPublic = publicRoutes.some(route => pathname === route) || pathname.startsWith('/menu/');
+      // CORRECCIÓN: Añadido pathname.startsWith('/landing/') a la lista de rutas públicas
+      const isPublic = publicRoutes.some(route => pathname === route) || pathname.startsWith('/menu/') || pathname.startsWith('/landing/');
       
       if (!currentUser && !isPublic) {
         router.push('/login');
