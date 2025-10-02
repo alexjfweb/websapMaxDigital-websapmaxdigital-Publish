@@ -21,6 +21,19 @@ function escapeHtml(text: string) {
          .replace(/'/g, "&#039;");
 }
 
+// Función auxiliar para asegurar que la URL de la imagen sea válida
+function ensureValidImageUrl(url: string | null | undefined): string {
+  if (!url) {
+    return "https://placehold.co/1200x630.png?text=WebSapMax";
+  }
+  
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  
+  return "https://placehold.co/1200x630.png?text=WebSapMax";
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const pathParts = params.path;
   
@@ -32,7 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   
   let companyName = "Menú Digital";
   let companyDescription = "¡Haz clic para ver nuestras delicias!";
-  let finalImageUrl: string | null = null;
+  let finalImageUrl: string;
   
   try {
       const db = getDb();
@@ -43,16 +56,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           companyName = companyData.name || companyName;
           companyDescription = companyData.customShareMessage || companyData.description || companyDescription;
           
-          // SOLUCIÓN: Buscar la imagen personalizada guardada, sino el logo, sino el placeholder.
-          finalImageUrl = companyData.customShareImageUrl || companyData.logoUrl || `https://placehold.co/1200x630.png?text=${encodeURIComponent(companyName)}`;
+          const rawImageUrl = companyData.customShareImageUrl || companyData.logoUrl;
+          finalImageUrl = ensureValidImageUrl(rawImageUrl);
+
+          console.log(`[generateMetadata] CompanyId: ${companyId}`);
+          console.log(`[generateMetadata] customShareImageUrl: ${companyData.customShareImageUrl}`);
+          console.log(`[generateMetadata] finalImageUrl: ${finalImageUrl}`);
 
       } else {
-        // Si no existe la compañía, usa el placeholder como fallback
         finalImageUrl = "https://placehold.co/1200x630.png?text=WebSapMax";
+        console.log(`[generateMetadata] Company not found: ${companyId}`);
       }
   } catch (e) {
-      console.error("Error fetching metadata:", e);
-      // En caso de error, usa el placeholder como fallback
+      console.error("[generateMetadata] Error fetching metadata:", e);
       finalImageUrl = "https://placehold.co/1200x630.png?text=Error";
   }
   
@@ -66,10 +82,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: escapeHtml(companyDescription),
       url: menuUrl,
       images: [{
-        url: finalImageUrl || "https://placehold.co/1200x630.png?text=WebSapMax",
+        url: finalImageUrl,
         width: 1200,
         height: 630,
-        alt: escapeHtml(companyName)
+        alt: escapeHtml(companyName),
+        type: 'image/jpeg',
       }],
       type: 'website',
       siteName: 'WebSapMax',
@@ -79,8 +96,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: 'summary_large_image',
       title: escapeHtml(companyName),
       description: escapeHtml(companyDescription),
-      images: [finalImageUrl || "https://placehold.co/1200x630.png?text=WebSapMax"],
+      images: [finalImageUrl],
     },
+    other: {
+      'og:image:width': '1200',
+      'og:image:height': '630',
+    }
   };
 }
 
@@ -104,7 +125,8 @@ export default async function LandingSharePage({ params }: Props) {
   }
 
   const companyData = companySnap.data();
-  const imageUrl = companyData.customShareImageUrl || companyData.logoUrl || "https://placehold.co/1200x630.png?text=WebSapMax";
+  const rawImageUrl = companyData.customShareImageUrl || companyData.logoUrl;
+  const imageUrl = ensureValidImageUrl(rawImageUrl);
 
   const menuUrl = `https://www.websap.site/menu/${companyId}`;
   
