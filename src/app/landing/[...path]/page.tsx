@@ -1,4 +1,5 @@
 
+
 import { Metadata } from 'next';
 import { doc, getDoc } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
@@ -72,7 +73,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       finalImageUrl = "https://placehold.co/1200x630.png?text=Error";
   }
   
-  const menuUrl = `https://www.websap.site/menu/${companyId}`;
+  const landingUrl = `https://www.websap.site/landing/restaurant/${companyId}`;
   
   return {
     title: escapeHtml(companyName),
@@ -80,7 +81,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: escapeHtml(companyName),
       description: escapeHtml(companyDescription),
-      url: menuUrl,
       images: [{
         url: finalImageUrl,
         width: 1200,
