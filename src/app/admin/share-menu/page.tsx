@@ -40,6 +40,7 @@ export default function AdminShareMenuPage() {
     
     if (companyId) {
       setMenuUrl(`${prodBaseUrl}/menu/${companyId}`);
+      // CORRECCIÓN: La URL de vista previa debe ser la de la landing, no la de la API
       setSharePreviewUrl(`${prodBaseUrl}/landing/restaurant/${companyId}`);
     }
     
@@ -84,20 +85,17 @@ export default function AdminShareMenuPage() {
   };
 
   const handleShareWithPreview = () => {
-    const companyId = currentUser?.companyId;
-    if (!companyId) {
+    // CORRECCIÓN: Usar la URL de la landing directamente, que ya está en sharePreviewUrl.
+    if (!sharePreviewUrl) {
       toast({
-        title: "Faltan datos",
-        description: "No se ha podido identificar la compañía. Por favor, recarga la página.",
+        title: "URL no lista",
+        description: "No se ha podido generar la URL para compartir. Por favor, recarga la página.",
         variant: "destructive"
       });
       return;
     }
   
-    // CORRECCIÓN: La URL a compartir es la de la landing, no la de la API.
-    const shareUrl = `https://www.websap.site/landing/restaurant/${companyId}`;
-    const textoParaCompartir = `${customMessage}\n${shareUrl}`;
-    
+    const textoParaCompartir = `${customMessage}\n${sharePreviewUrl}`;
     const encodedMessage = encodeURIComponent(textoParaCompartir);
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank');
@@ -148,8 +146,6 @@ export default function AdminShareMenuPage() {
 
       if (imageFile) {
         toast({ title: "Subiendo imagen...", description: "Por favor espera." });
-        // No eliminamos la imagen anterior aquí por si la subida falla.
-        // La lógica de eliminación debería estar en un backend seguro.
         finalImageUrl = await storageService.compressAndUploadFile(imageFile, `share-images/${currentUser.companyId}`);
         setCustomImageUrl(finalImageUrl);
         setImageFile(null);
@@ -171,7 +167,6 @@ export default function AdminShareMenuPage() {
 
     } catch (e: any) {
       console.error("Error al guardar:", e);
-      // CORRECCIÓN: Mostrar el mensaje de error específico de facturación.
       if (e.message?.includes("billing account")) {
           toast({
               title: 'Error de Facturación de Proyecto',
@@ -313,7 +308,6 @@ export default function AdminShareMenuPage() {
           </Card>
         </div>
 
-        {/* Nueva sección para copiar el enlace con vista previa */}
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle>Copiar enlace al portapapeles</CardTitle>
