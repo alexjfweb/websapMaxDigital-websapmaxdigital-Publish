@@ -23,6 +23,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import type { Company } from '@/types';
 import { useNavigationConfig } from '@/hooks/use-navigation-config';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 
 
 function AdminLoader() {
@@ -39,7 +40,7 @@ function AdminLoader() {
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const { currentUser, isLoading: isSessionLoading, logout } = useSession();
     const { navConfig, isLoading: isNavLoading } = useNavigationConfig();
-    const { setOpenMobile } = useSidebar();
+    const { openMobile, setOpenMobile } = useSidebar();
     const router = useRouter();
     const [companyProfile, setCompanyProfile] = React.useState<Partial<Company>>({});
 
@@ -85,7 +86,38 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     return (
         <>
-            <Sidebar collapsible="icon" variant="sidebar" side="left">
+            <div className="md:hidden">
+              <Sheet open={openMobile} onOpenChange={setOpenMobile}>
+                <SheetContent side="left" className="w-64 p-0">
+                  <div className="flex h-full flex-col">
+                    <SidebarHeader className="p-4 flex flex-col items-center gap-2 border-b">
+                      <Link href="/" className="flex items-center gap-2 font-semibold text-lg text-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-primary">
+                          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                        </svg>
+                        <span>websapMax</span>
+                      </Link>
+                    </SidebarHeader>
+                    <SidebarContent className="flex-grow overflow-y-auto">
+                      <NavigationMenu
+                        role={currentUser.role}
+                        items={navConfig.sidebarItems}
+                        isLoading={isNavLoading}
+                        onLinkClick={handleMobileLinkClick}
+                      />
+                    </SidebarContent>
+                    <SidebarFooter className="p-4 mt-auto border-t">
+                      <Button variant="ghost" onClick={handleLogout} className="w-full justify-start gap-2">
+                        <LogOut />
+                        <span>Cerrar sesión</span>
+                      </Button>
+                    </SidebarFooter>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
+
+            <Sidebar collapsible="icon" variant="sidebar" side="left" className="hidden md:flex">
                 <SidebarHeader className="p-4 flex flex-col items-center gap-2">
                 <Link href="/" className="flex items-center gap-2 font-semibold text-lg text-primary">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-primary">
@@ -107,7 +139,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     role={currentUser.role} 
                     items={navConfig.sidebarItems} 
                     isLoading={isNavLoading} 
-                    onLinkClick={handleMobileLinkClick} 
                   />
                 </SidebarContent>
                 <SidebarFooter className="p-2 mt-auto">
@@ -148,10 +179,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 </DropdownMenu>
                 </SidebarFooter>
             </Sidebar>
-            <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background pb-20 md:pb-8">
-              {children}
-            </main>
-            <FooterNavigation role={currentUser.role} />
+            <div className="flex flex-col w-full min-h-screen">
+                <AppHeader />
+                <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background pb-20 md:pb-8">
+                {children}
+                </main>
+                <FooterNavigation role={currentUser.role} />
+            </div>
         </>
     );
 }

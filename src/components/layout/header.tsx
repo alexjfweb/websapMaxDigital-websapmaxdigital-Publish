@@ -1,15 +1,17 @@
+
 "use client";
 
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Bell, LogIn as LogInIcon, Globe } from 'lucide-react';
+import { Bell, LogIn as LogInIcon, Globe, Menu } from 'lucide-react';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { useSession } from '@/contexts/session-context';
 
 export default function AppHeader() {
   const { currentUser } = useSession();
+  const { toggleSidebar } = useSidebar();
   
   const languages = [
     { code: 'en', name: 'English', flag: '🇬🇧' },
@@ -18,9 +20,17 @@ export default function AppHeader() {
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 sm:px-6 shadow-sm">
-      {/* El trigger del Sidebar solo se muestra si hay un usuario logueado */}
+      
       {currentUser && (
-          <SidebarTrigger />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={toggleSidebar}
+            aria-label="Abrir menú"
+          >
+            <Menu className="h-6 w-6" />
+          </Button>
       )}
       
       <div className="flex-1">
