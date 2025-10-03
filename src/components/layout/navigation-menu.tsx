@@ -8,6 +8,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  useSidebar, // Importar el hook useSidebar
 } from '@/components/ui/sidebar';
 import {
   ShoppingBag, Users, Settings, ClipboardList, BookUser, ShieldCheck, LayoutDashboard, Utensils,
@@ -59,11 +60,17 @@ interface NavigationMenuProps {
   role: string;
   items: NavItemConfig[];
   isLoading: boolean;
-  onLinkClick?: () => void;
 }
 
-export default function NavigationMenu({ role, items, isLoading, onLinkClick }: NavigationMenuProps) {
+export default function NavigationMenu({ role, items, isLoading }: NavigationMenuProps) {
   const pathname = usePathname();
+  // Obtener el estado y la función para controlar el menú móvil directamente desde el contexto
+  const { setOpenMobile } = useSidebar();
+
+  const handleLinkClick = () => {
+    // Llamar a la función para cerrar el menú móvil
+    setOpenMobile(false);
+  };
 
   if (isLoading) {
     return (
@@ -95,7 +102,8 @@ export default function NavigationMenu({ role, items, isLoading, onLinkClick }: 
             
             return (
                 <SidebarMenuItem key={item.id}>
-                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.tooltip} onClick={onLinkClick}>
+                    {/* El onClick ahora llama a la función de cierre del menú */}
+                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.tooltip} onClick={handleLinkClick}>
                     <Link href={item.href}>
                         <IconComponent />
                         <span>{item.label}</span>
