@@ -65,10 +65,14 @@ async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<Av
             const allConfig = docSnap.data();
             
             // CORRECCIÓN: Lógica de parsing del slug robusta.
-            const rawPlanKey = (plan.slug.split('-')[1] || 'bsico').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const rawPlanKey = (plan.slug.split('-')[1] || 'bsico');
 
-            // CORRECCIÓN: Lógica de búsqueda robusta que contempla inconsistencias.
-            const planConfig = allConfig[rawPlanKey] || allConfig['estandar'] || allConfig['estándar'] || allConfig['basico'] || allConfig['básico'];
+            // CORRECCIÓN: Lógica de búsqueda en cascada que contempla inconsistencias.
+            // Intenta con el nombre directo, luego las variantes normalizadas y con acento.
+            const planConfig = allConfig[rawPlanKey] || // Intenta 'bsico' o 'estndar'
+                               allConfig[rawPlanKey.normalize("NFD").replace(/[\u0300-\u036f]/g, "")] || // Intenta 'basico' o 'estandar'
+                               allConfig['básico'] || // Fallback a 'básico'
+                               allConfig['estándar']; // Fallback a 'estándar'
 
             if (!planConfig) {
                  console.warn(`No payment config found for plan key: ${rawPlanKey}`);
