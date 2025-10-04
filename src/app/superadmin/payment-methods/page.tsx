@@ -185,37 +185,36 @@ export default function SuperAdminPaymentMethodsPage() {
 
     const handleConfigChange = (plan: PlanName, method: keyof PlanPaymentConfig, newValues: Partial<PaymentMethodConfig>) => {
         setConfig(prev => {
-            const newConfig = { ...prev };
-    
+            const newConfig = JSON.parse(JSON.stringify(prev)); // Deep copy
+
+            // Si se modifica Nequi, sincronizar los datos (excepto 'enabled') en todos los planes.
             if (method === 'nequiQr') {
-                // Sincronizar Nequi en todos los planes
+                const { enabled, ...dataToSync } = newValues;
+
                 (Object.keys(newConfig) as PlanName[]).forEach(p => {
                     if (newConfig[p][method]) {
-                        newConfig[p] = {
-                            ...newConfig[p],
-                            [method]: {
-                                ...newConfig[p][method],
-                                ...newValues
-                            }
-                        };
+                        // Sincronizar solo los datos, no el estado de activación
+                        newConfig[p][method] = { ...newConfig[p][method], ...dataToSync };
                     }
                 });
+
+                // Actualizar el estado 'enabled' solo para el plan activo
+                if (newValues.enabled !== undefined) {
+                    newConfig[plan][method]!.enabled = newValues.enabled;
+                }
             } else {
-                // Actualizar solo el plan activo para otros métodos
-                const planMethods = newConfig[plan] || {};
-                const methodConfig = planMethods[method] || {};
-                newConfig[plan] = {
-                    ...planMethods,
-                    [method]: { ...methodConfig, ...newValues },
-                };
+                // Para otros métodos, actualizar solo el plan activo
+                const existingMethodConfig = newConfig[plan][method] || { enabled: false, instructions: '' };
+                newConfig[plan][method] = { ...existingMethodConfig, ...newValues };
             }
+
             return newConfig;
         });
     };
   
   const handleSave = async () => {
     setIsSaving(true);
-    let updatedConfig = { ...config };
+    let updatedConfig = JSON.parse(JSON.stringify(config)); // Deep copy
 
     try {
         for (const plan of Object.keys(qrFiles) as PlanName[]) {
@@ -370,8 +369,8 @@ export default function SuperAdminPaymentMethodsPage() {
                             <div>
                                 <Label>Número de cuenta asociado *</Label>
                                 <Input
-                                    value={currentPlanConfig.nequiQr?.accountNumber || ''}
-                                    onChange={(e) => handleConfigChange(activePlan, 'nequiQr', { accountNumber: e.target.value.replace(/\\D/g, '') })}
+                                    value={config.básico.nequiQr?.accountNumber || ''}
+                                    onChange={(e) => handleConfigChange(activePlan, 'nequiQr', { accountNumber: e.target.value.replace(/\D/g, '') })}
                                     placeholder="3001234567"
                                 />
                             </div>
@@ -379,7 +378,7 @@ export default function SuperAdminPaymentMethodsPage() {
                         <div className="text-center">
                             <Label>Vista Previa QR</Label>
                             <Image 
-                                src={qrPreviews[activePlan]?.nequiQr || currentPlanConfig.nequiQr?.qrImageUrl || 'https://placehold.co/128x128.png?text=QR'} 
+                                src={qrPreviews.básico?.nequiQr || config.básico.nequiQr?.qrImageUrl || 'https://placehold.co/128x128.png?text=QR'} 
                                 alt="Vista previa QR Nequi" 
                                 width={128}
                                 height={128}
@@ -391,14 +390,14 @@ export default function SuperAdminPaymentMethodsPage() {
                         <div>
                             <Label>Nombre del titular *</Label>
                             <Input
-                                value={currentPlanConfig.nequiQr?.accountHolder || ''}
+                                value={config.básico.nequiQr?.accountHolder || ''}
                                 onChange={(e) => handleConfigChange(activePlan, 'nequiQr', { accountHolder: e.target.value })}
                             />
                         </div>
                         <div>
                             <Label>Documento de identidad *</Label>
                             <Input
-                                value={currentPlanConfig.nequiQr?.identityDocument || ''}
+                                value={config.básico.nequiQr?.identityDocument || ''}
                                 onChange={(e) => handleConfigChange(activePlan, 'nequiQr', { identityDocument: e.target.value })}
                             />
                         </div>
@@ -434,7 +433,7 @@ export default function SuperAdminPaymentMethodsPage() {
                                 <Label>Número de cuenta asociado *</Label>
                                 <Input
                                     value={currentPlanConfig.bancolombiaQr?.accountNumber || ''}
-                                    onChange={(e) => handleConfigChange(activePlan, 'bancolombiaQr', { accountNumber: e.target.value.replace(/\\D/g, '') })}
+                                    onChange={(e) => handleConfigChange(activePlan, 'bancolombiaQr', { accountNumber: e.target.value.replace(/\D/g, '') })}
                                     placeholder="1234567890"
                                 />
                             </div>
@@ -542,5 +541,3 @@ export default function SuperAdminPaymentMethodsPage() {
     </div>
   );
 }
-
-    
