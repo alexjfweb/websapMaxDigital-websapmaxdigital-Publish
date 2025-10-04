@@ -542,5 +542,3 @@ export default function SuperAdminPaymentMethodsPage() {
     </div>
   );
 }
-
-  
