@@ -185,6 +185,18 @@ export default function SuperAdminPaymentMethodsPage() {
 
   const handleConfigChange = (plan: PlanName, method: keyof PlanPaymentConfig, newValues: Partial<PaymentMethodConfig>) => {
     setConfig(prev => {
+        // Si el método es Nequi, aplica los cambios a todos los planes
+        if (method === 'nequiQr') {
+            const newConfig = { ...prev };
+            for (const p of Object.keys(newConfig) as PlanName[]) {
+                if (newConfig[p][method]) {
+                    newConfig[p][method] = { ...newConfig[p][method], ...newValues };
+                }
+            }
+            return newConfig;
+        }
+
+        // Para otros métodos, solo aplica al plan actual
         const planMethods = prev[plan] || {};
         const methodConfig = planMethods[method] || {};
         return {
@@ -213,16 +225,17 @@ export default function SuperAdminPaymentMethodsPage() {
                         await storageService.deleteFile(currentImageUrl).catch(e => console.warn("Could not delete old file, it might not exist", e));
                     }
                     const newUrl = await storageService.compressAndUploadFile(file, `payment_qrs/${plan}/${method}`);
-                    updatedConfig = {
-                        ...updatedConfig,
-                        [plan]: {
-                            ...updatedConfig[plan],
-                            [method]: {
-                                ...updatedConfig[plan][method],
-                                qrImageUrl: newUrl
-                            }
+                    
+                    // Si es Nequi, actualizar la URL en todos los planes
+                    if (method === 'nequiQr') {
+                        for (const p of Object.keys(updatedConfig) as PlanName[]) {
+                           if(updatedConfig[p][method]) {
+                                updatedConfig[p][method]!.qrImageUrl = newUrl;
+                           }
                         }
-                    };
+                    } else {
+                        updatedConfig[plan][method]!.qrImageUrl = newUrl;
+                    }
                 }
             }
         }
@@ -256,19 +269,33 @@ export default function SuperAdminPaymentMethodsPage() {
         return;
       }
       
-      // Guardar el archivo para subirlo después
-      setQrFiles(prev => ({
-        ...prev,
-        [plan]: { ...prev[plan], [method]: file }
-      }));
-      
-      // Mostrar la vista previa
       const reader = new FileReader();
       reader.onloadend = () => {
-        setQrPreviews(prev => ({
-            ...prev,
-            [plan]: { ...prev[plan], [method]: reader.result as string }
-        }));
+        const previewUrl = reader.result as string;
+
+        // Si es Nequi, actualiza el archivo y la vista previa para todos los planes
+        if (method === 'nequiQr') {
+            setQrFiles(prev => ({
+                básico: { ...prev.básico, nequiQr: file },
+                estándar: { ...prev.estándar, nequiQr: file },
+                premium: { ...prev.premium, nequiQr: file },
+            }));
+            setQrPreviews(prev => ({
+                básico: { ...prev.básico, nequiQr: previewUrl },
+                estándar: { ...prev.estándar, nequiQr: previewUrl },
+                premium: { ...prev.premium, nequiQr: previewUrl },
+            }));
+        } else {
+            // Para otros métodos (Bancolombia), solo para el plan activo
+            setQrFiles(prev => ({
+                ...prev,
+                [plan]: { ...prev[plan], [method]: file }
+            }));
+            setQrPreviews(prev => ({
+                ...prev,
+                [plan]: { ...prev[plan], [method]: previewUrl }
+            }));
+        }
       };
       reader.readAsDataURL(file);
     }
