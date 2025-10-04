@@ -199,7 +199,7 @@ export default function SuperAdminPaymentMethodsPage() {
                 });
 
                 // Actualizar el estado 'enabled' solo para el plan activo
-                if (newValues.enabled !== undefined) {
+                if (newValues.enabled !== undefined && newConfig[plan][method]) {
                     newConfig[plan][method]!.enabled = newValues.enabled;
                 }
             } else {
@@ -237,6 +237,7 @@ export default function SuperAdminPaymentMethodsPage() {
                            }
                         }
                     } else {
+                        // Si es Bancolombia, solo en el plan actual
                         updatedConfig[plan][method]!.qrImageUrl = newUrl;
                     }
                 }
@@ -378,7 +379,7 @@ export default function SuperAdminPaymentMethodsPage() {
                         <div className="text-center">
                             <Label>Vista Previa QR</Label>
                             <Image 
-                                src={qrPreviews.básico?.nequiQr || config.básico.nequiQr?.qrImageUrl || 'https://placehold.co/128x128.png?text=QR'} 
+                                src={qrPreviews[activePlan]?.nequiQr || config[activePlan].nequiQr?.qrImageUrl || config.básico.nequiQr?.qrImageUrl || 'https://placehold.co/128x128.png?text=QR'} 
                                 alt="Vista previa QR Nequi" 
                                 width={128}
                                 height={128}
@@ -541,3 +542,5 @@ export default function SuperAdminPaymentMethodsPage() {
     </div>
   );
 }
+
+  
