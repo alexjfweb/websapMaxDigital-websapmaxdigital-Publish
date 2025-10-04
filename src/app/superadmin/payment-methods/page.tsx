@@ -183,31 +183,35 @@ export default function SuperAdminPaymentMethodsPage() {
   }, [toast]);
 
 
-  const handleConfigChange = (plan: PlanName, method: keyof PlanPaymentConfig, newValues: Partial<PaymentMethodConfig>) => {
-    setConfig(prev => {
-        // Si el método es Nequi, aplica los cambios a todos los planes
-        if (method === 'nequiQr') {
+    const handleConfigChange = (plan: PlanName, method: keyof PlanPaymentConfig, newValues: Partial<PaymentMethodConfig>) => {
+        setConfig(prev => {
             const newConfig = { ...prev };
-            for (const p of Object.keys(newConfig) as PlanName[]) {
-                if (newConfig[p][method]) {
-                    newConfig[p][method] = { ...newConfig[p][method], ...newValues };
-                }
+    
+            if (method === 'nequiQr') {
+                // Sincronizar Nequi en todos los planes
+                (Object.keys(newConfig) as PlanName[]).forEach(p => {
+                    if (newConfig[p][method]) {
+                        newConfig[p] = {
+                            ...newConfig[p],
+                            [method]: {
+                                ...newConfig[p][method],
+                                ...newValues
+                            }
+                        };
+                    }
+                });
+            } else {
+                // Actualizar solo el plan activo para otros métodos
+                const planMethods = newConfig[plan] || {};
+                const methodConfig = planMethods[method] || {};
+                newConfig[plan] = {
+                    ...planMethods,
+                    [method]: { ...methodConfig, ...newValues },
+                };
             }
             return newConfig;
-        }
-
-        // Para otros métodos, solo aplica al plan actual
-        const planMethods = prev[plan] || {};
-        const methodConfig = planMethods[method] || {};
-        return {
-            ...prev,
-            [plan]: {
-                ...planMethods,
-                [method]: { ...methodConfig, ...newValues },
-            },
-        };
-    });
-  };
+        });
+    };
   
   const handleSave = async () => {
     setIsSaving(true);
@@ -538,3 +542,5 @@ export default function SuperAdminPaymentMethodsPage() {
     </div>
   );
 }
+
+    
