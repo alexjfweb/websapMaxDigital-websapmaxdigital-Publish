@@ -78,8 +78,8 @@ async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<Av
             // Comprobaciones explícitas y seguras
             const isStripeEnabled = !!planConfig.stripe?.enabled;
             const isMercadoPagoEnabled = !!planConfig.mercadoPago?.enabled;
-            const isBancolombiaQrEnabled = !!planConfig.bancolombiaQr?.enabled;
-            const isNequiQrEnabled = !!planConfig.nequiQr?.enabled;
+            const isBancolombiaQrEnabled = !!planConfig.bancolombiaQr?.enabled && !!planConfig.bancolombiaQr?.qrImageUrl;
+            const isNequiQrEnabled = !!planConfig.nequiQr?.enabled && !!planConfig.nequiQr?.qrImageUrl;
 
             // La sección manual solo aparece si AL MENOS UNO de los métodos manuales está activo
             const isManualEnabled = isBancolombiaQrEnabled || isNequiQrEnabled;
@@ -398,3 +398,5 @@ export default function CheckoutPage() {
         </Suspense>
     );
 }
+
+    
