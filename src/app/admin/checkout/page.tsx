@@ -20,6 +20,8 @@ import { doc, getDoc } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import type { LandingPlan } from '@/types/plans';
 import SuccessModal from '@/components/ui/success-modal';
+import BancolombiaIcon from '@/components/icons/bancolombia-icon';
+import NequiIcon from '@/components/icons/nequi-icon';
 
 function CheckoutSkeleton() {
     return (
@@ -64,28 +66,23 @@ async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<Av
         if (docSnap.exists()) {
             const allConfig = docSnap.data();
             
-            // CORRECCIÓN: Lógica de parsing del slug robusta.
             const rawPlanKey = (plan.slug.split('-')[1] || 'bsico');
 
-            // CORRECCIÓN: Lógica de búsqueda en cascada que contempla inconsistencias.
-            // Intenta con el nombre directo, luego las variantes normalizadas y con acento.
-            const planConfig = allConfig[rawPlanKey] || // Intenta 'bsico' o 'estndar'
-                               allConfig[rawPlanKey.normalize("NFD").replace(/[\u0300-\u036f]/g, "")] || // Intenta 'basico' o 'estandar'
-                               allConfig['básico'] || // Fallback a 'básico'
-                               allConfig['estándar']; // Fallback a 'estándar'
+            const planConfig = allConfig[rawPlanKey] || 
+                               allConfig[rawPlanKey.normalize("NFD").replace(/[\u0300-\u036f]/g, "")] ||
+                               allConfig['básico'] ||
+                               allConfig['estándar'];
 
             if (!planConfig) {
                  console.warn(`No payment config found for plan key: ${rawPlanKey}`);
                  return defaultPayments;
             }
             
-            // Comprobaciones explícitas y seguras
             const isStripeEnabled = !!planConfig.stripe?.enabled;
             const isMercadoPagoEnabled = !!planConfig.mercadoPago?.enabled;
             const isBancolombiaQrEnabled = !!planConfig.bancolombiaQr?.enabled && !!planConfig.bancolombiaQr?.qrImageUrl;
             const isNequiQrEnabled = !!planConfig.nequiQr?.enabled && !!planConfig.nequiQr?.qrImageUrl;
 
-            // La sección manual solo aparece si AL MENOS UNO de los métodos manuales está activo
             const isManualEnabled = isBancolombiaQrEnabled || isNequiQrEnabled;
 
             return {
@@ -123,13 +120,29 @@ function CheckoutContent() {
     const [availablePayments, setAvailablePayments] = useState<AvailablePayments | null>(null);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     
+    const [selectedQrMethod, setSelectedQrMethod] = useState<'bancolombia' | 'nequi' | null>(null);
+    
     const selectedPlan = plans.find(p => p.slug === planSlug);
     
     useEffect(() => {
-        if (selectedPlan && selectedPlan.price > 0) { // **NUEVO**: Solo buscar pagos si el plan no es gratuito
-            fetchAvailablePayments(selectedPlan).then(setAvailablePayments);
+        if (selectedPlan && selectedPlan.price > 0) {
+            fetchAvailablePayments(selectedPlan).then(payments => {
+                setAvailablePayments(payments);
+                // Auto-select QR method if only one is available
+                const bancolombiaEnabled = payments.bancolombiaQr?.enabled;
+                const nequiEnabled = payments.nequiQr?.enabled;
+
+                if (bancolombiaEnabled && !nequiEnabled) {
+                    setSelectedQrMethod('bancolombia');
+                } else if (!bancolombiaEnabled && nequiEnabled) {
+                    setSelectedQrMethod('nequi');
+                } else {
+                    // Si ambos (o ninguno) están disponibles, no preseleccionar
+                    setSelectedQrMethod(null);
+                }
+            });
         } else if (selectedPlan) {
-            setAvailablePayments({ stripe: false, mercadopago: false, manual: false }); // No hay pagos para planes gratuitos
+            setAvailablePayments({ stripe: false, mercadopago: false, manual: false });
         }
     }, [selectedPlan]);
     
@@ -235,6 +248,9 @@ function CheckoutContent() {
             setIsProcessingPayment(null);
         }
     };
+    
+    const bothManualEnabled = availablePayments?.bancolombiaQr?.enabled && availablePayments?.nequiQr?.enabled;
+
 
     return (
         <>
@@ -301,7 +317,6 @@ function CheckoutContent() {
                     </div>
 
                     <div className="md:col-span-2">
-                        {/* **NUEVO**: Renderizado condicional basado en el precio del plan */}
                         {selectedPlan.price > 0 ? (
                             <Card className="sticky top-6">
                                 <CardHeader>
@@ -342,18 +357,36 @@ function CheckoutContent() {
                                             <AccordionItem value="manual">
                                                 <AccordionTrigger className="font-semibold text-base">Pago Manual (QR)</AccordionTrigger>
                                                 <AccordionContent className="space-y-4 pt-3">
-                                                    {availablePayments.bancolombiaQr?.enabled && availablePayments.bancolombiaQr.qrImageUrl && (
+                                                    {bothManualEnabled && (
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <Button 
+                                                                variant={selectedQrMethod === 'bancolombia' ? 'default' : 'outline'}
+                                                                onClick={() => setSelectedQrMethod('bancolombia')}
+                                                            >
+                                                                <BancolombiaIcon className="mr-2 h-4 w-4" /> Bancolombia
+                                                            </Button>
+                                                            <Button 
+                                                                variant={selectedQrMethod === 'nequi' ? 'default' : 'outline'}
+                                                                onClick={() => setSelectedQrMethod('nequi')}
+                                                            >
+                                                                <NequiIcon className="mr-2 h-4 w-4" /> Nequi
+                                                            </Button>
+                                                        </div>
+                                                    )}
+
+                                                    {selectedQrMethod === 'bancolombia' && availablePayments.bancolombiaQr?.enabled && availablePayments.bancolombiaQr.qrImageUrl && (
                                                         <div className="text-center space-y-2">
                                                             <p className="text-sm">Escanea el código QR desde la App Bancolombia.</p>
-                                                            <Image src={availablePayments.bancolombiaQr.qrImageUrl} alt="QR Bancolombia" width={150} height={150} className="mx-auto rounded-md border" data-ai-hint="payment QR code"/>
+                                                            <Image src={availablePayments.bancolombiaQr.qrImageUrl} alt="QR Bancolombia" width={200} height={200} className="mx-auto rounded-md border" data-ai-hint="payment QR code"/>
                                                         </div>
                                                     )}
-                                                    {availablePayments.nequiQr?.enabled && availablePayments.nequiQr.qrImageUrl && (
+                                                    {selectedQrMethod === 'nequi' && availablePayments.nequiQr?.enabled && availablePayments.nequiQr.qrImageUrl && (
                                                         <div className="text-center space-y-2">
                                                             <p className="text-sm">Escanea el código QR desde tu app Nequi.</p>
-                                                            <Image src={availablePayments.nequiQr.qrImageUrl} alt="QR Nequi" width={150} height={150} className="mx-auto rounded-md border" data-ai-hint="payment QR code"/>
+                                                            <Image src={availablePayments.nequiQr.qrImageUrl} alt="QR Nequi" width={200} height={200} className="mx-auto rounded-md border" data-ai-hint="payment QR code"/>
                                                         </div>
                                                     )}
+
                                                     <Button className="w-full" size="lg" onClick={handleConfirmManualPayment}>
                                                         He realizado el pago
                                                     </Button>
