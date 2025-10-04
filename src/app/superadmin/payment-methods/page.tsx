@@ -69,11 +69,13 @@ const initialConfig: Record<PlanName, PlanPaymentConfig> = {
   },
   estándar: {
     bancolombiaQr: { enabled: true, qrImageUrl: '', accountNumber: '', accountHolder: '', identityDocument: '', instructions: 'Escanea el código QR desde la App Bancolombia. Sube el comprobante para que podamos verificar y activar tu plan.' },
+    nequiQr: { enabled: true, qrImageUrl: '', accountNumber: '', accountHolder: '', identityDocument: '', instructions: 'Escanea este código QR desde tu app Nequi para realizar el pago.' },
     stripe: { enabled: true, publicKey: '', secretKey: '', merchantId: '', instructions: 'Paga con tarjeta de forma segura usando Stripe. Tu plan se activará automáticamente.' },
     mercadoPago: { enabled: true, accessToken: '', publicKey: '', country: 'CO', mode: 'production', instructions: 'Realiza el pago fácilmente con tarjeta, QR o billetera desde Mercado Pago. Tu plan se activará al instante.' },
   },
   premium: {
      bancolombiaQr: { enabled: true, qrImageUrl: '', accountNumber: '', accountHolder: '', identityDocument: '', instructions: 'Escanea el código QR desde la App Bancolombia. Sube el comprobante para que podamos verificar y activar tu plan.' },
+     nequiQr: { enabled: true, qrImageUrl: '', accountNumber: '', accountHolder: '', identityDocument: '', instructions: 'Escanea este código QR desde tu app Nequi para realizar el pago.' },
     stripe: { enabled: true, publicKey: '', secretKey: '', merchantId: '', instructions: 'Paga con tarjeta de forma segura usando Stripe. Tu plan se activará automáticamente.' },
     mercadoPago: { enabled: true, accessToken: '', publicKey: '', country: 'CO', mode: 'production', instructions: 'Realiza el pago fácilmente con tarjeta, QR o billetera desde Mercado Pago. Tu plan se activará al instante.' },
   },
@@ -309,34 +311,69 @@ export default function SuperAdminPaymentMethodsPage() {
         
         <div className="mt-6">
             <div className="space-y-6">
+
                 <PaymentMethodCard
-                    title="Nequi (Transferencia)"
+                    title="Nequi con Código QR"
                     icon={<NequiIcon className="h-8 w-8" />}
-                    config={currentPlanConfig.nequi}
-                    onConfigChange={(newValues) => handleConfigChange(activePlan, 'nequi', newValues)}
+                    config={currentPlanConfig.nequiQr}
+                    onConfigChange={(newValues) => handleConfigChange(activePlan, 'nequiQr', newValues)}
                 >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <div className="flex-1 space-y-4">
+                             <div>
+                                <Label htmlFor={`nequi-qr-upload-${activePlan}`}>Imagen del Código QR (JPG/PNG, máx 5MB)</Label>
+                                <Button asChild variant="outline" className="w-full mt-1">
+                                    <label htmlFor={`nequi-qr-upload-${activePlan}`} className="cursor-pointer flex items-center gap-2">
+                                        <UploadCloud className="h-4 w-4" />
+                                        Seleccionar o cambiar QR
+                                        <Input 
+                                            id={`nequi-qr-upload-${activePlan}`}
+                                            type="file" 
+                                            className="hidden"
+                                            accept="image/jpeg, image/png"
+                                            onChange={(e) => handleQrImageSelection(e, activePlan, 'nequiQr')} 
+                                        />
+                                    </label>
+                                </Button>
+                            </div>
+                            <div>
+                                <Label>Número de cuenta asociado *</Label>
+                                <Input
+                                    value={currentPlanConfig.nequiQr?.accountNumber || ''}
+                                    onChange={(e) => handleConfigChange(activePlan, 'nequiQr', { accountNumber: e.target.value.replace(/\\D/g, '') })}
+                                    placeholder="3001234567"
+                                />
+                            </div>
+                        </div>
+                        <div className="text-center">
+                            <Label>Vista Previa QR</Label>
+                            <Image 
+                                src={qrPreviews[activePlan]?.nequiQr || currentPlanConfig.nequiQr?.qrImageUrl || 'https://placehold.co/128x128.png?text=QR'} 
+                                alt="Vista previa QR Nequi" 
+                                width={128}
+                                height={128}
+                                className="w-32 h-32 mt-2 rounded-md border p-1" 
+                            />
+                        </div>
+                    </div>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                         <div>
-                            <Label>Número Nequi</Label>
-                            <Input 
-                                type="text" 
-                                pattern="\\d{10}"
-                                maxLength={10}
-                                title="Debe ser un número de 10 dígitos"
-                                value={currentPlanConfig.nequi?.accountNumber || ''} 
-                                onChange={(e) => handleConfigChange(activePlan, 'nequi', { accountNumber: e.target.value.replace(/\\D/g, '') })} 
+                            <Label>Nombre del titular *</Label>
+                            <Input
+                                value={currentPlanConfig.nequiQr?.accountHolder || ''}
+                                onChange={(e) => handleConfigChange(activePlan, 'nequiQr', { accountHolder: e.target.value })}
                             />
                         </div>
                         <div>
-                            <Label>Nombre del Titular</Label>
-                            <Input value={currentPlanConfig.nequi?.accountHolder || ''} onChange={(e) => handleConfigChange(activePlan, 'nequi', { accountHolder: e.target.value })} />
+                            <Label>Documento de identidad *</Label>
+                            <Input
+                                value={currentPlanConfig.nequiQr?.identityDocument || ''}
+                                onChange={(e) => handleConfigChange(activePlan, 'nequiQr', { identityDocument: e.target.value })}
+                            />
                         </div>
                     </div>
-                    <div>
-                        <Label>Documento de Identidad</Label>
-                        <Input value={currentPlanConfig.nequi?.identityDocument || ''} onChange={(e) => handleConfigChange(activePlan, 'nequi', { identityDocument: e.target.value })} />
-                    </div>
                 </PaymentMethodCard>
+
                 
                 <PaymentMethodCard
                     title="Bancolombia con Código QR"
