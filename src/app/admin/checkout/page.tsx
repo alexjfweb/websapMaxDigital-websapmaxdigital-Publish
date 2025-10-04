@@ -68,7 +68,7 @@ async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<Av
             const rawPlanKey = plan.slug.replace(/^plan-/, '').replace(/-$/, '') || 'básico';
             
             // CORRECCIÓN: Lógica de búsqueda robusta que contempla inconsistencias.
-            const planConfig = allConfig[rawPlanKey] || allConfig['estándar'] || allConfig['estandar'] || allConfig[rawPlanKey.replace('estandar', 'estándar')];
+            const planConfig = allConfig[rawPlanKey] || allConfig['estándar'] || allConfig['estandar'] || allConfig[rawPlanKey.replace('estandar', 'estándar')] || allConfig['básico'];
 
             if (!planConfig) {
                  console.warn(`No payment config found for plan key: ${rawPlanKey}`);
