@@ -288,33 +288,37 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
               ) : (
                 <ul className="space-y-3">
                   {cart.map((item) => (
-                    <li key={item.id} className="flex items-center gap-3 p-3 rounded-lg border bg-white shadow-sm">
-                      <Image 
-                        src={item.imageUrl} 
-                        alt={item.name} 
-                        width={56} 
-                        height={56} 
-                        className="rounded-md object-cover" 
-                        style={{ width: '56px', height: '56px', objectFit: 'cover' }}
-                        data-ai-hint="food item"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-base truncate">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">${item.price.toFixed(2)} c/u</p>
+                    <li key={item.id} className="flex flex-col sm:flex-row items-center gap-3 p-3 rounded-lg border bg-white shadow-sm">
+                      <div className="flex w-full items-center gap-3">
+                         <Image 
+                            src={item.imageUrl} 
+                            alt={item.name} 
+                            width={56} 
+                            height={56} 
+                            className="rounded-md object-cover flex-shrink-0"
+                            style={{ width: '56px', height: '56px' }}
+                            data-ai-hint="food item"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-base truncate">{item.name}</p>
+                            <p className="text-xs text-muted-foreground">${item.price.toFixed(2)} c/u</p>
+                          </div>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setItemToRemove(item)}>
+                            <XCircle className="h-5 w-5" />
+                          </Button>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onQuantity(item.id, -1)}>
-                          <MinusCircle className="h-5 w-5" />
-                        </Button>
-                        <span className="text-base font-medium w-7 text-center">{item.quantity}</span>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onQuantity(item.id, 1)}>
-                          <PlusCircle className="h-5 w-5" />
-                        </Button>
+                      <div className="flex w-full sm:w-auto items-center justify-between mt-2 sm:mt-0">
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onQuantity(item.id, -1)}>
+                              <MinusCircle className="h-5 w-5" />
+                            </Button>
+                            <span className="text-base font-medium w-7 text-center">{item.quantity}</span>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onQuantity(item.id, 1)}>
+                              <PlusCircle className="h-5 w-5" />
+                            </Button>
+                          </div>
+                          <span className="font-semibold w-24 text-right">${(item.price * item.quantity).toFixed(2)}</span>
                       </div>
-                      <span className="font-semibold w-20 text-right">${(item.price * item.quantity).toFixed(2)}</span>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setItemToRemove(item)}>
-                        <XCircle className="h-5 w-5" />
-                      </Button>
                     </li>
                   ))}
                 </ul>
