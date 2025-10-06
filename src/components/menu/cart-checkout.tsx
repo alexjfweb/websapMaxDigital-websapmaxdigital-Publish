@@ -298,17 +298,17 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
                             style={{ width: '64px', height: '64px' }}
                             data-ai-hint="food item"
                           />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex justify-between items-start gap-2">
-                                <div className="flex-1">
-                                    <p className="font-semibold text-base leading-tight break-words">{item.name}</p>
+                          <div className="flex-1 overflow-hidden">
+                            <div className="flex justify-between items-start gap-2 mb-2">
+                                <div className="flex-1 overflow-hidden">
+                                    <p className="font-semibold text-base leading-tight break-words whitespace-normal">{item.name}</p>
                                     <p className="text-sm text-muted-foreground">${item.price.toFixed(2)} c/u</p>
                                 </div>
                                 <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0" onClick={() => setItemToRemove(item)}>
                                     <XCircle className="h-5 w-5" />
                                 </Button>
                             </div>
-                             <div className="flex flex-wrap items-center justify-between mt-2 gap-2">
+                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div className="flex items-center gap-1">
                                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onQuantity(item.id, -1)}>
                                     <MinusCircle className="h-5 w-5" />
@@ -318,7 +318,7 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
                                     <PlusCircle className="h-5 w-5" />
                                     </Button>
                                 </div>
-                                <span className="font-bold text-lg">${(item.price * item.quantity).toFixed(2)}</span>
+                                <span className="font-bold text-lg whitespace-nowrap">${(item.price * item.quantity).toFixed(2)}</span>
                             </div>
                           </div>
                     </li>
