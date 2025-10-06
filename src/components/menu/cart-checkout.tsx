@@ -288,37 +288,39 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
               ) : (
                 <ul className="space-y-3">
                   {cart.map((item) => (
-                    <li key={item.id} className="flex flex-col sm:flex-row items-center gap-3 p-3 rounded-lg border bg-white shadow-sm">
-                      <div className="flex w-full items-center gap-3">
-                         <Image 
+                     <li key={item.id} className="flex items-start gap-4 p-3 rounded-lg border bg-white shadow-sm">
+                        <Image 
                             src={item.imageUrl} 
                             alt={item.name} 
-                            width={56} 
-                            height={56} 
+                            width={64} 
+                            height={64} 
                             className="rounded-md object-cover flex-shrink-0"
-                            style={{ width: '56px', height: '56px' }}
+                            style={{ width: '64px', height: '64px' }}
                             data-ai-hint="food item"
                           />
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-base truncate">{item.name}</p>
-                            <p className="text-xs text-muted-foreground">${item.price.toFixed(2)} c/u</p>
+                            <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                    <p className="font-semibold text-base leading-tight break-words">{item.name}</p>
+                                    <p className="text-sm text-muted-foreground">${item.price.toFixed(2)} c/u</p>
+                                </div>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0" onClick={() => setItemToRemove(item)}>
+                                    <XCircle className="h-5 w-5" />
+                                </Button>
+                            </div>
+                             <div className="flex items-center justify-between mt-2">
+                                <div className="flex items-center gap-1">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onQuantity(item.id, -1)}>
+                                    <MinusCircle className="h-5 w-5" />
+                                    </Button>
+                                    <span className="text-base font-bold w-8 text-center">{item.quantity}</span>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onQuantity(item.id, 1)}>
+                                    <PlusCircle className="h-5 w-5" />
+                                    </Button>
+                                </div>
+                                <span className="font-bold text-lg">${(item.price * item.quantity).toFixed(2)}</span>
+                            </div>
                           </div>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setItemToRemove(item)}>
-                            <XCircle className="h-5 w-5" />
-                          </Button>
-                      </div>
-                      <div className="flex w-full sm:w-auto items-center justify-between mt-2 sm:mt-0">
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onQuantity(item.id, -1)}>
-                              <MinusCircle className="h-5 w-5" />
-                            </Button>
-                            <span className="text-base font-medium w-7 text-center">{item.quantity}</span>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onQuantity(item.id, 1)}>
-                              <PlusCircle className="h-5 w-5" />
-                            </Button>
-                          </div>
-                          <span className="font-semibold w-24 text-right">${(item.price * item.quantity).toFixed(2)}</span>
-                      </div>
                     </li>
                   ))}
                 </ul>
