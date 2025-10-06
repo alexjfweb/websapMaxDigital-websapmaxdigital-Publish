@@ -19,7 +19,7 @@ import { collection, addDoc, doc, serverTimestamp } from "firebase/firestore";
 import type { Company } from '@/types';
 import NequiIcon from '@/components/icons/nequi-icon';
 import DaviplataIcon from '@/components/icons/daviplata-icon';
-import BancolombiaIcon from '@/components/icons/bancolombia-icon';
+import BancolombiaIcon from "@/components/icons/bancolombia-icon";
 import WhatsAppIcon from "@/components/icons/whatsapp-icon";
 import { usePlanLimits } from "@/hooks/use-plan-limits";
 
@@ -520,7 +520,7 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
             <UiDialogTitle className="text-center text-xl">¡Producto Eliminado!</UiDialogTitle>
             <UiDialogDescription className="text-center">
                 {removedItemName} ha sido eliminado de tu carrito.
-            </sUiDialogDescription>
+            </UiDialogDescription>
             </UiDialogHeader>
             <UiDialogFooter className="sm:justify-center">
             <Button onClick={() => setShowSuccessModal(false)}>Cerrar</Button>
@@ -530,3 +530,5 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
     </>
   );
 }
+
+    
