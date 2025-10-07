@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { Stripe } from 'stripe';
-import { MercadoPagoConfig, Preference, PreApproval } from 'mercadopago';
+import { MercadoPagoConfig, Preference } from 'mercadopago';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import type { LandingPlan } from '@/services/landing-plans-service';
@@ -144,102 +144,75 @@ export async function POST(request: NextRequest) {
       const isProduction = mpConfig.accessToken.startsWith('APP_USR-');
       const client = new MercadoPagoConfig({ accessToken: mpConfig.accessToken });
 
-      if (isProduction) {
-          console.log(`[Checkout API] - Modo PRODUCCIÓN. Creando suscripción recurrente con PreApproval.`);
-          const preapproval = new PreApproval(client);
-          
-          const result = await preapproval.create({
-              body: {
-                reason: `Suscripción al Plan ${plan.name} de WebSapMax`,
-                auto_recurring: {
-                    frequency: 1,
-                    frequency_type: 'months',
-                    transaction_amount: plan.price,
-                    currency_id: 'COP', 
-                },
-                back_url: `https://websap.site/admin/subscription?payment=success&provider=mercadopago`,
-                payer_email: company.email,
-                external_reference: `${companyId}|${plan.slug}`,
-              }
-          });
-          
-          checkoutUrl = result.init_point!;
-          console.log('✅ [Checkout API] - URL de suscripción (PreApproval) de Mercado Pago creada exitosamente.');
+      console.log(`[Checkout API] - Modo ${isProduction ? 'PRODUCCIÓN' : 'SANDBOX'}. Creando pago con Preference.`);
+      
+      const preference = new Preference(client);
 
-      } else {
-          console.log(`[Checkout API] - Modo SANDBOX. Creando pago único con Preference.`);
-          const preference = new Preference(client);
-
-          if (!companyId || !plan.slug || !plan.name || !plan.price) {
-            throw new Error('Faltan datos críticos: companyId, plan.slug, plan.name o plan.price');
-          }
-
-          const result = await preference.create({
-            body: {
-              items: [
-                {
-                  id: `plan_${plan.slug}_${Date.now()}`,
-                  title: `Plan ${plan.name} - WebSapMax`,
-                  description: `Suscripción mensual al plan ${plan.name}`,
-                  category_id: 'services',
-                  quantity: 1,
-                  currency_id: 'COP',
-                  unit_price: plan.price,
-                }
-              ],
-              payer: {
-                email: 'test_user_63274208@testuser.com',
-                name: 'Test',
-                surname: 'User',
-                phone: {
-                  area_code: '11',
-                  number: '22334455'
-                },
-                identification: {
-                  type: 'CC',
-                  number: '12345678'
-                },
-                address: {
-                  street_name: 'Falsa',
-                  street_number: 123,
-                  zip_code: '1111'
-                }
-              },
-              back_urls: {
-                success: 'https://websap.site/admin/subscription?payment=success',
-                failure: 'https://websap.site/admin/subscription?payment=failure',
-                pending: 'https://websap.site/admin/subscription?payment=pending'
-              },
-              auto_return: 'approved',
-              external_reference: `ws_${companyId}_${plan.slug}_${Date.now()}`,
-              marketplace: 'NONE',
-              statement_descriptor: 'WebSapMax',
-              payment_methods: {
-                default_payment_method_id: null,
-                excluded_payment_methods: [],
-                excluded_payment_types: [],
-                installments: 1,
-                default_installments: 1
-              },
-              expires: true,
-              expiration_date_from: new Date().toISOString(),
-              expiration_date_to: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-              notification_url: 'https://websap.site/api/webhooks/mercadopago',
-              metadata: {
-                company_id: companyId,
-                plan_slug: plan.slug,
-                timestamp: Date.now().toString()
-              }
-            }
-          });
-
-          console.log('✅ Preference creada con ID:', result.id);
-          console.log('✅ External reference:', `ws_${companyId}_${plan.slug}_${Date.now()}`);
-          console.log('✅ Item ID:', `plan_${plan.slug}_${Date.now()}`);
-
-          checkoutUrl = result.init_point!;
-          console.log('✅ [Checkout API] - URL de preferencia de pago (Preference) creada para sandbox.');
+      if (!companyId || !plan.slug || !plan.name || !plan.price) {
+        throw new Error('Faltan datos críticos: companyId, plan.slug, plan.name o plan.price');
       }
+
+      const result = await preference.create({
+        body: {
+          items: [
+            {
+              id: `plan_${plan.slug}_${Date.now()}`,
+              title: `Plan ${plan.name} - WebSapMax`,
+              description: `Suscripción mensual al plan ${plan.name}`,
+              category_id: 'services',
+              quantity: 1,
+              currency_id: 'COP',
+              unit_price: plan.price,
+            }
+          ],
+          payer: {
+            email: isProduction ? company.email : 'test_user_63274208@testuser.com',
+            name: isProduction ? (company.name || 'Cliente') : 'Test',
+            surname: isProduction ? 'Usuario' : 'User',
+            ...(isProduction ? {} : {
+              phone: {
+                area_code: '11',
+                number: '22334455'
+              },
+              identification: {
+                type: 'CC',
+                number: '12345678'
+              },
+              address: {
+                street_name: 'Falsa',
+                street_number: 123,
+                zip_code: '1111'
+              }
+            })
+          },
+          back_urls: {
+            success: 'https://websap.site/admin/subscription?payment=success',
+            failure: 'https://websap.site/admin/subscription?payment=failure',
+            pending: 'https://websap.site/admin/subscription?payment=pending'
+          },
+          auto_return: 'approved',
+          external_reference: `ws_${companyId}_${plan.slug}_${Date.now()}`,
+          statement_descriptor: 'WebSapMax',
+          payment_methods: {
+            installments: 1,
+            default_installments: 1
+          },
+          expires: true,
+          expiration_date_from: new Date().toISOString(),
+          expiration_date_to: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          notification_url: 'https://websap.site/api/webhooks/mercadopago',
+          metadata: {
+            company_id: companyId,
+            plan_slug: plan.slug,
+            timestamp: Date.now().toString()
+          }
+        }
+      });
+
+      console.log('✅ Preference creada con ID:', result.id);
+      checkoutUrl = result.init_point!;
+      console.log('✅ [Checkout API] - URL de preferencia creada.');
+
     } else {
       console.error(`🔴 [Checkout API] - Error: Proveedor de pago no soportado: ${provider}.`);
       return NextResponse.json({ error: 'Proveedor de pago no soportado.' }, { status: 400 });
