@@ -47,8 +47,8 @@ interface AvailablePayments {
   stripe: boolean;
   mercadopago: boolean;
   manual: boolean;
-  bancolombiaQr?: { enabled: boolean; qrImageUrl?: string };
-  nequiQr?: { enabled: boolean; qrImageUrl?: string };
+  bancolombiaQr?: { enabled: boolean; qrImageUrl?: string; accountNumber?: string };
+  nequiQr?: { enabled: boolean; qrImageUrl?: string; accountNumber?: string };
 }
 
 const CONFIG_DOC_ID = 'main_payment_methods';
@@ -91,11 +91,13 @@ async function fetchAvailablePayments(plan: LandingPlan | undefined): Promise<Av
                 manual: isManualEnabled,
                 bancolombiaQr: { 
                     enabled: isBancolombiaQrEnabled,
-                    qrImageUrl: planConfig.bancolombiaQr?.qrImageUrl
+                    qrImageUrl: planConfig.bancolombiaQr?.qrImageUrl,
+                    accountNumber: planConfig.bancolombiaQr?.accountNumber,
                 },
                 nequiQr: { 
                     enabled: isNequiQrEnabled,
-                    qrImageUrl: planConfig.nequiQr?.qrImageUrl
+                    qrImageUrl: planConfig.nequiQr?.qrImageUrl,
+                    accountNumber: planConfig.nequiQr?.accountNumber,
                 },
             };
         }
@@ -378,12 +380,14 @@ function CheckoutContent() {
                                                         <div className="text-center space-y-2">
                                                             <p className="text-sm">Escanea el código QR desde la App Bancolombia.</p>
                                                             <Image src={availablePayments.bancolombiaQr.qrImageUrl} alt="QR Bancolombia" width={200} height={200} className="mx-auto rounded-md border" data-ai-hint="payment QR code"/>
+                                                            {availablePayments.bancolombiaQr.accountNumber && <p className="font-bold text-lg mt-2">{availablePayments.bancolombiaQr.accountNumber}</p>}
                                                         </div>
                                                     )}
                                                     {selectedQrMethod === 'nequi' && availablePayments.nequiQr?.enabled && availablePayments.nequiQr.qrImageUrl && (
                                                         <div className="text-center space-y-2">
                                                             <p className="text-sm">Escanea el código QR desde tu app Nequi.</p>
                                                             <Image src={availablePayments.nequiQr.qrImageUrl} alt="QR Nequi" width={200} height={200} className="mx-auto rounded-md border" data-ai-hint="payment QR code"/>
+                                                            {availablePayments.nequiQr.accountNumber && <p className="font-bold text-lg mt-2">{availablePayments.nequiQr.accountNumber}</p>}
                                                         </div>
                                                     )}
 
@@ -435,7 +439,3 @@ export default function CheckoutPage() {
         </Suspense>
     );
 }
-
-    
-
-    
