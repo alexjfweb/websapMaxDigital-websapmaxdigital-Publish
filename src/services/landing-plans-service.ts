@@ -343,7 +343,8 @@ class LandingPlansService {
           color: 'green',
           maxUsers: -1,
           maxProjects: -1,
-          ctaText: 'Elegir Plan'
+          ctaText: 'Elegir Plan',
+          mp_preapproval_plan_id: '5865c85c7a444d329fe276aa92ad248c', // Emprendedor
         },
         {
             name: 'Plan Premium',
@@ -361,7 +362,8 @@ class LandingPlansService {
             color: 'purple',
             maxUsers: -1,
             maxProjects: -1,
-            ctaText: 'Contactar a Ventas'
+            ctaText: 'Contactar a Ventas',
+            mp_preapproval_plan_id: '9acc8d140f044537bfd13b31613b1af8', // Pro Plus Ilimitado
         }
       ];
 
@@ -375,5 +377,6 @@ class LandingPlansService {
 }
 
 export const landingPlansService = new LandingPlansService();
+
 
 
