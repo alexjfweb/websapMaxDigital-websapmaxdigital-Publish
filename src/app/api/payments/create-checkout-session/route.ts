@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { Stripe } from 'stripe';
-import { MercadoPagoConfig, Preference } from 'mercadopago';
+import { MercadoPagoConfig, Preference, PreApproval } from 'mercadopago';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import type { LandingPlan } from '@/services/landing-plans-service';
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     }
     
     const allPlansConfig = paymentMethodsDoc.data();
-    const planNameKey = (plan.slug?.replace(/^plan-/, '').replace(/-$/, '') || 'básico') as 'básico' | 'estándar' | 'premium';
+    const planNameKey = (plan.slug?.replace(/^plan-/, '').replace(/-$/, '') || 'básico') as 'básico' | 'estándar' | 'premium' | 'emprendedor' | 'pro-plus-ilimitado';
     const paymentMethodsConfig = allPlansConfig[planNameKey] || allPlansConfig['estandar'] || allPlansConfig['estándar'];
 
     if (!paymentMethodsConfig) {
@@ -144,75 +144,72 @@ export async function POST(request: NextRequest) {
       const isProduction = mpConfig.accessToken.startsWith('APP_USR-');
       const client = new MercadoPagoConfig({ accessToken: mpConfig.accessToken });
 
-      console.log(`[Checkout API] - Modo ${isProduction ? 'PRODUCCIÓN' : 'SANDBOX'}. Creando pago con Preference.`);
-      
-      const preference = new Preference(client);
-
-      if (!companyId || !plan.slug || !plan.name || !plan.price) {
-        throw new Error('Faltan datos críticos: companyId, plan.slug, plan.name o plan.price');
-      }
-
-      const result = await preference.create({
-        body: {
-          items: [
-            {
-              id: `plan_${plan.slug}_${Date.now()}`,
-              title: `Plan ${plan.name} - WebSapMax`,
-              description: `Suscripción mensual al plan ${plan.name}`,
-              category_id: 'services',
-              quantity: 1,
-              currency_id: 'COP',
-              unit_price: plan.price,
-            }
-          ],
-          payer: {
-            email: isProduction ? company.email : 'test_user_63274208@testuser.com',
-            name: isProduction ? (company.name || 'Cliente') : 'Test',
-            surname: isProduction ? 'Usuario' : 'User',
-            ...(isProduction ? {} : {
-              phone: {
-                area_code: '11',
-                number: '22334455'
-              },
-              identification: {
-                type: 'CC',
-                number: '12345678'
-              },
-              address: {
-                street_name: 'Falsa',
-                street_number: 123,
-                zip_code: '1111'
-              }
-            })
-          },
-          back_urls: {
-            success: 'https://websap.site/admin/subscription?payment=success',
-            failure: 'https://websap.site/admin/subscription?payment=failure',
-            pending: 'https://websap.site/admin/subscription?payment=pending'
-          },
-          auto_return: 'approved',
-          external_reference: `ws_${companyId}_${plan.slug}_${Date.now()}`,
-          statement_descriptor: 'WebSapMax',
-          payment_methods: {
-            installments: 1,
-            default_installments: 1
-          },
-          expires: true,
-          expiration_date_from: new Date().toISOString(),
-          expiration_date_to: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-          notification_url: 'https://websap.site/api/webhooks/mercadopago',
-          metadata: {
-            company_id: companyId,
-            plan_slug: plan.slug,
-            timestamp: Date.now().toString()
+      if (isProduction) {
+          console.log(`[Checkout API] - Modo PRODUCCIÓN. Creando suscripción recurrente con PreApproval.`);
+          if (!plan.mp_preapproval_plan_id) {
+              console.error(`🔴 [Checkout API] - Error: El plan '${plan.name}' no tiene un 'mp_preapproval_plan_id' configurado para producción.`);
+              return NextResponse.json({ error: `El plan ${plan.name} no está configurado para suscripciones recurrentes con Mercado Pago.` }, { status: 400 });
           }
-        }
-      });
+          
+          const preapproval = new PreApproval(client);
+          
+          const result = await preapproval.create({
+              body: {
+                preapproval_plan_id: plan.mp_preapproval_plan_id,
+                reason: `Suscripción al Plan ${plan.name} de WebSapMax`,
+                payer_email: company.email,
+                back_url: `https://websap.site/admin/subscription?payment=success&provider=mercadopago`,
+                external_reference: `${companyId}|${plan.slug}`,
+              }
+          });
+          
+          checkoutUrl = result.init_point!;
+          console.log('✅ [Checkout API] - URL de suscripción (PreApproval) de Mercado Pago creada exitosamente.');
 
-      console.log('✅ Preference creada con ID:', result.id);
-      checkoutUrl = result.init_point!;
-      console.log('✅ [Checkout API] - URL de preferencia creada.');
+      } else {
+          console.log(`[Checkout API] - Modo SANDBOX. Creando pago único con Preference.`);
+          const preference = new Preference(client);
 
+          if (!companyId || !plan.slug || !plan.name || !plan.price) {
+            throw new Error('Faltan datos críticos: companyId, plan.slug, plan.name o plan.price');
+          }
+
+          const result = await preference.create({
+            body: {
+              items: [
+                {
+                  id: `plan_${plan.slug}_${Date.now()}`,
+                  title: `Plan ${plan.name} - WebSapMax`,
+                  description: `Suscripción mensual al plan ${plan.name}`,
+                  category_id: 'services',
+                  quantity: 1,
+                  currency_id: 'COP',
+                  unit_price: plan.price,
+                }
+              ],
+              payer: {
+                email: 'test_user_63274208@testuser.com',
+                name: 'Test',
+                surname: 'User',
+              },
+              back_urls: {
+                success: 'https://websap.site/admin/subscription?payment=success',
+                failure: 'https://websap.site/admin/subscription?payment=failure',
+                pending: 'https://websap.site/admin/subscription?payment=pending'
+              },
+              auto_return: 'approved',
+              external_reference: `ws_${companyId}_${plan.slug}_${Date.now()}`,
+              notification_url: 'https://websap.site/api/webhooks/mercadopago',
+              metadata: {
+                company_id: companyId,
+                plan_slug: plan.slug,
+              }
+            }
+          });
+
+          checkoutUrl = result.init_point!;
+          console.log('✅ [Checkout API] - URL de preferencia de pago (Preference) creada para sandbox.');
+      }
     } else {
       console.error(`🔴 [Checkout API] - Error: Proveedor de pago no soportado: ${provider}.`);
       return NextResponse.json({ error: 'Proveedor de pago no soportado.' }, { status: 400 });
