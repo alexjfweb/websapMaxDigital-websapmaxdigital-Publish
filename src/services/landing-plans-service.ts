@@ -328,8 +328,8 @@ class LandingPlansService {
           ctaText: 'Empezar Ahora'
         },
         {
-          name: 'Plan Estándar',
-          slug: 'plan-estandar',
+          name: 'Emprendedor',
+          slug: 'plan-emprendedor',
           description: 'La solución completa para restaurantes en crecimiento.',
           price: 25,
           currency: 'USD',
@@ -344,16 +344,16 @@ class LandingPlansService {
           maxUsers: -1,
           maxProjects: -1,
           ctaText: 'Elegir Plan',
-          mp_preapproval_plan_id: '5865c85c7a444d329fe276aa92ad248c', // Emprendedor
+          mp_preapproval_plan_id: '5865c85c7a444d329fe276aa92ad248c',
         },
         {
-            name: 'Plan Premium',
-            slug: 'plan-premium',
+            name: 'Pro Plus Ilimitado',
+            slug: 'plan-pro-plus-ilimitado',
             description: 'Funcionalidades avanzadas y analítica para grandes operaciones.',
             price: 50,
             currency: 'USD',
             period: 'monthly',
-            features: ['Todo en Estándar', 'Analítica Avanzada', 'Integración con APIs', 'Asesor Personalizado'],
+            features: ['Todo en Emprendedor', 'Analítica Avanzada', 'Integración con APIs', 'Asesor Personalizado'],
             isActive: true,
             isPublic: true,
             isPopular: false,
@@ -363,7 +363,7 @@ class LandingPlansService {
             maxUsers: -1,
             maxProjects: -1,
             ctaText: 'Contactar a Ventas',
-            mp_preapproval_plan_id: '9acc8d140f044537bfd13b31613b1af8', // Pro Plus Ilimitado
+            mp_preapproval_plan_id: '9acc8d140f044537bfd13b31613b1af8',
         }
       ];
 
@@ -377,6 +377,7 @@ class LandingPlansService {
 }
 
 export const landingPlansService = new LandingPlansService();
+
 
 
 
