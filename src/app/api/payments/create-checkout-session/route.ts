@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     }
     
     const allPlansConfig = paymentMethodsDoc.data();
-    const planNameKey = (plan.slug?.replace(/^plan-/, '').replace(/-$/, '') || 'básico') as 'básico' | 'estándar' | 'premium' | 'emprendedor' | 'pro-plus-ilimitado' | 'uno';
+    const planNameKey = (plan.slug?.replace(/^plan-/, '').replace(/-$/, '') || 'básico');
     const paymentMethodsConfig = allPlansConfig[planNameKey] || allPlansConfig['estandar'] || allPlansConfig['estándar'];
 
     if (!paymentMethodsConfig) {
@@ -141,8 +141,8 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'El método de pago Mercado Pago no está configurado.' }, { status: 400 });
       }
       
-      const isProduction = mpConfig.accessToken.startsWith('APP_USR-');
       const client = new MercadoPagoConfig({ accessToken: mpConfig.accessToken });
+      const isProduction = mpConfig.accessToken.startsWith('APP_USR-');
 
       if (isProduction) {
           console.log(`[Checkout API] - Modo PRODUCCIÓN. Creando suscripción recurrente con PreApproval.`);
