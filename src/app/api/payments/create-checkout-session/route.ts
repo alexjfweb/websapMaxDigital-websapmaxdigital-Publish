@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     }
     
     const allPlansConfig = paymentMethodsDoc.data();
-    const planNameKey = (plan.slug?.replace(/^plan-/, '').replace(/-$/, '') || 'básico') as 'básico' | 'estándar' | 'premium' | 'emprendedor' | 'pro-plus-ilimitado';
+    const planNameKey = (plan.slug?.replace(/^plan-/, '').replace(/-$/, '') || 'básico') as 'básico' | 'estándar' | 'premium' | 'emprendedor' | 'pro-plus-ilimitado' | 'uno';
     const paymentMethodsConfig = allPlansConfig[planNameKey] || allPlansConfig['estandar'] || allPlansConfig['estándar'];
 
     if (!paymentMethodsConfig) {
@@ -190,9 +190,9 @@ export async function POST(request: NextRequest) {
                 }
               ],
               payer: {
-                email: 'test_user_63274208@testuser.com',
-                name: 'Test',
-                surname: 'User',
+                email: company.email,
+                name: company.name || 'Cliente',
+                surname: 'WebSapMax',
               },
               back_urls: {
                 success: 'https://websap.site/admin/subscription?payment=success',
