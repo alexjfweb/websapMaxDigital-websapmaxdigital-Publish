@@ -157,7 +157,9 @@ export async function POST(request: NextRequest) {
               body: {
                 preapproval_plan_id: plan.mp_preapproval_plan_id,
                 reason: `Suscripción al Plan ${plan.name} de WebSapMax`,
-                payer_email: company.email,
+                payer: {
+                  email: company.email,
+                },
                 back_url: `https://websap.site/admin/subscription?payment=success&provider=mercadopago`,
                 external_reference: `${companyId}|${plan.slug}`,
               }
