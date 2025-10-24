@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { MercadoPagoConfig, PreApproval, Payment } from 'mercadopago';
 import { doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
@@ -90,9 +89,17 @@ export async function POST(request: NextRequest) {
         const subscription = await preapproval.get({ id: data.id });
         
         const externalReference = subscription.external_reference;
-        if (!externalReference) return NextResponse.json({ received: true, message: 'Missing external_reference' });
+        if (!externalReference) {
+            console.warn(`[MP Webhook] PreApproval ${data.id} sin external_reference.`);
+            return NextResponse.json({ received: true, message: 'Missing external_reference' });
+        }
         
         const [companyId, planId] = externalReference.split('|');
+
+        if (!companyId || !planId) {
+            console.warn(`[MP Webhook] external_reference con formato inválido para PreApproval: ${externalReference}`);
+            return NextResponse.json({ received: true, message: 'Invalid external_reference format for PreApproval' });
+        }
 
         let newStatus: Company['subscriptionStatus'] = 'pending_payment';
         if (subscription.status === 'authorized') {
