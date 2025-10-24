@@ -7,11 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, Star, ArrowRight, AlertCircle, XCircle, CreditCard } from 'lucide-react';
+import { Check, Star, ArrowRight, AlertCircle, XCircle, CreditCard, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import SupportRequestDialog from '@/components/support/SupportRequestDialog';
 import type { Company, LandingPlan } from '@/types';
+import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 
 function SubscriptionSkeleton() {
@@ -85,6 +87,9 @@ export default function SubscriptionPage() {
     const { subscription, allPlans, isLoading: isLoadingSubscription, error: errorSubscription } = useSubscription();
     const { employees, isLoading: isLoadingEmployees } = useEmployees(subscription?.company?.id);
     const [isSupportDialogOpen, setIsSupportDialogOpen] = useState(false);
+    const { toast } = useToast();
+    const [isCancelling, setIsCancelling] = useState(false);
+    const [isCancelAlertOpen, setIsCancelAlertOpen] = useState(false);
 
     const isLoading = isLoadingSubscription || isLoadingEmployees;
     const error = errorSubscription;
@@ -99,6 +104,37 @@ export default function SubscriptionPage() {
             default: { text: status || "Desconocido", className: "bg-gray-500" }
         };
         return statusMap[status || 'default'] || statusMap.default;
+    };
+
+    const handleCancelSubscription = async () => {
+        if (!subscription.company?.id) {
+            toast({ title: "Error", description: "No se encontró la información de la compañía.", variant: "destructive" });
+            return;
+        }
+
+        setIsCancelling(true);
+        try {
+            const response = await fetch('/api/payments/cancel-subscription', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ companyId: subscription.company.id }),
+            });
+
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.error || 'No se pudo cancelar la suscripción.');
+            }
+
+            toast({ title: "Suscripción Cancelada", description: "Tu suscripción ha sido cancelada exitosamente." });
+            // Forzar recarga de datos de suscripción
+            window.location.reload();
+
+        } catch (error: any) {
+            toast({ title: "Error al cancelar", description: error.message, variant: "destructive" });
+        } finally {
+            setIsCancelling(false);
+            setIsCancelAlertOpen(false);
+        }
     };
 
 
@@ -118,6 +154,7 @@ export default function SubscriptionPage() {
 
     const { company, plan } = subscription || {};
     const statusInfo = company ? getStatusInfo(company.subscriptionStatus) : null;
+    const isCancelable = company?.subscriptionStatus === 'active' && company?.mpPreapprovalId;
     
     // Los planes de mejora son todos los planes públicos que no son el plan actual del usuario
     const otherPlans = (allPlans || []).filter(p => p.isPublic && p.id !== plan?.id);
@@ -133,6 +170,24 @@ export default function SubscriptionPage() {
                     planName={plan?.name || 'No Asignado'}
                 />
             )}
+             <AlertDialog open={isCancelAlertOpen} onOpenChange={setIsCancelAlertOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>¿Estás seguro de que quieres cancelar?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta acción cancelará tu suscripción de forma inmediata y no se puede deshacer. Perderás acceso a las funciones de pago al final de tu ciclo de facturación actual.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isCancelling}>Volver</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleCancelSubscription} disabled={isCancelling} className="bg-destructive hover:bg-destructive/90">
+                             {isCancelling ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                             {isCancelling ? 'Cancelando...' : 'Sí, cancelar suscripción'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
             <div className="space-y-8">
                 <div>
                     <h1 className="text-3xl font-bold text-primary">Gestiona tu Suscripción</h1>
@@ -179,6 +234,16 @@ export default function SubscriptionPage() {
                                                     <CreditCard className="mr-2 h-4 w-4"/>
                                                     Realizar Pago
                                                 </Link>
+                                            </Button>
+                                        )}
+                                        {isCancelable && (
+                                            <Button
+                                                variant="destructive"
+                                                className="w-full"
+                                                onClick={() => setIsCancelAlertOpen(true)}
+                                            >
+                                                <XCircle className="mr-2 h-4 w-4"/>
+                                                Cancelar Suscripción
                                             </Button>
                                         )}
                                     </>
