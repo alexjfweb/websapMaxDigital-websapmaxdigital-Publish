@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,7 +30,7 @@ const createUserFormSchema = z.object({
   email: z.string().email({ message: "Por favor ingresa un correo electrónico válido" }),
   password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres" }),
   confirmPassword: z.string(),
-  role: z.enum(["admin", "employee"], { required_error: "Por favor selecciona un rol" }),
+  role: z.enum(["admin", "employee", "superadmin"], { required_error: "Por favor selecciona un rol" }),
   name: z.string().min(2, { message: "El nombre es obligatorio." }),
   contact: z.string().optional(),
 }).refine(data => data.password === data.confirmPassword, {
@@ -50,6 +49,7 @@ export default function SuperAdminCreateUserPage() {
       confirmPassword: "",
       name: "",
       contact: "",
+      role: "employee",
     },
   });
 
@@ -211,6 +211,7 @@ export default function SuperAdminCreateUserPage() {
                         <SelectContent>
                           <SelectItem value="admin">Administrador</SelectItem>
                           <SelectItem value="employee">Empleado</SelectItem>
+                          <SelectItem value="superadmin">Superadmin</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

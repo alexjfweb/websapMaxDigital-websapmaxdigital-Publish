@@ -1,15 +1,13 @@
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Edit3, Trash2, Search, Filter, UserCog, ShieldCheck, ShieldOff } from "lucide-react";
+import { PlusCircle, Edit3, Trash2, Search, Filter, UserCog, ShieldCheck, ShieldOff, Save } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { User, UserRole } from "@/types"; 
-import Link from "next/link";
 import { format } from "date-fns";
 import React, { useState, useEffect, useMemo } from "react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -21,6 +19,29 @@ import { useUsers } from "@/hooks/use-users";
 import { useToast } from "@/hooks/use-toast";
 import { getDb } from "@/lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
+import Link from "next/link";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+
+const userFormSchema = z.object({
+  name: z.string().min(2, "El nombre es requerido."),
+  username: z.string().min(3, "El nombre de usuario es requerido."),
+  email: z.string().email("Correo electrónico inválido."),
+  role: z.enum(["admin", "employee", "superadmin"], { required_error: "El rol es requerido." }),
+  status: z.enum(["active", "inactive", "pending"], { required_error: "El estado es requerido." }),
+});
+
+type UserFormData = z.infer<typeof userFormSchema>;
 
 export default function SuperAdminUsersPage() {
   const { users, isLoading, error, refreshUsers } = useUsers();
@@ -34,11 +55,21 @@ export default function SuperAdminUsersPage() {
   
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [editForm, setEditForm] = useState<Partial<User>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [selectedRole, setSelectedRole] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+
+  const form = useForm<UserFormData>({
+    resolver: zodResolver(userFormSchema),
+    defaultValues: {
+      name: "",
+      username: "",
+      email: "",
+      role: "employee",
+      status: "active",
+    },
+  });
 
   const roleOptions = [
     { value: "all", label: "Todos los roles" },
@@ -110,28 +141,27 @@ export default function SuperAdminUsersPage() {
   
   const handleEditClick = (user: User) => {
     setEditingUser(user);
-    setEditForm(user);
+    form.reset({
+        name: user.name || '',
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+    });
     setIsFormModalOpen(true);
   };
   
   const handleCreateClick = () => {
-    setEditingUser(null);
-    setEditForm({});
-    setIsFormModalOpen(true);
+    router.push('/superadmin/users/create');
   };
 
-  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setEditForm(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleEditSave = async () => {
-    if (!editingUser || !editForm) return;
+  const handleEditSave = async (data: UserFormData) => {
+    if (!editingUser) return;
     setIsSubmitting(true);
     try {
       const db = getDb();
       const userRef = doc(db, 'users', editingUser.id);
-      await updateDoc(userRef, editForm);
+      await updateDoc(userRef, data);
       toast({ title: "Usuario actualizado", description: "Los datos del usuario han sido guardados." });
       setIsFormModalOpen(false);
       await refreshUsers();
@@ -300,7 +330,7 @@ export default function SuperAdminUsersPage() {
         </CardContent>
       </Card>
       
-      {/* Edit/Create Modal */}
+      {/* Edit Modal */}
       <Dialog open={isFormModalOpen} onOpenChange={setIsFormModalOpen}>
         <DialogContent>
           <DialogHeader>
@@ -309,57 +339,86 @@ export default function SuperAdminUsersPage() {
               {editingUser ? 'Modifica los detalles del usuario.' : 'Crea un nuevo usuario en el sistema.'}
             </DialogDescription>
           </DialogHeader>
-          {editingUser ? (
-            <div className="space-y-4 py-4">
-                <div>
-                    <label className="text-sm font-medium">Nombre Completo</label>
-                    <Input name="name" value={editForm.name || ''} onChange={handleEditChange} />
-                </div>
-                <div>
-                    <label className="text-sm font-medium">Nombre de Usuario</label>
-                    <Input name="username" value={editForm.username || ''} onChange={handleEditChange} />
-                </div>
-                <div>
-                    <label className="text-sm font-medium">Email</label>
-                    <Input name="email" type="email" value={editForm.email || ''} onChange={handleEditChange} disabled />
-                </div>
-                <div>
-                <label className="text-sm font-medium">Rol</label>
-                <Select name="role" value={editForm.role} onValueChange={(value) => handleEditChange({ target: { name: 'role', value } } as any)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="employee">Empleado</SelectItem>
-                    <SelectItem value="superadmin">Superadmin</SelectItem>
-                    </SelectContent>
-                </Select>
-                </div>
-                <div>
-                <label className="text-sm font-medium">Estado</label>
-                <Select name="status" value={editForm.status} onValueChange={(value) => handleEditChange({ target: { name: 'status', value } } as any)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                    <SelectItem value="active">Activo</SelectItem>
-                    <SelectItem value="inactive">Inactivo</SelectItem>
-                    <SelectItem value="pending">Pendiente</SelectItem>
-                    </SelectContent>
-                </Select>
-                </div>
-            </div>
-          ) : (
-            <div className="py-4 text-center">
-              <p className="text-muted-foreground">Para crear un nuevo usuario, por favor usa el botón de "Crear Usuario" que te llevará al formulario completo.</p>
-              <Button asChild className="mt-4">
-                <Link href="/superadmin/users/create">Ir a Crear Usuario</Link>
-              </Button>
-            </div>
-          )}
-          {editingUser && (
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsFormModalOpen(false)}>Cancelar</Button>
-              <Button onClick={handleEditSave} disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar Cambios'}</Button>
-            </DialogFooter>
-          )}
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleEditSave)} className="space-y-4 py-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre Completo</FormLabel>
+                    <FormControl><Input {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre de Usuario</FormLabel>
+                    <FormControl><Input {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl><Input type="email" {...field} disabled /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rol</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="employee">Empleado</SelectItem>
+                        <SelectItem value="superadmin">Superadmin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estado</FormLabel>
+                     <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="active">Activo</SelectItem>
+                        <SelectItem value="inactive">Inactivo</SelectItem>
+                        <SelectItem value="pending">Pendiente</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button variant="outline" type="button" onClick={() => setIsFormModalOpen(false)}>Cancelar</Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  <Save className="mr-2 h-4 w-4" />
+                  {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
       
