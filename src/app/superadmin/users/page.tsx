@@ -17,16 +17,25 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { useRouter } from 'next/navigation';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useUsers } from "@/hooks/use-users"; // Importar el nuevo hook
+import { useUsers } from "@/hooks/use-users";
+import { useToast } from "@/hooks/use-toast";
+import { getDb } from "@/lib/firebase";
+import { doc, updateDoc } from "firebase/firestore";
 
 export default function SuperAdminUsersPage() {
-  const { users, isLoading, error } = useUsers(); // Usar el hook para obtener datos reales
+  const { users, isLoading, error, refreshUsers } = useUsers();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [openDetail, setOpenDetail] = useState(false);
   const [openStatus, setOpenStatus] = useState(false);
   const [openDelete, setOpenDelete] = useState(false);
   const [statusAction, setStatusAction] = useState<'activate' | 'deactivate'>('activate');
   const router = useRouter();
+  const { toast } = useToast();
+  
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editForm, setEditForm] = useState<Partial<User>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [selectedRole, setSelectedRole] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
 
@@ -97,6 +106,35 @@ export default function SuperAdminUsersPage() {
   const handleOpenDetail = (user: User) => { setSelectedUser(user); setOpenDetail(true); };
   const handleOpenStatus = (user: User, action: 'activate' | 'deactivate') => { setSelectedUser(user); setStatusAction(action); setOpenStatus(true); };
   const handleOpenDelete = (user: User) => { setSelectedUser(user); setOpenDelete(true); };
+  
+  const handleEditClick = (user: User) => {
+    setSelectedUser(user);
+    setEditForm(user);
+    setIsEditModalOpen(true);
+  };
+  
+  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setEditForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditSave = async () => {
+    if (!selectedUser || !editForm) return;
+    setIsSubmitting(true);
+    try {
+      const db = getDb();
+      const userRef = doc(db, 'users', selectedUser.id);
+      await updateDoc(userRef, editForm);
+      toast({ title: "Usuario actualizado", description: "Los datos del usuario han sido guardados." });
+      setIsEditModalOpen(false);
+      await refreshUsers();
+    } catch (e: any) {
+      toast({ title: "Error", description: `No se pudo actualizar el usuario: ${e.message}`, variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleCloseModals = () => { setOpenDetail(false); setOpenStatus(false); setOpenDelete(false); setSelectedUser(null); };
 
   if (isLoading) {
@@ -231,7 +269,7 @@ export default function SuperAdminUsersPage() {
                           <DropdownMenuItem onSelect={() => handleOpenDetail(user)}>
                             Ver detalles
                           </DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => router.push(`/superadmin/users/create?edit=${user.id}`)}>
+                          <DropdownMenuItem onSelect={() => handleEditClick(user)}>
                             Editar Usuario
                           </DropdownMenuItem>
                           {user.status === 'active' ? (
@@ -256,7 +294,64 @@ export default function SuperAdminUsersPage() {
           </Table>
         </CardContent>
       </Card>
-       {/* Modales de acciones */}
+      
+      {/* Edit Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Usuario</DialogTitle>
+            <DialogDescription>
+              Modifica los detalles del usuario.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+                <label className="text-sm font-medium">Nombre Completo</label>
+                <Input name="name" value={editForm.name || ''} onChange={handleEditChange} />
+            </div>
+            <div>
+                <label className="text-sm font-medium">Nombre de Usuario</label>
+                <Input name="username" value={editForm.username || ''} onChange={handleEditChange} />
+            </div>
+             <div>
+                <label className="text-sm font-medium">Email</label>
+                <Input name="email" type="email" value={editForm.email || ''} onChange={handleEditChange} disabled />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Rol</label>
+              <Select name="role" value={editForm.role} onValueChange={(value) => handleEditChange({ target: { name: 'role', value } } as any)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="employee">Empleado</SelectItem>
+                  <SelectItem value="superadmin">Superadmin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+             <div>
+              <label className="text-sm font-medium">Estado</label>
+              <Select name="status" value={editForm.status} onValueChange={(value) => handleEditChange({ target: { name: 'status', value } } as any)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Activo</SelectItem>
+                  <SelectItem value="inactive">Inactivo</SelectItem>
+                  <SelectItem value="pending">Pendiente</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancelar</Button>
+            <Button onClick={handleEditSave} disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar Cambios'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Other Modals */}
       <Dialog open={openDetail} onOpenChange={setOpenDetail}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
