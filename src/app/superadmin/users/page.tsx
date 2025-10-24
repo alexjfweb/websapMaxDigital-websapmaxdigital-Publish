@@ -18,7 +18,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useUsers } from "@/hooks/use-users";
 import { useToast } from "@/hooks/use-toast";
 import { getDb } from "@/lib/firebase";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { getAuth } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import Link from "next/link";
 import {
   Form,
@@ -33,8 +35,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ShieldCheck, UserCog } from "lucide-react";
 
-
-const userFormSchema = z.object({
+// Schema para edición (sin contraseñas)
+const userEditSchema = z.object({
   name: z.string().min(2, "El nombre es requerido."),
   username: z.string().min(3, "El nombre de usuario es requerido."),
   email: z.string().email("Correo electrónico inválido."),
@@ -42,7 +44,19 @@ const userFormSchema = z.object({
   status: z.enum(["active", "inactive", "pending"], { required_error: "El estado es requerido." }),
 });
 
-type UserFormData = z.infer<typeof userFormSchema>;
+// Schema para creación (con contraseñas)
+const userCreateSchema = userEditSchema.extend({
+  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres."),
+  confirmPassword: z.string().min(6, "Confirma la contraseña."),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Las contraseñas no coinciden.",
+  path: ["confirmPassword"],
+});
+
+type UserFormData = z.infer<typeof userEditSchema> & {
+  password?: string;
+  confirmPassword?: string;
+};
 
 export default function SuperAdminUsersPage() {
   const { users, isLoading, error, refreshUsers } = useUsers();
@@ -62,13 +76,15 @@ export default function SuperAdminUsersPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
 
   const form = useForm<UserFormData>({
-    resolver: zodResolver(userFormSchema),
+    resolver: zodResolver(editingUser ? userEditSchema : userCreateSchema),
     defaultValues: {
       name: "",
       username: "",
       email: "",
       role: "employee",
       status: "active",
+      password: "",
+      confirmPassword: "",
     },
   });
 
@@ -91,7 +107,6 @@ export default function SuperAdminUsersPage() {
       (selectedStatus === "all" || user.status === selectedStatus)
     );
   }, [users, selectedRole, selectedStatus]);
-
 
   const getRoleBadge = (role: UserRole) => {
     const roleTranslations: { [key in UserRole]: string } = {
@@ -143,11 +158,11 @@ export default function SuperAdminUsersPage() {
   const handleEditClick = (user: User) => {
     setEditingUser(user);
     form.reset({
-        name: user.name || '',
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        status: user.status,
+      name: user.name || '',
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      status: user.status,
     });
     setIsFormModalOpen(true);
   };
@@ -160,8 +175,55 @@ export default function SuperAdminUsersPage() {
       email: "",
       role: "employee",
       status: "active",
+      password: "",
+      confirmPassword: "",
     });
     setIsFormModalOpen(true);
+  };
+
+  const handleFormSubmit = async (data: UserFormData) => {
+    if (editingUser) {
+      await handleEditSave(data);
+    } else {
+      await handleCreateSave(data);
+    }
+  };
+
+  const handleCreateSave = async (data: UserFormData) => {
+    setIsSubmitting(true);
+    try {
+      const auth = getAuth();
+      const db = getDb();
+      
+      // Crear usuario en Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password!);
+      const uid = userCredential.user.uid;
+      
+      // Crear documento en Firestore
+      await addDoc(collection(db, 'users'), {
+        uid,
+        name: data.name,
+        username: data.username,
+        email: data.email,
+        role: data.role,
+        status: data.status,
+        registrationDate: serverTimestamp(),
+        avatarUrl: null,
+        contact: null,
+      });
+      
+      toast({ title: "Usuario creado", description: "El usuario ha sido creado exitosamente." });
+      setIsFormModalOpen(false);
+      await refreshUsers();
+    } catch (e: any) {
+      toast({ 
+        title: "Error", 
+        description: `No se pudo crear el usuario: ${e.message}`, 
+        variant: "destructive" 
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEditSave = async (data: UserFormData) => {
@@ -170,18 +232,36 @@ export default function SuperAdminUsersPage() {
     try {
       const db = getDb();
       const userRef = doc(db, 'users', editingUser.id);
-      await updateDoc(userRef, data);
+      
+      // Solo actualizar campos permitidos (sin password)
+      const updateData: any = {
+        name: data.name,
+        username: data.username,
+        role: data.role,
+        status: data.status,
+      };
+      
+      await updateDoc(userRef, updateData);
       toast({ title: "Usuario actualizado", description: "Los datos del usuario han sido guardados." });
       setIsFormModalOpen(false);
       await refreshUsers();
     } catch (e: any) {
-      toast({ title: "Error", description: `No se pudo actualizar el usuario: ${e.message}`, variant: "destructive" });
+      toast({ 
+        title: "Error", 
+        description: `No se pudo actualizar el usuario: ${e.message}`, 
+        variant: "destructive" 
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleCloseModals = () => { setOpenDetail(false); setOpenStatus(false); setOpenDelete(false); setSelectedUser(null); };
+  const handleCloseModals = () => { 
+    setOpenDetail(false); 
+    setOpenStatus(false); 
+    setOpenDelete(false); 
+    setSelectedUser(null); 
+  };
 
   if (isLoading) {
     return (
@@ -225,7 +305,7 @@ export default function SuperAdminUsersPage() {
   }
   
   if (error) {
-      return <div>Error al cargar los usuarios: {error.message}</div>
+    return <div>Error al cargar los usuarios: {error.message}</div>
   }
 
   return (
@@ -236,7 +316,7 @@ export default function SuperAdminUsersPage() {
           <p className="text-lg text-muted-foreground">Descripción de la página de usuarios</p>
         </div>
         <Button onClick={handleCreateClick}>
-            <PlusCircle className="mr-2 h-5 w-5" /> Crear Usuario
+          <PlusCircle className="mr-2 h-5 w-5" /> Crear Usuario
         </Button>
       </div>
 
@@ -339,7 +419,7 @@ export default function SuperAdminUsersPage() {
         </CardContent>
       </Card>
       
-      {/* Unified Create/Edit Modal */}
+      {/* Modal Unificado Crear/Editar */}
       <Dialog open={isFormModalOpen} onOpenChange={setIsFormModalOpen}>
         <DialogContent>
           <DialogHeader>
@@ -349,7 +429,7 @@ export default function SuperAdminUsersPage() {
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleEditSave)} className="space-y-4 py-4">
+            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
               <FormField
                 control={form.control}
                 name="name"
@@ -385,10 +465,10 @@ export default function SuperAdminUsersPage() {
               />
               {!editingUser && (
                 <>
-                 <FormField
+                  <FormField
                     control={form.control}
                     name="password"
-                    render={({ field }: any) => (
+                    render={({ field }) => (
                       <FormItem>
                         <FormLabel>Contraseña</FormLabel>
                         <FormControl><Input type="password" {...field} /></FormControl>
@@ -399,7 +479,7 @@ export default function SuperAdminUsersPage() {
                   <FormField
                     control={form.control}
                     name="confirmPassword"
-                    render={({ field }: any) => (
+                    render={({ field }) => (
                       <FormItem>
                         <FormLabel>Confirmar Contraseña</FormLabel>
                         <FormControl><Input type="password" {...field} /></FormControl>
@@ -433,7 +513,7 @@ export default function SuperAdminUsersPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Estado</FormLabel>
-                     <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                       <SelectContent>
                         <SelectItem value="active">Activo</SelectItem>
@@ -449,7 +529,7 @@ export default function SuperAdminUsersPage() {
                 <Button variant="outline" type="button" onClick={() => setIsFormModalOpen(false)}>Cancelar</Button>
                 <Button type="submit" disabled={isSubmitting}>
                   <Save className="mr-2 h-4 w-4" />
-                  {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
+                  {isSubmitting ? 'Guardando...' : (editingUser ? 'Guardar Cambios' : 'Crear Usuario')}
                 </Button>
               </DialogFooter>
             </form>
@@ -457,7 +537,7 @@ export default function SuperAdminUsersPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Other Modals */}
+      {/* Otros Modales */}
       <Dialog open={openDetail} onOpenChange={setOpenDetail}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -490,9 +570,7 @@ export default function SuperAdminUsersPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {statusAction === 'activate'
-                ? 'Activar Usuario'
-                : 'Desactivar Usuario'}
+              {statusAction === 'activate' ? 'Activar Usuario' : 'Desactivar Usuario'}
             </DialogTitle>
             <DialogDescription>
               {statusAction === 'activate'
