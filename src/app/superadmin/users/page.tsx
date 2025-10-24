@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Edit3, Trash2, Search, Filter, UserCog, ShieldCheck, ShieldOff, Save } from "lucide-react";
+import { PlusCircle, Edit3, Trash2, Search, Save } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +31,7 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { ShieldCheck, UserCog } from "lucide-react";
 
 
 const userFormSchema = z.object({
@@ -152,7 +153,15 @@ export default function SuperAdminUsersPage() {
   };
   
   const handleCreateClick = () => {
-    router.push('/superadmin/users/create');
+    setEditingUser(null);
+    form.reset({
+      name: "",
+      username: "",
+      email: "",
+      role: "employee",
+      status: "active",
+    });
+    setIsFormModalOpen(true);
   };
 
   const handleEditSave = async (data: UserFormData) => {
@@ -280,7 +289,7 @@ export default function SuperAdminUsersPage() {
                 <TableRow key={user.id}>
                   <TableCell className="hidden lg:table-cell">
                     <Avatar>
-                      <AvatarImage src={user.avatarUrl || `https://placehold.co/40x40.png?text=${user.username.substring(0,1).toUpperCase()}`} alt={user.username} data-ai-hint="user avatar" />
+                      <AvatarImage src={user.avatarUrl || `https://placehold.co/40x40.png?text=${user.username.substring(0,1).toUpperCase()}`} alt={user.username} data-ai-hint="user avatar"/>
                       <AvatarFallback>{user.username.substring(0,2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                   </TableCell>
@@ -330,7 +339,7 @@ export default function SuperAdminUsersPage() {
         </CardContent>
       </Card>
       
-      {/* Edit Modal */}
+      {/* Unified Create/Edit Modal */}
       <Dialog open={isFormModalOpen} onOpenChange={setIsFormModalOpen}>
         <DialogContent>
           <DialogHeader>
@@ -369,11 +378,37 @@ export default function SuperAdminUsersPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email</FormLabel>
-                    <FormControl><Input type="email" {...field} disabled /></FormControl>
+                    <FormControl><Input type="email" {...field} disabled={!!editingUser} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              {!editingUser && (
+                <>
+                 <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }: any) => (
+                      <FormItem>
+                        <FormLabel>Contraseña</FormLabel>
+                        <FormControl><Input type="password" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="confirmPassword"
+                    render={({ field }: any) => (
+                      <FormItem>
+                        <FormLabel>Confirmar Contraseña</FormLabel>
+                        <FormControl><Input type="password" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
               <FormField
                 control={form.control}
                 name="role"
