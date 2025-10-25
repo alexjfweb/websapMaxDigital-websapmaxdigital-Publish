@@ -25,6 +25,8 @@ const serializeCompany = (doc: any): Company => {
   return {
     id: doc.id,
     ...data,
+    stripeSubscriptionId: data.stripeSubscriptionId, // <-- CORRECCIÓN
+    mpPreapprovalId: data.mpPreapprovalId, // <-- CORRECCIÓN
     createdAt: serializeDate(data.createdAt),
     updatedAt: serializeDate(data.updatedAt),
     registrationDate: serializeDate(data.registrationDate) || new Date().toISOString(),
