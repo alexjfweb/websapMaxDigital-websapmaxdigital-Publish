@@ -46,7 +46,7 @@ export default function SuperAdminCompaniesPage() {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
-    // Para depuración: Imprimir los datos de las compañías cuando lleguen
+    // Log para depuración
     if (companies.length > 0) {
       console.log('Datos de compañías recibidos en el componente:', companies);
     }
