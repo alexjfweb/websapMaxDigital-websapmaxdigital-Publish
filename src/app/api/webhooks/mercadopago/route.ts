@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { MercadoPagoConfig, PreApproval, Payment } from 'mercadopago';
 import { doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
@@ -108,18 +109,28 @@ export async function POST(request: NextRequest) {
             newStatus = 'canceled';
         }
 
-        const db = getDb();
-        await updateDoc(doc(db, 'companies', companyId), {
+        // CORRECCIÓN: Crear un objeto para las actualizaciones y añadir el mpPaymentId
+        const updateData: any = {
             subscriptionStatus: newStatus,
             planId: planId,
             mpPreapprovalId: data.id,
             updatedAt: serverTimestamp(),
-        });
+        };
+
+        // Si es el primer pago de la suscripción (authorized), guardamos también el ID del pago.
+        if (subscription.status === 'authorized' && subscription.next_payment_date) {
+            if (subscription.last_payment_id) {
+                updateData.mpPaymentId = subscription.last_payment_id;
+            }
+        }
+
+        const db = getDb();
+        await updateDoc(doc(db, 'companies', companyId), updateData);
 
         await auditService.log({
           entity: 'companies', entityId: companyId, action: 'updated',
           performedBy: { uid: 'mercadopago-webhook', email: 'webhook@mercadopago.com' },
-          newData: { planId, subscriptionStatus: newStatus, mpPreapprovalId: data.id },
+          newData: { planId, subscriptionStatus: newStatus, mpPreapprovalId: data.id, mpPaymentId: updateData.mpPaymentId },
           details: `Suscripción (vía PreApproval) actualizada por webhook. Nuevo estado: ${newStatus}.`
         });
         console.log(`✅ [MP Webhook] Suscripción recurrente actualizada para ${companyId}. Estado: ${newStatus}`);

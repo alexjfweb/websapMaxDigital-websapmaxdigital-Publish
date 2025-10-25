@@ -47,7 +47,7 @@ export default function SuperAdminCompaniesPage() {
 
   useEffect(() => {
     if (companies.length > 0) {
-      console.log('Empresas recibidas en el componente:', companies);
+      console.log('Datos de empresas recibidos en el componente:', companies);
     }
     if (error) {
       console.error('🔴 Error al cargar empresas:', error);
