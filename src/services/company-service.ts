@@ -27,6 +27,7 @@ const serializeCompany = (doc: any): Company => {
     ...data,
     stripeSubscriptionId: data.stripeSubscriptionId || null,
     mpPreapprovalId: data.mpPreapprovalId || null,
+    mpPaymentId: data.mpPaymentId || null, // Asegurar que mpPaymentId también se incluya
     createdAt: serializeDate(data.createdAt),
     updatedAt: serializeDate(data.updatedAt),
     registrationDate: serializeDate(data.registrationDate) || new Date().toISOString(),
