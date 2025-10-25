@@ -3,30 +3,35 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Edit3, Trash2, Search, Filter, Eye } from "lucide-react";
+import { PlusCircle, Edit3, Trash2, Search, Filter, Eye, XCircle, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { Company } from "@/types";
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { useCompanies } from "@/hooks/use-companies";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CreateCompanyInput } from "@/services/company-service";
+import { CreateCompanyInput, companyService } from "@/services/company-service";
+import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+
 
 export default function SuperAdminCompaniesPage() {
   const { companies, isLoading, error, refreshCompanies } = useCompanies();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const { toast } = useToast();
 
   // States for modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [cancelSubModalOpen, setCancelSubModalOpen] = useState(false);
   
   const initialFormState: CreateCompanyInput = {
     name: '', ruc: '', location: '', email: '', phone: '', phoneFixed: '',
@@ -166,6 +171,34 @@ export default function SuperAdminCompaniesPage() {
     console.log("Eliminando empresa:", selectedCompany?.id);
     setDeleteModalOpen(false);
   };
+  
+  const handleCancelSubscription = (company: Company) => {
+    setSelectedCompany(company);
+    setCancelSubModalOpen(true);
+  };
+
+  const confirmCancelSubscription = async () => {
+    if (!selectedCompany?.id) return;
+    setIsSubmitting(true);
+    try {
+        const response = await fetch('/api/payments/cancel-subscription', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ companyId: selectedCompany.id }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.error || 'No se pudo cancelar la suscripción.');
+        }
+        toast({ title: "Suscripción Cancelada", description: `La suscripción de ${selectedCompany.name} ha sido cancelada.`});
+        await refreshCompanies();
+    } catch (err: any) {
+        toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+        setIsSubmitting(false);
+        setCancelSubModalOpen(false);
+    }
+  };
 
   const renderTableContent = () => {
     if (isLoading) {
@@ -213,17 +246,33 @@ export default function SuperAdminCompaniesPage() {
           {company.registrationDate ? format(new Date(company.registrationDate), "P") : 'N/A'}
         </TableCell>
         <TableCell className="text-right">
-          <div className="flex justify-end gap-1">
-            <Button variant="ghost" size="icon" className="hover:text-blue-500" title="Ver detalles" onClick={() => handleView(company)}>
-              <Eye className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="hover:text-primary" title="Editar" onClick={() => handleEdit(company)}>
-              <Edit3 className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="hover:text-destructive" title="Eliminar" onClick={() => handleDelete(company)}>
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="hover:text-primary" title="Acciones">
+                <span className="sr-only">Acciones</span>
+                <Edit3 className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleView(company)}>
+                <Eye className="mr-2 h-4 w-4" />Ver Detalles
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleEdit(company)}>
+                <Edit3 className="mr-2 h-4 w-4" />Editar Empresa
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDelete(company)}>
+                <Trash2 className="mr-2 h-4 w-4" />Eliminar (Desactivar)
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => handleCancelSubscription(company)} 
+                className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                disabled={company.subscriptionStatus !== 'active' || !company.mpPreapprovalId}
+              >
+                <XCircle className="mr-2 h-4 w-4" />Cancelar Suscripción
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </TableCell>
       </TableRow>
     ));
@@ -482,6 +531,25 @@ export default function SuperAdminCompaniesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Modal Cancelar Suscripción */}
+      <AlertDialog open={cancelSubModalOpen} onOpenChange={setCancelSubModalOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>¿Confirmas la cancelación?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Esta acción cancelará la suscripción de <strong>{selectedCompany?.name}</strong> de forma inmediata. La acción no se puede deshacer.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setCancelSubModalOpen(false)} disabled={isSubmitting}>Volver</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmCancelSubscription} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isSubmitting ? 'Cancelando...' : 'Sí, cancelar suscripción'}
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Feedback modal */}
       <Dialog open={!!feedback} onOpenChange={() => setFeedback(null)}>
@@ -498,3 +566,4 @@ export default function SuperAdminCompaniesPage() {
     </div>
   );
 }
+
