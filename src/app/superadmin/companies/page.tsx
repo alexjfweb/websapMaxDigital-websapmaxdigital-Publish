@@ -46,8 +46,9 @@ export default function SuperAdminCompaniesPage() {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
+    // Para depuración: Imprimir los datos de las compañías cuando lleguen
     if (companies.length > 0) {
-      console.log('Datos de empresas recibidos en el componente:', companies);
+      console.log('Datos de compañías recibidos en el componente:', companies);
     }
     if (error) {
       console.error('🔴 Error al cargar empresas:', error);
@@ -236,6 +237,7 @@ export default function SuperAdminCompaniesPage() {
     }
 
     return filteredCompanies.map((company) => {
+      // Lógica robustecida para habilitar el botón
       const isCancelable = company.subscriptionStatus === 'active' && (!!company.stripeSubscriptionId || !!company.mpPreapprovalId || !!company.mpPaymentId);
       return (
         <TableRow key={company.id}>
