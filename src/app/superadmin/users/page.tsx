@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,8 +18,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useUsers } from "@/hooks/use-users";
 import { useToast } from "@/hooks/use-toast";
 import { getDb } from "@/lib/firebase";
+import { getAuth } from "firebase/auth";
 import { doc, updateDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { getAuth } from 'firebase/auth';
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import Link from "next/link";
 import {
@@ -391,10 +390,16 @@ export default function SuperAdminUsersPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onSelect={() => handleOpenDetail(user)}>
+                          <DropdownMenuItem onSelect={(e) => {
+                            e.preventDefault();
+                            handleOpenDetail(user);
+                          }}>
                             Ver detalles
                           </DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleEditClick(user)}>
+                          <DropdownMenuItem onSelect={(e) => {
+                            e.preventDefault();
+                            handleEditClick(user);
+                          }}>
                             Editar Usuario
                           </DropdownMenuItem>
                           {user.status === 'active' ? (
