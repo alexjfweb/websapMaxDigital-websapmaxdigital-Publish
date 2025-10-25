@@ -235,47 +235,50 @@ export default function SuperAdminCompaniesPage() {
       );
     }
 
-    return filteredCompanies.map((company) => (
-      <TableRow key={company.id}>
-        <TableCell className="font-medium">{company.name}</TableCell>
-        <TableCell>{company.ruc}</TableCell>
-        <TableCell className="hidden sm:table-cell">{company.email || 'N/A'}</TableCell>
-        <TableCell className="text-center">{getStatusBadge(company.status)}</TableCell>
-        <TableCell><Badge variant="outline">{company.planName}</Badge></TableCell>
-        <TableCell className="hidden md:table-cell text-center text-xs text-muted-foreground">
-          {company.registrationDate ? format(new Date(company.registrationDate), "P") : 'N/A'}
-        </TableCell>
-        <TableCell className="text-right">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="hover:text-primary" title="Acciones">
-                <span className="sr-only">Acciones</span>
-                <Edit3 className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleView(company)}>
-                <Eye className="mr-2 h-4 w-4" />Ver Detalles
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleEdit(company)}>
-                <Edit3 className="mr-2 h-4 w-4" />Editar Empresa
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleDelete(company)}>
-                <Trash2 className="mr-2 h-4 w-4" />Eliminar (Desactivar)
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                onClick={() => handleCancelSubscription(company)} 
-                className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                disabled={company.subscriptionStatus !== 'active'}
-              >
-                <XCircle className="mr-2 h-4 w-4" />Cancelar Suscripción
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </TableCell>
-      </TableRow>
-    ));
+    return filteredCompanies.map((company) => {
+      const isCancelable = company.subscriptionStatus === 'active' && (!!company.stripeSubscriptionId || !!company.mpPreapprovalId);
+      return (
+        <TableRow key={company.id}>
+          <TableCell className="font-medium">{company.name}</TableCell>
+          <TableCell>{company.ruc}</TableCell>
+          <TableCell className="hidden sm:table-cell">{company.email || 'N/A'}</TableCell>
+          <TableCell className="text-center">{getStatusBadge(company.status)}</TableCell>
+          <TableCell><Badge variant="outline">{company.planName}</Badge></TableCell>
+          <TableCell className="hidden md:table-cell text-center text-xs text-muted-foreground">
+            {company.registrationDate ? format(new Date(company.registrationDate), "P") : 'N/A'}
+          </TableCell>
+          <TableCell className="text-right">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="hover:text-primary" title="Acciones">
+                  <span className="sr-only">Acciones</span>
+                  <Edit3 className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleView(company)}>
+                  <Eye className="mr-2 h-4 w-4" />Ver Detalles
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleEdit(company)}>
+                  <Edit3 className="mr-2 h-4 w-4" />Editar Empresa
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDelete(company)}>
+                  <Trash2 className="mr-2 h-4 w-4" />Eliminar (Desactivar)
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => handleCancelSubscription(company)} 
+                  className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                  disabled={!isCancelable}
+                >
+                  <XCircle className="mr-2 h-4 w-4" />Cancelar Suscripción
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </TableCell>
+        </TableRow>
+      )
+    });
   };
 
 
@@ -566,4 +569,3 @@ export default function SuperAdminCompaniesPage() {
     </div>
   );
 }
-

@@ -203,7 +203,10 @@ export interface Company {
   };
   customShareMessage?: string;
   customShareImageUrl?: string;
-  stripeCustomerId?: string; // Nuevo campo
+  stripeCustomerId?: string; // Nuevo campo para Stripe
+  stripeSubscriptionId?: string; // Nuevo campo para Stripe
+  mpPaymentId?: string; // Para pagos únicos de Mercado Pago
+  mpPreapprovalId?: string; // Para suscripciones de Mercado Pago
   baseShippingCost?: number; // Nuevo campo para costo de envío
 }
 // Sistema de Gestión de Mesas
