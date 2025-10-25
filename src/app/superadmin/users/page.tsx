@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -282,8 +281,6 @@ export default function SuperAdminUsersPage() {
     try {
         const db = getDb();
         await deleteDoc(doc(db, "users", selectedUser.id));
-        // Note: This does not delete the user from Firebase Auth, only Firestore.
-        // A complete solution would involve a Cloud Function to handle Auth user deletion.
         toast({ title: "Usuario Eliminado", description: "El registro del usuario ha sido eliminado de la base de datos.", variant: "destructive" });
         await refreshUsers();
     } catch (e: any) {
