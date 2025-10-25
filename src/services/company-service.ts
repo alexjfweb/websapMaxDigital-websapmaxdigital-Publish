@@ -21,12 +21,12 @@ import { getDb } from '@/lib/firebase';
 
 const serializeCompany = (doc: any): Company => {
   const data = doc.data();
-  // Usar la nueva utilidad para serializar fechas de forma segura
+  // Ensure subscription IDs are correctly serialized from the document data
   return {
     id: doc.id,
     ...data,
-    stripeSubscriptionId: data.stripeSubscriptionId, // <-- CORRECCIÓN
-    mpPreapprovalId: data.mpPreapprovalId, // <-- CORRECCIÓN
+    stripeSubscriptionId: data.stripeSubscriptionId || null,
+    mpPreapprovalId: data.mpPreapprovalId || null,
     createdAt: serializeDate(data.createdAt),
     updatedAt: serializeDate(data.updatedAt),
     registrationDate: serializeDate(data.registrationDate) || new Date().toISOString(),

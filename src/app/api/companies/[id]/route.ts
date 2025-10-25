@@ -10,6 +10,7 @@ export async function GET(
     if (!company) {
       return NextResponse.json({ error: 'Empresa no encontrada' }, { status: 404 });
     }
+    // Devolver el objeto completo de la compañía, incluyendo los IDs de suscripción
     return NextResponse.json(company, { status: 200 });
   } catch (error: any) {
     console.error(`❌ [API] GET /api/companies/${params.id} - Error:`, error.message);
