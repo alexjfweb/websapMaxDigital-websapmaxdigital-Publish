@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -235,7 +236,7 @@ export default function SuperAdminCompaniesPage() {
     }
 
     return filteredCompanies.map((company) => {
-      const isCancelable = company.subscriptionStatus === 'active' && (!!company.stripeSubscriptionId || !!company.mpPreapprovalId);
+      const isCancelable = company.subscriptionStatus === 'active' && (!!company.stripeSubscriptionId || !!company.mpPreapprovalId || !!company.mpPaymentId);
       return (
         <TableRow key={company.id}>
           <TableCell className="font-medium">{company.name}</TableCell>

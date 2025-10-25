@@ -15,7 +15,6 @@ async function getMercadoPagoAccessToken(planId: string): Promise<string> {
     }
     
     const config = docSnap.data();
-    // Determinar qué clave de plan usar basado en el planId (slug)
     const planKey = planId.includes('premium') || planId.includes('pro') ? 'premium' : 
                     planId.includes('estandar') || planId.includes('emprendedor') ? 'estándar' :
                     'básico';
@@ -48,46 +47,71 @@ export async function POST(request: NextRequest) {
 
         const company = companySnap.data();
         const preapprovalId = company.mpPreapprovalId;
+        const paymentId = company.mpPaymentId; // ← NUEVO: Obtener también el payment ID
         const planId = company.planId;
 
-        if (!preapprovalId || !planId) {
-            return NextResponse.json({ error: 'La compañía no tiene una suscripción activa de Mercado Pago para cancelar.' }, { status: 400 });
+        // ✅ MODIFICADO: Aceptar si tiene preapprovalId O paymentId
+        if ((!preapprovalId && !paymentId) || !planId) {
+            return NextResponse.json({ 
+                error: 'La compañía no tiene una suscripción activa para cancelar.' 
+            }, { status: 400 });
         }
 
-        console.log(`[Cancel API] - Cancelando suscripción ${preapprovalId} para la compañía ${companyId}`);
+        // CASO 1: Suscripción Recurrente (tiene preapprovalId)
+        if (preapprovalId) {
+            console.log(`[Cancel API] - Cancelando suscripción recurrente ${preapprovalId} para la compañía ${companyId}`);
 
-        const mpAccessToken = await getMercadoPagoAccessToken(planId);
-        const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
-        const preapproval = new PreApproval(client);
+            const mpAccessToken = await getMercadoPagoAccessToken(planId);
+            const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
+            const preapproval = new PreApproval(client);
 
-        // Cancelar la suscripción en Mercado Pago
-        await preapproval.update({
-            id: preapprovalId,
-            body: {
-                status: 'cancelled',
-            },
-        });
+            // Cancelar la suscripción en Mercado Pago
+            await preapproval.update({
+                id: preapprovalId,
+                body: {
+                    status: 'cancelled',
+                },
+            });
 
-        console.log(`[Cancel API] - Suscripción ${preapprovalId} cancelada en Mercado Pago.`);
+            console.log(`✅ [Cancel API] - Suscripción recurrente ${preapprovalId} cancelada en Mercado Pago.`);
+            
+            await auditService.log({
+                entity: 'companies',
+                entityId: companyId,
+                action: 'updated',
+                performedBy: { uid: 'user-action', email: company.email },
+                details: `El usuario canceló la suscripción recurrente de Mercado Pago (ID: ${preapprovalId}).`,
+                newData: { subscriptionStatus: 'canceled' }
+            });
+        }
+        // CASO 2: Pago Único (tiene paymentId)
+        else if (paymentId) {
+            console.log(`[Cancel API] - Cancelando suscripción de pago único ${paymentId} para la compañía ${companyId}`);
+            console.log(`✅ [Cancel API] - Pago único ${paymentId} no requiere cancelación en Mercado Pago.`);
+            
+            await auditService.log({
+                entity: 'companies',
+                entityId: companyId,
+                action: 'updated',
+                performedBy: { uid: 'user-action', email: company.email },
+                details: `El usuario canceló la suscripción de pago único (Payment ID: ${paymentId}).`,
+                newData: { subscriptionStatus: 'canceled' }
+            });
+        }
 
-        // Actualizar el estado en nuestra base de datos
+        // Actualizar el estado en nuestra base de datos (común para ambos casos)
         await updateDoc(companyRef, {
             subscriptionStatus: 'canceled',
             updatedAt: serverTimestamp(),
         });
-        
-        await auditService.log({
-            entity: 'companies',
-            entityId: companyId,
-            action: 'updated',
-            performedBy: { uid: 'user-action', email: company.email },
-            details: `El usuario canceló la suscripción de Mercado Pago (ID: ${preapprovalId}).`,
-            newData: { subscriptionStatus: 'canceled' }
-        });
 
         console.log(`✅ [Cancel API] - Estado de la compañía ${companyId} actualizado a "canceled".`);
 
-        return NextResponse.json({ success: true, message: 'Suscripción cancelada exitosamente.' });
+        return NextResponse.json({ 
+            success: true, 
+            message: 'Suscripción cancelada exitosamente.',
+            paymentType: preapprovalId ? 'recurring' : 'one-time'
+        });
 
     } catch (e: any) {
         console.error('❌ [Cancel API] - Error fatal en el handler:', e);
