@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,9 +18,8 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUsers } from "@/hooks/use-users";
 import { useToast } from "@/hooks/use-toast";
-import { getDb } from "@/lib/firebase";
-import { getAuth } from "firebase/auth";
-import { doc, updateDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { getDb, getFirebaseAuth } from "@/lib/firebase";
+import { doc, updateDoc, collection, addDoc, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import Link from "next/link";
 import {
@@ -33,7 +33,8 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ShieldCheck, UserCog } from "lucide-react";
+import { ShieldCheck, UserCog, Loader2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // Schema para edición (sin contraseñas)
 const userEditSchema = z.object({
@@ -192,14 +193,12 @@ export default function SuperAdminUsersPage() {
   const handleCreateSave = async (data: UserFormData) => {
     setIsSubmitting(true);
     try {
-      const auth = getAuth();
+      const auth = getFirebaseAuth();
       const db = getDb();
       
-      // Crear usuario en Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password!);
       const uid = userCredential.user.uid;
       
-      // Crear documento en Firestore
       await addDoc(collection(db, 'users'), {
         uid,
         name: data.name,
@@ -233,7 +232,6 @@ export default function SuperAdminUsersPage() {
       const db = getDb();
       const userRef = doc(db, 'users', editingUser.id);
       
-      // Solo actualizar campos permitidos (sin password)
       const updateData: any = {
         name: data.name,
         username: data.username,
@@ -255,6 +253,47 @@ export default function SuperAdminUsersPage() {
       setIsSubmitting(false);
     }
   };
+
+  const handleConfirmStatusChange = async () => {
+    if (!selectedUser) return;
+    setIsSubmitting(true);
+    try {
+      const newStatus = statusAction === 'activate' ? 'active' : 'inactive';
+      const db = getDb();
+      const userRef = doc(db, 'users', selectedUser.id);
+      await updateDoc(userRef, { status: newStatus });
+
+      toast({
+        title: `Usuario ${newStatus === 'active' ? 'activado' : 'desactivado'}`,
+        description: `El estado de ${selectedUser.username} ha sido actualizado.`,
+      });
+      await refreshUsers();
+    } catch (e: any) {
+      toast({ title: "Error", description: "No se pudo actualizar el estado del usuario.", variant: "destructive" });
+    } finally {
+      handleCloseModals();
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedUser) return;
+    setIsSubmitting(true);
+    try {
+        const db = getDb();
+        await deleteDoc(doc(db, "users", selectedUser.id));
+        // Note: This does not delete the user from Firebase Auth, only Firestore.
+        // A complete solution would involve a Cloud Function to handle Auth user deletion.
+        toast({ title: "Usuario Eliminado", description: "El registro del usuario ha sido eliminado de la base de datos.", variant: "destructive" });
+        await refreshUsers();
+    } catch (e: any) {
+       toast({ title: "Error", description: "No se pudo eliminar el registro del usuario.", variant: "destructive" });
+    } finally {
+       handleCloseModals();
+       setIsSubmitting(false);
+    }
+  };
+
 
   const handleCloseModals = () => { 
     setOpenDetail(false); 
@@ -543,7 +582,7 @@ export default function SuperAdminUsersPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Otros Modales */}
+      {/* --- Otros Modales (Confirmación) --- */}
       <Dialog open={openDetail} onOpenChange={setOpenDetail}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -572,36 +611,46 @@ export default function SuperAdminUsersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <Dialog open={openStatus} onOpenChange={setOpenStatus}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>
+
+      {/* Modal de Activar/Desactivar */}
+      <AlertDialog open={openStatus} onOpenChange={setOpenStatus}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
               {statusAction === 'activate' ? 'Activar Usuario' : 'Desactivar Usuario'}
-            </DialogTitle>
-            <DialogDescription>
-              {statusAction === 'activate'
-                ? '¿Seguro que deseas activar este usuario?'
-                : '¿Seguro que deseas desactivar este usuario?'}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleCloseModals}>Cancelar</Button>
-            <Button onClick={handleCloseModals}>Confirmar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <Dialog open={openDelete} onOpenChange={setOpenDelete}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Eliminar Usuario</DialogTitle>
-            <DialogDescription>¿Seguro que deseas eliminar este usuario?</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleCloseModals}>Cancelar</Button>
-            <Button onClick={handleCloseModals} variant="destructive">Eliminar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {`¿Seguro que deseas ${statusAction === 'activate' ? 'activar' : 'desactivar'} a este usuario?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCloseModals} disabled={isSubmitting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmStatusChange} disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+              {isSubmitting ? 'Procesando...' : 'Confirmar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Modal de Eliminar */}
+      <AlertDialog open={openDelete} onOpenChange={setOpenDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar Usuario</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Seguro que deseas eliminar este usuario? Esta acción es irreversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCloseModals} disabled={isSubmitting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} variant="destructive" disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+              {isSubmitting ? 'Eliminando...' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
