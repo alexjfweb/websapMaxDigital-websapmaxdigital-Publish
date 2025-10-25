@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import type { Company } from "@/types";
 import { format } from "date-fns";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { useCompanies } from "@/hooks/use-companies";
@@ -210,7 +210,7 @@ export default function SuperAdminCompaniesPage() {
           <TableCell className="text-center"><Skeleton className="h-6 w-20 mx-auto rounded-full" /></TableCell>
           <TableCell><Skeleton className="h-4 w-28" /></TableCell>
           <TableCell className="hidden md:table-cell text-center"><Skeleton className="h-4 w-24" /></TableCell>
-          <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
+          <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
         </TableRow>
       ));
     }
@@ -267,7 +267,7 @@ export default function SuperAdminCompaniesPage() {
               <DropdownMenuItem 
                 onClick={() => handleCancelSubscription(company)} 
                 className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                disabled={company.subscriptionStatus !== 'active' || !company.mpPreapprovalId}
+                disabled={company.subscriptionStatus !== 'active'}
               >
                 <XCircle className="mr-2 h-4 w-4" />Cancelar Suscripción
               </DropdownMenuItem>
