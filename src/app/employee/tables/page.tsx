@@ -12,9 +12,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, RefreshCw, AlertCircle } from "lucide-react";
 import { useTables } from "@/hooks/use-tables";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSession } from "@/contexts/session-context";
 
 export default function EmployeeTablesPage() {
-  const companyId = "websapmax"; // Hardcoded for now
+  const { currentUser } = useSession();
+  const companyId = currentUser?.companyId;
   const { tables, isLoading, isError, error, refreshTables } = useTables(companyId);
   const [filteredTables, setFilteredTables] = useState<Table[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
