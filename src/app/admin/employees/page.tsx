@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, type ChangeEvent } from "react";
@@ -29,7 +28,6 @@ import { getDb, getFirebaseAuth } from "@/lib/firebase";
 import { useSubscription } from '@/hooks/use-subscription';
 import UpgradePlanCard from "@/components/UpgradePlanCard";
 import { usePlanLimits } from "@/hooks/use-plan-limits";
-import LimitReachedDialog from "@/components/LimitReachedDialog";
 import WhatsAppIcon from "@/components/icons/whatsapp-icon";
 import Link from 'next/link';
 import { createUserWithEmailAndPassword } from "firebase/auth";
@@ -193,7 +191,8 @@ export default function AdminEmployeesPage() {
           registrationDate: new Date().toISOString(),
         };
 
-        await addDoc(collection(db, "users"), employeeData);
+        const userDocRef = doc(db, 'users', newUserId);
+        await setDoc(userDocRef, employeeData);
 
         toast({ title: "Empleado Agregado!", description: `${values.username} ha sido agregado al equipo.` });
         await fetchEmployees();
