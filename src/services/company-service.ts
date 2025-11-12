@@ -1,4 +1,5 @@
 
+
 import {
   collection,
   doc,
@@ -121,13 +122,11 @@ class CompanyService {
       throw new Error('userId es undefined - adminUserData.uid no existe');
     }
     
-    const companiesColRef = collection(db, 'companies');
-    const usersColRef = collection(db, 'users');
     let companyId: string | null = null;
     const batch = writeBatch(db);
 
     if (!isSuperAdminFlow) {
-      const companyDocRef = doc(companiesColRef); 
+      const companyDocRef = doc(collection(db, 'companies')); 
       companyId = companyDocRef.id;
       const planId = companyData.planId || 'plan-gratuito';
 
@@ -144,7 +143,7 @@ class CompanyService {
       batch.set(companyDocRef, newCompanyData);
     }
     
-    const userDocRef = doc(usersColRef, userId);
+    const userDocRef = doc(db, 'users', userId);
     const newUserDoc: Omit<User, 'id'> = {
       uid: userId,
       email: adminUserData.email!,
@@ -208,3 +207,4 @@ class CompanyService {
 }
 
 export const companyService = new CompanyService();
+
