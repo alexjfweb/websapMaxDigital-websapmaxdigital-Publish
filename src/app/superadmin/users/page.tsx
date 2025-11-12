@@ -35,6 +35,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ShieldCheck, UserCog, Loader2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import WhatsAppIcon from "@/components/icons/whatsapp-icon";
 
 // Schema para edición (sin contraseñas)
 const userEditSchema = z.object({
@@ -208,7 +209,7 @@ export default function SuperAdminUsersPage() {
         status: data.status,
         registrationDate: serverTimestamp(),
         avatarUrl: null,
-        contact: null,
+        whatsapp: null,
       });
       
       toast({ title: "Usuario creado", description: "El usuario ha sido creado exitosamente." });
@@ -395,7 +396,7 @@ export default function SuperAdminUsersPage() {
                 <TableHead className="hidden lg:table-cell">Avatar</TableHead>
                 <TableHead>Nombre de usuario</TableHead>
                 <TableHead>Correo electrónico</TableHead>
-                <TableHead className="hidden sm:table-cell">Contacto</TableHead>
+                <TableHead className="hidden sm:table-cell">Whatsapp</TableHead>
                 <TableHead className="text-center">Rol</TableHead>
                 <TableHead className="text-center">Estado</TableHead>
                 <TableHead className="hidden sm:table-cell">Registrado</TableHead>
@@ -413,7 +414,16 @@ export default function SuperAdminUsersPage() {
                   </TableCell>
                   <TableCell className="font-medium">{user.username}</TableCell>
                   <TableCell>{user.email}</TableCell>
-                  <TableCell className="hidden sm:table-cell">{user.contact || 'No disponible'}</TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    {user.whatsapp ? (
+                      <Link href={`https://wa.me/${user.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-primary hover:underline">
+                        <WhatsAppIcon className="h-4 w-4"/>
+                        {user.whatsapp}
+                      </Link>
+                    ) : (
+                      'No disponible'
+                    )}
+                  </TableCell>
                   <TableCell className="text-center">{getRoleBadge(user.role)}</TableCell>
                   <TableCell className="text-center">{getStatusBadge(user.status)}</TableCell>
                   <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">
@@ -603,7 +613,7 @@ export default function SuperAdminUsersPage() {
               <div><b>Rol:</b> {getRoleBadge(selectedUser.role)}</div>
               <div><b>Estado:</b> {getStatusBadge(selectedUser.status)}</div>
               <div><b>Registrado:</b> {format(new Date(selectedUser.registrationDate), "P")}</div>
-              {selectedUser.contact && <div><b>Contacto:</b> {selectedUser.contact}</div>}
+              {selectedUser.whatsapp && <div><b>Whatsapp:</b> {selectedUser.whatsapp}</div>}
             </div>
           )}
           <DialogFooter>

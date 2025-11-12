@@ -30,6 +30,8 @@ import { useSubscription } from '@/hooks/use-subscription';
 import UpgradePlanCard from "@/components/UpgradePlanCard";
 import { usePlanLimits } from "@/hooks/use-plan-limits";
 import LimitReachedDialog from "@/components/LimitReachedDialog";
+import WhatsAppIcon from "@/components/icons/whatsapp-icon";
+import Link from 'next/link';
 
 export default function AdminEmployeesPage() {
   const { currentUser } = useSession();
@@ -75,7 +77,7 @@ export default function AdminEmployeesPage() {
       id: z.string().optional(),
       username: z.string().min(3, { message: 'Se requiere el nombre de usuario' }),
       email: z.string().email({ message: "Por favor, ingrese una dirección de correo electrónico válida." }),
-      contact: z.string().optional(),
+      whatsapp: z.string().optional(),
       role: z.enum(["employee", "admin"], { required_error: "Se requiere el rol." }),
       status: z.enum(["active", "inactive", "pending"], { required_error: "Se requiere el estado." }),
       avatar: z.any().optional(),
@@ -88,7 +90,7 @@ export default function AdminEmployeesPage() {
     defaultValues: {
       username: "",
       email: "",
-      contact: "",
+      whatsapp: "",
       role: "employee",
       status: "active",
       avatar: null
@@ -101,7 +103,7 @@ export default function AdminEmployeesPage() {
         id: editingEmployee.id,
         username: editingEmployee.username,
         email: editingEmployee.email,
-        contact: editingEmployee.contact || "",
+        whatsapp: editingEmployee.whatsapp || "",
         role: editingEmployee.role as "employee" | "admin",
         status: editingEmployee.status,
       });
@@ -110,7 +112,7 @@ export default function AdminEmployeesPage() {
       form.reset({
         username: "",
         email: "",
-        contact: "",
+        whatsapp: "",
         role: "employee",
         status: "active",
         avatar: null
@@ -215,7 +217,7 @@ export default function AdminEmployeesPage() {
     if (search && !(
       emp.username.toLowerCase().includes(search.toLowerCase()) ||
       emp.email.toLowerCase().includes(search.toLowerCase()) ||
-      (emp.contact && emp.contact.includes(search))
+      (emp.whatsapp && emp.whatsapp.includes(search))
     )) return false;
     return true;
   });
@@ -297,13 +299,27 @@ export default function AdminEmployeesPage() {
                     )}
                   />
                 </div>
-                <FormField control={form.control} name="contact" render={({ field }) => (
+                <FormField
+                  control={form.control}
+                  name="whatsapp"
+                  render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Contacto</FormLabel>
-                        <FormControl><Input type="tel" placeholder="Contacto" {...field} /></FormControl>
-                        <FormMessage />
+                      <FormLabel>Whatsapp</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="tel"
+                          placeholder="Ej: 573001234567"
+                          {...field}
+                          onChange={(e) => {
+                            const numericValue = e.target.value.replace(/\D/g, '');
+                            field.onChange(numericValue);
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
-                )}/>
+                  )}
+                />
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField control={form.control} name="role" render={({ field }) => (
                         <FormItem>
@@ -417,7 +433,7 @@ export default function AdminEmployeesPage() {
                 <TableHead className="hidden md:table-cell">Avatar</TableHead>
                 <TableHead>Nombre de Usuario</TableHead>
                 <TableHead>Correo Electrónico</TableHead>
-                <TableHead className="hidden sm:table-cell">Contacto</TableHead>
+                <TableHead className="hidden sm:table-cell">Whatsapp</TableHead>
                 <TableHead className="text-center">Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
@@ -427,13 +443,22 @@ export default function AdminEmployeesPage() {
                 <TableRow key={employee.id}>
                   <TableCell className="hidden md:table-cell">
                     <Avatar>
-                      <AvatarImage src={employee.avatarUrl || `https://placehold.co/40x40.png?text=${employee.username.substring(0,1).toUpperCase()}`} alt={employee.username} data-ai-hint="avatar user" />
+                      <AvatarImage src={employee.avatarUrl || `https://placehold.co/40x40.png?text=${employee.username.substring(0,1).toUpperCase()}`} alt={employee.username} data-ai-hint="user avatar" />
                       <AvatarFallback>{employee.username.substring(0,2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                   </TableCell>
                   <TableCell className="font-medium">{employee.username}</TableCell>
                   <TableCell>{employee.email}</TableCell>
-                  <TableCell className="hidden sm:table-cell">{employee.contact || 'No disponible'}</TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    {employee.whatsapp ? (
+                      <Link href={`https://wa.me/${employee.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-primary hover:underline">
+                        <WhatsAppIcon className="h-4 w-4"/>
+                        {employee.whatsapp}
+                      </Link>
+                    ) : (
+                      'No disponible'
+                    )}
+                  </TableCell>
                   <TableCell className="text-center">
                     <Badge variant={employee.status === 'active' ? 'default' : 'outline'} 
                            className={employee.status === 'active' ? 'bg-green-500 text-white' : 'border-yellow-500 text-yellow-600'}>

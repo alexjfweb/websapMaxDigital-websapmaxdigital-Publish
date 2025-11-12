@@ -106,7 +106,7 @@ export interface User {
   firstName?: string; // Preferred field
   lastName?: string;  // Preferred field
   businessName?: string; // For admin users
-  contact?: string;
+  whatsapp?: string;
   role: UserRole;
   status: 'active' | 'inactive' | 'pending';
   registrationDate: string; // ISO date string
