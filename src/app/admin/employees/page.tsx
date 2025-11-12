@@ -33,6 +33,7 @@ import LimitReachedDialog from "@/components/LimitReachedDialog";
 import WhatsAppIcon from "@/components/icons/whatsapp-icon";
 import Link from 'next/link';
 import { createUserWithEmailAndPassword } from "firebase/auth";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const userEditSchema = z.object({
     id: z.string().optional(),
@@ -60,7 +61,7 @@ export default function AdminEmployeesPage() {
   const companyId = currentUser?.companyId;
   const { toast } = useToast();
   const [employees, setEmployees] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingData, setIsLoadingData] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<User | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -74,7 +75,7 @@ export default function AdminEmployeesPage() {
 
   const fetchEmployees = async () => {
     if (!companyId) return;
-    setIsLoading(true);
+    setIsLoadingData(true);
     try {
       const db = getDb();
       const q = query(collection(db, "users"), where("companyId", "==", companyId), where("role", "==", "employee"));
@@ -87,7 +88,7 @@ export default function AdminEmployeesPage() {
     } catch (error) {
       toast({ title: "Error", description: "No se pudieron cargar los empleados.", variant: "destructive" });
     } finally {
-      setIsLoading(false);
+      setIsLoadingData(false);
     }
   };
 
@@ -293,18 +294,173 @@ export default function AdminEmployeesPage() {
     return true;
   });
 
-  if (isSubscriptionLoading || isLimitsLoading) {
-    return <div>Cargando información de suscripción...</div>;
+  const isLoadingPage = isSubscriptionLoading || isLimitsLoading || isLoadingData;
+
+  const renderContent = () => {
+    if (!subscription?.permissions.canManageEmployees) {
+      return (
+          <UpgradePlanCard 
+              featureName="Gestión de Empleados"
+              description="Esta funcionalidad te permite añadir, editar y gestionar los roles de los miembros de tu equipo. Ideal para restaurantes con personal."
+              requiredPlan="Estándar o superior"
+          />
+      );
+    }
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Todos los Empleados</CardTitle>
+          <CardDescription>Descripción de la sección de empleados</CardDescription>
+          <div className="flex flex-col gap-2 pt-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex w-full gap-2 items-center">
+              <div className="relative flex-grow min-w-[12rem] md:min-w-[20rem] lg:min-w-[28rem]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Buscar empleados"
+                  className="pl-10 pr-4 py-2 rounded-md border border-border bg-background focus:ring-2 focus:ring-primary/30 transition-all w-full"
+                />
+              </div>
+              <div className="flex gap-2 flex-shrink-0 ml-auto">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={`flex items-center gap-2 rounded-md px-4 py-2 font-medium bg-background border border-border shadow-sm hover:shadow-lg hover:bg-primary/10 hover:text-primary transition-all duration-200 ${statusFilter && statusFilter !== 'all' ? 'ring-2 ring-primary/40 bg-primary/10 text-primary' : ''}`}
+                    >
+                      <Filter className="mr-2 h-4 w-4" /> Filtrar por Estado
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setStatusFilter('all')}>Todos</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setStatusFilter('active')}>Activo</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setStatusFilter('inactive')}>Inactivo</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={`flex items-center gap-2 rounded-md px-4 py-2 font-medium bg-background border border-border shadow-sm hover:shadow-lg hover:bg-primary/10 hover:text-primary transition-all duration-200 ${dateRange.from && dateRange.to ? 'ring-2 ring-primary/40 bg-primary/10 text-primary' : ''}`}
+                    >
+                      <CalendarDays className="mr-2 h-4 w-4" /> Filtrar por Fecha
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-auto p-0">
+                    <Calendar
+                      mode="range"
+                      selected={dateRange as { from: Date; to: Date } | undefined}
+                      onSelect={(range) => setDateRange(range || { from: null, to: null })}
+                      numberOfMonths={2}
+                      initialFocus
+                    />
+                    <div className="flex justify-end p-2">
+                      <Button size="sm" variant="ghost" onClick={() => setDateRange({ from: null, to: null })}>Limpiar Filtro de Fecha</Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="hidden md:table-cell">Avatar</TableHead>
+                <TableHead>Nombre de Usuario</TableHead>
+                <TableHead>Correo Electrónico</TableHead>
+                <TableHead className="hidden sm:table-cell">Whatsapp</TableHead>
+                <TableHead className="text-center">Estado</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredEmployees.map((employee) => (
+                <TableRow key={employee.id}>
+                  <TableCell className="hidden md:table-cell">
+                    <Avatar>
+                      <AvatarImage src={employee.avatarUrl || `https://placehold.co/40x40.png?text=${employee.username.substring(0,1).toUpperCase()}`} alt={employee.username} data-ai-hint="user avatar" />
+                      <AvatarFallback>{employee.username.substring(0,2).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                  </TableCell>
+                  <TableCell className="font-medium">{employee.username}</TableCell>
+                  <TableCell>{employee.email}</TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    {employee.whatsapp ? (
+                      <Link href={`https://wa.me/${employee.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-primary hover:underline">
+                        <WhatsAppIcon className="h-4 w-4"/>
+                        {employee.whatsapp}
+                      </Link>
+                    ) : (
+                      'No disponible'
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant={employee.status === 'active' ? 'default' : 'outline'} 
+                           className={employee.status === 'active' ? 'bg-green-500 text-white' : 'border-yellow-500 text-yellow-600'}>
+                      {employee.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                       <Button variant="ghost" size="icon" className="hover:text-primary" onClick={() => openEditDialog(employee)}>
+                        <Edit3 className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="hover:text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                              <AlertDialogHeader>
+                                  <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                      Esta acción eliminará permanentemente el empleado &quot;{employee.username}&quot;. Esta acción no se puede deshacer.
+                                  </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteEmployee(employee.id)} className="bg-destructive hover:bg-destructive/90">
+                                      Sí, eliminar empleado
+                                  </AlertDialogAction>
+                              </AlertDialogFooter>
+                          </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    )
   }
 
-  if (!subscription?.permissions.canManageEmployees) {
+  if (isLoadingPage) {
     return (
-        <UpgradePlanCard 
-            featureName="Gestión de Empleados"
-            description="Esta funcionalidad te permite añadir, editar y gestionar los roles de los miembros de tu equipo. Ideal para restaurantes con personal."
-            requiredPlan="Estándar o superior"
-        />
-    );
+       <div className="space-y-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-5 w-80 mt-2" />
+          </div>
+          <Skeleton className="h-10 w-44" />
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-64 mt-2" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-64 w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -323,7 +479,7 @@ export default function AdminEmployeesPage() {
           <p className="text-lg text-muted-foreground">Añade o edita los miembros de tu equipo. Límite del plan: {limits.current.employees}/{limits.max.employees < 0 ? 'Ilimitados' : limits.max.employees}</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <Button onClick={openNewDialog}>
+          <Button onClick={openNewDialog} disabled={!subscription?.permissions.canManageEmployees}>
             <PlusCircle className="mr-2 h-5 w-5" /> Agregar Nuevo
           </Button>
           <DialogContent className="sm:max-w-xl">
@@ -455,140 +611,8 @@ export default function AdminEmployeesPage() {
         </Dialog>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Todos los Empleados</CardTitle>
-          <CardDescription>Descripción de la sección de empleados</CardDescription>
-          <div className="flex flex-col gap-2 pt-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex w-full gap-2 items-center">
-              <div className="relative flex-grow min-w-[12rem] md:min-w-[20rem] lg:min-w-[28rem]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  placeholder="Buscar empleados"
-                  className="pl-10 pr-4 py-2 rounded-md border border-border bg-background focus:ring-2 focus:ring-primary/30 transition-all w-full"
-                />
-              </div>
-              <div className="flex gap-2 flex-shrink-0 ml-auto">
-                <Button
-                  variant="outline"
-                  asChild
-                  className={`flex items-center gap-2 rounded-md px-4 py-2 font-medium bg-background border border-border shadow-sm hover:shadow-lg hover:bg-primary/10 hover:text-primary transition-all duration-200 ${statusFilter && statusFilter !== 'all' ? 'ring-2 ring-primary/40 bg-primary/10 text-primary' : ''}`}
-                >
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      className="flex items-center w-full bg-background border border-border shadow-sm hover:shadow-lg hover:bg-primary/10 hover:text-primary transition-all duration-200 px-4 py-2 rounded-md font-medium"
-                      tabIndex={0}
-                    >
-                      <Filter className="mr-2 h-4 w-4" /> Filtrar por Estado
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setStatusFilter('all')}>Todos</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setStatusFilter('active')}>Activo</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setStatusFilter('inactive')}>Inactivo</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </Button>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={`flex items-center gap-2 rounded-md px-4 py-2 font-medium bg-background border border-border shadow-sm hover:shadow-lg hover:bg-primary/10 hover:text-primary transition-all duration-200 ${dateRange.from && dateRange.to ? 'ring-2 ring-primary/40 bg-primary/10 text-primary' : ''}`}
-                    >
-                      <CalendarDays className="mr-2 h-4 w-4" /> Filtrar por Fecha
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="end" className="w-auto p-0">
-                    <Calendar
-                      mode="range"
-                      selected={dateRange}
-                      onSelect={setDateRange}
-                      numberOfMonths={2}
-                      initialFocus
-                    />
-                    <div className="flex justify-end p-2">
-                      <Button size="sm" variant="ghost" onClick={() => setDateRange({ from: null, to: null })}>Limpiar Filtro de Fecha</Button>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="hidden md:table-cell">Avatar</TableHead>
-                <TableHead>Nombre de Usuario</TableHead>
-                <TableHead>Correo Electrónico</TableHead>
-                <TableHead className="hidden sm:table-cell">Whatsapp</TableHead>
-                <TableHead className="text-center">Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredEmployees.map((employee) => (
-                <TableRow key={employee.id}>
-                  <TableCell className="hidden md:table-cell">
-                    <Avatar>
-                      <AvatarImage src={employee.avatarUrl || `https://placehold.co/40x40.png?text=${employee.username.substring(0,1).toUpperCase()}`} alt={employee.username} data-ai-hint="user avatar" />
-                      <AvatarFallback>{employee.username.substring(0,2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                  </TableCell>
-                  <TableCell className="font-medium">{employee.username}</TableCell>
-                  <TableCell>{employee.email}</TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    {employee.whatsapp ? (
-                      <Link href={`https://wa.me/${employee.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-primary hover:underline">
-                        <WhatsAppIcon className="h-4 w-4"/>
-                        {employee.whatsapp}
-                      </Link>
-                    ) : (
-                      'No disponible'
-                    )}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant={employee.status === 'active' ? 'default' : 'outline'} 
-                           className={employee.status === 'active' ? 'bg-green-500 text-white' : 'border-yellow-500 text-yellow-600'}>
-                      {employee.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                       <Button variant="ghost" size="icon" className="hover:text-primary" onClick={() => openEditDialog(employee)}>
-                        <Edit3 className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="hover:text-destructive">
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                              <AlertDialogHeader>
-                                  <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                      Esta acción eliminará permanentemente el empleado &quot;{employee.username}&quot;. Esta acción no se puede deshacer.
-                                  </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteEmployee(employee.id)} className="bg-destructive hover:bg-destructive/90">
-                                      Sí, eliminar empleado
-                                  </AlertDialogAction>
-                              </AlertDialogFooter>
-                          </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+     {renderContent()}
+
     </div>
     </>
   );
