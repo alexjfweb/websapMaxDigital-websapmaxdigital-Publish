@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Edit3, Trash2, Search, UploadCloud, Save, Filter, CalendarDays, Lock } from "lucide-react";
+import { PlusCircle, Edit3, Trash2, Search, UploadCloud, Save, Filter, CalendarDays, Lock, UserPlus, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -25,13 +25,35 @@ import { addDays, isWithinInterval, parseISO } from "date-fns";
 import { storageService } from "@/services/storage-service";
 import { useSession } from "@/contexts/session-context";
 import { collection, getDocs, query, where, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
-import { getDb } from "@/lib/firebase";
+import { getDb, getFirebaseAuth } from "@/lib/firebase";
 import { useSubscription } from '@/hooks/use-subscription';
 import UpgradePlanCard from "@/components/UpgradePlanCard";
 import { usePlanLimits } from "@/hooks/use-plan-limits";
 import LimitReachedDialog from "@/components/LimitReachedDialog";
 import WhatsAppIcon from "@/components/icons/whatsapp-icon";
 import Link from 'next/link';
+import { createUserWithEmailAndPassword } from "firebase/auth";
+
+const userEditSchema = z.object({
+    id: z.string().optional(),
+    username: z.string().min(3, { message: 'Se requiere el nombre de usuario' }),
+    email: z.string().email({ message: "Por favor, ingrese una dirección de correo electrónico válida." }),
+    whatsapp: z.string().optional(),
+    role: z.enum(["employee", "admin"], { required_error: "Se requiere el rol." }),
+    status: z.enum(["active", "inactive", "pending"], { required_error: "Se requiere el estado." }),
+    avatar: z.any().optional(),
+});
+
+const userCreateSchema = userEditSchema.extend({
+    password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres."),
+    confirmPassword: z.string(),
+}).refine(data => data.password === data.confirmPassword, {
+    message: "Las contraseñas no coinciden.",
+    path: ["confirmPassword"],
+});
+
+type EmployeeFormData = z.infer<typeof userCreateSchema>;
+
 
 export default function AdminEmployeesPage() {
   const { currentUser } = useSession();
@@ -73,52 +95,43 @@ export default function AdminEmployeesPage() {
     if(companyId) fetchEmployees();
   }, [companyId]);
 
-  const employeeFormSchema = z.object({
-      id: z.string().optional(),
-      username: z.string().min(3, { message: 'Se requiere el nombre de usuario' }),
-      email: z.string().email({ message: "Por favor, ingrese una dirección de correo electrónico válida." }),
-      whatsapp: z.string().optional(),
-      role: z.enum(["employee", "admin"], { required_error: "Se requiere el rol." }),
-      status: z.enum(["active", "inactive", "pending"], { required_error: "Se requiere el estado." }),
-      avatar: z.any().optional(),
-  });
-
-  type EmployeeFormData = z.infer<typeof employeeFormSchema>;
-
   const form = useForm<EmployeeFormData>({
-    resolver: zodResolver(employeeFormSchema),
+    resolver: zodResolver(editingEmployee ? userEditSchema : userCreateSchema),
     defaultValues: {
       username: "",
       email: "",
       whatsapp: "",
       role: "employee",
       status: "active",
-      avatar: null
+      avatar: null,
+      password: "",
+      confirmPassword: ""
     },
   });
 
   useEffect(() => {
-    if (editingEmployee) {
-      form.reset({
-        id: editingEmployee.id,
-        username: editingEmployee.username,
-        email: editingEmployee.email,
-        whatsapp: editingEmployee.whatsapp || "",
-        role: editingEmployee.role as "employee" | "admin",
-        status: editingEmployee.status,
-      });
-      setAvatarPreview(editingEmployee.avatarUrl || null);
-    } else {
-      form.reset({
-        username: "",
-        email: "",
-        whatsapp: "",
-        role: "employee",
-        status: "active",
-        avatar: null
-      });
-      setAvatarPreview(null);
-    }
+    form.reset(
+        editingEmployee
+        ? {
+            id: editingEmployee.id,
+            username: editingEmployee.username,
+            email: editingEmployee.email,
+            whatsapp: editingEmployee.whatsapp || "",
+            role: editingEmployee.role as "employee" | "admin",
+            status: editingEmployee.status,
+            }
+        : {
+            username: "",
+            email: "",
+            whatsapp: "",
+            role: "employee",
+            status: "active",
+            avatar: null,
+            password: "",
+            confirmPassword: ""
+            }
+    );
+    setAvatarPreview(editingEmployee?.avatarUrl || null);
   }, [editingEmployee, form, isDialogOpen]);
   
   const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -136,9 +149,71 @@ export default function AdminEmployeesPage() {
     }
   };
 
-  const onSubmit = async (values: EmployeeFormData) => {
+  const handleFormSubmit = async (values: EmployeeFormData) => {
+    if (editingEmployee) {
+        await handleUpdate(values);
+    } else {
+        await handleCreate(values);
+    }
+  };
+
+  const handleCreate = async (values: EmployeeFormData) => {
     if (!companyId) {
-      toast({ title: "Error", description: "ID de la compañía no encontrado.", variant: "destructive" });
+        toast({ title: "Error", description: "ID de la compañía no encontrado.", variant: "destructive" });
+        return;
+    }
+    setIsSubmitting(true);
+    try {
+        const auth = getFirebaseAuth();
+        const db = getDb();
+        
+        // Verificar si el email ya existe en Firebase Auth
+        // Nota: Firebase Auth ya lo hace, pero podríamos hacerlo antes si quisiéramos.
+        
+        const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password!);
+        const newUserId = userCredential.user.uid;
+
+        let avatarUrl = `https://placehold.co/100x100.png?text=${values.username.substring(0,1).toUpperCase()}`;
+        if (values.avatar instanceof File) {
+             avatarUrl = await storageService.uploadFile(values.avatar, `avatars/${companyId}/`);
+        }
+
+        const employeeData = {
+          uid: newUserId,
+          username: values.username,
+          email: values.email,
+          whatsapp: values.whatsapp || null,
+          role: values.role,
+          status: values.status,
+          avatarUrl: avatarUrl,
+          companyId: companyId,
+          registrationDate: new Date().toISOString(),
+        };
+
+        // En lugar de setDoc, usamos addDoc y dejamos que Firestore genere el ID de documento
+        // Y guardamos el UID de auth en el documento.
+        await addDoc(collection(db, "users"), employeeData);
+
+        toast({ title: "Empleado Agregado!", description: `${values.username} ha sido agregado al equipo.` });
+        await fetchEmployees();
+        closeDialog();
+    } catch (error: any) {
+        console.error("Error creando empleado:", error);
+        toast({ 
+            title: "Error", 
+            description: error.code === 'auth/email-already-in-use' 
+                ? 'El correo electrónico ya está en uso.' 
+                : 'No se pudo crear el empleado.', 
+            variant: "destructive" 
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdate = async (values: EmployeeFormData) => {
+    if (!companyId || !editingEmployee) {
+      toast({ title: "Error", description: "ID de la compañía o empleado no encontrado.", variant: "destructive" });
       return;
     }
     setIsSubmitting(true);
@@ -153,26 +228,22 @@ export default function AdminEmployeesPage() {
             avatarUrl = await storageService.uploadFile(values.avatar, `avatars/${companyId}/`);
         }
 
-        const employeeData = {
-          ...values,
+        const employeeData: Partial<User> = {
+          username: values.username,
+          whatsapp: values.whatsapp || "",
+          role: values.role,
+          status: values.status,
           avatarUrl: avatarUrl || `https://placehold.co/40x40.png?text=${values.username.substring(0,1).toUpperCase()}`,
-          companyId: companyId,
-          registrationDate: editingEmployee?.registrationDate || new Date().toISOString(),
         };
-        delete (employeeData as any).avatar; // remove file object
 
-        if (editingEmployee) {
-            const employeeRef = doc(db, "users", editingEmployee.id);
-            await updateDoc(employeeRef, employeeData);
-            toast({ title: "Empleado Actualizado!", description: `Detalles para ${values.username} han sido actualizados.` });
-        } else {
-            await addDoc(collection(db, "users"), employeeData);
-            toast({ title: "Empleado Agregado!", description: `${values.username} ha sido agregado al equipo.` });
-        }
+        const employeeRef = doc(db, "users", editingEmployee.id);
+        await updateDoc(employeeRef, employeeData);
+        toast({ title: "Empleado Actualizado!", description: `Detalles para ${values.username} han sido actualizados.` });
+        
         await fetchEmployees();
         closeDialog();
     } catch (error) {
-        console.error("Error saving employee:", error);
+        console.error("Error guardando empleado:", error);
         toast({ title: "Error", description: "No se pudo guardar el empleado.", variant: "destructive" });
     } finally {
         setIsSubmitting(false);
@@ -259,11 +330,11 @@ export default function AdminEmployeesPage() {
              <DialogHeader>
                 <DialogTitle>{editingEmployee ? 'Editar Empleado' : 'Agregar Empleado'}</DialogTitle>
                 <DialogDescription>
-                  {editingEmployee ? 'Descripción de la edición' : 'Descripción de la creación'}
+                  {editingEmployee ? 'Modifica los detalles del empleado.' : 'Crea una cuenta para un nuevo miembro del equipo.'}
                 </DialogDescription>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
                  <div className="space-y-2">
                     <FormLabel>Avatar</FormLabel>
                     <div className="flex items-center gap-4">
@@ -293,12 +364,30 @@ export default function AdminEmployeesPage() {
                   <FormField control={form.control} name="email" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Correo Electrónico</FormLabel>
-                        <FormControl><Input type="email" placeholder="Correo electrónico" {...field} /></FormControl>
+                        <FormControl><Input type="email" placeholder="Correo electrónico" {...field} disabled={!!editingEmployee} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
+                 {!editingEmployee && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="password" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Contraseña</FormLabel>
+                                <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}/>
+                        <FormField control={form.control} name="confirmPassword" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Confirmar Contraseña</FormLabel>
+                                <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}/>
+                    </div>
+                )}
                 <FormField
                   control={form.control}
                   name="whatsapp"
@@ -356,7 +445,8 @@ export default function AdminEmployeesPage() {
                  <DialogFooter>
                     <Button type="button" variant="outline" onClick={closeDialog} disabled={isSubmitting}>Cancelar</Button>
                     <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting ? 'Guardando...' : <><Save className="mr-2 h-4 w-4"/> {editingEmployee ? 'Guardar Cambios' : 'Crear'}</>}
+                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
+                        {isSubmitting ? 'Guardando...' : (editingEmployee ? 'Guardar Cambios' : 'Crear Empleado')}
                     </Button>
                 </DialogFooter>
               </form>
