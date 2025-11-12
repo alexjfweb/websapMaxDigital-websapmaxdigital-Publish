@@ -95,8 +95,10 @@ export default function AdminEmployeesPage() {
     if(companyId) fetchEmployees();
   }, [companyId]);
 
+  const formSchema = editingEmployee ? userEditSchema : userCreateSchema;
+
   const form = useForm<EmployeeFormData>({
-    resolver: zodResolver(editingEmployee ? userEditSchema : userCreateSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       username: "",
       email: "",
@@ -110,29 +112,32 @@ export default function AdminEmployeesPage() {
   });
 
   useEffect(() => {
-    form.reset(
-        editingEmployee
-        ? {
-            id: editingEmployee.id,
-            username: editingEmployee.username,
-            email: editingEmployee.email,
-            whatsapp: editingEmployee.whatsapp || "",
-            role: editingEmployee.role as "employee" | "admin",
-            status: editingEmployee.status,
-            }
-        : {
-            username: "",
-            email: "",
-            whatsapp: "",
-            role: "employee",
-            status: "active",
-            avatar: null,
-            password: "",
-            confirmPassword: ""
-            }
-    );
-    setAvatarPreview(editingEmployee?.avatarUrl || null);
-  }, [editingEmployee, form, isDialogOpen]);
+    if (isDialogOpen) {
+        if (editingEmployee) {
+             form.reset({
+                id: editingEmployee.id,
+                username: editingEmployee.username,
+                email: editingEmployee.email,
+                whatsapp: editingEmployee.whatsapp || "",
+                role: editingEmployee.role as "employee" | "admin",
+                status: editingEmployee.status,
+            });
+            setAvatarPreview(editingEmployee.avatarUrl || null);
+        } else {
+             form.reset({
+                username: "",
+                email: "",
+                whatsapp: "",
+                role: "employee",
+                status: "active",
+                avatar: null,
+                password: "",
+                confirmPassword: ""
+            });
+            setAvatarPreview(null);
+        }
+    }
+  }, [isDialogOpen, editingEmployee, form]);
   
   const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -167,9 +172,6 @@ export default function AdminEmployeesPage() {
         const auth = getFirebaseAuth();
         const db = getDb();
         
-        // Verificar si el email ya existe en Firebase Auth
-        // Nota: Firebase Auth ya lo hace, pero podríamos hacerlo antes si quisiéramos.
-        
         const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password!);
         const newUserId = userCredential.user.uid;
 
@@ -190,8 +192,6 @@ export default function AdminEmployeesPage() {
           registrationDate: new Date().toISOString(),
         };
 
-        // En lugar de setDoc, usamos addDoc y dejamos que Firestore genere el ID de documento
-        // Y guardamos el UID de auth en el documento.
         await addDoc(collection(db, "users"), employeeData);
 
         toast({ title: "Empleado Agregado!", description: `${values.username} ha sido agregado al equipo.` });
