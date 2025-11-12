@@ -33,6 +33,7 @@ import WhatsAppIcon from "@/components/icons/whatsapp-icon";
 import Link from 'next/link';
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { Skeleton } from "@/components/ui/skeleton";
+import LimitReachedDialog from "@/components/LimitReachedDialog";
 
 const userEditSchema = z.object({
     id: z.string().optional(),
@@ -617,3 +618,5 @@ export default function AdminEmployeesPage() {
     </>
   );
 }
+
+    
