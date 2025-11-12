@@ -12,7 +12,8 @@ import {
   addDoc,
   writeBatch,
   runTransaction,
-  type Firestore
+  type Firestore,
+  setDoc,
 } from 'firebase/firestore';
 import type { Company, User } from '@/types';
 import { auditService } from './audit-service';
@@ -106,7 +107,6 @@ class CompanyService {
     
     const db = getDb();
     
-    // Mover la validación del RUC fuera de la transacción
     if (!isSuperAdminFlow && companyData.ruc) {
       const companiesColRef = collection(db, 'companies');
       const rucQuery = query(companiesColRef, where('ruc', '==', companyData.ruc));
@@ -116,59 +116,54 @@ class CompanyService {
       }
     }
     
-    return runTransaction(db, async (transaction) => {
-      // Crear las referencias de colecciones DENTRO de la transacción
-      const companiesColRef = collection(db, 'companies');
-      const usersColRef = collection(db, 'users');
+    const userId = adminUserData?.uid;
+    if (!userId) {
+      throw new Error('userId es undefined - adminUserData.uid no existe');
+    }
+    
+    const companiesColRef = collection(db, 'companies');
+    const usersColRef = collection(db, 'users');
+    let companyId: string | null = null;
+    const batch = writeBatch(db);
 
-      const userId = adminUserData?.uid;
-      if (!userId) {
-        throw new Error('userId es undefined - adminUserData.uid no existe');
-      }
-      
-      let companyId: string | null = null;
+    if (!isSuperAdminFlow) {
+      const companyDocRef = doc(companiesColRef); 
+      companyId = companyDocRef.id;
+      const planId = companyData.planId || 'plan-gratuito';
 
-      // Crear compañía si no es superadmin
-      if (!isSuperAdminFlow) {
-        const companyDocRef = doc(companiesColRef); 
-        companyId = companyDocRef.id;
-
-        // CORRECCIÓN: Asegurarse que planId se maneja bien
-        const planId = companyData.planId || 'plan-gratuito';
-
-        const newCompanyData = {
-          ...companyData,
-          planId: planId, // Asignar el plan correcto
-          status: 'active',
-          subscriptionStatus: planId !== 'plan-gratuito' ? 'pending_payment' : 'trialing',
-          trialEndsAt: planId !== 'plan-gratuito' ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          registrationDate: new Date().toISOString(),
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        };
-        transaction.set(companyDocRef, newCompanyData);
-      }
-
-      // Crear el documento del usuario
-      const userDocRef = doc(usersColRef, userId);
-      const newUserDoc: Omit<User, 'id'> = {
-        uid: userId,
-        email: adminUserData.email!,
-        firstName: adminUserData.firstName!,
-        lastName: adminUserData.lastName!,
-        role: adminUserData.role!,
-        companyId: companyId || undefined,
-        businessName: companyData.name || '',
+      const newCompanyData = {
+        ...companyData,
+        planId: planId,
         status: 'active',
+        subscriptionStatus: planId !== 'plan-gratuito' ? 'pending_payment' : 'trialing',
+        trialEndsAt: planId !== 'plan-gratuito' ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         registrationDate: new Date().toISOString(),
-        isActive: true,
-        avatarUrl: adminUserData.avatarUrl || `https://placehold.co/100x100.png?text=${adminUserData.firstName!.charAt(0)}`,
-        username: adminUserData.email!.split('@')[0],
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       };
-      transaction.set(userDocRef, newUserDoc);
+      batch.set(companyDocRef, newCompanyData);
+    }
+    
+    const userDocRef = doc(usersColRef, userId);
+    const newUserDoc: Omit<User, 'id'> = {
+      uid: userId,
+      email: adminUserData.email!,
+      firstName: adminUserData.firstName!,
+      lastName: adminUserData.lastName!,
+      role: adminUserData.role!,
+      companyId: companyId || undefined,
+      businessName: companyData.name || '',
+      status: 'active',
+      registrationDate: new Date().toISOString(),
+      isActive: true,
+      avatarUrl: adminUserData.avatarUrl || `https://placehold.co/100x100.png?text=${adminUserData.firstName!.charAt(0)}`,
+      username: adminUserData.email!.split('@')[0],
+    };
+    batch.set(userDocRef, newUserDoc);
 
-      return { companyId, userId };
-    });
+    await batch.commit();
+
+    return { companyId, userId };
   }
 
 
