@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -394,6 +395,7 @@ export default function SuperAdminUsersPage() {
                 <TableHead className="hidden lg:table-cell">Avatar</TableHead>
                 <TableHead>Nombre de usuario</TableHead>
                 <TableHead>Correo electrónico</TableHead>
+                <TableHead className="hidden sm:table-cell">Contacto</TableHead>
                 <TableHead className="text-center">Rol</TableHead>
                 <TableHead className="text-center">Estado</TableHead>
                 <TableHead className="hidden sm:table-cell">Registrado</TableHead>
@@ -411,6 +413,7 @@ export default function SuperAdminUsersPage() {
                   </TableCell>
                   <TableCell className="font-medium">{user.username}</TableCell>
                   <TableCell>{user.email}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{user.contact || 'No disponible'}</TableCell>
                   <TableCell className="text-center">{getRoleBadge(user.role)}</TableCell>
                   <TableCell className="text-center">{getStatusBadge(user.status)}</TableCell>
                   <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">
