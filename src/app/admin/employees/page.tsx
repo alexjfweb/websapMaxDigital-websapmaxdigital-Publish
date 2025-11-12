@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, type ChangeEvent } from "react";
@@ -23,7 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { addDays, isWithinInterval, parseISO } from "date-fns";
 import { storageService } from "@/services/storage-service";
 import { useSession } from "@/contexts/session-context";
-import { collection, getDocs, query, where, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
+import { collection, getDocs, query, where, addDoc, updateDoc, deleteDoc, doc, setDoc } from "firebase/firestore";
 import { getDb, getFirebaseAuth } from "@/lib/firebase";
 import { useSubscription } from '@/hooks/use-subscription';
 import UpgradePlanCard from "@/components/UpgradePlanCard";
