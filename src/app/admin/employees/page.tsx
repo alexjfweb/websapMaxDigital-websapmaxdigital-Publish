@@ -1,13 +1,13 @@
 
 "use client";
 
-import { useState, useEffect, type ChangeEvent } from "react";
+import { useState, useEffect, type ChangeEvent, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Edit3, Trash2, Search, UploadCloud, Save, Filter, CalendarDays, Lock, UserPlus, Loader2 } from "lucide-react";
+import { PlusCircle, Edit3, Trash2, Search, UploadCloud, Save, Filter, CalendarDays, Lock, UserPlus, Loader2, Printer, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,7 @@ import Link from 'next/link';
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { Skeleton } from "@/components/ui/skeleton";
 import LimitReachedDialog from "@/components/LimitReachedDialog";
+import html2pdf from 'html2pdf.js';
 
 const userEditSchema = z.object({
     id: z.string().optional(),
@@ -72,6 +73,8 @@ export default function AdminEmployeesPage() {
   const { subscription, isLoading: isSubscriptionLoading } = useSubscription();
   const { limits, isLimitsLoading } = usePlanLimits();
   const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
+  const printAreaRef = useRef<HTMLDivElement>(null);
+
 
   const fetchEmployees = async () => {
     if (!companyId) return;
@@ -295,6 +298,26 @@ export default function AdminEmployeesPage() {
     return true;
   });
 
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleDownloadPdf = () => {
+    if (printAreaRef.current) {
+        const element = printAreaRef.current;
+        const today = new Date().toISOString().slice(0, 10);
+        const opt = {
+            margin:       0.5,
+            filename:     `Empleados_${today}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+        html2pdf().from(element).set(opt).save();
+    }
+  };
+
+
   const isLoadingPage = isSubscriptionLoading || isLimitsLoading || isLoadingData;
 
   const renderContent = () => {
@@ -310,8 +333,21 @@ export default function AdminEmployeesPage() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Todos los Empleados</CardTitle>
-          <CardDescription>Descripción de la sección de empleados</CardDescription>
+          <div className="flex flex-row justify-between items-start">
+              <div>
+                  <CardTitle>Todos los Empleados</CardTitle>
+                  <CardDescription>Descripción de la sección de empleados</CardDescription>
+              </div>
+              <div className="flex gap-2">
+                  <Button variant="outline" onClick={handlePrint} className="bg-green-500 text-white hover:bg-green-600">
+                      <Printer className="mr-2 h-4 w-4"/> Imprimir
+                  </Button>
+                  <Button variant="outline" onClick={handleDownloadPdf} className="bg-orange-500 text-white hover:bg-orange-600">
+                      <Download className="mr-2 h-4 w-4"/> Descargar PDF
+                  </Button>
+              </div>
+          </div>
+
           <div className="flex flex-col gap-2 pt-4 md:flex-row md:items-center md:justify-between">
             <div className="flex w-full gap-2 items-center">
               <div className="relative flex-grow min-w-[12rem] md:min-w-[20rem] lg:min-w-[28rem]">
@@ -473,7 +509,7 @@ export default function AdminEmployeesPage() {
         limit={limits.max.employees}
         planName={subscription?.plan?.name || ''}
     />
-    <div className="space-y-8">
+    <div className="space-y-8" ref={printAreaRef}>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-primary">Gestión de empleados</h1>
