@@ -50,7 +50,7 @@ export default function AdminReservationsPage() {
   const filteredReservations = reservations.filter((reservation) => {
     const statusMatch = statusFilter === 'all' || reservation.status === statusFilter;
     const dateMatch = !dateRange?.from || (dateRange.from && dateRange.to && isWithinInterval(new Date(reservation.dateTime), { start: dateRange.from, end: addDays(dateRange.to, 1) }));
-    const searchMatch = !search || reservation.customerName.toLowerCase().includes(search.toLowerCase()) || reservation.customerPhone.includes(search);
+    const searchMatch = !search || reservation.customerName.toLowerCase().includes(search.toLowerCase()) || (reservation.customerPhone && reservation.customerPhone.includes(search));
     return statusMatch && dateMatch && searchMatch;
   });
   

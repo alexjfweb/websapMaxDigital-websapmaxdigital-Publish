@@ -288,6 +288,7 @@ export default function AdminEmployeesPage() {
   const filteredEmployees = employees.filter((emp) => {
     if (statusFilter && statusFilter !== 'all' && emp.status !== statusFilter) return false;
     if (dateRange?.from && dateRange?.to) {
+      if (!emp.registrationDate) return false;
       const regDate = parseISO(emp.registrationDate);
       if (!isWithinInterval(regDate, { start: dateRange.from, end: addDays(dateRange.to, 1) })) return false;
     }

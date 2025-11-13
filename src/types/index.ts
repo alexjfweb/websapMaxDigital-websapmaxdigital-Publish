@@ -207,40 +207,6 @@ export interface Company {
   mpPreapprovalId?: string; // Para suscripciones de Mercado Pago
   baseShippingCost?: number; // Nuevo campo para costo de envío
 }
-// Sistema de Gestión de Mesas
-export type TableStatus = 'available' | 'occupied' | 'reserved' | 'out_of_service';
-
-export interface Table {
-  id?: string;
-  number: number;
-  capacity: number;
-  location?: string;
-  description?: string;
-  status: TableStatus;
-  isActive: boolean;
-  createdAt?: any;
-  updatedAt?: any;
-  restaurantId?: string;
-}
-
-export type TableInput = {
-  number: string;
-  capacity: number;
-  zone: string;
-  status: 'available' | 'occupied' | 'reserved' | 'out_of_service';
-};
-
-export interface TableAuditLog {
-  id: string;
-  tableId: string;
-  tableNumber: number;
-  action: 'created' | 'updated' | 'deleted' | 'reserved' | 'released' | 'status_changed';
-  previousStatus?: TableStatus;
-  newStatus?: TableStatus;
-  details: string;
-  performedBy: string;
-  createdAt: Timestamp;
-}
 
 // Definición de un Pedido
 export interface Order {

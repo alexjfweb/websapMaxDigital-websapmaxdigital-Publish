@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -308,7 +308,7 @@ export default function SubscriptionPlansPage() {
       };
 
       if (editingPlan) {
-        await landingPlansService.updatePlan(editingPlan.id, { id: editingPlan.id, ...planData }, currentUser.id, currentUser.email);
+        await landingPlansService.updatePlan(editingPlan.id, { ...planData, id: editingPlan.id }, currentUser.id, currentUser.email);
         toast({ title: "Éxito", description: "Plan actualizado correctamente" });
       } else {
         await landingPlansService.createPlan(planData, currentUser.id, currentUser.email);
@@ -518,8 +518,8 @@ export default function SubscriptionPlansPage() {
               <div><Label htmlFor="color">Color</Label><Select value={formData.color} onValueChange={(v) => handleInputChange('color', v)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{PLAN_COLORS.map(c=><SelectItem key={c.value} value={c.value}><div className="flex items-center gap-2"><div className={`w-4 h-4 rounded ${c.class}`}></div>{c.label}</div></SelectItem>)}</SelectContent></Select></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-                <div><Label htmlFor="maxUsers">Límite de Usuarios (-1 = ilimitado)</Label><Input id="maxUsers" type="number" value={formData.maxUsers} onChange={(e) => handleInputChange('maxUsers', parseInt(e.target.value))} /></div>
-                <div><Label htmlFor="maxProjects">Límite de Proyectos (-1 = ilimitado)</Label><Input id="maxProjects" type="number" value={formData.maxProjects} onChange={(e) => handleInputChange('maxProjects', parseInt(e.target.value))} /></div>
+                <div><Label htmlFor="maxUsers">Límite de Usuarios (-1 = ilimitado)</Label><Input id="maxUsers" type="number" value={formData.maxUsers || 0} onChange={(e) => handleInputChange('maxUsers', parseInt(e.target.value))} /></div>
+                <div><Label htmlFor="maxProjects">Límite de Mesas (-1 = ilimitado)</Label><Input id="maxProjects" type="number" value={formData.maxProjects || 0} onChange={(e) => handleInputChange('maxProjects', parseInt(e.target.value))} /></div>
             </div>
             <div>
               <Label>Características *</Label>

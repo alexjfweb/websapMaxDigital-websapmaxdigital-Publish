@@ -1,4 +1,3 @@
-
 import { getDb } from '@/lib/firebase';
 import {
   collection,
@@ -15,11 +14,10 @@ import {
   Timestamp,
   deleteDoc,
 } from 'firebase/firestore';
+import type { TableStatus } from '@/types';
 
 // Este servicio ahora está diseñado para ser llamado desde componentes de cliente
 // a través de rutas API, no directamente.
-
-export type TableStatus = 'available' | 'occupied' | 'reserved' | 'out_of_service';
 
 export interface Table {
   id?: string;

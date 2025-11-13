@@ -116,13 +116,6 @@ export async function POST(request: NextRequest) {
             updatedAt: serverTimestamp(),
         };
 
-        if (subscription.status === 'authorized' && subscription.auto_recurring) {
-           // No hay un campo directo last_payment_id en la respuesta del SDK v2, 
-           // pero el 'authorized' implica un pago exitoso.
-           // Omitimos la actualización del mpPaymentId aquí para evitar errores,
-           // ya que la activación de la suscripción es lo crucial.
-        }
-
         const db = getDb();
         await updateDoc(doc(db, 'companies', companyId), updateData);
 

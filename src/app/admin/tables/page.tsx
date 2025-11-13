@@ -12,7 +12,7 @@ import { Table as UITable, TableBody, TableCell, TableHead, TableHeader, TableRo
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { tableService, type Table } from "@/services/table-service";
+import { tableService, type Table, type TableStatus } from "@/services/table-service";
 import { TableForm } from "./table-form";
 import { TableLogsDialog } from "./table-logs-dialog";
 import { useTables } from "@/hooks/use-tables";

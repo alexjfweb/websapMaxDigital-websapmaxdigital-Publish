@@ -14,7 +14,8 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
-import { useOrderContext, type Order } from '@/contexts/order-context';
+import { useOrderContext } from '@/contexts/order-context';
+import type { Order } from '@/types';
 import { tableService } from '@/services/table-service';
 import { Skeleton } from "@/components/ui/skeleton";
 
