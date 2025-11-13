@@ -45,6 +45,7 @@
     "firebase-admin": "^12.3.0",
     "framer-motion": "^12.23.12",
     "genkit": "^1.7.0",
+    "html2pdf.js": "^0.10.1",
     "lucide-react": "^0.475.0",
     "mercadopago": "^2.0.10",
     "next": "14.2.5",

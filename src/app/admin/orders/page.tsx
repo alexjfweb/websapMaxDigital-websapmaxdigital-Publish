@@ -3,13 +3,13 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, CheckCircle, Truck, Search, Filter, Printer, ShoppingBag, Loader2, AlertCircle } from "lucide-react";
+import { Eye, CheckCircle, Truck, Search, Filter, Printer, ShoppingBag, Loader2, AlertCircle, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
@@ -17,6 +17,7 @@ import { useOrderContext, type Order } from '@/contexts/order-context';
 import { tableService } from '@/services/table-service';
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/contexts/session-context";
+import html2pdf from 'html2pdf.js';
 
 export default function AdminOrdersPage() {
   const { currentUser } = useSession();
@@ -26,6 +27,7 @@ export default function AdminOrdersPage() {
   const [activeTab, setActiveTab] = useState<string>("active");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [openDetail, setOpenDetail] = useState(false);
+  const printAreaRef = useRef<HTMLDivElement>(null);
 
   const activeOrders = orders.filter(o => !['completed', 'cancelled'].includes(o.status));
   const pastOrders = orders.filter(o => ['completed', 'cancelled'].includes(o.status));
@@ -59,6 +61,26 @@ export default function AdminOrdersPage() {
   };
 
   const handleOpenDetail = (order: Order) => { setSelectedOrder(order); setOpenDetail(true); };
+  
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleDownloadPdf = () => {
+    if (printAreaRef.current) {
+        const element = printAreaRef.current;
+        const today = new Date().toISOString().slice(0, 10);
+        const opt = {
+            margin:       0.5,
+            filename:     `Pedidos_${today}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+        html2pdf().from(element).set(opt).save();
+    }
+  };
+
 
   const orderStatuses = [
     { value: 'pending', label: 'Pendiente' },
@@ -148,7 +170,7 @@ export default function AdminOrdersPage() {
 
 
   return (
-    <div className="space-y-8">
+    <div ref={printAreaRef} className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-primary">Gestión de pedidos</h1>
         <p className="text-lg text-muted-foreground">Gestiona y administra tus pedidos de manera eficiente</p>
@@ -158,7 +180,10 @@ export default function AdminOrdersPage() {
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
             <CardTitle>Resumen</CardTitle>
-            <Button variant="outline" ><Printer className="mr-2 h-4 w-4"/> Imprimir KOTs</Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={handlePrint}><Printer className="mr-2 h-4 w-4"/> Imprimir</Button>
+              <Button variant="outline" onClick={handleDownloadPdf}><Download className="mr-2 h-4 w-4"/> Descargar PDF</Button>
+            </div>
           </div>
           <CardDescription>Resumen de pedidos</CardDescription>
            <div className="flex flex-col md:flex-row gap-2 pt-4">
