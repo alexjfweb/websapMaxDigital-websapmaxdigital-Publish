@@ -1,7 +1,6 @@
-
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -74,14 +73,14 @@ const DraggableNavTable: React.FC<DraggableNavTableProps> = ({ items, onDragEnd,
 
 
 export default function NavigationSettingsPage() {
-  const { navConfig, setNavConfig, isLoading, isError, saveConfig, isSaving } = useNavigationConfig();
+  const { navConfig, isLoading, isError, saveConfig, isSaving, setNavConfig } = useNavigationConfig();
   const { toast } = useToast();
   
   const handleDragEnd = (result: DropResult, type: 'sidebar' | 'footer') => {
     if (!result.destination) return;
     
-    setNavConfig(prevConfig => {
-        if (!prevConfig) return null;
+    setNavConfig((prevConfig) => {
+        if (!prevConfig) return prevConfig;
         const items = Array.from(type === 'sidebar' ? prevConfig.sidebarItems : prevConfig.footerItems);
         const [reorderedItem] = items.splice(result.source.index, 1);
         items.splice(result.destination!.index, 0, reorderedItem);
@@ -95,8 +94,8 @@ export default function NavigationSettingsPage() {
   };
 
   const handleFieldChange = (id: string, field: 'label' | 'tooltip' | 'visible', value: string | boolean, type: 'sidebar' | 'footer') => {
-    setNavConfig(prevConfig => {
-        if (!prevConfig) return null;
+    setNavConfig((prevConfig) => {
+        if (!prevConfig) return prevConfig;
         const key = type === 'sidebar' ? 'sidebarItems' : 'footerItems';
         const updatedItems = prevConfig[key].map(item =>
             item.id === id ? { ...item, [field]: value } : item
@@ -107,7 +106,7 @@ export default function NavigationSettingsPage() {
 
   const handleSaveChanges = async () => {
     try {
-      await saveConfig();
+      await saveConfig(navConfig);
       toast({
         title: '¡Éxito!',
         description: 'La configuración de navegación ha sido guardada.',

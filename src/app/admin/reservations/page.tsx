@@ -1,4 +1,3 @@
-
 "use client";
 
 export const dynamic = 'force-dynamic';
@@ -26,7 +25,7 @@ import { useSession } from "@/contexts/session-context";
 
 export default function AdminReservationsPage() {
   const { currentUser } = useSession();
-  const companyId = currentUser.companyId;
+  const companyId = currentUser?.companyId;
   const { reservations, isLoading, error, refreshReservations } = useReservations(companyId);
   const { toast } = useToast();
   

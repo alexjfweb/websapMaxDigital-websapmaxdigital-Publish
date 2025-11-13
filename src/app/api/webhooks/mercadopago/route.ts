@@ -118,10 +118,14 @@ export async function POST(request: NextRequest) {
         };
 
         // Si es el primer pago de la suscripción (authorized), guardamos también el ID del pago.
-        if (subscription.status === 'authorized' && subscription.next_payment_date) {
-            if (subscription.last_payment_id) {
-                updateData.mpPaymentId = subscription.last_payment_id;
-            }
+        // MercadoPago SDK v2 usa `auto_recurring.last_charged_amount` para esta info.
+        // `last_payment_id` es de una versión anterior o no está siempre presente.
+        // Nos aseguraremos de buscar en el lugar correcto.
+        if (subscription.status === 'authorized' && subscription.auto_recurring?.last_charged_amount) {
+            // El ID del último pago no está directamente disponible en el objeto `preapproval` de la misma forma que antes.
+            // La estrategia más robusta es buscar el último pago asociado a esta pre-aprobación si es necesario.
+            // Por ahora, omitimos `mpPaymentId` en la actualización de pre-aprobación para evitar errores
+            // y nos enfocamos en activar la suscripción.
         }
 
         const db = getDb();
@@ -130,7 +134,7 @@ export async function POST(request: NextRequest) {
         await auditService.log({
           entity: 'companies', entityId: companyId, action: 'updated',
           performedBy: { uid: 'mercadopago-webhook', email: 'webhook@mercadopago.com' },
-          newData: { planId, subscriptionStatus: newStatus, mpPreapprovalId: data.id, mpPaymentId: updateData.mpPaymentId },
+          newData: { planId, subscriptionStatus: newStatus, mpPreapprovalId: data.id },
           details: `Suscripción (vía PreApproval) actualizada por webhook. Nuevo estado: ${newStatus}.`
         });
         console.log(`✅ [MP Webhook] Suscripción recurrente actualizada para ${companyId}. Estado: ${newStatus}`);

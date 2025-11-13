@@ -1,4 +1,3 @@
-
 "use client";
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
@@ -14,7 +13,7 @@ import {
   Palette
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { LandingPlan } from '@/services/landing-plans-service';
+import type { LandingPlan } from '@/types/plans';
 import Link from 'next/link';
 
 // Opciones para íconos y colores (debe coincidir con el panel admin)
@@ -107,7 +106,7 @@ export default function SubscriptionPlansSection({ plans }: SubscriptionPlansSec
                   </div>
                 </div>
                 <div className="space-y-3 mb-8">
-                  {plan.features && plan.features.map((feature, featureIndex) => (
+                  {plan.features && plan.features.map((feature: string, featureIndex: number) => (
                     <div key={featureIndex} className="flex items-center text-left">
                       <Check className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
                       <span className="text-gray-700">{feature}</span>

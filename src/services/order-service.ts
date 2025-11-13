@@ -1,5 +1,4 @@
-
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import {
   collection,
   query,

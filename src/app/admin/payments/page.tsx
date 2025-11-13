@@ -1,4 +1,3 @@
-
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -28,7 +27,6 @@ interface PaymentMethodsState {
 
 interface FormState {
   daviplataNumber: string;
-  daviplataQRUrl?: string;
   bancolombiaQRUrl?: string;
   nequiNumber: string;
   nequiQRUrl?: string;

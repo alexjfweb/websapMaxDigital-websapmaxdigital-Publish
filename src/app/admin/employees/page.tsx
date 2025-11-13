@@ -1,4 +1,3 @@
-
 "use client";
 
 export const dynamic = 'force-dynamic';
@@ -36,6 +35,7 @@ import Link from 'next/link';
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { Skeleton } from "@/components/ui/skeleton";
 import LimitReachedDialog from "@/components/LimitReachedDialog";
+import type { DateRange } from "react-day-picker";
 
 const userEditSchema = z.object({
     id: z.string().optional(),
@@ -68,7 +68,7 @@ export default function AdminEmployeesPage() {
   const [editingEmployee, setEditingEmployee] = useState<User | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null }>({ from: null, to: null });
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [search, setSearch] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { subscription, isLoading: isSubscriptionLoading } = useSubscription();
@@ -287,7 +287,7 @@ export default function AdminEmployeesPage() {
 
   const filteredEmployees = employees.filter((emp) => {
     if (statusFilter && statusFilter !== 'all' && emp.status !== statusFilter) return false;
-    if (dateRange.from && dateRange.to) {
+    if (dateRange?.from && dateRange?.to) {
       const regDate = parseISO(emp.registrationDate);
       if (!isWithinInterval(regDate, { start: dateRange.from, end: addDays(dateRange.to, 1) })) return false;
     }
@@ -381,7 +381,7 @@ export default function AdminEmployeesPage() {
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
-                      className={`flex items-center gap-2 rounded-md px-4 py-2 font-medium bg-background border border-border shadow-sm hover:shadow-lg hover:bg-primary/10 hover:text-primary transition-all duration-200 ${dateRange.from && dateRange.to ? 'ring-2 ring-primary/40 bg-primary/10 text-primary' : ''}`}
+                      className={`flex items-center gap-2 rounded-md px-4 py-2 font-medium bg-background border border-border shadow-sm hover:shadow-lg hover:bg-primary/10 hover:text-primary transition-all duration-200 ${dateRange?.from && dateRange?.to ? 'ring-2 ring-primary/40 bg-primary/10 text-primary' : ''}`}
                     >
                       <CalendarDays className="mr-2 h-4 w-4" /> Filtrar por Fecha
                     </Button>
@@ -389,13 +389,13 @@ export default function AdminEmployeesPage() {
                   <PopoverContent align="end" className="w-auto p-0">
                     <Calendar
                       mode="range"
-                      selected={dateRange as { from: Date; to: Date } | undefined}
-                      onSelect={(range) => setDateRange(range || { from: null, to: null })}
+                      selected={dateRange}
+                      onSelect={setDateRange}
                       numberOfMonths={2}
                       initialFocus
                     />
                     <div className="flex justify-end p-2">
-                      <Button size="sm" variant="ghost" onClick={() => setDateRange({ from: null, to: null })}>Limpiar Filtro de Fecha</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setDateRange(undefined)}>Limpiar Filtro de Fecha</Button>
                     </div>
                   </PopoverContent>
                 </Popover>

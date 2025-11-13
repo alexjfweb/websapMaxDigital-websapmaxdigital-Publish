@@ -16,20 +16,28 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { useReservations } from "@/hooks/use-reservations";
 import { reservationService } from "@/services/reservation-service";
 import { useToast } from "@/hooks/use-toast";
-import type { Reservation } from "@/types";
+import type { Reservation, Company } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/contexts/session-context";
+import { companyService } from "@/services/company-service";
 
 export default function EmployeeReservationsPage() {
   const { currentUser } = useSession();
   const companyId = currentUser?.companyId; 
   const { reservations, isLoading, error, refreshReservations } = useReservations(companyId);
+  const [companyProfile, setCompanyProfile] = useState<Company | null>(null);
   const { toast } = useToast();
 
   const [open, setOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [openDetail, setOpenDetail] = useState(false);
   const [actionToConfirm, setActionToConfirm] = useState<{ action: 'confirm' | 'cancel', reservation: Reservation } | null>(null);
+
+  useEffect(() => {
+      if (companyId) {
+          companyService.getCompanyById(companyId).then(setCompanyProfile);
+      }
+  }, [companyId]);
 
   const getStatusBadge = (status: Reservation['status']) => {
     switch (status) {
@@ -144,7 +152,13 @@ export default function EmployeeReservationsPage() {
               <DialogTitle>Agregar nueva reserva</DialogTitle>
               <DialogDescription>Complete el formulario para agregar una nueva reserva</DialogDescription>
             </DialogHeader>
-            <ReservationForm />
+            {companyId && companyProfile && (
+              <ReservationForm 
+                restaurantId={companyId} 
+                restaurantProfile={companyProfile}
+                onSuccess={() => setOpen(false)} 
+              />
+            )}
           </DialogContent>
         </Dialog>
       </div>
@@ -202,7 +216,7 @@ export default function EmployeeReservationsPage() {
               className={actionToConfirm?.action === 'cancel' ? 'bg-destructive hover:bg-destructive/90' : ''}
               onClick={() => {
                 if (actionToConfirm) {
-                  handleUpdateStatus(actionToConfirm.reservation.id, actionToConfirm.action);
+                  handleUpdateStatus(actionToConfirm.reservation.id, actionToConfirm.action === 'confirm' ? 'confirmed' : 'cancelled');
                 }
               }}
             >

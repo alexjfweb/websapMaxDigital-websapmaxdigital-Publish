@@ -1,5 +1,5 @@
 // src/lib/firebase-admin.ts
-import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
+import { initializeApp, getApps, cert, App, ServiceAccount } from 'firebase-admin/app';
 import { serviceAccountConfig } from './firebase-config-server'; // Importar la configuración directamente.
 
 let adminApp: App;
@@ -15,7 +15,7 @@ function getFirebaseAdmin(): App {
   try {
     // Aquí se utiliza cert() para crear las credenciales a partir del objeto importado.
     adminApp = initializeApp({
-      credential: cert(serviceAccountConfig),
+      credential: cert(serviceAccountConfig as ServiceAccount),
       storageBucket: 'websapmax-images',
     }, APP_NAME);
     

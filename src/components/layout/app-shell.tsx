@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from 'react';
@@ -103,7 +102,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                         role={currentUser.role}
                         items={navConfig.sidebarItems}
                         isLoading={isNavLoading}
-                        onLinkClick={handleMobileLinkClick}
                       />
                     </SidebarContent>
                     <SidebarFooter className="p-4 mt-auto border-t">

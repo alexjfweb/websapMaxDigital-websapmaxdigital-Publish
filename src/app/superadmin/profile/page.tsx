@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -155,8 +154,8 @@ export default function SuperAdminProfilePage() {
             <Input id="email" type="email" value={profileData.email || ''} disabled />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="contact">Teléfono de contacto</Label>
-            <Input id="contact" type="tel" value={profileData.contact || ''} disabled={!isEditing} onChange={handleInputChange} />
+            <Label htmlFor="whatsapp">Teléfono de contacto</Label>
+            <Input id="whatsapp" type="tel" value={profileData.whatsapp || ''} disabled={!isEditing} onChange={handleInputChange} />
           </div>
            <div className="space-y-4">
               <Label>Avatar</Label>

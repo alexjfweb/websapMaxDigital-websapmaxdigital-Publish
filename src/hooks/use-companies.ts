@@ -1,9 +1,8 @@
-
 "use client";
 
 import useSWR from 'swr';
 import type { Company } from '@/types';
-import type { LandingPlan } from '@/services/landing-plans-service';
+import type { LandingPlan } from '@/types/plans';
 import { landingPlansService } from '@/services/landing-plans-service';
 import { companyService } from '@/services/company-service';
 

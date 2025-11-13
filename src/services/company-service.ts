@@ -1,5 +1,3 @@
-
-
 import {
   collection,
   doc,
@@ -20,6 +18,20 @@ import type { Company, User } from '@/types';
 import { auditService } from './audit-service';
 import { serializeDate } from '@/lib/utils';
 import { getDb } from '@/lib/firebase';
+
+export interface CreateCompanyInput {
+  name: string;
+  ruc: string;
+  location: string;
+  email: string;
+  phone: string;
+  phoneFixed: string;
+  addressStreet: string;
+  addressNeighborhood: string;
+  addressState: string;
+  addressPostalCode: string;
+  companyType: string;
+}
 
 const serializeCompany = (doc: any): Company => {
   const data = doc.data();
@@ -207,4 +219,3 @@ class CompanyService {
 }
 
 export const companyService = new CompanyService();
-

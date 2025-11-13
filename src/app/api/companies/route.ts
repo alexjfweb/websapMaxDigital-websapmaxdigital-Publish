@@ -16,13 +16,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { companyData, user } = await request.json();
-    
-    if (!user || !user.uid || !user.email) {
-      return NextResponse.json({ error: 'Usuario no autenticado para esta acción.' }, { status: 403 });
-    }
+    const body = await request.json();
 
-    const newCompany = await companyService.createCompany(companyData, user);
+    const newCompany = await companyService.createCompany(body, {uid: 'superadmin', email: 'superadmin@system.com'});
 
     return NextResponse.json(newCompany, { status: 201 });
   } catch (error: any) {

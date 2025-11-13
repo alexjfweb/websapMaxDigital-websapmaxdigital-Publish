@@ -99,7 +99,7 @@ class SupportService {
       userId: safeUserId,
       userName: safeUserName,
       message: reply.message.trim(),
-      createdAt: Timestamp.now(),
+      createdAt: new Date().toISOString(), // Usar ISO string para consistencia
     };
     
     // Actualizar el documento

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import type { CartItem } from '@/types';
+import type { CartItem, Order } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -40,17 +40,21 @@ export default function CartSummary({ cart, restaurantPhone }: CartSummaryProps)
       return;
     }
 
-    // Agregar pedido al contexto global
-    const orderId = `order-${Date.now()}`;
-    addOrder({
-      id: orderId,
+    const newOrder: Omit<Order, 'id' | 'date'> = {
       customerName: 'Cliente Web', // Puedes mejorar esto con datos reales del formulario
-      date: new Date().toISOString(),
       items: cart.totalItems,
       total: cart.totalPrice,
       status: 'pending',
       type: 'delivery', // O 'pickup', según preferencia
-    });
+      restaurantId: '', // Esto deberá ser llenado con el ID real del restaurante
+      productos: [], // Deberás mapear cart.items aquí
+      cliente: {
+          nombre: 'Cliente Web',
+          telefono: 'N/A',
+          direccion: 'N/A',
+      },
+    };
+    addOrder(newOrder);
 
     let message = `Hello websapMax Restaurant! I'd like to place the following order:\n\n`;
     cart.items.forEach(item => {

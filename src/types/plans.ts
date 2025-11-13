@@ -1,4 +1,3 @@
-
 export interface LandingPlan {
   id: string;
   slug: string;
@@ -14,8 +13,8 @@ export interface LandingPlan {
   order: number;
   icon: string;
   color: string;
-  maxUsers?: number;
-  maxProjects?: number;
+  maxUsers: number;
+  maxProjects: number;
   ctaText?: string;
   createdAt: string;
   updatedAt: string;
@@ -26,6 +25,7 @@ export interface LandingPlan {
 
 export interface CreatePlanRequest {
   name: string;
+  slug?: string;
   description: string;
   price: number;
   currency?: string;
@@ -37,8 +37,8 @@ export interface CreatePlanRequest {
   order?: number;
   icon: string;
   color: string;
-  maxUsers?: number;
-  maxProjects?: number;
+  maxUsers: number;
+  maxProjects: number;
   ctaText?: string;
   mp_preapproval_plan_id?: string;
 }

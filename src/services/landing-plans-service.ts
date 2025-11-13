@@ -1,5 +1,3 @@
-
-
 import {
   collection,
   doc,
@@ -37,9 +35,9 @@ const serializePlan = (id: string, data: any): LandingPlan => ({
   order: data.order ?? 99,
   icon: data.icon || 'zap',
   color: data.color || 'blue',
-  maxUsers: data.maxUsers,
-  maxProjects: data.maxProjects,
-  ctaText: data.ctaText,
+  maxUsers: data.maxUsers ?? -1,
+  maxProjects: data.maxProjects ?? -1,
+  ctaText: data.ctaText || 'Elegir Plan',
   createdAt: serializeDate(data.createdAt)!,
   updatedAt: serializeDate(data.updatedAt)!,
   createdBy: data.createdBy || 'system',
@@ -169,7 +167,7 @@ class LandingPlansService {
     return createdPlan;
   }
 
-  async updatePlan(id: string, data: UpdatePlanRequest, userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<LandingPlan> {
+  async updatePlan(id: string, data: Partial<CreatePlanRequest>, userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<LandingPlan> {
     const coll = this.getPlansCollection();
     const docRef = doc(coll, id);
     const originalDoc = await this.getPlanById(id);
@@ -203,8 +201,6 @@ class LandingPlansService {
   }
 
   async deletePlan(id: string, userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<void> {
-    const coll = this.getPlansCollection();
-    const docRef = doc(coll, id);
     const originalDoc = await this.getPlanById(id);
 
     if (!originalDoc) {

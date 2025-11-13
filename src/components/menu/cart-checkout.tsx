@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -13,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent as UiDialogContent, DialogHeader as UiDialogHeader, DialogTitle as UiDialogTitle, DialogDescription as UiDialogDescription, DialogFooter as UiDialogFooter } from '@/components/ui/dialog';
-import { tableService, Table } from '@/services/table-service';
+import { tableService, Table } from "@/services/table-service";
 import { getDb } from "@/lib/firebase";
 import { collection, addDoc, doc, serverTimestamp } from "firebase/firestore";
 import type { Company } from '@/types';
@@ -215,7 +214,7 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
     
     window.open(url, '_blank');
     
-    toast({ title: 'Pedido Enviado', description: 'Tu pedido se guardó y se envió por WhatsApp.', variant: 'success' });
+    toast({ title: 'Pedido Enviado', description: 'Tu pedido se guardó y se envió por WhatsApp' });
     
     if (onClear) onClear();
     if (onClose) onClose();
@@ -236,7 +235,7 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
       `Productos:\n${productos}\n` +
       `Total: $${totalStr}`;
     navigator.clipboard.writeText(resumen).then(() => {
-      toast({ title: 'Pedido copiado', description: 'Resumen copiado al portapapeles.', variant: 'success' });
+      toast({ title: 'Pedido copiado', description: 'Resumen copiado al portapapeles.' });
     }).catch(() => {
       toast({ title: 'Error', description: 'No se pudo copiar el pedido.', variant: 'destructive' });
     });
@@ -246,7 +245,7 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
     const method = paymentMethods.find(m => m.key === selectedPayment);
     if (!method || !method.details) return null;
 
-    const { nequiQrImageUrl, bancolombiaQrImageUrl, daviplataQrImageUrl, accountNumber, accountHolder } = method.details;
+    const { nequiQrImageUrl, bancolombiaQrImageUrl, daviplataQrImageUrl, accountNumber, accountHolder } = method.details as any;
     const qrUrl = nequiQrImageUrl || bancolombiaQrImageUrl || daviplataQrImageUrl;
 
     return (
@@ -530,5 +529,3 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
     </>
   );
 }
-
-    

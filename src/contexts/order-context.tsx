@@ -1,4 +1,3 @@
-
 "use client";
 import React, { createContext, useContext, useState, ReactNode, useCallback } from "react";
 import useSWR from 'swr';
@@ -46,7 +45,6 @@ const fetcher = async ([_, companyId]: [string, string]): Promise<Order[]> => {
       id: doc.id,
       ...data,
       date: serializeDate(data.date)!,
-      // Los campos createdAt y updatedAt no existen en la interfaz Order, así que no se serializan
     } as Order;
   });
 };
@@ -93,7 +91,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
 
 
   return (
-    <OrderContext.Provider value={{ orders, addOrder, updateOrder, loading: finalLoadingState, error, refreshOrders: () => {if(shouldFetch) mutate();} }}>
+    <OrderContext.Provider value={{ orders, addOrder, updateOrder, loading: finalLoadingState, error: error || null, refreshOrders: () => {if(shouldFetch) mutate();} }}>
       {children}
     </OrderContext.Provider>
   );

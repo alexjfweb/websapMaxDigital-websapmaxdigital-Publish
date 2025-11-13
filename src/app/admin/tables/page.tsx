@@ -1,4 +1,3 @@
-
 "use client";
 
 export const dynamic = 'force-dynamic';
@@ -25,7 +24,7 @@ import LimitReachedDialog from "@/components/LimitReachedDialog";
 
 export default function TablesPage() {
   const { currentUser } = useSession();
-  const companyId = currentUser.companyId;
+  const companyId = currentUser?.companyId;
   const { tables, isLoading, isError, error, refreshTables } = useTables(companyId);
   const { limits, isLimitsLoading } = usePlanLimits();
   const { subscription, isLoading: isSubscriptionLoading } = useSubscription();

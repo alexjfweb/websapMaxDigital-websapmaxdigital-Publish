@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,10 +13,10 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { useCompanies } from "@/hooks/use-companies";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CreateCompanyInput, companyService } from "@/services/company-service";
+import { companyService } from "@/services/company-service";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-
+import type { CreateCompanyInput } from "@/services/company-service";
 
 export default function SuperAdminCompaniesPage() {
   const { companies, isLoading, error, refreshCompanies } = useCompanies();
@@ -55,7 +54,7 @@ export default function SuperAdminCompaniesPage() {
     }
   }, [companies, error]);
 
-  const statusTranslations: { [key in Company['status'] | 'all']: string } = {
+  const statusTranslations: { [key: string]: string } = {
     all: "Todos",
     active: "Activo",
     inactive: "Inactivo",
@@ -90,7 +89,7 @@ export default function SuperAdminCompaniesPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setNewCompanyForm(prev => ({ ...prev, [name]: value }));
+    setNewCompanyForm((prev: CreateCompanyInput) => ({ ...prev, [name]: value }));
   };
 
   const handleCreateNew = async () => {
@@ -431,7 +430,7 @@ export default function SuperAdminCompaniesPage() {
                 <p><strong>Teléfono Móvil:</strong> {selectedCompany.phone || 'N/A'}</p>
                 <p><strong>Dirección:</strong> {`${selectedCompany.addressStreet || ''}, ${selectedCompany.addressNeighborhood || ''}, ${selectedCompany.location}, ${selectedCompany.addressState || ''}, ${selectedCompany.addressPostalCode || ''}`}</p>
                 <p><strong>Estado:</strong> {statusTranslations[selectedCompany.status]}</p>
-                <p><strong>Plan:</strong> {(selectedCompany as any).planName || 'N/A'}</p>
+                <p><strong>Plan:</strong> {selectedCompany.planName || 'N/A'}</p>
                 <p><strong>Registrado:</strong> {selectedCompany.registrationDate ? format(new Date(selectedCompany.registrationDate), "P") : 'N/A'}</p>
               </div>
             )}

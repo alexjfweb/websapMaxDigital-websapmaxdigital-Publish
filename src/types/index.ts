@@ -1,5 +1,3 @@
-
-
 import type { Timestamp } from 'firebase/firestore';
 
 
@@ -233,13 +231,13 @@ export type TableInput = {
 export interface TableAuditLog {
   id: string;
   tableId: string;
-  action: 'created' | 'updated' | 'deleted' | 'status_changed' | 'reserved' | 'freed';
-  previousStatus?: string;
-  newStatus?: string;
-  userId: string;
-  userRole: string;
-  timestamp: Timestamp;
-  details?: string;
+  tableNumber: number;
+  action: 'created' | 'updated' | 'deleted' | 'reserved' | 'released' | 'status_changed';
+  previousStatus?: TableStatus;
+  newStatus?: TableStatus;
+  details: string;
+  performedBy: string;
+  createdAt: Timestamp;
 }
 
 // Definición de un Pedido
@@ -315,13 +313,13 @@ export interface SupportTicket {
   status: 'open' | 'in_progress' | 'closed';
   priority: 'low' | 'medium' | 'high'; // Campo añadido
   source: 'public' | 'internal'; // Campo para diferenciar origen
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: string;
+  updatedAt: string;
   replies?: {
     userId: string; // UID de quien responde
     userName: string; // Nombre de quien responde
     message: string;
-    createdAt: Timestamp;
+    createdAt: string;
   }[];
 }
 

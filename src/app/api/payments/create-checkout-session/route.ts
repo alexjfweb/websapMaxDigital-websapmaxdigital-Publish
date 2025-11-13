@@ -4,7 +4,7 @@ import { Stripe } from 'stripe';
 import { MercadoPagoConfig, Preference, PreApproval } from 'mercadopago';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
-import type { LandingPlan } from '@/services/landing-plans-service';
+import type { LandingPlan } from '@/types/plans';
 import type { Company } from '@/types';
 
 // Helper para obtener la URL base de la aplicación de forma robusta
@@ -157,9 +157,7 @@ export async function POST(request: NextRequest) {
               body: {
                 preapproval_plan_id: plan.mp_preapproval_plan_id,
                 reason: `Suscripción al Plan ${plan.name} de WebSapMax`,
-                payer: {
-                  email: company.email,
-                },
+                payer_email: company.email,
                 back_url: `https://websap.site/admin/subscription?payment=success&provider=mercadopago`,
                 external_reference: `${companyId}|${plan.slug}`,
               }

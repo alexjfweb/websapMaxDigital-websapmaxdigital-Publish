@@ -1,10 +1,9 @@
-
 "use client";
 
 import useSWR from 'swr';
 import { useSession } from '@/contexts/session-context';
 import type { Company } from '@/types';
-import type { LandingPlan } from '@/services/landing-plans-service';
+import type { LandingPlan } from '@/types/plans';
 import { companyService } from '@/services/company-service';
 import { landingPlansService } from '@/services/landing-plans-service';
 
@@ -78,4 +77,3 @@ export function useSubscription() {
     error,
   };
 }
-

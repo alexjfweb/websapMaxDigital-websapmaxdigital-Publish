@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,9 +54,8 @@ export default function AdminProfilePage() {
         if (docSnap.exists()) {
           const data = docSnap.data() as Company;
           setProfileData(data);
-          // El avatar en el contexto de la empresa es el mismo que el logo.
-          setAvatarPreview(data.logoUrl);
-          setLogoPreview(data.logoUrl);
+          setAvatarPreview(data.logoUrl || null);
+          setLogoPreview(data.logoUrl || null);
           if(data.bannerUrl) setBannerPreview(data.bannerUrl);
           if(data.paymentMethods?.nequi?.nequiQrImageUrl) setNequiQrPreview(data.paymentMethods.nequi.nequiQrImageUrl);
           if(data.paymentMethods?.daviplata?.daviplataQrImageUrl) setDaviplataQrPreview(data.paymentMethods.daviplata.daviplataQrImageUrl);
