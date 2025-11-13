@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Plus, Search, MoreHorizontal, Edit, Trash2, Eye, Clock, Users, AlertCircle } from "lucide-react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { Plus, Search, MoreHorizontal, Edit, Trash2, Eye, Clock, Users, AlertCircle, Printer, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -20,6 +20,7 @@ import { useSession } from "@/contexts/session-context";
 import { usePlanLimits } from "@/hooks/use-plan-limits";
 import { useSubscription } from "@/hooks/use-subscription";
 import LimitReachedDialog from "@/components/LimitReachedDialog";
+import html2pdf from 'html2pdf.js';
 
 export default function TablesPage() {
   const { currentUser } = useSession();
@@ -35,6 +36,8 @@ export default function TablesPage() {
   const [selectedTableForLogs, setSelectedTableForLogs] = useState<Table | null>(null);
   const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
   const { toast } = useToast();
+  const printAreaRef = useRef<HTMLDivElement>(null);
+
 
   const filteredTables = useMemo(() => {
     let filtered = tables;
@@ -100,6 +103,25 @@ export default function TablesPage() {
     await refreshTables();
     setIsFormOpen(false);
     setEditingTable(null);
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleDownloadPdf = () => {
+    if (printAreaRef.current) {
+        const element = printAreaRef.current;
+        const today = new Date().toISOString().slice(0, 10);
+        const opt = {
+            margin:       0.5,
+            filename:     `Mesas_${today}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+        html2pdf().from(element).set(opt).save();
+    }
   };
 
   const getStatusColor = (status: Table["status"]) => {
@@ -210,7 +232,7 @@ export default function TablesPage() {
         limit={limits.max.tables}
         planName={subscription?.plan?.name || ''}
     />
-    <div className="space-y-6">
+    <div className="space-y-6" ref={printAreaRef}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -266,8 +288,16 @@ export default function TablesPage() {
       {/* Vista de Tabla (Desktop) */}
       <div className="hidden lg:block">
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Mesas ({filteredTables.length})</CardTitle>
+            <div className="flex gap-2">
+                <Button variant="outline" onClick={handlePrint} className="bg-green-500 text-white hover:bg-green-600">
+                    <Printer className="mr-2 h-4 w-4"/> Imprimir
+                </Button>
+                <Button variant="outline" onClick={handleDownloadPdf} className="bg-orange-500 text-white hover:bg-orange-600">
+                    <Download className="mr-2 h-4 w-4"/> Descargar PDF
+                </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <UITable>
