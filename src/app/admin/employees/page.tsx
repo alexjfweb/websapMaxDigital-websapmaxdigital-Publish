@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, type ChangeEvent, useRef } from "react";
@@ -654,5 +653,3 @@ export default function AdminEmployeesPage() {
     </>
   );
 }
-
-    
