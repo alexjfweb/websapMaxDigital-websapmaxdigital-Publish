@@ -101,7 +101,7 @@ export default function LandingEditorPage() {
       
       try {
         const imageUrl = await storageService.compressAndUploadFile(file, `subsections/`);
-        updatedFormData.sections[parseInt(sectionIndex)].subsections![parseInt(subIndex)][field as 'imageUrl' | 'logoUrl'] = imageUrl;
+        updatedFormData.sections[parseInt(sectionIndex)].subsections![parseInt(subIndex)][field as 'imageUrl'] = imageUrl;
       } catch (error: any) {
         toast({ title: "Error de subida", description: `No se pudo subir una de las imágenes: ${error.message}`, variant: "destructive" });
         return; // Detener el guardado si una imagen falla
@@ -116,7 +116,7 @@ export default function LandingEditorPage() {
     }
   };
   
-  const handleFileSelection = (e: ChangeEvent<HTMLInputElement>, sectionIndex: number, subIndex: number, field: 'imageUrl' | 'logoUrl') => {
+  const handleFileSelection = (e: ChangeEvent<HTMLInputElement>, sectionIndex: number, subIndex: number, field: 'imageUrl') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -568,7 +568,7 @@ export default function LandingEditorPage() {
                         <div className="space-y-3">
                           <div className="flex justify-between items-center">
                             <Label className="font-semibold">Subsecciones (Columnas/Tarjetas)</Label>
-                            <Button size="xs" variant="outline" onClick={() => addSubsection(index)}>
+                            <Button size="sm" variant="outline" onClick={() => addSubsection(index)}>
                               <Plus className="w-3 h-3 mr-1" /> Añadir
                             </Button>
                           </div>

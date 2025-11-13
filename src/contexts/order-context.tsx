@@ -7,6 +7,8 @@ import type { Order } from '@/types';
 import { useSession } from "./session-context";
 import { serializeDate } from "@/lib/utils";
 
+export type { Order };
+
 interface OrderContextType {
   orders: Order[];
   addOrder: (order: Omit<Order, 'id' | 'date'>) => Promise<string>;

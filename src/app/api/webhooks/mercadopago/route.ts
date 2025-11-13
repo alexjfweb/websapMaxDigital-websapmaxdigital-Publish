@@ -109,7 +109,6 @@ export async function POST(request: NextRequest) {
             newStatus = 'canceled';
         }
 
-        // CORRECCIÓN: Crear un objeto para las actualizaciones y añadir el mpPaymentId
         const updateData: any = {
             subscriptionStatus: newStatus,
             planId: planId,
@@ -117,15 +116,11 @@ export async function POST(request: NextRequest) {
             updatedAt: serverTimestamp(),
         };
 
-        // Si es el primer pago de la suscripción (authorized), guardamos también el ID del pago.
-        // MercadoPago SDK v2 usa `auto_recurring.last_charged_amount` para esta info.
-        // `last_payment_id` es de una versión anterior o no está siempre presente.
-        // Nos aseguraremos de buscar en el lugar correcto.
-        if (subscription.status === 'authorized' && subscription.auto_recurring?.last_charged_amount) {
-            // El ID del último pago no está directamente disponible en el objeto `preapproval` de la misma forma que antes.
-            // La estrategia más robusta es buscar el último pago asociado a esta pre-aprobación si es necesario.
-            // Por ahora, omitimos `mpPaymentId` en la actualización de pre-aprobación para evitar errores
-            // y nos enfocamos en activar la suscripción.
+        if (subscription.status === 'authorized' && subscription.auto_recurring) {
+           // No hay un campo directo last_payment_id en la respuesta del SDK v2, 
+           // pero el 'authorized' implica un pago exitoso.
+           // Omitimos la actualización del mpPaymentId aquí para evitar errores,
+           // ya que la activación de la suscripción es lo crucial.
         }
 
         const db = getDb();

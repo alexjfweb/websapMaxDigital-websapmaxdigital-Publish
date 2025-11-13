@@ -44,6 +44,7 @@ export default function EmployeeReservationsPage() {
       case "confirmed": return <Badge className="bg-green-500 text-white hover:bg-green-600">Confirmada</Badge>;
       case "pending": return <Badge className="bg-yellow-500 text-white hover:bg-yellow-600">Pendiente</Badge>;
       case "cancelled": return <Badge variant="destructive">Cancelada</Badge>;
+      case 'completed': return <Badge variant="secondary">Completada</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;
     }
   };
@@ -152,13 +153,13 @@ export default function EmployeeReservationsPage() {
               <DialogTitle>Agregar nueva reserva</DialogTitle>
               <DialogDescription>Complete el formulario para agregar una nueva reserva</DialogDescription>
             </DialogHeader>
-            {companyId && companyProfile && (
+            {companyId && companyProfile ? (
               <ReservationForm 
                 restaurantId={companyId} 
                 restaurantProfile={companyProfile}
                 onSuccess={() => setOpen(false)} 
               />
-            )}
+            ) : <p>Cargando información del restaurante...</p>}
           </DialogContent>
         </Dialog>
       </div>
@@ -216,7 +217,8 @@ export default function EmployeeReservationsPage() {
               className={actionToConfirm?.action === 'cancel' ? 'bg-destructive hover:bg-destructive/90' : ''}
               onClick={() => {
                 if (actionToConfirm) {
-                  handleUpdateStatus(actionToConfirm.reservation.id, actionToConfirm.action === 'confirm' ? 'confirmed' : 'cancelled');
+                  const newStatus = actionToConfirm.action === 'confirm' ? 'confirmed' : 'cancelled';
+                  handleUpdateStatus(actionToConfirm.reservation.id, newStatus);
                 }
               }}
             >

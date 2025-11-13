@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -70,7 +70,7 @@ function PlanHistoryDialog({ planId }: { planId: string }) {
   
   const currentUser = { id: 'superadmin', email: 'superadmin@websapmax.com' };
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (planId) {
       setIsLoading(true);
       setError(null);
@@ -302,13 +302,13 @@ export default function SubscriptionPlansPage() {
         isPopular: formData.isPopular || false,
         icon: formData.icon || 'zap',
         color: formData.color || 'blue',
-        maxUsers: formData.maxUsers,
-        maxProjects: formData.maxProjects,
+        maxUsers: formData.maxUsers as number,
+        maxProjects: formData.maxProjects as number,
         ctaText: formData.ctaText
       };
 
       if (editingPlan) {
-        await landingPlansService.updatePlan(editingPlan.id, planData, currentUser.id, currentUser.email);
+        await landingPlansService.updatePlan(editingPlan.id, { id: editingPlan.id, ...planData }, currentUser.id, currentUser.email);
         toast({ title: "Éxito", description: "Plan actualizado correctamente" });
       } else {
         await landingPlansService.createPlan(planData, currentUser.id, currentUser.email);

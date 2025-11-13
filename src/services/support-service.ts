@@ -11,8 +11,20 @@ import {
   arrayUnion,
   Timestamp,
 } from 'firebase/firestore';
-import type { SupportTicket, CreateSupportTicket } from '@/types';
+import type { SupportTicket } from '@/types';
 import { serializeSupportDate } from '@/lib/utils';
+
+export interface CreateSupportTicket {
+  companyId: string;
+  companyName: string;
+  planName: string;
+  userId: string;
+  userEmail: string;
+  subject: string;
+  message: string;
+  priority?: 'low' | 'medium' | 'high';
+  attachmentUrl?: string;
+}
 
 /**
  * Serializa un ticket completo convirtiendo todas las fechas a ISO strings

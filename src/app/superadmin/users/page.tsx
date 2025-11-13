@@ -163,7 +163,7 @@ export default function SuperAdminUsersPage() {
       name: user.name || '',
       username: user.username,
       email: user.email,
-      role: user.role,
+      role: user.role as 'admin' | 'employee' | 'superadmin',
       status: user.status,
     });
     setIsFormModalOpen(true);
@@ -654,7 +654,7 @@ export default function SuperAdminUsersPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={handleCloseModals} disabled={isSubmitting}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} variant="destructive" disabled={isSubmitting}>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90" disabled={isSubmitting}>
               {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
               {isSubmitting ? 'Eliminando...' : 'Eliminar'}
             </AlertDialogAction>

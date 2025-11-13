@@ -27,19 +27,19 @@ export const mockRestaurantProfile: RestaurantProfile = {
     codEnabled: true, // Cash on Delivery
     nequi: {
       enabled: true,
-      qrCodeUrl: 'https://placehold.co/300x300.png?text=Nequi+QR',
+      nequiQrImageUrl: 'https://placehold.co/300x300.png?text=Nequi+QR',
       accountHolder: 'websapMax S.A.S',
       accountNumber: '3001234567'
     },
      daviplata: {
       enabled: true,
-      qrCodeUrl: 'https://placehold.co/300x300.png?text=Daviplata+QR',
+      daviplataQrImageUrl: 'https://placehold.co/300x300.png?text=Daviplata+QR',
       accountHolder: 'websapMax S.A.S',
       accountNumber: '3109876543'
     },
     bancolombia: {
       enabled: true,
-      qrCodeUrl: 'https://placehold.co/300x300.png?text=Bancolombia+QR',
+      bancolombiaQrImageUrl: 'https://placehold.co/300x300.png?text=Bancolombia+QR',
       accountHolder: 'websapMax S.A.S',
       accountNumber: '123-456789-01'
     }
@@ -56,7 +56,11 @@ export const mockDishes: Dish[] = [
     stock: 50,
     likes: 5,
     category: 'Main Courses',
-    isFeatured: true, // Example of featured dish
+    isFeatured: true,
+    companyId: 'mock-company',
+    available: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: 'dish-2',
@@ -67,6 +71,10 @@ export const mockDishes: Dish[] = [
     stock: -1, // Unlimited
     likes: 4,
     category: 'Main Courses',
+    companyId: 'mock-company',
+    available: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: 'dish-3',
@@ -77,6 +85,10 @@ export const mockDishes: Dish[] = [
     stock: 100,
     likes: 4,
     category: 'Appetizers',
+    companyId: 'mock-company',
+    available: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: 'dish-4',
@@ -88,6 +100,10 @@ export const mockDishes: Dish[] = [
     likes: 5,
     category: 'Desserts',
     isFeatured: true,
+    companyId: 'mock-company',
+    available: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: 'dish-5',
@@ -98,6 +114,10 @@ export const mockDishes: Dish[] = [
     stock: 0, // Out of stock
     likes: 3,
     category: 'Main Courses',
+    companyId: 'mock-company',
+    available: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: 'dish-6',
@@ -108,5 +128,9 @@ export const mockDishes: Dish[] = [
     stock: -1,
     likes: 5,
     category: 'Drinks',
+    companyId: 'mock-company',
+    available: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
 ];

@@ -208,13 +208,15 @@ export interface Company {
   baseShippingCost?: number; // Nuevo campo para costo de envío
 }
 // Sistema de Gestión de Mesas
+export type TableStatus = 'available' | 'occupied' | 'reserved' | 'out_of_service';
+
 export interface Table {
   id?: string;
   number: number;
   capacity: number;
   location?: string;
   description?: string;
-  status: 'available' | 'occupied' | 'reserved' | 'out_of_service';
+  status: TableStatus;
   isActive: boolean;
   createdAt?: any;
   updatedAt?: any;
@@ -321,16 +323,4 @@ export interface SupportTicket {
     message: string;
     createdAt: string;
   }[];
-}
-
-export interface CreateSupportTicket {
-  companyId: string;
-  companyName: string;
-  planName: string;
-  userId: string;
-  userEmail: string;
-  subject: string;
-  message: string;
-  priority?: 'low' | 'medium' | 'high'; // Campo añadido
-  attachmentUrl?: string; // URL a la imagen adjunta
 }
