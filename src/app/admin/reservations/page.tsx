@@ -1,3 +1,4 @@
+
 "use client";
 
 export const dynamic = 'force-dynamic';
@@ -22,7 +23,6 @@ import { useReservations } from "@/hooks/use-reservations";
 import { reservationService } from "@/services/reservation-service";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/contexts/session-context";
-import html2pdf from 'html2pdf.js';
 
 export default function AdminReservationsPage() {
   const { currentUser } = useSession();
@@ -77,8 +77,9 @@ export default function AdminReservationsPage() {
     window.print();
   };
 
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
     if (printAreaRef.current) {
+        const html2pdf = (await import('html2pdf.js')).default;
         const element = printAreaRef.current;
         const today = new Date().toISOString().slice(0, 10);
         const opt = {

@@ -1,3 +1,4 @@
+
 "use client";
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart as RechartsBarChart, LineChart as RechartsLineChart, PieChart as RechartsPieChart, Bar, Line, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
-import html2pdf from 'html2pdf.js';
 import { useOrderContext } from '@/contexts/order-context';
 import { useDishes } from '@/hooks/use-dishes';
 import { useSession } from '@/contexts/session-context';
@@ -108,9 +108,10 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
     const element = detailedStatsRef.current;
     if (element) {
+      const html2pdf = (await import('html2pdf.js')).default;
       const today = new Date().toISOString().slice(0, 10);
       const opt = {
         margin: 0.5,

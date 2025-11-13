@@ -1,3 +1,4 @@
+
 "use client";
 
 export const dynamic = 'force-dynamic';
@@ -35,7 +36,6 @@ import Link from 'next/link';
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { Skeleton } from "@/components/ui/skeleton";
 import LimitReachedDialog from "@/components/LimitReachedDialog";
-import html2pdf from 'html2pdf.js';
 
 const userEditSchema = z.object({
     id: z.string().optional(),
@@ -303,8 +303,9 @@ export default function AdminEmployeesPage() {
     window.print();
   };
 
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
     if (printAreaRef.current) {
+        const html2pdf = (await import('html2pdf.js')).default;
         const element = printAreaRef.current;
         const today = new Date().toISOString().slice(0, 10);
         const opt = {
