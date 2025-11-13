@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ShoppingBag, BookUser, Megaphone, Bell, ClipboardList, Utensils, AlertCircle } from "lucide-react";
 import Link from "next/link";

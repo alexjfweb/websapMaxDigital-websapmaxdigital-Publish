@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Settings, ShoppingBag, Utensils, Users, CreditCard, Share2, Palette, Printer, Download, LineChart as LineChartIcon, BarChart2, PieChart as PieChartIcon } from "lucide-react";
 import Link from "next/link";
