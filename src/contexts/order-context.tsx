@@ -46,7 +46,7 @@ const fetcher = async ([_, companyId]: [string, string]): Promise<Order[]> => {
       id: doc.id,
       ...data,
       date: serializeDate(data.date)!,
-      updatedAt: serializeDate(data.updatedAt)!,
+      // Los campos createdAt y updatedAt no existen en la interfaz Order, así que no se serializan
     } as Order;
   });
 };

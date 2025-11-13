@@ -4,40 +4,24 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Settings, ShoppingBag, Utensils, Users, CreditCard, Share2, Palette, Printer, Download, LineChart as LineChartIcon, BarChart2, PieChart as PieChartIcon } from "lucide-react";
 import Link from "next/link";
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart as RechartsBarChart, LineChart as RechartsLineChart, PieChart as RechartsPieChart, Bar, Line, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import html2pdf from 'html2pdf.js';
-
-
-// Mock Data for new detailed charts
-const barChartData = [
-  { category: 'Entradas', sales: 4000 },
-  { category: 'Platos Fuertes', sales: 12000 },
-  { category: 'Postres', sales: 8000 },
-  { category: 'Bebidas', sales: 7000 },
-  { category: 'Especiales', sales: 5500 },
-];
-
-const lineChartData = [
-  { month: 'Ene', orders: 120 },
-  { month: 'Feb', orders: 150 },
-  { month: 'Mar', orders: 130 },
-  { month: 'Abr', orders: 180 },
-  { month: 'May', orders: 210 },
-  { month: 'Jun', orders: 250 },
-];
-
-const pieChartData = [
-  { name: 'En Local', value: 400, fill: "hsl(var(--chart-1))" },
-  { name: 'Domicilio', value: 300, fill: "hsl(var(--chart-2))" },
-  { name: 'Para Recoger', value: 200, fill: "hsl(var(--chart-3))" },
-];
+import { useOrderContext } from '@/contexts/order-context';
+import { useDishes } from '@/hooks/use-dishes';
+import { useSession } from '@/contexts/session-context';
+import { subMonths, format, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export default function AdminDashboardPage() {
+  const { currentUser } = useSession();
+  const { orders, loading: loadingOrders, error: errorOrders } = useOrderContext();
+  const { dishes, isLoading: loadingDishes, error: errorDishes } = useDishes(currentUser?.companyId);
+
   const [isClient, setIsClient] = useState(false);
   const detailedStatsRef = useRef<HTMLDivElement>(null);
   const [activeChart, setActiveChart] = useState('bar');
@@ -46,13 +30,72 @@ export default function AdminDashboardPage() {
     setIsClient(true);
   }, []);
 
+  const { barChartData, lineChartData, pieChartData, quickStats } = useMemo(() => {
+    if (!orders.length || !dishes.length) {
+      return { barChartData: [], lineChartData: [], pieChartData: [], quickStats: { totalDishes: 0, pendingOrders: 0 } };
+    }
+
+    // Quick Stats
+    const totalDishes = dishes.length;
+    const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'preparing').length;
+
+    // Bar Chart: Sales by Category
+    const dishCategoryMap = new Map(dishes.map(d => [d.id, d.category]));
+    const salesByCategory: { [key: string]: number } = {};
+
+    orders.forEach(order => {
+      order.productos.forEach(product => {
+        const category = dishCategoryMap.get(product.id) || 'Sin Categoría';
+        const saleAmount = product.precio * product.cantidad;
+        salesByCategory[category] = (salesByCategory[category] || 0) + saleAmount;
+      });
+    });
+
+    const barData = Object.entries(salesByCategory).map(([category, sales]) => ({ category, sales }));
+
+    // Line Chart: Orders over last 6 months
+    const sixMonthsAgo = subMonths(new Date(), 5);
+    const monthLabels: string[] = [];
+    for (let i = 5; i >= 0; i--) {
+      monthLabels.push(format(subMonths(new Date(), i), 'MMM', { locale: es }));
+    }
+
+    const ordersByMonth = monthLabels.map(monthLabel => {
+      const monthDate = subMonths(new Date(), monthLabels.length - 1 - monthLabels.indexOf(monthLabel));
+      const start = startOfMonth(monthDate);
+      const end = endOfMonth(monthDate);
+      const monthlyOrders = orders.filter(o => isWithinInterval(new Date(o.date), { start, end })).length;
+      return { month: monthLabel, orders: monthlyOrders };
+    });
+
+    // Pie Chart: Order Types
+    const orderTypes = orders.reduce((acc, order) => {
+      const type = order.type === 'dine-in' ? 'En Local' : order.type === 'delivery' ? 'Domicilio' : 'Para Recoger';
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const pieData = [
+        { name: 'En Local', value: orderTypes['En Local'] || 0, fill: "hsl(var(--chart-1))" },
+        { name: 'Domicilio', value: orderTypes['Domicilio'] || 0, fill: "hsl(var(--chart-2))" },
+        { name: 'Para Recoger', value: orderTypes['Para Recoger'] || 0, fill: "hsl(var(--chart-3))" },
+    ];
+    
+    return { 
+      barChartData: barData, 
+      lineChartData: ordersByMonth, 
+      pieChartData: pieData, 
+      quickStats: { totalDishes, pendingOrders }
+    };
+
+  }, [orders, dishes]);
+
   const handlePrint = () => {
     const printContent = detailedStatsRef.current;
     if (printContent) {
       const printWindow = window.open('', '', 'height=800,width=800');
       if (printWindow) {
         printWindow.document.write('<html><head><title>Estadísticas</title>');
-        // Aquí podrías enlazar un CSS específico para impresión si lo tuvieras
         printWindow.document.write('</head><body>');
         printWindow.document.write(printContent.innerHTML);
         printWindow.document.write('</body></html>');
@@ -79,7 +122,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  if (!isClient) {
+  if (!isClient || loadingOrders || loadingDishes) {
     return (
       <div className="space-y-8">
         <Skeleton className="h-12 w-1/2" />
@@ -205,14 +248,14 @@ export default function AdminDashboardPage() {
                 <BarChart className="h-8 w-8 text-primary"/>
                 <div className="flex-1 space-y-1">
                     <p className="text-sm font-medium leading-none">Platos totales</p>
-                    <p className="text-2xl font-semibold">25</p> {/* Mock Data */}
+                    <p className="text-2xl font-semibold">{quickStats.totalDishes}</p>
                 </div>
             </div>
              <div className="flex items-center space-x-4 rounded-md border p-4">
                 <ShoppingBag className="h-8 w-8 text-primary"/>
                 <div className="flex-1 space-y-1">
                     <p className="text-sm font-medium leading-none">Pedidos pendientes</p>
-                    <p className="text-2xl font-semibold">5</p> {/* Mock Data */}
+                    <p className="text-2xl font-semibold">{quickStats.pendingOrders}</p>
                 </div>
             </div>
         </CardContent>
