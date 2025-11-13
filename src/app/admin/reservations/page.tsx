@@ -4,12 +4,12 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, Search, Filter, CalendarDays, MoreVertical, AlertCircle, Phone } from "lucide-react";
+import { Eye, Search, Filter, CalendarDays, MoreVertical, AlertCircle, Phone, Printer, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -22,6 +22,7 @@ import { useReservations } from "@/hooks/use-reservations";
 import { reservationService } from "@/services/reservation-service";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/contexts/session-context";
+import html2pdf from 'html2pdf.js';
 
 export default function AdminReservationsPage() {
   const { currentUser } = useSession();
@@ -35,6 +36,7 @@ export default function AdminReservationsPage() {
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [openDetail, setOpenDetail] = useState(false);
   const [actionToConfirm, setActionToConfirm] = useState<{ action: 'confirm' | 'cancel' | 'complete', reservation: Reservation } | null>(null);
+  const printAreaRef = useRef<HTMLDivElement>(null);
 
   const getStatusBadge = (status: Reservation['status']) => {
     switch (status) {
@@ -71,6 +73,25 @@ export default function AdminReservationsPage() {
     setActionToConfirm(null);
   };
   
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleDownloadPdf = () => {
+    if (printAreaRef.current) {
+        const element = printAreaRef.current;
+        const today = new Date().toISOString().slice(0, 10);
+        const opt = {
+            margin:       0.5,
+            filename:     `Reservas_${today}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+        html2pdf().from(element).set(opt).save();
+    }
+  };
+
   const renderTableBody = () => {
     if (isLoading) {
       return Array.from({ length: 5 }).map((_, index) => (
@@ -134,7 +155,7 @@ export default function AdminReservationsPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div ref={printAreaRef} className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-primary">Reservas</h1>
         <p className="text-lg text-muted-foreground">Descripción de la página de reservas</p>
@@ -142,8 +163,20 @@ export default function AdminReservationsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Todas las reservas</CardTitle>
-          <CardDescription>Descripción de la sección de todas las reservas</CardDescription>
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle>Todas las reservas</CardTitle>
+              <CardDescription>Descripción de la sección de todas las reservas</CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={handlePrint} className="bg-green-500 text-white hover:bg-green-600">
+                  <Printer className="mr-2 h-4 w-4"/> Imprimir
+              </Button>
+              <Button variant="outline" onClick={handleDownloadPdf} className="bg-orange-500 text-white hover:bg-orange-600">
+                  <Download className="mr-2 h-4 w-4"/> Descargar PDF
+              </Button>
+            </div>
+          </div>
           <div className="flex flex-col gap-2 pt-4 md:flex-row md:items-center md:justify-between">
             <div className="relative flex-grow">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
