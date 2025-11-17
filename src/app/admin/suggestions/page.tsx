@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Search, Plus, Clock, Zap, MessageSquare, ShoppingBag, BrainCircuit, BarChart2, DollarSign, TrendingUp, ArrowRight, ArrowDown, Loader2, Settings, TestTube2, CheckCircle, AlertTriangle, PowerOff, Save, Edit, Trash2, GripVertical } from "lucide-react";
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -24,7 +24,8 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { useAIConfig, AIModelConfig } from '@/hooks/use-ai-config';
+import { useAIConfig } from '@/hooks/use-ai-config';
+import type { AIConfig, AIModelConfig } from '@/services/ai-config-service';
 
 
 // --- AI Configuration Component ---
@@ -39,7 +40,7 @@ const AIConfigDialog = () => {
   const { aiConfig, updateAIConfig, isLoading } = useAIConfig();
 
   // Estados locales para la UI, inicializados desde el hook
-  const [localConfig, setLocalConfig] = useState(aiConfig);
+  const [localConfig, setLocalConfig] = useState<AIConfig | null>(aiConfig);
   const [selectedProviderName, setSelectedProviderName] = useState(aiProviders[0].name);
   const [connectionStatus, setConnectionStatus] = useState<'unconfigured' | 'connected' | 'error'>('unconfigured');
   const [isSaving, setIsSaving] = useState(false);
