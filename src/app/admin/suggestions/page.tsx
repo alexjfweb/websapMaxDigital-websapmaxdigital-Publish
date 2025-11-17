@@ -9,14 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Search, Plus, Clock, Zap, MessageSquare, ShoppingBag, BrainCircuit, BarChart2, DollarSign, TrendingUp, ArrowRight, ArrowDown, Loader2, Settings, TestTube2, CheckCircle, AlertTriangle, PowerOff, Save, Edit, Trash2, GripVertical } from "lucide-react";
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { suggestionRuleService, SuggestionRule } from '@/services/suggestion-rules-service';
 import { useSession } from '@/contexts/session-context';
 import { Slider } from '@/components/ui/slider';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOrderContext } from '@/contexts/order-context';
@@ -24,6 +24,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { useAIConfig, AIModelConfig } from '@/hooks/use-ai-config';
 
 
 // --- AI Configuration Component ---
@@ -33,44 +34,31 @@ const aiProviders = [
   { name: "Custom API", models: [] },
 ];
 
-const savedModelsMock = [
-  { id: '1', provider: 'Google Gemini', name: 'gemini-pro', apiKey: '...tur8i', active: true },
-  { id: '2', provider: 'OpenAI GPT', name: 'gpt-4o', apiKey: '...h4fg6', active: false },
-];
-
 const AIConfigDialog = () => {
   const { toast } = useToast();
-  const [selectedProvider, setSelectedProvider] = useState(aiProviders[0]);
-  const [apiKey, setApiKey] = useState("");
-  const [selectedModel, setSelectedModel] = useState(selectedProvider.models[0]);
-  const [temperature, setTemperature] = useState(0.7);
-  const [maxTokens, setMaxTokens] = useState(1024);
-  const [connectionStatus, setConnectionStatus] = useState<"unconfigured" | "connected" | "error">("unconfigured");
-  const [savedModels, setSavedModels] = useState(savedModelsMock);
+  const { aiConfig, updateAIConfig, isLoading } = useAIConfig();
 
-  // Cargar estado desde localStorage al montar
+  // Estados locales para la UI, inicializados desde el hook
+  const [localConfig, setLocalConfig] = useState(aiConfig);
+  const [selectedProviderName, setSelectedProviderName] = useState(aiProviders[0].name);
+  const [connectionStatus, setConnectionStatus] = useState<'unconfigured' | 'connected' | 'error'>('unconfigured');
+  const [isSaving, setIsSaving] = useState(false);
+
   useEffect(() => {
-    try {
-      const storedModels = localStorage.getItem('aiSavedModels');
-      if (storedModels) {
-        setSavedModels(JSON.parse(storedModels));
-      }
-    } catch (error) {
-      console.error("Error loading AI models from localStorage:", error);
-      setSavedModels(savedModelsMock);
+    if (aiConfig) {
+      setLocalConfig(aiConfig);
     }
-  }, []);
+  }, [aiConfig]);
+  
+  const selectedProvider = aiProviders.find(p => p.name === selectedProviderName)!;
 
   const handleProviderChange = (providerName: string) => {
-    const provider = aiProviders.find(p => p.name === providerName)!;
-    setSelectedProvider(provider);
-    setApiKey("");
-    setSelectedModel(provider.models[0] || "");
+    setSelectedProviderName(providerName);
     setConnectionStatus("unconfigured");
   };
 
   const handleTestConnection = () => {
-    if (!apiKey) {
+    if (!localConfig?.models.find(m => m.provider === selectedProviderName)?.apiKey) {
       toast({ title: "Clave API requerida", description: "Por favor, ingresa tu clave API para probar la conexión.", variant: "destructive" });
       return;
     }
@@ -78,7 +66,7 @@ const AIConfigDialog = () => {
     setTimeout(() => {
       if (Math.random() > 0.3) {
         setConnectionStatus("connected");
-        toast({ title: "¡Conexión Exitosa!", description: `Conectado correctamente a ${selectedProvider.name}.`, className: "bg-green-100 text-green-800" });
+        toast({ title: "¡Conexión Exitosa!", description: `Conectado correctamente a ${selectedProviderName}.`, className: "bg-green-100 text-green-800" });
       } else {
         setConnectionStatus("error");
         toast({ title: "Error de Conexión", description: "No se pudo verificar la clave API. Revisa tus credenciales.", variant: "destructive" });
@@ -86,19 +74,36 @@ const AIConfigDialog = () => {
     }, 1500);
   };
   
-  const handleSaveConfig = () => {
+  const handleSaveConfig = async () => {
+    if (!localConfig) return;
+    setIsSaving(true);
     try {
-      localStorage.setItem('aiSavedModels', JSON.stringify(savedModels));
-      toast({ title: "Configuración Guardada", description: "Tu configuración de IA ha sido guardada." });
+      await updateAIConfig(localConfig);
     } catch (error) {
-      console.error("Error saving AI models to localStorage:", error);
-      toast({ title: "Error al Guardar", description: "No se pudo guardar la configuración en el navegador.", variant: "destructive" });
+      // El hook ya muestra un toast de error
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const toggleModelActive = (id: string) => {
-    setSavedModels(models => models.map(m => m.id === id ? { ...m, active: !m.active } : m));
+  const handleModelChange = (id: string, field: keyof AIModelConfig, value: any) => {
+    if (!localConfig) return;
+    const newModels = localConfig.models.map(m => m.id === id ? { ...m, [field]: value } : m);
+    setLocalConfig({ ...localConfig, models: newModels });
   };
+  
+  if (isLoading || !localConfig) {
+    return (
+        <DialogContent className="sm:max-w-4xl">
+            <DialogHeader>
+                <DialogTitle>Cargando Configuración...</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+                <Skeleton className="h-64 w-full" />
+            </div>
+        </DialogContent>
+    );
+  }
 
   return (
     <DialogContent className="sm:max-w-4xl">
@@ -112,7 +117,6 @@ const AIConfigDialog = () => {
         </DialogDescription>
       </DialogHeader>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
-        {/* Columna Izquierda: Configuración de API */}
         <div className="space-y-6">
             <Card>
                 <CardHeader>
@@ -123,39 +127,13 @@ const AIConfigDialog = () => {
                         <Label>Proveedor de IA</Label>
                         <div className="flex gap-2 flex-wrap">
                             {aiProviders.map(provider => (
-                                <Button key={provider.name} variant={selectedProvider.name === provider.name ? "default" : "outline"} onClick={() => handleProviderChange(provider.name)}>
+                                <Button key={provider.name} variant={selectedProviderName === provider.name ? "default" : "outline"} onClick={() => handleProviderChange(provider.name)}>
                                     <span>{provider.name}</span>
                                 </Button>
                             ))}
                         </div>
                     </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="api-key">Clave API de {selectedProvider.name}</Label>
-                        <Input id="api-key" type="password" placeholder="Pega tu clave API aquí" value={apiKey} onChange={e => setApiKey(e.target.value)} />
-                    </div>
-
-                    {selectedProvider.models.length > 0 && (
-                         <div className="space-y-2">
-                            <Label htmlFor="model-select">Modelo a Utilizar</Label>
-                            <Select value={selectedModel} onValueChange={setSelectedModel}>
-                                <SelectTrigger id="model-select"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    {selectedProvider.models.map(model => (
-                                        <SelectItem key={model} value={model}>{model}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    )}
-                    <div className="flex items-center gap-4">
-                        <Button onClick={handleTestConnection} variant="destructive"><TestTube2 className="mr-2"/>Probar</Button>
-                        <div className="flex items-center gap-2">
-                        {connectionStatus === 'connected' && <><CheckCircle className="h-5 w-5 text-green-500" /><span className="text-sm font-medium text-green-600">Conectado</span></>}
-                        {connectionStatus === 'error' && <><AlertTriangle className="h-5 w-5 text-destructive" /><span className="text-sm font-medium text-destructive">Error</span></>}
-                        {connectionStatus === 'unconfigured' && <><PowerOff className="h-5 w-5 text-muted-foreground" /><span className="text-sm font-medium text-muted-foreground">No configurado</span></>}
-                        </div>
-                    </div>
+                    {/* El resto del formulario para API key y modelo se puede añadir aquí si se desea editar de forma granular */}
                 </CardContent>
             </Card>
             <Card>
@@ -164,36 +142,34 @@ const AIConfigDialog = () => {
                     <div className="space-y-2">
                         <div className="flex justify-between">
                             <Label>Temperatura / Creatividad</Label>
-                            <span className="text-sm font-medium text-primary">{temperature.toFixed(2)}</span>
+                            <span className="text-sm font-medium text-primary">{localConfig.temperature.toFixed(2)}</span>
                         </div>
-                        <Slider value={[temperature]} onValueChange={(v) => setTemperature(v[0])} min={0} max={2} step={0.01} />
+                        <Slider value={[localConfig.temperature]} onValueChange={(v) => setLocalConfig({...localConfig, temperature: v[0]})} min={0} max={2} step={0.01} />
                         <p className="text-xs text-muted-foreground">Valores más altos = más creativo. Valores bajos = más predecible.</p>
                     </div>
                     <div className="space-y-2">
                         <Label>Tokens Máximos (Longitud de Respuesta)</Label>
-                        <Input type="number" value={maxTokens} onChange={(e) => setMaxTokens(Number(e.target.value))} />
+                        <Input type="number" value={localConfig.maxTokens} onChange={(e) => setLocalConfig({...localConfig, maxTokens: Number(e.target.value)})} />
                     </div>
                 </CardContent>
             </Card>
         </div>
-
-        {/* Columna Derecha: Modelos Guardados */}
         <div className="space-y-6">
           <Card>
             <CardHeader><CardTitle className="text-lg">Modelos de IA Guardados</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              {savedModels.map(model => (
+              {localConfig.models.map(model => (
                 <Card key={model.id} className="p-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <BrainCircuit className="h-6 w-6 text-muted-foreground"/>
                             <div>
                                 <p className="font-semibold">{model.provider}</p>
-                                <p className="text-xs text-muted-foreground">API Key: {model.apiKey}</p>
+                                <p className="text-xs text-muted-foreground">API Key: ***{model.apiKey.slice(-5)}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Switch checked={model.active} onCheckedChange={() => toggleModelActive(model.id)} />
+                            <Switch checked={model.active} onCheckedChange={(checked) => handleModelChange(model.id, 'active', checked)} />
                             <Badge variant={model.active ? "default" : "outline"} className={model.active ? "bg-green-500" : ""}>{model.active ? 'Activo' : 'Inactivo'}</Badge>
                             <Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-4 w-4"/></Button>
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4"/></Button>
@@ -206,9 +182,9 @@ const AIConfigDialog = () => {
         </div>
       </div>
       <DialogFooter>
-        <Button variant="outline" onClick={() => {}}>Cancelar</Button>
-        <Button onClick={handleSaveConfig} className="bg-orange-500 hover:bg-orange-600">
-            <Save className="mr-2"/>
+        <Button variant="outline">Cancelar</Button>
+        <Button onClick={handleSaveConfig} className="bg-orange-500 hover:bg-orange-600" disabled={isSaving}>
+            {isSaving ? <Loader2 className="mr-2 animate-spin" /> : <Save className="mr-2"/>}
             Guardar Configuración
         </Button>
       </DialogFooter>
