@@ -29,24 +29,37 @@ export type SuggestionResponse = z.infer<typeof SuggestionResponseSchema>;
 
 // Función que evalúa las reglas de negocio obtenidas de la base de datos.
 async function evaluateRules(request: SuggestionRequest): Promise<SuggestionResponse> {
+    console.log('[Evaluate Rules] Iniciando evaluación con request:', request);
+    
     const allDishes = await dishService.getDishesByCompany(request.companyId);
+    console.log('[Evaluate Rules] Total de platos encontrados:', allDishes.length);
+    
     const initialDish = allDishes.find(d => d.id === request.initialDishId);
 
     if (!initialDish) {
         console.warn(`[Evaluate Rules] Plato inicial con ID ${request.initialDishId} no encontrado.`);
+        console.warn('[Evaluate Rules] IDs disponibles:', allDishes.map(d => d.id));
         return { suggestionType: 'none' };
     }
 
+    console.log('[Evaluate Rules] Plato encontrado:', initialDish.name);
+
     const rules = await suggestionRuleService.getRulesByCompany(request.companyId);
+    console.log('[Evaluate Rules] Reglas encontradas:', rules.length);
+    console.log('[Evaluate Rules] Nombres de platos en reglas:', rules.map(r => r.initialDish));
     
     const applicableRule = rules.find(rule => 
-        rule.initialDish.trim().toLowerCase() === initialDish.name.trim().toLowerCase()
+        rule.initialDish.trim().toLowerCase() === initialDish.name.trim().toLowerCase() ||
+        rule.initialDish === request.initialDishId
     );
 
     if (!applicableRule) {
-        console.log(`[Evaluate Rules] No se encontró una regla para el plato: ${initialDish.name}`);
+        console.log(`[Evaluate Rules] No se encontró una regla para el plato: "${initialDish.name}"`);
+        console.log('[Evaluate Rules] Comparación fallida con:', rules.map(r => `"${r.initialDish}"`));
         return { suggestionType: 'none' };
     }
+
+    console.log('[Evaluate Rules] ✓ Regla aplicable encontrada:', applicableRule.initialDish);
 
     const condition = applicableRule.condition;
     let conditionMet = false;
