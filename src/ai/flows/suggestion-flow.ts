@@ -41,7 +41,7 @@ async function evaluateRules(request: SuggestionRequest): Promise<SuggestionResp
 
     const rules = await suggestionRuleService.getRulesByCompany(request.companyId);
     
-    // CORREGIDO: Buscar la regla que coincida con el nombre del plato inicial.
+    // CORRECCIÓN: Normalizar nombres para una comparación robusta
     const applicableRule = rules.find(rule => 
         rule.initialDish.trim().toLowerCase() === initialDish.name.trim().toLowerCase()
     );
