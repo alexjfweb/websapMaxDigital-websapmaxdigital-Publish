@@ -1,4 +1,5 @@
 
+
 'use server';
 /**
  * @fileOverview Flow de IA para generar sugerencias de productos.
@@ -40,8 +41,7 @@ async function evaluateRules(request: SuggestionRequest): Promise<SuggestionResp
 
     const rules = await suggestionRuleService.getRulesByCompany(request.companyId);
     
-    // Buscar la regla que coincida con el nombre del plato inicial.
-    // Esto podría mejorarse para usar IDs en el futuro, pero por ahora usamos el nombre.
+    // CORREGIDO: Buscar la regla que coincida con el nombre del plato inicial.
     const applicableRule = rules.find(rule => 
         rule.initialDish.trim().toLowerCase() === initialDish.name.trim().toLowerCase()
     );
@@ -77,7 +77,7 @@ async function evaluateRules(request: SuggestionRequest): Promise<SuggestionResp
     console.log(`[Evaluate Rules] Regla encontrada para "${initialDish.name}". Condición de hora pico (${conditionMet ? 'SÍ' : 'NO'}). Acción: ${action.type} -> ${action.product}`);
 
     return {
-        suggestionType: action.type,
+        suggestionType: action.type as 'cross-sell' | 'upsell' | 'none',
         suggestedProduct: action.product,
         message: action.message,
     };

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -181,11 +182,13 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
         const now = new Date();
         const request: SuggestionRequest = {
             companyId: restaurantId,
-            initialDishId: dish.id,
+            initialDishId: dish.id, // CORREGIDO: Usar el ID del plato
             currentTime: `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`,
         };
 
+        console.log("Enviando solicitud de sugerencia:", request); // Log para depuración
         const result = await getProductSuggestion(request);
+        console.log("Respuesta de sugerencia recibida:", result); // Log para depuración
 
         // 3. Si hay una sugerencia válida, mostrarla
         if (result && result.suggestionType !== 'none' && result.suggestedProduct) {
