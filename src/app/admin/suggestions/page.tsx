@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { suggestionRuleService, SuggestionRule } from '@/services/suggestion-rules-service';
 import { useSession } from '@/contexts/session-context';
 import { Slider } from '@/components/ui/slider';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOrderContext } from '@/contexts/order-context';
@@ -39,15 +39,17 @@ const AIConfigDialog = () => {
   const { toast } = useToast();
   const { aiConfig, updateAIConfig, isLoading } = useAIConfig();
 
-  // Estados locales para la UI, inicializados desde el hook
-  const [localConfig, setLocalConfig] = useState<AIConfig | null>(aiConfig);
+  const [localConfig, setLocalConfig] = useState<AIConfig | null>(null);
   const [selectedProviderName, setSelectedProviderName] = useState(aiProviders[0].name);
   const [connectionStatus, setConnectionStatus] = useState<'unconfigured' | 'connected' | 'error'>('unconfigured');
   const [isSaving, setIsSaving] = useState(false);
+  const [apiKey, setApiKey] = useState('');
 
   useEffect(() => {
     if (aiConfig) {
       setLocalConfig(aiConfig);
+      const activeGemini = aiConfig.models.find(m => m.provider === 'Google Gemini' && m.active);
+      if (activeGemini) setApiKey(activeGemini.apiKey);
     }
   }, [aiConfig]);
   
@@ -56,10 +58,12 @@ const AIConfigDialog = () => {
   const handleProviderChange = (providerName: string) => {
     setSelectedProviderName(providerName);
     setConnectionStatus("unconfigured");
+    const model = localConfig?.models.find(m => m.provider === providerName);
+    setApiKey(model?.apiKey || '');
   };
 
   const handleTestConnection = () => {
-    if (!localConfig?.models.find(m => m.provider === selectedProviderName)?.apiKey) {
+    if (!apiKey) {
       toast({ title: "Clave API requerida", description: "Por favor, ingresa tu clave API para probar la conexión.", variant: "destructive" });
       return;
     }
@@ -82,7 +86,7 @@ const AIConfigDialog = () => {
       await updateAIConfig(localConfig);
       toast({ title: "Configuración Guardada", description: "Tu configuración de IA ha sido guardada." });
     } catch (error) {
-      // El hook ya muestra un toast de error
+      // El hook ya maneja el toast de error
     } finally {
       setIsSaving(false);
     }
@@ -135,7 +139,38 @@ const AIConfigDialog = () => {
                             ))}
                         </div>
                     </div>
-                    {/* El resto del formulario para API key y modelo se puede añadir aquí si se desea editar de forma granular */}
+                    <div className="p-4 border rounded-lg bg-muted/50 space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="api-key">Clave API de {selectedProvider.name}</Label>
+                            <Input id="api-key" type="password" placeholder="Pega tu clave API aquí" value={apiKey} onChange={e => setApiKey(e.target.value)} />
+                        </div>
+                        {selectedProvider.models.length > 0 && (
+                            <div className="space-y-2">
+                                <Label htmlFor="model-select">Modelo a Utilizar</Label>
+                                <Select value={localConfig.models.find(m => m.provider === selectedProviderName)?.name || ''} onValueChange={(modelName) => {
+                                    if(localConfig){
+                                        const newModels = localConfig.models.map(m => m.provider === selectedProviderName ? {...m, name: modelName} : m);
+                                        setLocalConfig({...localConfig, models: newModels});
+                                    }
+                                }}>
+                                    <SelectTrigger id="model-select"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        {selectedProvider.models.map(model => (
+                                            <SelectItem key={model} value={model}>{model}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+                         <div className="flex items-center gap-4">
+                            <Button onClick={handleTestConnection}><TestTube2 className="mr-2"/>Probar Conexión</Button>
+                            <div className="flex items-center gap-2">
+                            {connectionStatus === 'connected' && <><CheckCircle className="h-5 w-5 text-green-500" /><span className="text-sm font-medium text-green-600">Conectado</span></>}
+                            {connectionStatus === 'error' && <><AlertTriangle className="h-5 w-5 text-destructive" /><span className="text-sm font-medium text-destructive">Error</span></>}
+                            {connectionStatus === 'unconfigured' && <><PowerOff className="h-5 w-5 text-muted-foreground" /><span className="text-sm font-medium text-muted-foreground">No configurado</span></>}
+                            </div>
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
             <Card>
