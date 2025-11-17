@@ -163,9 +163,16 @@ const productSuggestionFlow = ai.defineFlow(
             availableDishes: availableDishNames,
         });
 
-        if (output && output.suggestionType !== 'none') {
-            console.log(`[Suggestion Flow] IA generó una sugerencia: ${output.suggestedProduct}`);
-            return output;
+        if (output && output.suggestionType !== 'none' && output.suggestedProduct) {
+             // Verificación robusta: Asegurarse de que el producto sugerido existe en la lista de platos disponibles
+            const suggestedProductExists = availableDishNames.some(name => name.toLowerCase() === output.suggestedProduct!.toLowerCase());
+            if (suggestedProductExists) {
+                console.log(`[Suggestion Flow] IA generó una sugerencia válida: ${output.suggestedProduct}`);
+                return output;
+            } else {
+                 console.warn(`[Suggestion Flow] La IA sugirió un producto no existente: "${output.suggestedProduct}". Se descarta la sugerencia.`);
+                return { suggestionType: 'none' };
+            }
         } else {
             console.log('[Suggestion Flow] La IA decidió no hacer una sugerencia.');
             return { suggestionType: 'none' };
