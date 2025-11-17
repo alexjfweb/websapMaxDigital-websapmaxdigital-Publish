@@ -1,5 +1,3 @@
-
-
 'use server';
 /**
  * @fileOverview Flow de IA para generar sugerencias de productos.
@@ -53,36 +51,25 @@ async function evaluateRules(request: SuggestionRequest): Promise<SuggestionResp
     const condition = applicableRule.condition;
     let conditionMet = false;
 
-    // Evaluar la condición de horario pico si está activa.
+    // Evaluar la condición de horario pico si está activa
     if (condition.type === 'peakTime' && condition.active && request.currentTime) {
         const startTime = condition.startTime || '00:00';
         const endTime = condition.endTime || '23:59';
         if (request.currentTime >= startTime && request.currentTime <= endTime) {
             conditionMet = true;
         }
-    } else if (condition.type !== 'peakTime' || !condition.active) {
-        // Si no hay condición de horario pico o no está activa, la condición "verdadero/falso" no se aplica.
-        // En este caso, la acción a tomar debería ser la predeterminada o "NO".
-        conditionMet = false;
     }
     
-    // Seleccionar la acción a tomar basada en si la condición se cumplió o no.
+    // Seleccionar la acción correcta basada en si la condición se cumplió
     const action = conditionMet ? applicableRule.actions.yes : applicableRule.actions.no;
     
-    // Si la acción para la condición evaluada es 'ninguna' o no tiene producto, no hay sugerencia.
+    // Validar que la acción seleccionada sea válida
     if (!action || action.type === 'none' || !action.product) {
-      // Devolver una acción 'no' válida si la acción 'sí' falla pero la 'no' existe
-      if (!conditionMet && applicableRule.actions.no.product) {
-         return {
-            suggestionType: applicableRule.actions.no.type as 'cross-sell' | 'upsell' | 'none',
-            suggestedProduct: applicableRule.actions.no.product,
-            message: applicableRule.actions.no.message,
-        };
-      }
-      return { suggestionType: 'none' };
+        console.log(`[Evaluate Rules] La acción seleccionada (${conditionMet ? 'SÍ' : 'NO'}) no tiene producto. No hay sugerencia.`);
+        return { suggestionType: 'none' };
     }
 
-    console.log(`[Evaluate Rules] Regla encontrada para "${initialDish.name}". Condición de hora pico (${conditionMet ? 'SÍ' : 'NO'}). Acción: ${action.type} -> ${action.product}`);
+    console.log(`[Evaluate Rules] Regla encontrada para "${initialDish.name}". Condición cumplida: ${conditionMet ? 'SÍ' : 'NO'}. Acción: ${action.type} -> ${action.product}`);
 
     return {
         suggestionType: action.type as 'cross-sell' | 'upsell' | 'none',
