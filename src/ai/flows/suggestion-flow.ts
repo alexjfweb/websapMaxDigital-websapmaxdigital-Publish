@@ -61,16 +61,18 @@ async function evaluateRules(request: SuggestionRequest): Promise<SuggestionResp
         if (request.currentTime >= startTime && request.currentTime <= endTime) {
             conditionMet = true;
         }
-    } else if (!condition.active) {
+    } else if (condition.type === 'peakTime' && !condition.active) {
         // Si la condición de hora no está activa, la regla se aplica siempre.
-        conditionMet = true;
+        // PERO debemos decidir si esto significa 'SÍ' o si simplemente no hay condición.
+        // Por ahora, asumimos que si la condición está inactiva, la acción a tomar es la de 'NO'.
+        conditionMet = false;
     }
     
     // Seleccionar la acción a tomar basada en si la condición se cumplió o no.
     const action = conditionMet ? applicableRule.actions.yes : applicableRule.actions.no;
     
-    // Si la acción para la condición evaluada es 'ninguna', no hay sugerencia.
-    if (action.type === 'none') {
+    // Si la acción para la condición evaluada es 'ninguna' o no tiene producto, no hay sugerencia.
+    if (action.type === 'none' || !action.product) {
         return { suggestionType: 'none' };
     }
 
