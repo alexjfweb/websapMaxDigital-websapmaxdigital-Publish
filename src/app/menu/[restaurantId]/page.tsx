@@ -7,7 +7,7 @@ import Image from 'next/image';
 import type { Company, Dish, CartItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { LoaderCircle, ShoppingCart, CalendarCheck, Sparkles, X, Plus } from 'lucide-react';
+import { LoaderCircle, ShoppingCart, CalendarCheck, Sparkles, X, Plus, Wine } from 'lucide-react';
 import RestaurantInfoDisplay from '@/components/menu/restaurant-info-display';
 import DishItem from '@/components/menu/dish-item';
 import CartCheckout from '@/components/menu/cart-checkout';
@@ -103,6 +103,10 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
   const [isSuggestionLoading, setIsSuggestionLoading] = React.useState(false);
   const [suggestion, setSuggestion] = React.useState<SuggestionResponse | null>(null);
   const [isSuggestionModalOpen, setIsSuggestionModalOpen] = React.useState(false);
+  
+  // Nuevos estados para el modal de elección de sugerencias compuestas
+  const [isChoiceModalOpen, setIsChoiceModalOpen] = React.useState(false);
+  const [suggestionChoices, setSuggestionChoices] = React.useState<Dish[]>([]);
 
   React.useEffect(() => {
     if (!restaurantId) {
@@ -204,11 +208,34 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
         setIsSuggestionLoading(false);
     }
   };
-
-  const handleAddSuggestedItem = () => {
-    if (suggestion?.suggestedProduct) {
-        // Buscar el plato completo en la lista de platos
-        const suggestedDish = dishes.find(d => d.name.toLowerCase() === suggestion.suggestedProduct!.toLowerCase());
+  
+    const handleAddSuggestedItem = () => {
+    if (!suggestion?.suggestedProduct) return;
+    
+    const suggestedProductName = suggestion.suggestedProduct.toLowerCase();
+    
+    // Si la sugerencia contiene "o", es una sugerencia compuesta
+    if (suggestedProductName.includes(" o ")) {
+        const choices = suggestedProductName.split(" o ").map(name => name.trim());
+        const availableChoices = choices.map(choiceName => 
+            dishes.find(d => d.name.toLowerCase() === choiceName)
+        ).filter((d): d is Dish => d !== undefined);
+        
+        if (availableChoices.length > 0) {
+            setSuggestionChoices(availableChoices);
+            setIsSuggestionModalOpen(false); // Cierra el modal de sugerencia inicial
+            setIsChoiceModalOpen(true); // Abre el nuevo modal de elección
+        } else {
+            toast({
+                title: "Productos no encontrados",
+                description: "No pudimos encontrar las opciones sugeridas en el menú.",
+                variant: 'destructive'
+            });
+            setIsSuggestionModalOpen(false);
+        }
+    } else {
+        // Lógica para sugerencia simple
+        const suggestedDish = dishes.find(d => d.name.toLowerCase() === suggestedProductName);
         if (suggestedDish) {
             cart.addItem(suggestedDish);
             toast({
@@ -218,15 +245,24 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
         } else {
              toast({
                 title: "Producto no encontrado",
-                description: "No pudimos encontrar el producto sugerido en el menú actual.",
+                description: `No pudimos encontrar "${suggestion.suggestedProduct}" en el menú actual.`,
                 variant: 'destructive'
             });
         }
+        setIsSuggestionModalOpen(false);
     }
-    setIsSuggestionModalOpen(false);
     setSuggestion(null);
   };
   
+  const handleAddChoice = (dish: Dish) => {
+    cart.addItem(dish);
+    toast({
+        title: "¡Producto Añadido!",
+        description: `${dish.name} se ha añadido a tu carrito.`,
+    });
+    setIsChoiceModalOpen(false);
+    setSuggestionChoices([]);
+  };
 
   if (isLoading) {
     return (
@@ -253,30 +289,22 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
     <>
       <Dialog open={isSuggestionModalOpen} onOpenChange={setIsSuggestionModalOpen}>
         <DialogContent className="max-w-sm">
-            <DialogHeader className="text-center items-center">
-                <div className="p-3 bg-primary/10 rounded-full mb-2">
-                    <Sparkles className="h-8 w-8 text-primary"/>
-                </div>
-                <DialogTitle className="text-xl">¡Tenemos una recomendación para ti!</DialogTitle>
-                <DialogDescription>
-                  {suggestion?.message || "Basado en tu selección, te sugerimos complementar tu pedido"}
-                </DialogDescription>
+            <DialogHeader>
+                 <DialogTitle className="text-center text-lg font-semibold mb-2">¡Tenemos una recomendación para ti!</DialogTitle>
+                 <DialogDescription className="text-center text-sm text-muted-foreground mb-4">
+                     {suggestion?.message || "Basado en tu selección, te sugerimos complementar tu pedido"}
+                 </DialogDescription>
             </DialogHeader>
             {suggestion?.suggestedProduct && (
                  <div className="flex flex-col items-center gap-4 py-4">
-                    <Image 
-                        src={dishes.find(d => d.name.toLowerCase() === suggestion.suggestedProduct!.toLowerCase())?.imageUrl || "https://placehold.co/150x150.png"}
-                        alt={suggestion.suggestedProduct}
-                        width={150}
-                        height={150}
-                        className="rounded-lg object-cover shadow-md"
-                        data-ai-hint="suggested food item"
-                    />
+                    <div className="rounded-full bg-orange-100 p-4">
+                        <Wine className="h-8 w-8 text-orange-500" />
+                    </div>
                     <p className="text-lg font-bold">{suggestion.suggestedProduct}</p>
                 </div>
             )}
             <DialogFooter className="flex-col sm:flex-col sm:space-x-0 gap-2">
-                <Button onClick={handleAddSuggestedItem}>
+                <Button onClick={handleAddSuggestedItem} className="bg-orange-500 hover:bg-orange-600">
                     <Plus className="mr-2 h-4 w-4"/>
                     Sí, ¡añadir al carrito!
                 </Button>
@@ -284,6 +312,32 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
                     No, gracias
                 </Button>
             </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Nuevo Modal de Elección */}
+      <Dialog open={isChoiceModalOpen} onOpenChange={setIsChoiceModalOpen}>
+        <DialogContent className="max-w-md">
+            <DialogHeader>
+                <DialogTitle>Elige tu complemento</DialogTitle>
+                <DialogDescription>
+                    ¿Cuál de estas opciones te gustaría añadir?
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+                {suggestionChoices.map(choice => (
+                    <Button
+                        key={choice.id}
+                        variant="outline"
+                        className="h-auto flex flex-col gap-2 p-4"
+                        onClick={() => handleAddChoice(choice)}
+                    >
+                        <Image src={choice.imageUrl} alt={choice.name} width={80} height={80} className="rounded-md object-cover" />
+                        <span className="font-semibold">{choice.name}</span>
+                        <span className="text-sm text-muted-foreground">${choice.price.toFixed(2)}</span>
+                    </Button>
+                ))}
+            </div>
         </DialogContent>
       </Dialog>
 
@@ -382,3 +436,4 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
     </>
   );
 }
+
