@@ -216,15 +216,19 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
     
     // Si la sugerencia contiene "o", es una sugerencia compuesta
     if (suggestedProductName.includes(" o ")) {
+        // Normaliza los nombres de los platos del menú para una comparación segura
+        const dishNameMap = new Map(dishes.map(d => [d.name.trim().toLowerCase(), d]));
+        
+        // Separa las opciones y busca cada una de forma normalizada
         const choices = suggestedProductName.split(" o ").map(name => name.trim());
-        const availableChoices = choices.map(choiceName => 
-            dishes.find(d => d.name.toLowerCase() === choiceName)
-        ).filter((d): d is Dish => d !== undefined);
+        const availableChoices = choices
+            .map(choiceName => dishNameMap.get(choiceName))
+            .filter((d): d is Dish => d !== undefined);
         
         if (availableChoices.length > 0) {
             setSuggestionChoices(availableChoices);
-            setIsSuggestionModalOpen(false); // Cierra el modal de sugerencia inicial
-            setIsChoiceModalOpen(true); // Abre el nuevo modal de elección
+            setIsSuggestionModalOpen(false);
+            setIsChoiceModalOpen(true);
         } else {
             toast({
                 title: "Productos no encontrados",
@@ -234,8 +238,8 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
             setIsSuggestionModalOpen(false);
         }
     } else {
-        // Lógica para sugerencia simple
-        const suggestedDish = dishes.find(d => d.name.toLowerCase() === suggestedProductName);
+        // Lógica para sugerencia simple (validación robustecida)
+        const suggestedDish = dishes.find(d => d.name.trim().toLowerCase() === suggestedProductName);
         if (suggestedDish) {
             cart.addItem(suggestedDish);
             toast({
@@ -291,7 +295,6 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
         <DialogContent className="max-w-sm">
             <DialogHeader>
                  <DialogTitle className="text-center text-lg font-semibold mb-2">¡Tenemos una recomendación para ti!</DialogTitle>
-                 {/* El DialogDescription ahora está vacío o se puede quitar si no se usa */}
                  <DialogDescription className="sr-only">
                      {suggestion?.message || "Basado en tu selección, te sugerimos complementar tu pedido"}
                  </DialogDescription>
@@ -301,7 +304,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
                     <div className="rounded-full bg-orange-100 p-4">
                         <Wine className="h-8 w-8 text-orange-500" />
                     </div>
-                    <p className="text-lg font-bold">{suggestion.suggestedProduct}</p>
+                    <p className="text-lg font-bold text-center">{suggestion.suggestedProduct}</p>
                 </div>
             )}
             <DialogFooter className="flex-col sm:flex-col sm:space-x-0 gap-2">
