@@ -19,7 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOrderContext } from '@/contexts/order-context';
-import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart"
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts"
 
 
@@ -490,14 +490,16 @@ export default function SuggestionsEnginePage() {
                 <div>
                     <Label className="font-semibold">Conversión por Regla/IA</Label>
                     <div className="h-32 mt-2">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={performanceMetrics.conversionByRule} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-                           <XAxis type="number" hide />
-                           <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tick={{ fontSize: 12, width: 80 }} />
-                           <Tooltip content={<ChartTooltipContent />} />
-                           <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
+                      <ChartContainer config={{}} className="h-full w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={performanceMetrics.conversionByRule} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                             <XAxis type="number" hide />
+                             <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tick={{ fontSize: 12, width: 80 }} />
+                             <Tooltip content={<ChartTooltipContent />} cursor={false} />
+                             <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </ChartContainer>
                     </div>
                 </div>
 
@@ -586,3 +588,5 @@ export default function SuggestionsEnginePage() {
     </div>
   );
 }
+
+    
