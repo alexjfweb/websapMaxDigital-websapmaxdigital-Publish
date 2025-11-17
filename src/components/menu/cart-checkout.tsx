@@ -43,7 +43,6 @@ function validateEmail(email: string) {
     return emailRegex.test(email);
 }
 
-
 export default function CartCheckout({ cart, onQuantity, onRemove, onClear, restaurantId, restaurantProfile, onClose }: CartCheckoutProps) {
   const envio = restaurantProfile?.baseShippingCost && cart.length > 0 ? restaurantProfile.baseShippingCost : 0;
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -525,5 +524,5 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
         </UiDialogContent>
       </Dialog>
     </>
-
-    
+  );
+}
