@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -15,22 +16,12 @@ import { Dialog, DialogContent as UiDialogContent, DialogHeader as UiDialogHeade
 import { tableService, Table } from "@/services/table-service";
 import { getDb } from "@/lib/firebase";
 import { collection, addDoc, doc, serverTimestamp } from "firebase/firestore";
-import type { Company } from '@/types';
+import type { Company, CartItem } from '@/types';
 import NequiIcon from '@/components/icons/nequi-icon';
 import DaviplataIcon from '@/components/icons/daviplata-icon';
 import BancolombiaIcon from "@/components/icons/bancolombia-icon";
 import WhatsAppIcon from "@/components/icons/whatsapp-icon";
 import { usePlanLimits } from "@/hooks/use-plan-limits";
-
-
-// Tipos para los productos del carrito
-interface CartItem {
-  id: string;
-  name: string;
-  imageUrl: string;
-  price: number;
-  quantity: number;
-}
 
 interface CartCheckoutProps {
   cart: CartItem[];
@@ -159,8 +150,15 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
       const mesaObj = mesas.find(m => m.id === mesaSeleccionada);
       
       const newOrderData: any = {
-        restaurantId: restaurantId, // **CORRECCIÓN CLAVE**
-        productos: cart.map(item => ({ id: item.id, nombre: item.name, cantidad: item.quantity, precio: item.price })),
+        restaurantId: restaurantId,
+        productos: cart.map(item => ({
+          id: item.id,
+          nombre: item.name,
+          cantidad: item.quantity,
+          precio: item.price,
+          isSuggestion: item.isSuggestion || false,
+          suggestionSource: item.suggestionSource || null,
+        })),
         cliente: {
           nombre: cliente.nombre,
           telefono: cliente.telefono,
@@ -194,7 +192,7 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
     } catch (err) {
       console.error("Error al registrar pedido:", err);
       toast({ title: 'Error al registrar pedido', description: 'No se pudo guardar el pedido en el sistema. Por favor, intenta de nuevo.', variant: 'destructive' });
-      return; // **CORRECCIÓN CLAVE**: Detener la ejecución si el guardado falla
+      return;
     }
     
     // 3. Si el guardado fue exitoso, proceder a enviar por WhatsApp
@@ -527,5 +525,5 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
         </UiDialogContent>
       </Dialog>
     </>
-  );
-}
+
+    
