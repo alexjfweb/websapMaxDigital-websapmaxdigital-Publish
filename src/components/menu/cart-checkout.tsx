@@ -258,7 +258,7 @@ export default function CartCheckout({ cart, onQuantity, onRemove, onClear, rest
                     <p className="font-semibold mt-2">O escanea el código QR:</p>
                     <Image 
                         src={qrUrl}
-                        alt={`Código QR para ${method.label}`}
+                        alt={`Código QR para ${selectedPayment}`}
                         width={150}
                         height={150}
                         className="mx-auto rounded-lg border"
