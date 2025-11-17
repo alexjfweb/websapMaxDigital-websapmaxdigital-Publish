@@ -36,11 +36,12 @@ export default function AdminShareMenuPage() {
   useEffect(() => {
     const companyId = currentUser?.companyId;
     
-    const prodBaseUrl = 'https://www.websap.site';
+    // CORRECCIÓN: Construir la URL base dinámicamente desde el cliente
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://www.websap.site';
     
     if (companyId) {
-      setMenuUrl(`${prodBaseUrl}/menu/${companyId}`);
-      setSharePreviewUrl(`${prodBaseUrl}/landing/restaurant/${companyId}`);
+      setMenuUrl(`${baseUrl}/menu/${companyId}`);
+      setSharePreviewUrl(`${baseUrl}/landing/restaurant/${companyId}`);
     }
     
     async function fetchShareConfig() {
