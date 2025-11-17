@@ -1,14 +1,17 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Clock, Zap, MessageSquare, ShoppingBag, BrainCircuit, BarChart2, DollarSign, TrendingUp, ArrowRight, ArrowDown } from "lucide-react";
+import { Search, Plus, Clock, Zap, MessageSquare, ShoppingBag, BrainCircuit, BarChart2, DollarSign, TrendingUp, ArrowRight, ArrowDown, Loader2 } from "lucide-react";
 import Image from 'next/image';
+import { useToast } from '@/hooks/use-toast';
+import { suggestionRuleService, SuggestionRule } from '@/services/suggestion-rules-service';
+import { useSession } from '@/contexts/session-context';
 
 // Placeholder para el diagrama de flujo
 const FlowDiagram = () => (
@@ -36,6 +39,64 @@ const FlowDiagram = () => (
 
 
 export default function SuggestionsEnginePage() {
+  const { toast } = useToast();
+  const { currentUser } = useSession();
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Estado para el formulario de reglas
+  const [initialDish, setInitialDish] = useState('Hamburguesa Clásica');
+  const [isPeakTime, setIsPeakTime] = useState(true);
+  const [startTime, setStartTime] = useState('18:00');
+  const [endTime, setEndTime] = useState('22:00');
+  const [yesSuggestionType, setYesSuggestionType] = useState('cross-sell');
+  const [yesSuggestionProduct, setYesSuggestionProduct] = useState('Cerveza Artesanal');
+  const [yesSuggestionMessage, setYesSuggestionMessage] = useState('Acompaña tu hamburguesa con...');
+  const [noSuggestionType, setNoSuggestionType] = useState('cross-sell');
+  const [noSuggestionProduct, setNoSuggestionProduct] = useState('Batido Premium');
+  const [noSuggestionMessage, setNoSuggestionMessage] = useState('¿Qué tal algo refrescante?');
+
+  const handleSaveRule = async () => {
+    if (!currentUser?.companyId) {
+      toast({ title: "Error", description: "No se pudo identificar la compañía.", variant: "destructive" });
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const newRule: Omit<SuggestionRule, 'id'> = {
+        companyId: currentUser.companyId,
+        initialDish,
+        condition: {
+          type: 'peakTime',
+          active: isPeakTime,
+          startTime,
+          endTime,
+        },
+        actions: {
+          yes: {
+            type: yesSuggestionType as 'cross-sell' | 'upsell',
+            product: yesSuggestionProduct,
+            message: yesSuggestionMessage,
+          },
+          no: {
+            type: noSuggestionType as 'cross-sell' | 'upsell',
+            product: noSuggestionProduct,
+            message: noSuggestionMessage,
+          },
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      await suggestionRuleService.createRule(newRule);
+      toast({ title: "¡Regla Guardada!", description: "La nueva regla de sugerencia se ha guardado correctamente." });
+
+    } catch (error: any) {
+      toast({ title: "Error al guardar", description: error.message, variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -58,7 +119,7 @@ export default function SuggestionsEnginePage() {
                 <Label className="font-semibold text-gray-700">PLATO INICIAL</Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input placeholder="Buscar Plato..." className="pl-10" defaultValue="Hamburguesa Clásica"/>
+                  <Input placeholder="Buscar Plato..." value={initialDish} onChange={(e) => setInitialDish(e.target.value)} />
                 </div>
               </div>
 
@@ -66,18 +127,20 @@ export default function SuggestionsEnginePage() {
               <div className="space-y-4 rounded-md border p-4">
                 <div className="flex items-center justify-between">
                     <Label htmlFor="peak-hours" className="font-semibold text-gray-700">Activar Horario Pico</Label>
-                    <Switch id="peak-hours" defaultChecked />
+                    <Switch id="peak-hours" checked={isPeakTime} onCheckedChange={setIsPeakTime} />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <Label htmlFor="start-time">Hora de Inicio</Label>
-                        <Input id="start-time" type="time" defaultValue="18:00" />
-                    </div>
-                    <div>
-                        <Label htmlFor="end-time">Hora de Fin</Label>
-                        <Input id="end-time" type="time" defaultValue="22:00" />
-                    </div>
-                </div>
+                {isPeakTime && (
+                  <div className="grid grid-cols-2 gap-4">
+                      <div>
+                          <Label htmlFor="start-time">Hora de Inicio</Label>
+                          <Input id="start-time" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+                      </div>
+                      <div>
+                          <Label htmlFor="end-time">Hora de Fin</Label>
+                          <Input id="end-time" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+                      </div>
+                  </div>
+                )}
               </div>
               
               {/* Acciones */}
@@ -86,34 +149,37 @@ export default function SuggestionsEnginePage() {
                 {/* Acción SI */}
                 <div className="space-y-3 rounded-md border border-green-200 bg-green-50/50 p-4">
                     <p className="font-medium text-green-700">Si se cumple (SÍ)</p>
-                    <Select>
-                        <SelectTrigger><SelectValue placeholder="Tipo de Sugerencia" /></SelectTrigger>
+                    <Select value={yesSuggestionType} onValueChange={setYesSuggestionType}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="cross-sell">Cross-sell</SelectItem>
                             <SelectItem value="upsell">Upsell</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Input placeholder="Sugerir Plato/Producto" defaultValue="Cerveza Artesanal"/>
-                    <Input placeholder="Mensaje de Sugerencia" defaultValue="Acompaña tu hamburguesa con..."/>
+                    <Input placeholder="Sugerir Plato/Producto" value={yesSuggestionProduct} onChange={(e) => setYesSuggestionProduct(e.target.value)} />
+                    <Input placeholder="Mensaje de Sugerencia" value={yesSuggestionMessage} onChange={(e) => setYesSuggestionMessage(e.target.value)} />
                 </div>
                 {/* Acción NO */}
                  <div className="space-y-3 rounded-md border border-red-200 bg-red-50/50 p-4">
                     <p className="font-medium text-red-700">Si no se cumple (NO)</p>
-                    <Select>
-                        <SelectTrigger><SelectValue placeholder="Tipo de Sugerencia" /></SelectTrigger>
+                    <Select value={noSuggestionType} onValueChange={setNoSuggestionType}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
                          <SelectContent>
                             <SelectItem value="cross-sell">Cross-sell</SelectItem>
                             <SelectItem value="upsell">Upsell</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Input placeholder="Sugerir Plato/Producto" defaultValue="Batido Premium"/>
-                    <Input placeholder="Mensaje de Sugerencia" defaultValue="¿Qué tal algo refrescante?"/>
+                    <Input placeholder="Sugerir Plato/Producto" value={noSuggestionProduct} onChange={(e) => setNoSuggestionProduct(e.target.value)} />
+                    <Input placeholder="Mensaje de Sugerencia" value={noSuggestionMessage} onChange={(e) => setNoSuggestionMessage(e.target.value)} />
                 </div>
               </div>
 
               {/* Botones de Acción */}
               <div className="flex justify-between items-center pt-4">
-                <Button>Guardar Regla</Button>
+                <Button onClick={handleSaveRule} disabled={isSaving}>
+                  {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {isSaving ? 'Guardando...' : 'Guardar Regla'}
+                </Button>
                 <Button variant="ghost">Cancelar</Button>
                 <Button variant="outline" size="icon">
                   <Plus className="h-4 w-4" />
