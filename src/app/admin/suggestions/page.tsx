@@ -48,10 +48,14 @@ const AIConfigDialog = () => {
   useEffect(() => {
     if (aiConfig) {
       setLocalConfig(aiConfig);
-      const activeGemini = aiConfig.models.find(m => m.provider === 'Google Gemini' && m.active);
-      if (activeGemini) setApiKey(activeGemini.apiKey);
+      // Cargar API key del proveedor activo por defecto, o la del primer proveedor si ninguno está activo
+      const activeModel = aiConfig.models.find(m => m.provider === selectedProviderName) || aiConfig.models[0];
+      if (activeModel) {
+        setApiKey(activeModel.apiKey);
+        setSelectedProviderName(activeModel.provider);
+      }
     }
-  }, [aiConfig]);
+  }, [aiConfig, selectedProviderName]);
   
   const selectedProvider = aiProviders.find(p => p.name === selectedProviderName)!;
 
@@ -96,6 +100,17 @@ const AIConfigDialog = () => {
     if (!localConfig) return;
     const newModels = localConfig.models.map(m => m.id === id ? { ...m, [field]: value } : m);
     setLocalConfig({ ...localConfig, models: newModels });
+  };
+  
+  const handleEditModel = (modelToEdit: AIModelConfig) => {
+    setSelectedProviderName(modelToEdit.provider);
+    setApiKey(modelToEdit.apiKey);
+    // Simular una conexión exitosa ya que es un modelo guardado
+    setConnectionStatus("connected"); 
+    toast({
+      title: `Editando ${modelToEdit.provider}`,
+      description: "Los datos del modelo se han cargado en el formulario.",
+    });
   };
   
   if (isLoading || !localConfig) {
@@ -208,7 +223,9 @@ const AIConfigDialog = () => {
                         <div className="flex items-center gap-2">
                             <Switch checked={model.active} onCheckedChange={(checked) => handleModelChange(model.id, 'active', checked)} />
                             <Badge variant={model.active ? "default" : "outline"} className={model.active ? "bg-green-500" : ""}>{model.active ? 'Activo' : 'Inactivo'}</Badge>
-                            <Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-4 w-4"/></Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditModel(model)}>
+                                <Edit className="h-4 w-4"/>
+                            </Button>
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4"/></Button>
                         </div>
                     </div>
