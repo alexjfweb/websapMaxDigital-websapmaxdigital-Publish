@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview Flow de IA para generar sugerencias de productos.
@@ -164,6 +163,7 @@ const productSuggestionFlow = ai.defineFlow(
             const suggestedProductExists = availableDishNames.some(name => name.toLowerCase() === output.suggestedProduct!.toLowerCase());
             if (suggestedProductExists) {
                 console.log(`[Suggestion Flow] IA generó una sugerencia válida: ${output.suggestedProduct}`);
+                // Devolver el nombre de la regla como 'Inteligencia Artificial' para el tracking
                 return { ...output, ruleName: 'Inteligencia Artificial' };
             } else {
                  console.warn(`[Suggestion Flow] La IA sugirió un producto no existente: "${output.suggestedProduct}". Se descarta la sugerencia.`);
