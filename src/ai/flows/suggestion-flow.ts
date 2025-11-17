@@ -41,7 +41,6 @@ async function evaluateRules(request: SuggestionRequest): Promise<SuggestionResp
 
     const rules = await suggestionRuleService.getRulesByCompany(request.companyId);
     
-    // CORRECCIÓN: Normalizar nombres para una comparación robusta
     const applicableRule = rules.find(rule => 
         rule.initialDish.trim().toLowerCase() === initialDish.name.trim().toLowerCase()
     );
@@ -61,10 +60,9 @@ async function evaluateRules(request: SuggestionRequest): Promise<SuggestionResp
         if (request.currentTime >= startTime && request.currentTime <= endTime) {
             conditionMet = true;
         }
-    } else if (condition.type === 'peakTime' && !condition.active) {
-        // Si la condición de hora no está activa, la regla se aplica siempre.
-        // PERO debemos decidir si esto significa 'SÍ' o si simplemente no hay condición.
-        // Por ahora, asumimos que si la condición está inactiva, la acción a tomar es la de 'NO'.
+    } else if (condition.type !== 'peakTime' || !condition.active) {
+        // Si no hay condición de horario pico o no está activa, la condición "verdadero/falso" no se aplica.
+        // En este caso, la acción a tomar debería ser la predeterminada o "NO".
         conditionMet = false;
     }
     
@@ -72,8 +70,16 @@ async function evaluateRules(request: SuggestionRequest): Promise<SuggestionResp
     const action = conditionMet ? applicableRule.actions.yes : applicableRule.actions.no;
     
     // Si la acción para la condición evaluada es 'ninguna' o no tiene producto, no hay sugerencia.
-    if (action.type === 'none' || !action.product) {
-        return { suggestionType: 'none' };
+    if (!action || action.type === 'none' || !action.product) {
+      // Devolver una acción 'no' válida si la acción 'sí' falla pero la 'no' existe
+      if (!conditionMet && applicableRule.actions.no.product) {
+         return {
+            suggestionType: applicableRule.actions.no.type as 'cross-sell' | 'upsell' | 'none',
+            suggestedProduct: applicableRule.actions.no.product,
+            message: applicableRule.actions.no.message,
+        };
+      }
+      return { suggestionType: 'none' };
     }
 
     console.log(`[Evaluate Rules] Regla encontrada para "${initialDish.name}". Condición de hora pico (${conditionMet ? 'SÍ' : 'NO'}). Acción: ${action.type} -> ${action.product}`);
