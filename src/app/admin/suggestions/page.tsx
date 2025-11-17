@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -73,10 +74,6 @@ const AIConfigDialog = () => {
   };
   
   const handleSaveConfig = () => {
-     if (connectionStatus !== 'connected') {
-       toast({ title: "Prueba la conexión primero", description: "Debes probar la conexión exitosamente antes de guardar.", variant: "destructive" });
-       return;
-     }
      toast({ title: "Configuración Guardada", description: "Tu configuración de IA ha sido guardada." });
   }
 
