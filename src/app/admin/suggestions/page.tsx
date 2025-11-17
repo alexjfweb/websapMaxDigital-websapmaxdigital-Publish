@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -7,11 +8,152 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Clock, Zap, MessageSquare, ShoppingBag, BrainCircuit, BarChart2, DollarSign, TrendingUp, ArrowRight, ArrowDown, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { Search, Plus, Clock, Zap, MessageSquare, ShoppingBag, BrainCircuit, BarChart2, DollarSign, TrendingUp, ArrowRight, ArrowDown, Loader2, Settings, TestTube2, CheckCircle, AlertTriangle, PowerOff } from "lucide-react";
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { suggestionRuleService, SuggestionRule } from '@/services/suggestion-rules-service';
 import { useSession } from '@/contexts/session-context';
+import { Slider } from '@/components/ui/slider';
+
+
+// --- AI Configuration Component ---
+const aiProviders = [
+  { name: "Google Gemini", models: ["gemini-pro", "gemini-1.5-flash"] },
+  { name: "OpenAI GPT", models: ["gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"] },
+  { name: "Custom API", models: [] },
+];
+
+const AIConfigDialog = () => {
+  const { toast } = useToast();
+  const [selectedProvider, setSelectedProvider] = useState(aiProviders[0]);
+  const [apiKey, setApiKey] = useState("");
+  const [selectedModel, setSelectedModel] = useState(selectedProvider.models[0]);
+  const [temperature, setTemperature] = useState(0.7);
+  const [maxTokens, setMaxTokens] = useState(1024);
+  const [connectionStatus, setConnectionStatus] = useState<"unconfigured" | "connected" | "error">("unconfigured");
+
+  const handleProviderChange = (providerName: string) => {
+    const provider = aiProviders.find(p => p.name === providerName)!;
+    setSelectedProvider(provider);
+    setApiKey("");
+    setSelectedModel(provider.models[0] || "");
+    setConnectionStatus("unconfigured");
+  };
+
+  const handleTestConnection = () => {
+    if (!apiKey) {
+      toast({ title: "Clave API requerida", description: "Por favor, ingresa tu clave API para probar la conexión.", variant: "destructive" });
+      return;
+    }
+    toast({ title: "Probando Conexión...", description: "Por favor espera." });
+    setTimeout(() => {
+      if (Math.random() > 0.3) {
+        setConnectionStatus("connected");
+        toast({ title: "¡Conexión Exitosa!", description: `Conectado correctamente a ${selectedProvider.name}.`, className: "bg-green-100 text-green-800" });
+      } else {
+        setConnectionStatus("error");
+        toast({ title: "Error de Conexión", description: "No se pudo verificar la clave API. Revisa tus credenciales.", variant: "destructive" });
+      }
+    }, 1500);
+  };
+  
+  const handleSaveConfig = () => {
+     if (connectionStatus !== 'connected') {
+       toast({ title: "Prueba la conexión primero", description: "Debes probar la conexión exitosamente antes de guardar.", variant: "destructive" });
+       return;
+     }
+     toast({ title: "Configuración Guardada", description: "Tu configuración de IA ha sido guardada." });
+  }
+
+  return (
+    <DialogContent className="sm:max-w-2xl">
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2 text-xl">
+          <BrainCircuit className="h-6 w-6" />
+          Configuración del Motor de IA
+        </DialogTitle>
+        <DialogDescription>
+          Conecta tu proveedor de IA preferido para potenciar las sugerencias.
+        </DialogDescription>
+      </DialogHeader>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+        {/* Columna Izquierda: Configuración de API */}
+        <div className="space-y-4">
+            <div className="space-y-2">
+                <Label>Proveedor de IA</Label>
+                <div className="flex gap-2 flex-wrap">
+                    {aiProviders.map(provider => (
+                        <Button key={provider.name} variant={selectedProvider.name === provider.name ? "default" : "outline"} onClick={() => handleProviderChange(provider.name)}>
+                             <span>{provider.name}</span>
+                        </Button>
+                    ))}
+                </div>
+            </div>
+
+            <div className="p-4 border rounded-lg bg-muted/50 space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="api-key">Clave API de {selectedProvider.name}</Label>
+                    <Input id="api-key" type="password" placeholder="Pega tu clave API aquí" value={apiKey} onChange={e => setApiKey(e.target.value)} />
+                </div>
+                {selectedProvider.models.length > 0 && (
+                     <div className="space-y-2">
+                        <Label htmlFor="model-select">Modelo a Utilizar</Label>
+                        <Select value={selectedModel} onValueChange={setSelectedModel}>
+                            <SelectTrigger id="model-select"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {selectedProvider.models.map(model => (
+                                    <SelectItem key={model} value={model}>{model}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                )}
+            </div>
+
+            <div className="flex items-center gap-4">
+                <Button onClick={handleTestConnection}><TestTube2 className="mr-2"/>Probar Conexión</Button>
+                <div className="flex items-center gap-2">
+                  {connectionStatus === 'connected' && <><CheckCircle className="h-5 w-5 text-green-500" /><span className="text-sm font-medium text-green-600">Conectado</span></>}
+                  {connectionStatus === 'error' && <><AlertTriangle className="h-5 w-5 text-destructive" /><span className="text-sm font-medium text-destructive">Error</span></>}
+                  {connectionStatus === 'unconfigured' && <><PowerOff className="h-5 w-5 text-muted-foreground" /><span className="text-sm font-medium text-muted-foreground">No configurado</span></>}
+                </div>
+            </div>
+        </div>
+
+        {/* Columna Derecha: Parámetros */}
+        <div className="p-4 border rounded-lg space-y-6">
+            <h3 className="font-semibold text-lg">Parámetros del Modelo</h3>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                  <Label>Temperatura / Creatividad</Label>
+                  <span className="text-sm font-medium text-primary">{temperature.toFixed(2)}</span>
+              </div>
+              <Slider
+                value={[temperature]}
+                onValueChange={(v) => setTemperature(v[0])}
+                min={0}
+                max={2}
+                step={0.01}
+              />
+              <p className="text-xs text-muted-foreground">Valores más altos = más creativo. Valores bajos = más predecible.</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Tokens Máximos (Longitud de Respuesta)</Label>
+              <Input type="number" value={maxTokens} onChange={(e) => setMaxTokens(Number(e.target.value))} />
+            </div>
+        </div>
+      </div>
+      <DialogFooter>
+        <Button onClick={handleSaveConfig}>
+            <Save className="mr-2"/>
+            Guardar Configuración
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  );
+};
+
 
 // Placeholder para el diagrama de flujo
 const FlowDiagram = () => (
@@ -104,6 +246,12 @@ export default function SuggestionsEnginePage() {
             <BrainCircuit className="h-8 w-8" />
             Motor de Sugerencias Inteligentes
           </h1>
+          <Dialog>
+            <DialogTrigger asChild>
+                <Button variant="outline"><Settings className="mr-2 h-4 w-4" /> Configuración de IA</Button>
+            </DialogTrigger>
+            <AIConfigDialog />
+          </Dialog>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -241,3 +389,5 @@ export default function SuggestionsEnginePage() {
     </div>
   );
 }
+
+    
