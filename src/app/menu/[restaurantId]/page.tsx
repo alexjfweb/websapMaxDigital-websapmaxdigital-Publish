@@ -22,7 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface CartStore {
   items: CartItem[];
-  addItem: (dish: Dish) => void;
+  addItem: (dish: Dish, isSuggestion?: boolean, suggestionSource?: string) => void;
   removeItem: (dishId: string) => void;
   updateQuantity: (dishId: string, quantity: number) => void;
   clearCart: () => void;
@@ -33,7 +33,7 @@ interface CartStore {
 const useCart = (): CartStore => {
   const [items, setItems] = React.useState<CartItem[]>([]);
 
-  const addItem = (dish: Dish) => {
+  const addItem = (dish: Dish, isSuggestion = false, suggestionSource = 'IA') => {
     setItems((prevItems) => {
       const existingItem = prevItems.find((item) => item.id === dish.id);
       if (existingItem) {
@@ -41,7 +41,7 @@ const useCart = (): CartStore => {
           item.id === dish.id ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
-      return [...prevItems, { ...dish, quantity: 1, imageUrl: dish.imageUrl }];
+      return [...prevItems, { ...dish, quantity: 1, imageUrl: dish.imageUrl, isSuggestion, suggestionSource }];
     });
   };
 
@@ -213,6 +213,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
     if (!suggestion?.suggestedProduct) return;
     
     const suggestedProductName = suggestion.suggestedProduct.toLowerCase();
+    const ruleSource = suggestion.ruleName || 'IA';
     
     // Si la sugerencia contiene "o", es una sugerencia compuesta
     if (suggestedProductName.includes(" o ")) {
@@ -241,7 +242,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
         // Lógica para sugerencia simple (validación robustecida)
         const suggestedDish = dishes.find(d => d.name.trim().toLowerCase() === suggestedProductName);
         if (suggestedDish) {
-            cart.addItem(suggestedDish);
+            cart.addItem(suggestedDish, true, ruleSource);
             toast({
                 title: "¡Producto Sugerido Añadido!",
                 description: `${suggestedDish.name} también se ha añadido a tu carrito.`,
@@ -259,7 +260,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
   };
   
   const handleAddChoice = (dish: Dish) => {
-    cart.addItem(dish);
+    cart.addItem(dish, true, suggestion?.ruleName || 'IA');
     toast({
         title: "¡Producto Añadido!",
         description: `${dish.name} se ha añadido a tu carrito.`,
@@ -440,4 +441,3 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
     </>
   );
 }
-

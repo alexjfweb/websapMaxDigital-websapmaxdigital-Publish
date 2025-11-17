@@ -1,3 +1,4 @@
+
 import type { Timestamp } from 'firebase/firestore';
 
 
@@ -91,6 +92,8 @@ export type DishFormData = {
 
 export interface CartItem extends Dish {
   quantity: number;
+  isSuggestion?: boolean;
+  suggestionSource?: string;
 }
 
 export type UserRole = 'guest' | 'employee' | 'admin' | 'superadmin';
@@ -218,7 +221,7 @@ export interface Order {
   status: 'pending' | 'preparing' | 'ready_for_pickup' | 'out_for_delivery' | 'completed' | 'cancelled';
   type: 'delivery' | 'pickup' | 'dine-in';
   restaurantId: string;
-  productos: { id: string, nombre: string, cantidad: number, precio: number }[];
+  productos: ({ id: string, nombre: string, cantidad: number, precio: number, isSuggestion?: boolean, suggestionSource?: string })[];
   cliente: {
     nombre: string;
     telefono: string;

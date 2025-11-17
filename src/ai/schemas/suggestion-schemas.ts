@@ -12,5 +12,6 @@ export const SuggestionResponseSchema = z.object({
   suggestionType: z.enum(['cross-sell', 'upsell', 'none']).describe('El tipo de sugerencia.'),
   suggestedProduct: z.string().optional().describe('El nombre del producto sugerido.'),
   message: z.string().optional().describe('El mensaje para mostrar al cliente.'),
+  ruleName: z.string().optional().describe('El nombre de la regla que generó la sugerencia.'),
 });
 export type SuggestionResponse = z.infer<typeof SuggestionResponseSchema>;

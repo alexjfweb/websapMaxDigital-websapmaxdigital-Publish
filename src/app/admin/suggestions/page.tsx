@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,9 @@ import { Slider } from '@/components/ui/slider';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useOrderContext } from '@/contexts/order-context';
+import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart"
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts"
 
 
 // --- AI Configuration Component ---
@@ -180,6 +183,7 @@ const FlowDiagram = () => (
 export default function SuggestionsEnginePage() {
   const { toast } = useToast();
   const { currentUser } = useSession();
+  const { orders, loading: loadingOrders } = useOrderContext();
   const [isSaving, setIsSaving] = useState(false);
   
   // Estado para las reglas
@@ -222,6 +226,43 @@ export default function SuggestionsEnginePage() {
   const [noSuggestionProduct, setNoSuggestionProduct] = useState('Batido Premium');
   const [noSuggestionMessage, setNoSuggestionMessage] = useState('¿Qué tal algo refrescante?');
   
+    // Nuevas métricas de rendimiento
+  const performanceMetrics = useMemo(() => {
+    if (loadingOrders || orders.length === 0) {
+      return { acceptedSuggestions: 0, attributedRevenue: 0, acceptanceRate: 0, conversionByRule: [] };
+    }
+
+    let acceptedSuggestions = 0;
+    let attributedRevenue = 0;
+    const conversionByRule: Record<string, { name: string, count: number }> = {};
+
+    orders.forEach(order => {
+      order.productos.forEach(producto => {
+        if (producto.isSuggestion) {
+          acceptedSuggestions++;
+          attributedRevenue += producto.precio * producto.cantidad;
+          const ruleName = producto.suggestionSource || 'IA';
+          if (conversionByRule[ruleName]) {
+            conversionByRule[ruleName].count++;
+          } else {
+            conversionByRule[ruleName] = { name: ruleName, count: 1 };
+          }
+        }
+      });
+    });
+
+    // Para la tasa de aceptación necesitaríamos saber el total de sugerencias mostradas,
+    // lo cual no podemos calcular ahora. Mostramos un valor fijo por ahora.
+    const acceptanceRate = 25; // Placeholder
+
+    return {
+      acceptedSuggestions,
+      attributedRevenue,
+      acceptanceRate,
+      conversionByRule: Object.values(conversionByRule),
+    };
+  }, [orders, loadingOrders]);
+
   const clearForm = () => {
     setEditingRule(null);
     setInitialDish('');
@@ -433,30 +474,33 @@ export default function SuggestionsEnginePage() {
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="text-center">
-                    <p className="text-sm text-muted-foreground">Aumento en Ticket Promedio</p>
-                    <p className="text-4xl font-bold text-green-600">+12%</p>
+                    <p className="text-sm text-muted-foreground">Tasa de Aceptación</p>
+                    <p className="text-4xl font-bold text-green-600">{performanceMetrics.acceptanceRate}%</p>
                 </div>
                 
-                <div>
-                    <Label className="font-semibold">Conversión de Reglas</Label>
-                    <div className="h-24 mt-2 bg-gray-100 rounded-md flex items-end justify-around p-2">
-                        {/* Placeholder para el gráfico de barras */}
-                        <div className="w-6 bg-blue-400 rounded-t-sm" style={{height: '40%'}}></div>
-                        <div className="w-6 bg-blue-400 rounded-t-sm" style={{height: '75%'}}></div>
-                        <div className="w-6 bg-blue-400 rounded-t-sm" style={{height: '60%'}}></div>
-                        <div className="w-6 bg-blue-400 rounded-t-sm" style={{height: '85%'}}></div>
-                        <div className="w-6 bg-blue-400 rounded-t-sm" style={{height: '50%'}}></div>
+                <div className="flex items-center gap-4 p-3 border rounded-md">
+                    <DollarSign className="h-8 w-8 text-primary"/>
+                    <div>
+                        <p className="text-sm text-muted-foreground">Ingresos por Sugerencias</p>
+                        <p className="text-xl font-bold">${performanceMetrics.attributedRevenue.toFixed(2)}</p>
+                        <p className="text-xs text-muted-foreground">(Total generado)</p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4 p-3 border rounded-md">
-                    <TrendingUp className="h-8 w-8 text-primary"/>
-                    <div>
-                        <p className="text-sm text-muted-foreground">Ingresos Atribuidos</p>
-                        <p className="text-xl font-bold">+$2,500 USD</p>
-                        <p className="text-xs text-muted-foreground">(últimos 30 días)</p>
+                <div>
+                    <Label className="font-semibold">Conversión por Regla/IA</Label>
+                    <div className="h-32 mt-2">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={performanceMetrics.conversionByRule} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                           <XAxis type="number" hide />
+                           <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tick={{ fontSize: 12, width: 80 }} />
+                           <Tooltip content={<ChartTooltipContent />} />
+                           <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
                     </div>
                 </div>
+
             </CardContent>
           </Card>
         </div>
@@ -542,4 +586,3 @@ export default function SuggestionsEnginePage() {
     </div>
   );
 }
-

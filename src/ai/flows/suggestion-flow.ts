@@ -75,6 +75,7 @@ async function evaluateRules(request: SuggestionRequest): Promise<SuggestionResp
         suggestionType: action.type as 'cross-sell' | 'upsell' | 'none',
         suggestedProduct: action.product,
         message: action.message,
+        ruleName: applicableRule.initialDish, // Devolver el nombre de la regla
     };
 }
 
@@ -163,7 +164,7 @@ const productSuggestionFlow = ai.defineFlow(
             const suggestedProductExists = availableDishNames.some(name => name.toLowerCase() === output.suggestedProduct!.toLowerCase());
             if (suggestedProductExists) {
                 console.log(`[Suggestion Flow] IA generó una sugerencia válida: ${output.suggestedProduct}`);
-                return output;
+                return { ...output, ruleName: 'Inteligencia Artificial' };
             } else {
                  console.warn(`[Suggestion Flow] La IA sugirió un producto no existente: "${output.suggestedProduct}". Se descarta la sugerencia.`);
                 return { suggestionType: 'none' };
