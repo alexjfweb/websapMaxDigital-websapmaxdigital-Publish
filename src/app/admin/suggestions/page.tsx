@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,12 +9,15 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
-import { Search, Plus, Clock, Zap, MessageSquare, ShoppingBag, BrainCircuit, BarChart2, DollarSign, TrendingUp, ArrowRight, ArrowDown, Loader2, Settings, TestTube2, CheckCircle, AlertTriangle, PowerOff, Save } from "lucide-react";
+import { Search, Plus, Clock, Zap, MessageSquare, ShoppingBag, BrainCircuit, BarChart2, DollarSign, TrendingUp, ArrowRight, ArrowDown, Loader2, Settings, TestTube2, CheckCircle, AlertTriangle, PowerOff, Save, Edit, Trash2 } from "lucide-react";
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { suggestionRuleService, SuggestionRule } from '@/services/suggestion-rules-service';
 import { useSession } from '@/contexts/session-context';
 import { Slider } from '@/components/ui/slider';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 // --- AI Configuration Component ---
@@ -169,12 +172,6 @@ const FlowDiagram = () => (
             data-ai-hint="flowchart diagram"
             unoptimized
         />
-        <div className="flex justify-center items-center gap-4 mt-4 text-gray-500">
-            {/* Controles del diagrama (placeholders) */}
-            <Button variant="ghost" size="icon"><i className="i-lucide-zoom-in"></i></Button>
-            <Button variant="ghost" size="icon"><i className="i-lucide-zoom-out"></i></Button>
-            <Button variant="ghost" size="icon"><i className="i-lucide-rotate-cw"></i></Button>
-        </div>
     </div>
   </div>
 );
@@ -184,6 +181,34 @@ export default function SuggestionsEnginePage() {
   const { toast } = useToast();
   const { currentUser } = useSession();
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Estado para las reglas
+  const [rules, setRules] = useState<SuggestionRule[]>([]);
+  const [isLoadingRules, setIsLoadingRules] = useState(true);
+  const [editingRule, setEditingRule] = useState<SuggestionRule | null>(null);
+  
+  const [ruleToDelete, setRuleToDelete] = useState<SuggestionRule | null>(null);
+
+  // Cargar reglas al montar
+  useEffect(() => {
+    if (currentUser?.companyId) {
+      fetchRules();
+    }
+  }, [currentUser?.companyId]);
+
+  const fetchRules = async () => {
+    if (!currentUser?.companyId) return;
+    setIsLoadingRules(true);
+    try {
+      const fetchedRules = await suggestionRuleService.getRulesByCompany(currentUser.companyId);
+      setRules(fetchedRules);
+    } catch (error) {
+      toast({ title: "Error", description: "No se pudieron cargar las reglas.", variant: "destructive" });
+    } finally {
+      setIsLoadingRules(false);
+    }
+  };
+
 
   // Estado para el formulario de reglas
   const [initialDish, setInitialDish] = useState('Hamburguesa Clásica');
@@ -196,6 +221,35 @@ export default function SuggestionsEnginePage() {
   const [noSuggestionType, setNoSuggestionType] = useState('cross-sell');
   const [noSuggestionProduct, setNoSuggestionProduct] = useState('Batido Premium');
   const [noSuggestionMessage, setNoSuggestionMessage] = useState('¿Qué tal algo refrescante?');
+  
+  const clearForm = () => {
+    setEditingRule(null);
+    setInitialDish('');
+    setIsPeakTime(true);
+    setStartTime('18:00');
+    setEndTime('22:00');
+    setYesSuggestionType('cross-sell');
+    setYesSuggestionProduct('');
+    setYesSuggestionMessage('');
+    setNoSuggestionType('cross-sell');
+    setNoSuggestionProduct('');
+    setNoSuggestionMessage('');
+  };
+
+  const handleEditRule = (rule: SuggestionRule) => {
+    setEditingRule(rule);
+    setInitialDish(rule.initialDish);
+    setIsPeakTime(rule.condition.active);
+    setStartTime(rule.condition.startTime || '18:00');
+    setEndTime(rule.condition.endTime || '22:00');
+    setYesSuggestionType(rule.actions.yes.type);
+    setYesSuggestionProduct(rule.actions.yes.product);
+    setYesSuggestionMessage(rule.actions.yes.message);
+    setNoSuggestionType(rule.actions.no.type);
+    setNoSuggestionProduct(rule.actions.no.product);
+    setNoSuggestionMessage(rule.actions.no.message);
+  };
+
 
   const handleSaveRule = async () => {
     if (!currentUser?.companyId) {
@@ -204,7 +258,7 @@ export default function SuggestionsEnginePage() {
     }
     setIsSaving(true);
     try {
-      const newRule: Omit<SuggestionRule, 'id'> = {
+      const ruleData = {
         companyId: currentUser.companyId,
         initialDish,
         condition: {
@@ -225,12 +279,20 @@ export default function SuggestionsEnginePage() {
             message: noSuggestionMessage,
           },
         },
-        createdAt: new Date(),
+        createdAt: editingRule ? editingRule.createdAt : new Date(),
         updatedAt: new Date(),
       };
 
-      await suggestionRuleService.createRule(newRule);
-      toast({ title: "¡Regla Guardada!", description: "La nueva regla de sugerencia se ha guardado correctamente." });
+      if (editingRule) {
+        await suggestionRuleService.updateRule(editingRule.id, ruleData);
+        toast({ title: "¡Regla Actualizada!", description: "La regla de sugerencia se ha actualizado." });
+      } else {
+        await suggestionRuleService.createRule(ruleData);
+        toast({ title: "¡Regla Guardada!", description: "La nueva regla de sugerencia se ha guardado." });
+      }
+      
+      clearForm();
+      fetchRules(); // Recargar la lista de reglas
 
     } catch (error: any) {
       toast({ title: "Error al guardar", description: error.message, variant: "destructive" });
@@ -238,6 +300,22 @@ export default function SuggestionsEnginePage() {
       setIsSaving(false);
     }
   };
+  
+  const handleDeleteRule = async () => {
+    if (!ruleToDelete) return;
+    setIsSaving(true);
+    try {
+        await suggestionRuleService.deleteRule(ruleToDelete.id);
+        toast({ title: "Regla Eliminada", description: "La regla ha sido eliminada.", variant: "destructive"});
+        fetchRules();
+    } catch (error: any) {
+        toast({ title: "Error", description: `No se pudo eliminar la regla: ${error.message}`, variant: "destructive"});
+    } finally {
+        setIsSaving(false);
+        setRuleToDelete(null);
+    }
+  };
+  
 
   return (
     <div className="space-y-6">
@@ -259,7 +337,7 @@ export default function SuggestionsEnginePage() {
         <div className="lg:col-span-4">
           <Card className="shadow-lg">
             <CardHeader>
-              <CardTitle>Crear Nueva Regla</CardTitle>
+              <CardTitle>{editingRule ? 'Editar Regla' : 'Crear Nueva Regla'}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Plato Inicial */}
@@ -325,13 +403,10 @@ export default function SuggestionsEnginePage() {
               {/* Botones de Acción */}
               <div className="flex justify-between items-center pt-4">
                 <Button onClick={handleSaveRule} disabled={isSaving}>
-                  {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  {isSaving ? 'Guardando...' : 'Guardar Regla'}
+                  {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                  {editingRule ? 'Actualizar' : 'Guardar'}
                 </Button>
-                <Button variant="ghost">Cancelar</Button>
-                <Button variant="outline" size="icon">
-                  <Plus className="h-4 w-4" />
-                </Button>
+                <Button variant="ghost" onClick={clearForm}>Cancelar</Button>
               </div>
             </CardContent>
           </Card>
@@ -386,6 +461,85 @@ export default function SuggestionsEnginePage() {
           </Card>
         </div>
       </div>
+      
+      {/* Sección de Reglas Guardadas */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Reglas Guardadas</CardTitle>
+          <CardDescription>Administra las reglas de sugerencia existentes.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Plato Inicial</TableHead>
+                <TableHead>Condición</TableHead>
+                <TableHead>Sugerencia (Sí)</TableHead>
+                <TableHead>Sugerencia (No)</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoadingRules ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
+                  </TableRow>
+                ))
+              ) : rules.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    No has creado ninguna regla todavía.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                rules.map(rule => (
+                  <TableRow key={rule.id}>
+                    <TableCell className="font-medium">{rule.initialDish}</TableCell>
+                    <TableCell>
+                      {rule.condition.active ? `Hora Pico (${rule.condition.startTime}-${rule.condition.endTime})` : 'Siempre'}
+                    </TableCell>
+                    <TableCell>{rule.actions.yes.product}</TableCell>
+                    <TableCell>{rule.actions.no.product}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" onClick={() => handleEditRule(rule)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                           <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setRuleToDelete(rule)}>
+                            <Trash2 className="h-4 w-4" />
+                           </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Esta acción eliminará la regla para &quot;{ruleToDelete?.initialDish}&quot; permanentemente.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel onClick={() => setRuleToDelete(null)}>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteRule} className="bg-destructive hover:bg-destructive/90">
+                                    Sí, eliminar
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
     </div>
   );
 }
+
