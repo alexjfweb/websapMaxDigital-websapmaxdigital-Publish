@@ -6,15 +6,17 @@ import Image from 'next/image';
 import type { Company, Dish, CartItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { LoaderCircle, ShoppingCart, CalendarCheck } from 'lucide-react';
+import { LoaderCircle, ShoppingCart, CalendarCheck, Sparkles, X, Plus } from 'lucide-react';
 import RestaurantInfoDisplay from '@/components/menu/restaurant-info-display';
 import DishItem from '@/components/menu/dish-item';
 import CartCheckout from '@/components/menu/cart-checkout';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { getDb } from '@/lib/firebase';
 import { doc, getDoc, collection } from 'firebase/firestore';
 import ReservationForm from '@/components/forms/reservation-form';
 import { useDishes } from '@/hooks/use-dishes';
+import { getProductSuggestion, SuggestionRequest, SuggestionResponse } from '@/ai/flows/suggestion-flow';
+import { useToast } from '@/hooks/use-toast';
 
 interface CartStore {
   items: CartItem[];
@@ -86,6 +88,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
   const { restaurantId } = params;
   const [restaurant, setRestaurant] = React.useState<Company | null>(null);
   const cart = useCart();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [cartOpen, setCartOpen] = React.useState(false);
@@ -93,6 +96,11 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
   const [menuStyles, setMenuStyles] = React.useState(defaultMenuStyles);
   
   const { dishes, isLoading: isLoadingDishes, error: errorDishes } = useDishes(restaurantId);
+
+  // Estados para el modal de sugerencias
+  const [isSuggestionLoading, setIsSuggestionLoading] = React.useState(false);
+  const [suggestion, setSuggestion] = React.useState<SuggestionResponse | null>(null);
+  const [isSuggestionModalOpen, setIsSuggestionModalOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (!restaurantId) {
@@ -158,6 +166,64 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
     return dishes.filter(dish => dish.category === selectedCategory);
   }, [dishes, selectedCategory]);
 
+  const handleAddToCart = async (dish: Dish) => {
+    // 1. Añadir al carrito inmediatamente para una buena experiencia de usuario
+    cart.addItem(dish);
+    toast({
+        title: "¡Añadido!",
+        description: `${dish.name} se ha añadido a tu carrito.`,
+    });
+
+    // 2. Activar la carga de la sugerencia
+    setIsSuggestionLoading(true);
+    
+    try {
+        const now = new Date();
+        const request: SuggestionRequest = {
+            companyId: restaurantId,
+            initialDishId: dish.id,
+            currentTime: `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`,
+        };
+
+        const result = await getProductSuggestion(request);
+
+        // 3. Si hay una sugerencia válida, mostrarla
+        if (result && result.suggestionType !== 'none' && result.suggestedProduct) {
+            setSuggestion(result);
+            setIsSuggestionModalOpen(true);
+        }
+
+    } catch (e: any) {
+        console.error("Error obteniendo sugerencia:", e);
+        // No mostrar un toast de error al usuario, para no interrumpir su flujo.
+    } finally {
+        setIsSuggestionLoading(false);
+    }
+  };
+
+  const handleAddSuggestedItem = () => {
+    if (suggestion?.suggestedProduct) {
+        // Buscar el plato completo en la lista de platos
+        const suggestedDish = dishes.find(d => d.name.toLowerCase() === suggestion.suggestedProduct!.toLowerCase());
+        if (suggestedDish) {
+            cart.addItem(suggestedDish);
+            toast({
+                title: "¡Producto Sugerido Añadido!",
+                description: `${suggestedDish.name} también se ha añadido a tu carrito.`,
+            });
+        } else {
+             toast({
+                title: "Producto no encontrado",
+                description: "No pudimos encontrar el producto sugerido en el menú actual.",
+                variant: 'destructive'
+            });
+        }
+    }
+    setIsSuggestionModalOpen(false);
+    setSuggestion(null);
+  };
+  
+
   if (isLoading) {
     return (
         <div className="flex min-h-[calc(100vh-theme(spacing.16))] w-full items-center justify-center bg-background">
@@ -181,6 +247,43 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
 
   return (
     <>
+      <Dialog open={isSuggestionModalOpen} onOpenChange={setIsSuggestionModalOpen}>
+        <DialogContent className="max-w-sm">
+            <DialogHeader className="text-center items-center">
+                <div className="p-3 bg-primary/10 rounded-full mb-2">
+                    <Sparkles className="h-8 w-8 text-primary"/>
+                </div>
+                <DialogTitle className="text-xl">{suggestion?.message || 'Sugerencia Especial'}</DialogTitle>
+                <DialogDescription>
+                  ¡Tenemos una recomendación para ti!
+                </DialogDescription>
+            </DialogHeader>
+            {suggestion?.suggestedProduct && (
+                 <div className="flex flex-col items-center gap-4 py-4">
+                    <Image 
+                        src={dishes.find(d => d.name.toLowerCase() === suggestion.suggestedProduct!.toLowerCase())?.imageUrl || "https://placehold.co/150x150.png"}
+                        alt={suggestion.suggestedProduct}
+                        width={150}
+                        height={150}
+                        className="rounded-lg object-cover shadow-md"
+                        data-ai-hint="suggested food item"
+                    />
+                    <p className="text-lg font-bold">{suggestion.suggestedProduct}</p>
+                </div>
+            )}
+            <DialogFooter className="flex-col sm:flex-col sm:space-x-0 gap-2">
+                <Button onClick={handleAddSuggestedItem}>
+                    <Plus className="mr-2 h-4 w-4"/>
+                    Sí, ¡añadir al carrito!
+                </Button>
+                <Button variant="outline" onClick={() => setIsSuggestionModalOpen(false)}>
+                    No, gracias
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
     <div
       style={{
         background: menuStyles.secondary_color,
@@ -266,7 +369,7 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {filteredDishes.map((dish) => (
-             <DishItem key={dish.id} dish={dish} onAddToCart={() => cart.addItem(dish)} styles={menuStyles} />
+             <DishItem key={dish.id} dish={dish} onAddToCart={() => handleAddToCart(dish)} styles={menuStyles} />
           ))}
           {filteredDishes.length === 0 && !isLoadingDishes && <p>No se encontraron platos en esta categoría.</p>}
         </div>
