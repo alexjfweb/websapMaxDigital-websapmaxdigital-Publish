@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,7 +36,7 @@ export default function AdminShareMenuPage() {
     const companyId = currentUser?.companyId;
     
     // CORRECCIÓN: Construir la URL base dinámicamente desde el cliente
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://www.websap.site';
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
     
     if (companyId) {
       setMenuUrl(`${baseUrl}/menu/${companyId}`);
@@ -206,8 +205,8 @@ export default function AdminShareMenuPage() {
 
         <Card className="shadow-lg border-primary/30">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><LinkIcon className="h-5 w-5 text-primary"/> URL de tu Catálogo</CardTitle>
-            <CardDescription>Este es el enlace directo a tu menú público. ¡Cópialo y compártelo!</CardDescription>
+            <CardTitle className="flex items-center gap-2"><LinkIcon className="h-5 w-5 text-primary"/>Enlace del Menú</CardTitle>
+            <CardDescription>Usa este enlace para compartir tu menú digital donde quieras.</CardDescription>
           </CardHeader>
           <CardContent className="flex items-center space-x-2">
             <Input 
@@ -360,4 +359,3 @@ export default function AdminShareMenuPage() {
     </>
   );
 }
-
