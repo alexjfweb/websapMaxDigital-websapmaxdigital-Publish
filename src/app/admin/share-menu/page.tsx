@@ -205,6 +205,31 @@ export default function AdminShareMenuPage() {
         <h1 className="text-3xl font-bold text-primary text-center">Compartir menú</h1>
         <p className="text-lg text-muted-foreground text-center">Personaliza cómo se ve tu menú al compartirlo y usa las herramientas para llegar a más clientes.</p>
 
+        <Card className="shadow-lg border-primary/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><LinkIcon className="h-5 w-5 text-primary"/> URL de tu Catálogo</CardTitle>
+            <CardDescription>Este es el enlace directo a tu menú público. ¡Cópialo y compártelo!</CardDescription>
+          </CardHeader>
+          <CardContent className="flex items-center space-x-2">
+            <Input 
+              type="text" 
+              value={menuUrl} 
+              readOnly 
+              className="bg-muted text-base"
+              aria-label="URL del Menú"
+            />
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => handleCopyToClipboard(menuUrl, 'Enlace del menú copiado.')}
+              aria-label="Copiar URL del menú"
+              disabled={!menuUrl}
+            >
+              <Copy className="h-5 w-5" />
+            </Button>
+          </CardContent>
+        </Card>
+
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5" /> Personaliza tu Mensaje</CardTitle>
@@ -332,20 +357,6 @@ export default function AdminShareMenuPage() {
             </Button>
           </CardContent>
         </Card>
-
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle>Enlace del Menú</CardTitle>
-            <CardDescription>Usa este enlace para compartir tu menú digital donde quieras.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex items-center space-x-2">
-            <Input type="text" value={menuUrl} readOnly className="bg-muted" />
-            <Button variant="outline" size="icon" onClick={() => handleCopyToClipboard(menuUrl, 'Enlace del menú copiado.')}>
-              <Copy className="h-4 w-4" />
-            </Button>
-          </CardContent>
-        </Card>
-
       </div>
     </>
   );
