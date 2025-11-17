@@ -22,6 +22,7 @@ import { useOrderContext } from '@/contexts/order-context';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 
 
 // --- AI Configuration Component ---
