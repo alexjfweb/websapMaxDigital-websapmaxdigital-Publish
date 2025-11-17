@@ -62,8 +62,14 @@ const AIConfigDialog = () => {
   const handleProviderChange = (providerName: string) => {
     setSelectedProviderName(providerName);
     setConnectionStatus("unconfigured");
-    const model = localConfig?.models.find(m => m.provider === providerName);
-    setApiKey(model?.apiKey || '');
+    
+    if (providerName === 'Custom API') {
+        setApiKey('');
+        // No hay modelo que seleccionar, así que se podría limpiar también
+    } else {
+        const model = localConfig?.models.find(m => m.provider === providerName);
+        setApiKey(model?.apiKey || '');
+    }
   };
 
   const handleTestConnection = () => {
