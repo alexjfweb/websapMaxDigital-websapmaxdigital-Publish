@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { suggestionRuleService, SuggestionRule } from '@/services/suggestion-rules-service';
 import { useSession } from '@/contexts/session-context';
 import { Slider } from '@/components/ui/slider';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOrderContext } from '@/contexts/order-context';
@@ -80,6 +80,7 @@ const AIConfigDialog = () => {
     setIsSaving(true);
     try {
       await updateAIConfig(localConfig);
+      toast({ title: "Configuración Guardada", description: "Tu configuración de IA ha sido guardada." });
     } catch (error) {
       // El hook ya muestra un toast de error
     } finally {
