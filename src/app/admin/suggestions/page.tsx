@@ -55,7 +55,7 @@ const AIConfigDialog = () => {
         setSelectedProviderName(activeModel.provider);
       }
     }
-  }, [aiConfig, selectedProviderName]);
+  }, [aiConfig]);
   
   const selectedProvider = aiProviders.find(p => p.name === selectedProviderName)!;
 
@@ -65,7 +65,6 @@ const AIConfigDialog = () => {
     
     if (providerName === 'Custom API') {
         setApiKey('');
-        // No hay modelo que seleccionar, así que se podría limpiar también
     } else {
         const model = localConfig?.models.find(m => m.provider === providerName);
         setApiKey(model?.apiKey || '');
@@ -111,7 +110,6 @@ const AIConfigDialog = () => {
   const handleEditModel = (modelToEdit: AIModelConfig) => {
     setSelectedProviderName(modelToEdit.provider);
     setApiKey(modelToEdit.apiKey);
-    // Simular una conexión exitosa ya que es un modelo guardado
     setConnectionStatus("connected"); 
     toast({
       title: `Editando ${modelToEdit.provider}`,
@@ -162,8 +160,10 @@ const AIConfigDialog = () => {
                     </div>
                     <div className="p-4 border rounded-lg bg-muted/50 space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="api-key">Clave API de {selectedProvider.name}</Label>
-                            <Input id="api-key" type="password" placeholder="Pega tu clave API aquí" value={apiKey} onChange={e => setApiKey(e.target.value)} />
+                            <Label htmlFor="api-key">
+                                {selectedProviderName === 'Custom API' ? 'Endpoint de la API' : `Clave API de ${selectedProvider.name}`}
+                            </Label>
+                            <Input id="api-key" type={selectedProviderName === 'Custom API' ? 'text' : 'password'} placeholder={selectedProviderName === 'Custom API' ? 'https://api.example.com/suggest' : 'Pega tu clave API aquí'} value={apiKey} onChange={e => setApiKey(e.target.value)} />
                         </div>
                         {selectedProvider.models.length > 0 && (
                             <div className="space-y-2">
