@@ -40,7 +40,6 @@ export default function AdminShareMenuPage() {
     
     if (companyId) {
       setMenuUrl(`${prodBaseUrl}/menu/${companyId}`);
-      // CORRECCIÓN: La URL de vista previa debe ser la de la landing, no la de la API
       setSharePreviewUrl(`${prodBaseUrl}/landing/restaurant/${companyId}`);
     }
     
@@ -85,7 +84,6 @@ export default function AdminShareMenuPage() {
   };
 
   const handleShareWithPreview = () => {
-    // CORRECCIÓN: Usar la URL de la landing directamente, que ya está en sharePreviewUrl.
     if (!sharePreviewUrl) {
       toast({
         title: "URL no lista",
@@ -335,7 +333,7 @@ export default function AdminShareMenuPage() {
 
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle>Copiar enlace al portapapeles</CardTitle>
+            <CardTitle>Copiar enlace con vista previa</CardTitle>
             <CardDescription>Usa este enlace para compartir tu menú con vista previa en cualquier plataforma.</CardDescription>
           </CardHeader>
           <CardContent className="flex items-center space-x-2">
@@ -361,3 +359,4 @@ export default function AdminShareMenuPage() {
     </>
   );
 }
+
