@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Flow de IA para generar sugerencias de productos.
@@ -7,24 +8,10 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { suggestionRuleService, SuggestionRule } from '@/services/suggestion-rules-service';
+import { suggestionRuleService, type SuggestionRule } from '@/services/suggestion-rules-service';
 import { dishService } from '@/services/dish-service';
 import type { Dish } from '@/types';
-
-
-export const SuggestionRequestSchema = z.object({
-  companyId: z.string().describe('ID de la compañía para la cual se busca una sugerencia.'),
-  initialDishId: z.string().describe('ID del plato que el cliente ha seleccionado.'),
-  currentTime: z.string().optional().describe('Hora actual en formato HH:mm para evaluar condiciones.'),
-});
-export type SuggestionRequest = z.infer<typeof SuggestionRequestSchema>;
-
-export const SuggestionResponseSchema = z.object({
-  suggestionType: z.enum(['cross-sell', 'upsell', 'none']).describe('El tipo de sugerencia.'),
-  suggestedProduct: z.string().optional().describe('El nombre del producto sugerido.'),
-  message: z.string().optional().describe('El mensaje para mostrar al cliente.'),
-});
-export type SuggestionResponse = z.infer<typeof SuggestionResponseSchema>;
+import { SuggestionRequestSchema, SuggestionResponseSchema, type SuggestionRequest, type SuggestionResponse } from '@/ai/schemas/suggestion-schemas';
 
 
 // Función que evalúa las reglas de negocio obtenidas de la base de datos.

@@ -16,7 +16,8 @@ import { getDb } from '@/lib/firebase';
 import { doc, getDoc, collection } from 'firebase/firestore';
 import ReservationForm from '@/components/forms/reservation-form';
 import { useDishes } from '@/hooks/use-dishes';
-import { getProductSuggestion, SuggestionRequest, SuggestionResponse } from '@/ai/flows/suggestion-flow';
+import { getProductSuggestion } from '@/ai/flows/suggestion-flow';
+import type { SuggestionRequest, SuggestionResponse } from '@/ai/schemas/suggestion-schemas';
 import { useToast } from '@/hooks/use-toast';
 
 interface CartStore {
