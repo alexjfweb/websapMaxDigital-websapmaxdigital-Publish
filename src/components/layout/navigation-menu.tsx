@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from 'react';
@@ -13,7 +12,7 @@ import {
 import {
   ShoppingBag, Users, Settings, ClipboardList, BookUser, ShieldCheck, LayoutDashboard, Utensils,
   Share2, UserCog, Server, History, CalendarCheck, Megaphone, Store, BarChart3, Wrench, Database,
-  Gem, BellRing, Palette, Archive, CreditCard, Rocket, Navigation, LifeBuoy
+  Gem, BellRing, Palette, Archive, CreditCard, Rocket, Navigation, LifeBuoy, BrainCircuit
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { NavItemConfig } from '@/services/navigation-service';
@@ -38,6 +37,7 @@ const iconMap: { [key: string]: React.ElementType } = {
   'admin-profile': Settings,
   'admin-subscription': Rocket,
   'admin-dishes': Utensils,
+  'admin-suggestions': BrainCircuit,
   'admin-employees': UserCog,
   'admin-tables': ClipboardList,
   'admin-reservations': CalendarCheck,

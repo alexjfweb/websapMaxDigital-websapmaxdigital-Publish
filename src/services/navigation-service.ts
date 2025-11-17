@@ -42,6 +42,7 @@ const baseSidebarItems: any[] = [
   { id: 'admin-profile', href: '/admin/profile', labelKey: 'Perfil', icon: 'Settings', allowedRoles: ['admin'], tooltipKey: 'Perfil del restaurante' },
   { id: 'admin-subscription', href: '/admin/subscription', labelKey: 'Suscripción', icon: 'Rocket', allowedRoles: ['admin'], tooltipKey: 'Gestionar Suscripción' },
   { id: 'admin-dishes', href: '/admin/dishes', labelKey: 'Platos', icon: 'Utensils', allowedRoles: ['admin'], tooltipKey: 'Gestión de platos' },
+  { id: 'admin-suggestions', href: '/admin/suggestions', labelKey: 'Sugerencias IA', icon: 'BrainCircuit', allowedRoles: ['admin'], tooltipKey: 'Motor de Sugerencias' },
   { id: 'admin-employees', href: '/admin/employees', labelKey: 'Empleados', icon: 'UserCog', allowedRoles: ['admin'], tooltipKey: 'Gestión de empleados' },
   { id: 'admin-tables', href: '/admin/tables', labelKey: 'Mesas', icon: 'ClipboardList', allowedRoles: ['admin'], tooltipKey: 'Gestión de mesas' },
   { id: 'admin-reservations', href: '/admin/reservations', labelKey: 'Reservas', icon: 'CalendarCheck', allowedRoles: ['admin'], tooltipKey: 'Reservas' },
