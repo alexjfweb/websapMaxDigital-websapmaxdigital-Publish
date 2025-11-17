@@ -48,6 +48,19 @@ const AIConfigDialog = () => {
   const [connectionStatus, setConnectionStatus] = useState<"unconfigured" | "connected" | "error">("unconfigured");
   const [savedModels, setSavedModels] = useState(savedModelsMock);
 
+  // Cargar estado desde localStorage al montar
+  useEffect(() => {
+    try {
+      const storedModels = localStorage.getItem('aiSavedModels');
+      if (storedModels) {
+        setSavedModels(JSON.parse(storedModels));
+      }
+    } catch (error) {
+      console.error("Error loading AI models from localStorage:", error);
+      setSavedModels(savedModelsMock);
+    }
+  }, []);
+
   const handleProviderChange = (providerName: string) => {
     const provider = aiProviders.find(p => p.name === providerName)!;
     setSelectedProvider(provider);
@@ -74,8 +87,14 @@ const AIConfigDialog = () => {
   };
   
   const handleSaveConfig = () => {
-     toast({ title: "Configuración Guardada", description: "Tu configuración de IA ha sido guardada." });
-  }
+    try {
+      localStorage.setItem('aiSavedModels', JSON.stringify(savedModels));
+      toast({ title: "Configuración Guardada", description: "Tu configuración de IA ha sido guardada." });
+    } catch (error) {
+      console.error("Error saving AI models to localStorage:", error);
+      toast({ title: "Error al Guardar", description: "No se pudo guardar la configuración en el navegador.", variant: "destructive" });
+    }
+  };
 
   const toggleModelActive = (id: string) => {
     setSavedModels(models => models.map(m => m.id === id ? { ...m, active: !m.active } : m));
