@@ -291,7 +291,8 @@ export default function MenuPage({ params }: { params: { restaurantId: string } 
         <DialogContent className="max-w-sm">
             <DialogHeader>
                  <DialogTitle className="text-center text-lg font-semibold mb-2">¡Tenemos una recomendación para ti!</DialogTitle>
-                 <DialogDescription className="text-center text-sm text-muted-foreground mb-4">
+                 {/* El DialogDescription ahora está vacío o se puede quitar si no se usa */}
+                 <DialogDescription className="sr-only">
                      {suggestion?.message || "Basado en tu selección, te sugerimos complementar tu pedido"}
                  </DialogDescription>
             </DialogHeader>
