@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Flow de IA para generar sugerencias de productos.
@@ -9,6 +10,8 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { suggestionRuleService, SuggestionRule } from '@/services/suggestion-rules-service';
 import { dishService } from '@/services/dish-service';
+import type { Dish } from '@/types';
+
 
 export const SuggestionRequestSchema = z.object({
   companyId: z.string().describe('ID de la compañía para la cual se busca una sugerencia.'),
@@ -58,14 +61,18 @@ async function evaluateRules(request: SuggestionRequest): Promise<SuggestionResp
         if (request.currentTime >= startTime && request.currentTime <= endTime) {
             conditionMet = true;
         }
-    } else {
-        // Si no hay condición de hora, o no está activa, se podría definir un comportamiento por defecto.
-        // Por ahora, si no hay condición de hora, se considera como NO cumplida.
-        conditionMet = false;
+    } else if (!condition.active) {
+        // Si la condición de hora no está activa, la regla se aplica siempre.
+        conditionMet = true;
     }
     
     // Seleccionar la acción a tomar basada en si la condición se cumplió o no.
     const action = conditionMet ? applicableRule.actions.yes : applicableRule.actions.no;
+    
+    // Si la acción para la condición evaluada es 'ninguna', no hay sugerencia.
+    if (action.type === 'none') {
+        return { suggestionType: 'none' };
+    }
 
     console.log(`[Evaluate Rules] Regla encontrada para "${initialDish.name}". Condición de hora pico (${conditionMet ? 'SÍ' : 'NO'}). Acción: ${action.type} -> ${action.product}`);
 
@@ -76,11 +83,40 @@ async function evaluateRules(request: SuggestionRequest): Promise<SuggestionResp
     };
 }
 
+// Esquema de entrada para el prompt de IA
+const AISuggestionInputSchema = z.object({
+  initialDishName: z.string(),
+  availableDishes: z.array(z.string()),
+});
+
+// NUEVO: Prompt de Genkit para la sugerencia de IA
+const aiSuggestionPrompt = ai.definePrompt({
+    name: 'aiProductSuggestion',
+    input: { schema: AISuggestionInputSchema },
+    output: { schema: SuggestionResponseSchema },
+    prompt: `Eres un mesero experto en un restaurante. Un cliente ha añadido "{{initialDishName}}" a su carrito. 
+    Tu tarea es recomendar OTRO producto de la lista de platos disponibles que complemente bien su elección.
+
+    Lista de platos disponibles:
+    {{#each availableDishes}}
+    - {{this}}
+    {{/each}}
+
+    Basado en el plato inicial y la lista, elige la mejor recomendación.
+    - Si encuentras un buen acompañamiento, responde con "cross-sell".
+    - Si encuentras una versión mejor o más grande del mismo plato, responde con "upsell".
+    - El nombre del producto sugerido debe ser EXACTAMENTE como aparece en la lista.
+    - Crea un mensaje corto y amigable para el cliente animándolo a añadir tu sugerencia.
+
+    Si no encuentras una buena recomendación, responde con "none".`,
+});
+
 
 export async function getProductSuggestion(request: SuggestionRequest): Promise<SuggestionResponse> {
   return productSuggestionFlow(request);
 }
 
+// FLUJO PRINCIPAL ACTUALIZADO
 const productSuggestionFlow = ai.defineFlow(
   {
     name: 'productSuggestionFlow',
@@ -91,17 +127,53 @@ const productSuggestionFlow = ai.defineFlow(
     
     console.log(`[Suggestion Flow] Buscando sugerencia para la compañía ${request.companyId} y el plato ${request.initialDishId}`);
 
-    // La lógica de evaluación de reglas ahora está centralizada.
+    // 1. Intentar obtener una sugerencia basada en reglas de negocio
     const ruleBasedSuggestion = await evaluateRules(request);
 
     if (ruleBasedSuggestion.suggestionType !== 'none') {
+        console.log('[Suggestion Flow] Se encontró una regla de negocio. Devolviendo sugerencia de regla.');
         return ruleBasedSuggestion;
     }
 
-    // Fallback: Si ninguna regla coincide, se podría llamar a un LLM para una sugerencia genérica.
-    // Esta parte se puede implementar en el futuro.
-    console.log('[Suggestion Flow] Ninguna regla aplicable. Se podría llamar a un LLM aquí como fallback.');
+    // 2. Fallback: Si no hay reglas, usar IA (si está configurada)
+    console.log('[Suggestion Flow] Ninguna regla aplicable. Intentando fallback con IA.');
+    
+    // Obtener todos los platos para que la IA pueda elegir
+    const allDishes = await dishService.getDishesByCompany(request.companyId);
+    const initialDish = allDishes.find(d => d.id === request.initialDishId);
 
-    return { suggestionType: 'none', message: 'No hay sugerencias por ahora.' };
+    if (!initialDish) {
+        console.warn('[Suggestion Flow] No se encontró el plato inicial para el fallback de IA.');
+        return { suggestionType: 'none' };
+    }
+    
+    // Filtrar para no sugerir el mismo plato y solo los que tienen stock
+    const availableDishNames = allDishes
+        .filter(d => d.id !== initialDish.id && (d.stock === -1 || d.stock > 0))
+        .map(d => d.name);
+
+    if (availableDishNames.length === 0) {
+        console.log('[Suggestion Flow] No hay otros platos disponibles para sugerir.');
+        return { suggestionType: 'none' };
+    }
+
+    try {
+        const { output } = await aiSuggestionPrompt({
+            initialDishName: initialDish.name,
+            availableDishes: availableDishNames,
+        });
+
+        if (output && output.suggestionType !== 'none') {
+            console.log(`[Suggestion Flow] IA generó una sugerencia: ${output.suggestedProduct}`);
+            return output;
+        } else {
+            console.log('[Suggestion Flow] La IA decidió no hacer una sugerencia.');
+            return { suggestionType: 'none' };
+        }
+    } catch (error) {
+        console.error("[Suggestion Flow] Error al llamar al modelo de IA. Esto puede deberse a que la API Key no está configurada o es inválida.", error);
+        // Devolver 'none' si falla la llamada a la IA para no romper la experiencia.
+        return { suggestionType: 'none' };
+    }
   }
 );
