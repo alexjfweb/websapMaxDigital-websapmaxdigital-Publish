@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { suggestionRuleService, SuggestionRule } from '@/services/suggestion-rules-service';
 import { useSession } from '@/contexts/session-context';
 import { Slider } from '@/components/ui/slider';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOrderContext } from '@/contexts/order-context';
@@ -32,6 +32,7 @@ import type { AIConfig, AIModelConfig } from '@/services/ai-config-service';
 const aiProviders = [
   { name: "Google Gemini", models: ["gemini-pro", "gemini-1.5-flash"] },
   { name: "OpenAI GPT", models: ["gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"] },
+  { name: "Groq", models: ["llama3-8b-8192", "mixtral-8x7b-32768", "gemma-7b-it"] },
   { name: "Custom API", models: [] },
 ];
 
