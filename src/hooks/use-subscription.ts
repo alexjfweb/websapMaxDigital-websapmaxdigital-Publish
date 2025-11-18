@@ -1,3 +1,4 @@
+
 "use client";
 
 import useSWR from 'swr';
@@ -56,14 +57,16 @@ export function useSubscription() {
   // Filtrar los planes públicos para la sección "Explora"
   const publicPlans = allPlans.filter(p => p.isPublic && p.isActive);
 
-  // Lógica de permisos corregida y robustecida
-  const planSlugPart = currentPlan?.slug?.toLowerCase().split('-')[1] || '';
-  
+  // LÓGICA DE PERMISOS MEJORADA: Basada en los límites del plan, no en el nombre.
   const permissions = {
-    // Un plan permite gestionar empleados si NO es el gratuito Y NO es el básico.
-    canManageEmployees: !!currentPlan && currentPlan.price > 0 && !['plan-gratuito', 'plan-gratis-lite', 'plan-basico'].includes(currentPlan.slug),
-    canUseAdvancedAnalytics: ['premium', 'profesional'].includes(planSlugPart),
-    canCustomizeBranding: !!currentPlan && currentPlan.price > 0 && currentPlan.slug !== 'plan-gratis-lite',
+    // Se pueden gestionar empleados si el límite `maxUsers` es distinto de cero.
+    canManageEmployees: !!currentPlan && currentPlan.maxUsers !== 0,
+    
+    // La analítica avanzada es para planes con un precio alto (ej, > 30) o ilimitados
+    canUseAdvancedAnalytics: !!currentPlan && (currentPlan.price > 30 || currentPlan.maxUsers === -1),
+
+    // La personalización está disponible en cualquier plan de pago.
+    canCustomizeBranding: !!currentPlan && currentPlan.price > 0,
   };
   
   return {
