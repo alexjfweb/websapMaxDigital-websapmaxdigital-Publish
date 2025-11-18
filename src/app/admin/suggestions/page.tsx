@@ -26,6 +26,8 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useAIConfig } from '@/hooks/use-ai-config';
 import type { AIConfig, AIModelConfig } from '@/services/ai-config-service';
+import { useSubscription } from '@/hooks/use-subscription';
+import UpgradePlanCard from '@/components/UpgradePlanCard';
 
 
 // --- AI Configuration Component ---
@@ -308,6 +310,7 @@ export default function SuggestionsEnginePage() {
   const { toast } = useToast();
   const { currentUser } = useSession();
   const { orders, loading: loadingOrders } = useOrderContext();
+  const { subscription, isLoading: isSubscriptionLoading } = useSubscription();
   const [isSaving, setIsSaving] = useState(false);
   
   // Estado para las reglas
@@ -481,6 +484,25 @@ export default function SuggestionsEnginePage() {
     }
   };
   
+  if (isSubscriptionLoading) {
+    return (
+        <div className="space-y-6">
+            <Skeleton className="h-10 w-1/3" />
+            <Skeleton className="h-6 w-2/3" />
+            <Skeleton className="h-96 w-full" />
+        </div>
+    );
+  }
+
+  if (!subscription?.permissions.canUseAISuggestions) {
+    return (
+        <UpgradePlanCard
+            featureName="Motor de Sugerencias Inteligentes"
+            description="Aumenta tus ventas con recomendaciones de productos automáticas y personalizadas basadas en reglas de negocio o en Inteligencia Artificial."
+            requiredPlan="Cualquier plan de pago"
+        />
+    );
+  }
 
   return (
     <div className="space-y-6">

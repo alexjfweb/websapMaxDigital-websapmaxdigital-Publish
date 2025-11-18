@@ -15,6 +15,7 @@ interface SubscriptionInfo {
     canManageEmployees: boolean;
     canUseAdvancedAnalytics: boolean;
     canCustomizeBranding: boolean;
+    canUseAISuggestions: boolean; // Permiso para el motor de IA
   };
 }
 
@@ -67,6 +68,9 @@ export function useSubscription() {
 
     // La personalización está disponible en cualquier plan de pago.
     canCustomizeBranding: !!currentPlan && currentPlan.price > 0,
+
+    // El motor de IA está disponible en cualquier plan de pago.
+    canUseAISuggestions: !!currentPlan && currentPlan.price > 0,
   };
   
   return {
