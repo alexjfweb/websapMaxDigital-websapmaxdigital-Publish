@@ -15,6 +15,7 @@ export interface LandingPlan {
   color: string;
   maxUsers: number;
   maxProjects: number;
+  maxOrders: number; // Nuevo campo para el límite de pedidos
   ctaText?: string;
   createdAt: string;
   updatedAt: string;
@@ -39,6 +40,7 @@ export interface CreatePlanRequest {
   color: string;
   maxUsers: number;
   maxProjects: number;
+  maxOrders: number; // Nuevo campo para el límite de pedidos
   ctaText?: string;
   mp_preapproval_plan_id?: string;
 }

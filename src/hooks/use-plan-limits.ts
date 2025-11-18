@@ -1,4 +1,3 @@
-
 "use client";
 
 import useSWR from 'swr';
@@ -12,20 +11,23 @@ interface PlanLimits {
     tables: number;
     reservations: number;
     employees: number;
+    orders: number;
   };
   max: {
     tables: number;
     reservations: number;
     employees: number;
+    orders: number;
   };
   reached: {
     tables: boolean;
     reservations: boolean;
     employees: boolean;
+    orders: boolean;
   };
 }
 
-const fetchCurrentUsage = async (companyId: string): Promise<{ tables: number; reservations: number; employees: number }> => {
+const fetchCurrentUsage = async (companyId: string): Promise<{ tables: number; reservations: number; employees: number; orders: number }> => {
   const db = getDb();
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -49,13 +51,22 @@ const fetchCurrentUsage = async (companyId: string): Promise<{ tables: number; r
   const employeesSnapshot = await getDocs(employeesQuery);
   const employeesCount = employeesSnapshot.size;
 
-  return { tables: tablesCount, reservations: reservationsCount, employees: employeesCount };
+  // Fetch orders this month
+  const ordersQuery = query(
+    collection(db, 'orders'),
+    where('restaurantId', '==', companyId),
+    where('date', '>=', Timestamp.fromDate(startOfMonth))
+  );
+  const ordersSnapshot = await getDocs(ordersQuery);
+  const ordersCount = ordersSnapshot.size;
+
+  return { tables: tablesCount, reservations: reservationsCount, employees: employeesCount, orders: ordersCount };
 };
 
 const getDefaultLimits = (): PlanLimits => ({
-  current: { tables: 0, reservations: 0, employees: 0 },
-  max: { tables: -1, reservations: -1, employees: -1 },
-  reached: { tables: false, reservations: false, employees: false },
+  current: { tables: 0, reservations: 0, employees: 0, orders: 0 },
+  max: { tables: -1, reservations: -1, employees: -1, orders: -1 },
+  reached: { tables: false, reservations: false, employees: false, orders: false },
 });
 
 export function usePlanLimits() {
@@ -76,9 +87,10 @@ export function usePlanLimits() {
 
   if (plan && usage) {
     const maxLimits = {
-      tables: plan.maxProjects ?? 5, // Usando maxProjects para mesas como en la auditoría
+      tables: plan.maxProjects ?? -1,
       reservations: plan.name === 'Plan Gratuito' ? 10 : plan.name === 'Plan Básico' ? 50 : plan.name === 'Plan Gratis Lite' ? 5 : -1,
-      employees: plan.maxUsers ?? 5,
+      employees: plan.maxUsers ?? -1,
+      orders: plan.maxOrders ?? -1,
     };
 
     limits.current = usage;
@@ -87,6 +99,7 @@ export function usePlanLimits() {
     limits.reached.tables = maxLimits.tables === -1 ? false : usage.tables >= maxLimits.tables;
     limits.reached.reservations = maxLimits.reservations === -1 ? false : usage.reservations >= maxLimits.reservations;
     limits.reached.employees = maxLimits.employees === -1 ? false : usage.employees >= maxLimits.employees;
+    limits.reached.orders = maxLimits.orders === -1 ? false : usage.orders >= maxLimits.orders;
   }
 
   return {
