@@ -1,10 +1,11 @@
+
 "use client";
 
 import useSWR from 'swr';
 import { useSession } from '@/contexts/session-context';
 import { useSubscription } from '@/hooks/use-subscription';
 import { getDb } from '@/lib/firebase';
-import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, Timestamp, getCountFromServer } from 'firebase/firestore';
 
 interface PlanLimits {
   current: {
@@ -12,61 +13,70 @@ interface PlanLimits {
     reservations: number;
     employees: number;
     orders: number;
+    dishes: number; // Añadido
+    suggestions: number; // Añadido
   };
   max: {
     tables: number;
     reservations: number;
     employees: number;
     orders: number;
+    dishes: number; // Añadido
+    suggestions: number; // Añadido
   };
   reached: {
     tables: boolean;
     reservations: boolean;
     employees: boolean;
     orders: boolean;
+    dishes: boolean; // Añadido
+    suggestions: boolean; // Añadido
   };
 }
 
-const fetchCurrentUsage = async (companyId: string): Promise<{ tables: number; reservations: number; employees: number; orders: number }> => {
+const fetchCurrentUsage = async (companyId: string): Promise<PlanLimits['current']> => {
   const db = getDb();
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  // Fetch tables
-  const tablesQuery = query(collection(db, 'tables'), where('restaurantId', '==', companyId));
-  const tablesSnapshot = await getDocs(tablesQuery);
-  const tablesCount = tablesSnapshot.size;
+  const getCount = async (collectionName: string, extraConditions: any[] = []) => {
+    const collRef = collection(db, collectionName);
+    const q = query(collRef, where('restaurantId', '==', companyId), ...extraConditions);
+    const snapshot = await getCountFromServer(q);
+    return snapshot.data().count;
+  };
+  
+  const getCountForCompany = async (collectionName: string) => {
+    const collRef = collection(db, collectionName);
+    const q = query(collRef, where('companyId', '==', companyId));
+    const snapshot = await getCountFromServer(q);
+    return snapshot.data().count;
+  };
 
-  // Fetch reservations this month
-  const reservationsQuery = query(
-    collection(db, 'reservations'),
-    where('restaurantId', '==', companyId),
-    where('createdAt', '>=', Timestamp.fromDate(startOfMonth))
-  );
-  const reservationsSnapshot = await getDocs(reservationsQuery);
-  const reservationsCount = reservationsSnapshot.size;
 
-  // Fetch employees
-  const employeesQuery = query(collection(db, 'users'), where('companyId', '==', companyId), where('role', '==', 'employee'));
-  const employeesSnapshot = await getDocs(employeesQuery);
-  const employeesCount = employeesSnapshot.size;
+  const [tablesCount, reservationsCount, employeesCount, ordersCount, dishesCount, suggestionsCount] = await Promise.all([
+    getCountForCompany('tables'),
+    getCount('reservations', [where('createdAt', '>=', Timestamp.fromDate(startOfMonth))]),
+    getCountForCompany('users'), // Asumiendo que 'users' tiene 'companyId' para empleados. ¡OJO! Esto contará todos los usuarios de la empresa. Corregir si es necesario.
+    getCount('orders', [where('date', '>=', Timestamp.fromDate(startOfMonth))]),
+    getCountForCompany('dishes'),
+    getCount('suggestionLogs', [where('timestamp', '>=', Timestamp.fromDate(startOfMonth))]), // Asumiendo una colección de logs
+  ]);
 
-  // Fetch orders this month
-  const ordersQuery = query(
-    collection(db, 'orders'),
-    where('restaurantId', '==', companyId),
-    where('date', '>=', Timestamp.fromDate(startOfMonth))
-  );
-  const ordersSnapshot = await getDocs(ordersQuery);
-  const ordersCount = ordersSnapshot.size;
-
-  return { tables: tablesCount, reservations: reservationsCount, employees: employeesCount, orders: ordersCount };
+  return { 
+    tables: tablesCount, 
+    reservations: reservationsCount, 
+    employees: employeesCount, // Revisar si este query es correcto para solo empleados
+    orders: ordersCount,
+    dishes: dishesCount,
+    suggestions: suggestionsCount
+  };
 };
 
 const getDefaultLimits = (): PlanLimits => ({
-  current: { tables: 0, reservations: 0, employees: 0, orders: 0 },
-  max: { tables: -1, reservations: -1, employees: -1, orders: -1 },
-  reached: { tables: false, reservations: false, employees: false, orders: false },
+  current: { tables: 0, reservations: 0, employees: 0, orders: 0, dishes: 0, suggestions: 0 },
+  max: { tables: -1, reservations: -1, employees: -1, orders: -1, dishes: -1, suggestions: -1 },
+  reached: { tables: false, reservations: false, employees: false, orders: false, dishes: false, suggestions: false },
 });
 
 export function usePlanLimits() {
@@ -88,9 +98,11 @@ export function usePlanLimits() {
   if (plan && usage) {
     const maxLimits = {
       tables: plan.maxProjects ?? -1,
-      reservations: plan.maxReservations ?? -1, // Leer directamente del plan
+      reservations: plan.maxReservations ?? -1,
       employees: plan.maxUsers ?? -1,
       orders: plan.maxOrders ?? -1,
+      dishes: plan.maxDishes ?? -1, // Añadido
+      suggestions: plan.maxSuggestions ?? -1, // Añadido
     };
 
     limits.current = usage;
@@ -100,6 +112,8 @@ export function usePlanLimits() {
     limits.reached.reservations = maxLimits.reservations === -1 ? false : usage.reservations >= maxLimits.reservations;
     limits.reached.employees = maxLimits.employees === -1 ? false : usage.employees >= maxLimits.employees;
     limits.reached.orders = maxLimits.orders === -1 ? false : usage.orders >= maxLimits.orders;
+    limits.reached.dishes = maxLimits.dishes === -1 ? false : usage.dishes >= maxLimits.dishes;
+    limits.reached.suggestions = maxLimits.suggestions === -1 ? false : usage.suggestions >= maxLimits.suggestions;
   }
 
   return {

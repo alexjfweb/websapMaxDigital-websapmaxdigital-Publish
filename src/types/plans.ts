@@ -18,6 +18,8 @@ export interface LandingPlan {
   maxProjects: number;
   maxOrders: number;
   maxReservations: number;
+  maxDishes: number; // Añadido
+  maxSuggestions: number; // Añadido
   ctaText?: string;
   createdAt: string;
   updatedAt: string;
@@ -44,6 +46,8 @@ export interface CreatePlanRequest {
   maxProjects: number;
   maxOrders: number;
   maxReservations: number;
+  maxDishes: number; // Añadido
+  maxSuggestions: number; // Añadido
   ctaText?: string;
   mp_preapproval_plan_id?: string;
 }

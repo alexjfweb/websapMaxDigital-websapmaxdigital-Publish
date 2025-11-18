@@ -1,3 +1,4 @@
+
 import {
   collection,
   doc,
@@ -36,9 +37,11 @@ const serializePlan = (id: string, data: any): LandingPlan => ({
   icon: data.icon || 'zap',
   color: data.color || 'blue',
   maxUsers: data.maxUsers ?? -1,
-  maxProjects: data.maxProjects ?? -1,
+  maxProjects: data.maxProjects ?? -1, // Representa mesas
   maxOrders: data.maxOrders ?? -1,
-  maxReservations: data.maxReservations ?? -1, // Serializar nuevo campo
+  maxReservations: data.maxReservations ?? -1,
+  maxDishes: data.maxDishes ?? -1, // Añadido
+  maxSuggestions: data.maxSuggestions ?? -1, // Añadido
   ctaText: data.ctaText || 'Elegir Plan',
   createdAt: serializeDate(data.createdAt)!,
   updatedAt: serializeDate(data.updatedAt)!,
@@ -46,6 +49,7 @@ const serializePlan = (id: string, data: any): LandingPlan => ({
   updatedBy: data.updatedBy || 'system',
   mp_preapproval_plan_id: data.mp_preapproval_plan_id,
 });
+
 
 // Función para limpiar un objeto de valores 'undefined' antes de enviarlo a Firestore
 const cleanupObject = (obj: any): any => {
@@ -146,7 +150,7 @@ class LandingPlansService {
       slug,
       order: data.order ?? 999,
       isActive: data.isActive ?? true,
-      isPublic: data.isPublic ?? true, // CORRECCIÓN: Por defecto es público
+      isPublic: data.isPublic ?? true,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       createdBy: userId,
@@ -209,7 +213,6 @@ class LandingPlansService {
       throw new Error(`Plan with id ${id} not found.`);
     }
 
-    // CORRECCIÓN: En lugar de borrar, se desactiva y se hace no público.
     await this.updatePlan(id, { isActive: false, isPublic: false }, userId, userEmail);
 
     await auditService.log({
@@ -276,7 +279,7 @@ class LandingPlansService {
     await auditService.log({
       entity: 'landingPlans',
       entityId: planId,
-      action: 'rollback' as any, // 'rollback' es una acción personalizada
+      action: 'rollback' as any,
       performedBy: { uid: userId, email: userEmail },
       details: `Rolled back to state from audit log ${auditLogId}`,
       newData: logData.previousData,
@@ -297,16 +300,18 @@ class LandingPlansService {
             price: 0,
             currency: 'USD',
             period: 'lifetime',
-            features: ['5 Mesas', '5 Empleados', '10 Reservas/mes', '100 Pedidos/mes'],
+            features: ['5 Mesas', '5 Empleados', '10 Reservas/mes', '100 Pedidos/mes', '20 Platos'],
             isActive: true,
             isPublic: false,
             order: 99,
             icon: 'zap',
             color: 'gray',
             maxUsers: 5,
-            maxProjects: 5,
+            maxProjects: 5, // Mesas
             maxOrders: 100,
             maxReservations: 10,
+            maxDishes: 20, // Añadido
+            maxSuggestions: 50, // Añadido
             ctaText: 'Asignado Automáticamente'
         },
         {
@@ -316,7 +321,7 @@ class LandingPlansService {
             price: 5,
             currency: 'USD',
             period: 'monthly',
-            features: ['10 Mesas', '5 Empleados', '20 Reservas/mes', '100 Pedidos/mes'],
+            features: ['10 Mesas', '5 Empleados', '20 Reservas/mes', '100 Pedidos/mes', 'Hasta 40 platos', '100 Sugerencias IA/mes'],
             isActive: true,
             isPublic: true,
             isPopular: false,
@@ -327,6 +332,8 @@ class LandingPlansService {
             maxProjects: 10,
             maxOrders: 100,
             maxReservations: 20,
+            maxDishes: 40,
+            maxSuggestions: 100,
             ctaText: 'Elegir Plan Uno',
             mp_preapproval_plan_id: 'ad4fc79d3d974c77837cee01d4443192',
         },
@@ -337,7 +344,7 @@ class LandingPlansService {
             price: 10,
             currency: 'USD',
             period: 'monthly',
-            features: ['20 Mesas', '10 Empleados', '50 Reservas/mes', '1200 Pedidos/mes', 'Menú Digital con QR'],
+            features: ['20 Mesas', '10 Empleados', '50 Reservas/mes', '1200 Pedidos/mes', 'Menú Digital con QR', 'Hasta 80 platos', '250 Sugerencias IA/mes'],
             isActive: true,
             isPublic: true,
             isPopular: false,
@@ -348,6 +355,8 @@ class LandingPlansService {
             maxProjects: 20,
             maxOrders: 1200,
             maxReservations: 50,
+            maxDishes: 80,
+            maxSuggestions: 250,
             ctaText: 'Elegir Básico',
             mp_preapproval_plan_id: '8308fa1a6dbe41fdab0e56a54b1a93c0',
         },
@@ -358,7 +367,7 @@ class LandingPlansService {
             price: 25,
             currency: 'USD',
             period: 'monthly',
-            features: ['Mesas Ilimitadas', '25 Empleados', 'Hasta 150 Reservas/mes', '2000 Pedidos/mes', 'Personalización de Menú'],
+            features: ['Mesas Ilimitadas', '25 Empleados', 'Hasta 150 Reservas/mes', '2000 Pedidos/mes', 'Personalización de Menú', 'Platos Ilimitados', 'Sugerencias IA Ilimitadas'],
             isActive: true,
             isPublic: true,
             isPopular: true,
@@ -369,6 +378,8 @@ class LandingPlansService {
             maxProjects: -1,
             maxOrders: 2000,
             maxReservations: 150,
+            maxDishes: -1,
+            maxSuggestions: -1,
             ctaText: 'Elegir Estándar',
             mp_preapproval_plan_id: 'ec01918cf4e54dcf9839841f19a4bdbb',
         },
@@ -390,6 +401,8 @@ class LandingPlansService {
             maxProjects: -1,
             maxOrders: -1,
             maxReservations: -1,
+            maxDishes: -1,
+            maxSuggestions: -1,
             ctaText: 'Elegir Premium',
             mp_preapproval_plan_id: 'f50350617bce4132a5d4ced1a55d240e',
         },
@@ -411,6 +424,8 @@ class LandingPlansService {
           maxProjects: -1,
           maxOrders: -1,
           maxReservations: -1,
+          maxDishes: -1,
+          maxSuggestions: -1,
           ctaText: 'Elegir Emprendedor',
           mp_preapproval_plan_id: '5865c85c7a444d329fe276aa92ad248c',
         },
@@ -432,6 +447,8 @@ class LandingPlansService {
             maxProjects: -1,
             maxOrders: -1,
             maxReservations: -1,
+            maxDishes: -1,
+            maxSuggestions: -1,
             ctaText: 'Contactar a Ventas',
             mp_preapproval_plan_id: '9acc8d140f044537bfd13b31613b1af8',
         }
