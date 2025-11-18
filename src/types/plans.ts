@@ -1,3 +1,4 @@
+
 export interface LandingPlan {
   id: string;
   slug: string;
@@ -16,7 +17,7 @@ export interface LandingPlan {
   maxUsers: number;
   maxProjects: number;
   maxOrders: number;
-  maxReservations: number; // Nuevo campo para el límite de reservas
+  maxReservations: number;
   ctaText?: string;
   createdAt: string;
   updatedAt: string;
@@ -42,7 +43,7 @@ export interface CreatePlanRequest {
   maxUsers: number;
   maxProjects: number;
   maxOrders: number;
-  maxReservations: number; // Nuevo campo para el límite de reservas
+  maxReservations: number;
   ctaText?: string;
   mp_preapproval_plan_id?: string;
 }

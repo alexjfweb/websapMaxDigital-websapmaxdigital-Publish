@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { 
   Plus, 
   Edit, 
@@ -198,6 +199,7 @@ export default function SubscriptionPlansPage() {
     maxUsers: 5,
     maxProjects: 10,
     maxOrders: 100,
+    maxReservations: 10, // Añadido
     ctaText: 'Comenzar Prueba Gratuita'
   });
 
@@ -255,7 +257,7 @@ export default function SubscriptionPlansPage() {
       name: '', description: '', price: 0, currency: 'USD',
       period: 'monthly', features: [''], isActive: true,
       isPopular: false, icon: 'zap', color: 'blue',
-      maxUsers: 5, maxProjects: 10, maxOrders: 100, ctaText: 'Comenzar Prueba Gratuita'
+      maxUsers: 5, maxProjects: 10, maxOrders: 100, maxReservations: 10, ctaText: 'Comenzar Prueba Gratuita'
     });
   };
   
@@ -280,6 +282,7 @@ export default function SubscriptionPlansPage() {
       maxUsers: plan.maxUsers,
       maxProjects: plan.maxProjects,
       maxOrders: plan.maxOrders,
+      maxReservations: plan.maxReservations, // Añadido
       ctaText: plan.ctaText
     });
     setEditingPlan(plan);
@@ -308,6 +311,7 @@ export default function SubscriptionPlansPage() {
         maxUsers: formData.maxUsers as number,
         maxProjects: formData.maxProjects as number,
         maxOrders: formData.maxOrders as number,
+        maxReservations: formData.maxReservations as number, // Añadido
         ctaText: formData.ctaText
       };
 
@@ -521,11 +525,13 @@ export default function SubscriptionPlansPage() {
               <div><Label htmlFor="icon">Ícono</Label><Select value={formData.icon} onValueChange={(v) => handleInputChange('icon', v)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{PLAN_ICONS.map(i=><SelectItem key={i.value} value={i.value}>{i.label}</SelectItem>)}</SelectContent></Select></div>
               <div><Label htmlFor="color">Color</Label><Select value={formData.color} onValueChange={(v) => handleInputChange('color', v)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{PLAN_COLORS.map(c=><SelectItem key={c.value} value={c.value}><div className="flex items-center gap-2"><div className={`w-4 h-4 rounded ${c.class}`}></div>{c.label}</div></SelectItem>)}</SelectContent></Select></div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
-                <div><Label htmlFor="maxUsers">Límite de Usuarios (-1 = ilimitado)</Label><Input id="maxUsers" type="number" value={formData.maxUsers || 0} onChange={(e) => handleInputChange('maxUsers', parseInt(e.target.value))} /></div>
-                <div><Label htmlFor="maxProjects">Límite de Mesas (-1 = ilimitado)</Label><Input id="maxProjects" type="number" value={formData.maxProjects || 0} onChange={(e) => handleInputChange('maxProjects', parseInt(e.target.value))} /></div>
-                <div><Label htmlFor="maxOrders">Límite de Pedidos (-1 = ilimitado)</Label><Input id="maxOrders" type="number" value={formData.maxOrders || 0} onChange={(e) => handleInputChange('maxOrders', parseInt(e.target.value))} /></div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div><Label htmlFor="maxUsers">Usuarios</Label><Input id="maxUsers" type="number" value={formData.maxUsers || 0} onChange={(e) => handleInputChange('maxUsers', parseInt(e.target.value))} /></div>
+                <div><Label htmlFor="maxProjects">Mesas</Label><Input id="maxProjects" type="number" value={formData.maxProjects || 0} onChange={(e) => handleInputChange('maxProjects', parseInt(e.target.value))} /></div>
+                <div><Label htmlFor="maxOrders">Pedidos</Label><Input id="maxOrders" type="number" value={formData.maxOrders || 0} onChange={(e) => handleInputChange('maxOrders', parseInt(e.target.value))} /></div>
+                <div><Label htmlFor="maxReservations">Reservas</Label><Input id="maxReservations" type="number" value={formData.maxReservations || 0} onChange={(e) => handleInputChange('maxReservations', parseInt(e.target.value))} /></div>
             </div>
+            <p className="text-xs text-muted-foreground -mt-4">Usa -1 para ilimitado.</p>
             <div>
               <Label>Características *</Label>
               <div className="space-y-2">
