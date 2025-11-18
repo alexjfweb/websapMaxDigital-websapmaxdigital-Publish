@@ -89,18 +89,49 @@ const AIConfigDialog = () => {
     }, 1500);
   };
   
-  const handleSaveConfig = async () => {
-    if (!localConfig) return;
+    const handleSaveConfig = async () => {
+    if (!localConfig || !apiKey || connectionStatus !== 'connected') {
+        toast({ title: "No se puede guardar", description: "Completa la clave API y prueba la conexión antes de guardar.", variant: 'destructive' });
+        return;
+    }
+
     setIsSaving(true);
     try {
-      await updateAIConfig(localConfig);
-      toast({ title: "Configuración Guardada", description: "Tu configuración de IA ha sido guardada." });
+        let updatedModels = [...localConfig.models];
+        const existingModelIndex = updatedModels.findIndex(m => m.provider === selectedProviderName);
+        const selectedModelName = selectedProvider.models.length > 0 ? (localConfig.models.find(m => m.provider === selectedProviderName)?.name || selectedProvider.models[0]) : "custom";
+
+        if (existingModelIndex > -1) {
+            // Actualizar modelo existente
+            updatedModels[existingModelIndex] = {
+                ...updatedModels[existingModelIndex],
+                apiKey: apiKey,
+                name: selectedModelName
+            };
+        } else {
+            // Añadir nuevo modelo
+            updatedModels.push({
+                id: Date.now().toString(),
+                provider: selectedProviderName as any,
+                name: selectedModelName,
+                apiKey: apiKey,
+                active: true, // Activar por defecto al añadir uno nuevo
+            });
+        }
+        
+        const newConfig = { ...localConfig, models: updatedModels };
+        setLocalConfig(newConfig); // Actualizar estado local para reflejar en UI
+        await updateAIConfig(newConfig);
+        
+        toast({ title: "Configuración Guardada", description: "Tu configuración de IA ha sido guardada." });
+
     } catch (error) {
-      // El hook ya maneja el toast de error
+        // El hook ya maneja el toast de error
     } finally {
-      setIsSaving(false);
+        setIsSaving(false);
     }
   };
+
 
   const handleModelChange = (id: string, field: keyof AIModelConfig, value: any) => {
     if (!localConfig) return;
