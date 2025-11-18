@@ -25,12 +25,17 @@ import { useDishes } from "@/hooks/use-dishes";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/contexts/session-context";
 import { storageService } from "@/services/storage-service";
+import { usePlanLimits } from "@/hooks/use-plan-limits";
+import { useSubscription } from "@/hooks/use-subscription";
+import LimitReachedDialog from "@/components/LimitReachedDialog";
 
 
 export default function AdminDishesPage() {
   const { currentUser } = useSession();
   const companyId = currentUser?.companyId;
   const { dishes, isLoading, error, refreshDishes } = useDishes(companyId);
+  const { limits, isLimitsLoading } = usePlanLimits();
+  const { subscription, isLoading: isSubscriptionLoading } = useSubscription();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -38,6 +43,7 @@ export default function AdminDishesPage() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
+  const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -142,7 +148,6 @@ export default function AdminDishesPage() {
         }
         imageUrl = await storageService.compressAndUploadFile(values.image, 'dishes/');
       } else if (isUpdating && !imagePreview) {
-        // Si el usuario eliminó la vista previa, eliminamos la imagen anterior si existe.
         if (editingDish?.imageUrl && !editingDish.imageUrl.includes('placehold.co')) {
             await storageService.deleteFile(editingDish.imageUrl);
         }
@@ -191,6 +196,10 @@ export default function AdminDishesPage() {
   };
 
   const openNewDialog = () => {
+    if (limits.reached.dishes) {
+        setIsLimitModalOpen(true);
+        return;
+    }
     setEditingDish(null);
     setIsDialogOpen(true);
   }
@@ -204,7 +213,6 @@ export default function AdminDishesPage() {
     
     try {
       const db = getDb();
-      // Si el plato tiene una imagen, la borramos de Storage
       if (dishToDelete.imageUrl && !dishToDelete.imageUrl.includes('placehold.co')) {
         await storageService.deleteFile(dishToDelete.imageUrl);
       }
@@ -361,7 +369,7 @@ export default function AdminDishesPage() {
     ));
   };
 
-  if (!isClient) {
+  if (!isClient || isSubscriptionLoading || isLimitsLoading) {
     return (
       <div className="space-y-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -405,11 +413,19 @@ export default function AdminDishesPage() {
 
 
   return (
+    <>
+    <LimitReachedDialog
+        isOpen={isLimitModalOpen}
+        onClose={() => setIsLimitModalOpen(false)}
+        limitType="platos"
+        limit={limits.max.dishes}
+        planName={subscription?.plan?.name || ''}
+    />
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-primary">Gestión de platos</h1>
-          <p className="text-lg text-muted-foreground">Crea, edita y gestiona los platos de tu menú.</p>
+          <p className="text-lg text-muted-foreground">Crea, edita y gestiona los platos de tu menú. Límite del plan: {limits.current.dishes}/{limits.max.dishes < 0 ? 'Ilimitados' : limits.max.dishes}</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
@@ -618,7 +634,6 @@ export default function AdminDishesPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }
-
-    
