@@ -88,7 +88,7 @@ export function usePlanLimits() {
   if (plan && usage) {
     const maxLimits = {
       tables: plan.maxProjects ?? -1,
-      reservations: plan.name === 'Plan Gratuito' ? 10 : plan.name === 'Plan Básico' ? 50 : plan.name === 'Plan Gratis Lite' ? 5 : -1,
+      reservations: plan.maxReservations ?? -1, // Leer directamente del plan
       employees: plan.maxUsers ?? -1,
       orders: plan.maxOrders ?? -1,
     };
